@@ -1,8 +1,8 @@
 ---
-name: plan
+name: planning
 description: >
-  Cross-model adversarial planning. '/athanor:plan', '/플랜', 'athanor plan',
-  '계획 세워줘', '플랜 짜줘', '작업 계획', '구현 계획' 요청 시 사용.
+  Cross-model adversarial planning. 두 플래너가 경쟁하고 크리틱이 통합.
+  '플랜', '계획 세워줘', '플랜 짜줘', '작업 계획', '구현 계획' 요청 시 사용.
 user-invocable: true
 ---
 

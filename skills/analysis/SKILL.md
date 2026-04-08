@@ -1,8 +1,8 @@
 ---
-name: analyze
+name: analysis
 description: >
-  병렬 고속 분석. '/athanor:analyze', '/분석', 'athanor analyze',
-  '분석해줘', '코드 분석', '구조 파악', '다각도 분석' 요청 시 사용.
+  병렬 고속 분석. 여러 analyst가 동시에 코드베이스를 분석.
+  '분석', '분석해줘', '코드 분석', '구조 파악', '다각도 분석' 요청 시 사용.
 user-invocable: true
 ---
 

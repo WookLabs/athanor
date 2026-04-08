@@ -1,9 +1,8 @@
 ---
-name: work
+name: working
 description: >
-  TodoList grinding execution. '/athanor:work', '/워크', 'athanor work',
-  '실행해줘', '작업 시작', '구현 시작',
-  '/athanor:work --solo', '/athanor:work --team' 요청 시 사용.
+  TodoList grinding execution. subtask를 전부 완료할 때까지 실행.
+  '워크', '실행해줘', '작업 시작', '구현 시작', '--solo', '--team' 요청 시 사용.
 user-invocable: true
 ---
 
