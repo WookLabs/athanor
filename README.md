@@ -1,36 +1,78 @@
 # Athanor
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-blueviolet.svg)](https://claude.ai/code)
+
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-Athanor is a Claude Code plugin that provides **5 workflow commands** instead of 100 features. It uses a **thin-leader architecture** where the main session never does work directly — all tasks are dispatched to clean-context worker agents.
+**5 commands. Clean-context workers. Cross-model adversarial planning. Sessions that compound.**
 
-## Key Feature: Cross-Model Adversarial Planning
+## Why Athanor Exists
 
-Two independent planners create competing plans, cross-review each other's work, and a critic synthesizes the best elements. This produces higher-quality plans than any single model can achieve alone.
+**Without Athanor**, your Claude Code session is a single brain trying to hold everything at once — the analysis, the plan, the implementation, and quality checks. Context fills up. Quality degrades. When you ask for a plan, the same model that writes code also evaluates it — no second opinion.
 
-```
-         ┌── Planner A (standard) ──→ Reviewer B ──┐
-Input ───┤                                          ├── Critic → Final Plan
-         └── Planner B (contrarian) ──→ Reviewer A ──┘
-```
+**With Athanor**, the main session never touches a file. It dispatches work to clean-context specialists — a researcher who brainstorms, a planner who architects, a critic who cross-reviews, an executor who implements with verification loops. Two independent planners create competing plans, then a critic synthesizes the best of both. Lessons from every session compound — future workers start smarter than the last.
 
-## Install
+Other tools give Claude more skills. Athanor gives Claude a **team**.
+
+## Quick Start
+
+**Prerequisites:** [Claude Code](https://claude.ai/code)
 
 ```bash
 # 1. Add marketplace
 claude plugin marketplace add WookLabs/athanor
 
-# 2. Install plugin
+# 2. Install
 claude plugin install athanor
 
-# 3. Restart Claude Code, then run:
+# 3. Restart Claude Code, then:
 /athanor:setup
+
+# 4. Try it
+/athanor:discuss "Add user authentication — OAuth vs session-based?"
 ```
 
-**For development (local):**
+<details>
+<summary><b>For local development</b></summary>
+
 ```bash
 git clone https://github.com/WookLabs/athanor.git
 claude --plugin-dir /path/to/athanor
+```
+
+</details>
+
+## See It Work
+
+```
+You:     /athanor:discuss "Add a caching layer for the API"
+
+         [dispatches researcher + devil's advocate in parallel]
+
+         Researcher: 3 strategies — Redis, in-memory LRU, CDN edge cache
+         Devil's Advocate: Redis adds ops complexity for a team of 1.
+                          In-memory LRU handles current traffic fine.
+         Critic: Start with in-memory LRU. Add Redis at 10K RPM.
+
+You:     /athanor:plan
+
+         [dispatches Planner A (standard) + Planner B (contrarian)]
+
+         Plan A: Cache middleware, 4 subtasks
+         Plan B: Why not cache at DB query level instead?
+         [cross-review + critic synthesis]
+         Final plan: DB-level caching for reads, middleware for headers.
+         6 subtasks, dependency-ordered.
+
+You:     /athanor:work --team
+
+         Wave 1: [subtask 1, 2] parallel
+           ↓ discovery relay
+         Wave 2: [subtask 3, 4] depends on wave 1
+           ↓
+         Wave 3: [subtask 5, 6]
+         All 6 subtasks complete. 2 lessons saved for next time.
 ```
 
 ## Commands
@@ -38,39 +80,47 @@ claude --plugin-dir /path/to/athanor
 | Command | Mode | What it does |
 |---------|------|-------------|
 | `/athanor:setup` | — | Health check and configuration |
-| `/athanor:discuss` | Plan | Decision brainstorming with multiple perspectives |
-| `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers) |
+| `/athanor:discuss` | Plan | Decision brainstorming (researcher + devil's advocate + critic) |
+| `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers simultaneously) |
 | `/athanor:plan` | Plan | Cross-model adversarial planning + task splitting |
-| `/athanor:work` | Execute | TodoList grinding until all tasks complete |
-
-### Workflow
+| `/athanor:work` | Execute | Grinding through every subtask until done |
 
 ```
 /athanor:discuss  →  /athanor:analyze  →  /athanor:plan  →  /athanor:work
    "What?"              "Where?"             "How?"            "Do it."
-   (brainstorm)         (analyze)            (plan)            (execute)
 ```
 
-Everything before `/athanor:work` is **Plan Mode** — no files are modified. Execution mode begins only after you confirm the plan.
+Everything before `/athanor:work` is **Plan Mode** — no files are modified.
+
+## Key Feature: Cross-Model Adversarial Planning
+
+```
+         ┌── Planner A (standard)  ──→ Reviewer B ──┐
+Input ───┤                                           ├── Critic → Final Plan
+         └── Planner B (contrarian) ──→ Reviewer A ──┘
+```
+
+A single model reviewing its own plan misses blind spots. Two independent planners creating competing plans, cross-reviewing each other's work, and a critic synthesizing — that catches assumptions self-review can't.
+
+## Design Philosophy
+
+**5 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
+
+**Thin leader.** The main session never reads files, analyzes code, or writes code. It dispatches and collects. Your context stays clean regardless of session length.
+
+**Cross-model adversarial.** Competing perspectives produce better plans than any single model reviewing itself. Two planners, two reviewers, one critic.
+
+**Grow with use.** Lessons from every session are extracted, scored, and surfaced to future workers. The system gets better at your codebase over time.
+
+**Plan before execute.** No files are modified until you confirm the plan. Explicit mode separation prevents accidental changes.
 
 ## Architecture
 
-### Thin Leader Pattern
-
-The leader (main session) **never** reads files, analyzes code, or writes code. It only:
-
-1. Parses user input
-2. Dispatches worker agents
-3. Collects result briefs
-4. Presents output to user
-
-This keeps the leader's context clean regardless of session length.
-
-### Worker Agents
+**Thin leader** dispatches to **clean-context workers**:
 
 | Agent | Model | Role |
 |-------|-------|------|
-| researcher | sonnet | Brainstorming research + Devil's Advocate |
+| researcher | sonnet | Objective research + Devil's Advocate |
 | analyst | sonnet | Fast parallel analysis |
 | planner | opus | Implementation planning |
 | critic | opus | Plan synthesis and review |
@@ -78,87 +128,75 @@ This keeps the leader's context clean regardless of session length.
 | learner | sonnet | Session learning extraction |
 | cleaner | haiku | Memory decay and cleanup |
 
-### Session Communication
+**Session communication** via `.md` files — workers read and write to `.athanor/sessions/{id}/`. No shared state in the leader's context.
 
-All inter-stage communication uses `.md` files in `.athanor/sessions/{id}/`:
+**Learning system** — after each `/athanor:work`, the Learner extracts structured lessons to `.athanor/lessons/`. Workers read relevant lessons before starting. Frequently-accessed lessons auto-promote to permanent. Stale ones decay and get cleaned.
+
+[Full architecture details](docs/DESIGN.md) | [Conventions](docs/CONVENTIONS.md)
+
+## Execution Modes
+
+**Solo (`--solo`)** — One subtask at a time, each in a clean context. Simple and reliable.
+
+**Team (`--team`)** — Wave-based parallel execution. Subtasks grouped by dependency, each wave runs simultaneously with discovery relay between waves.
 
 ```
-.athanor/
-├── sessions/
-│   └── 2026-04-08-001/
-│       ├── research-a.md        ← researcher findings (intermediate)
-│       ├── research-b.md        ← devil's advocate findings (intermediate)
-│       ├── discuss.md           ← brainstorming synthesis
-│       ├── analyze.md           ← analysis report
-│       ├── plan-claude.md      ← Plan A
-│       ├── plan-codex.md       ← Plan B (contrarian)
-│       ├── review-of-claude.md ← Review of Plan A
-│       ├── review-of-codex.md  ← Review of Plan B
-│       ├── plan.md             ← Final merged plan + subtasks
-│       ├── decisions.md        ← Decision log
-│       ├── work-log.md         ← Execution progress
-│       └── discoveries/        ← Worker findings
-└── lessons/                    ← learned lessons (auto-managed)
-    └── work-2026-04-08-001.md
+Wave 1: [task 1, task 2]  ← parallel
+  ↓ discovery relay
+Wave 2: [task 3]          ← depends on wave 1
 ```
-
-### Learning System
-
-After each `/athanor:work` session:
-
-1. **Learner** analyzes results and extracts structured lessons
-2. **Cleaner** applies memory decay (age + access count)
-3. Future workers automatically read relevant lessons
-
-Lessons use a 2-tier model:
-- **Permanent**: Architecture decisions, critical patterns — never deleted
-- **Working**: Task-specific details — auto-cleaned after decay period
 
 ## Configuration
 
-`athanor.json` at project root:
+`athanor.json` at project root (auto-created by `/athanor:setup`):
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `codex.enabled` | `true` | Enable cross-model planning with Codex |
-| `work.defaultMode` | `"solo"` | Default execution mode (`solo` or `team`) |
+| `codex.enabled` | `true` | Cross-model planning with Codex (falls back to contrarian Claude) |
+| `work.defaultMode` | `"solo"` | Default execution mode |
 | `work.ralphLoop.maxRetries` | `5` | Max verification retries per subtask |
 | `work.circuitBreaker.consecutiveFailures` | `3` | Failures before circuit breaker trips |
 | `team.waveSize` | `3` | Max parallel workers per wave |
 | `memory.decayDays` | `7` | Working memory retention period |
 | `memory.promotionThreshold` | `5` | Access count for auto-promotion to permanent |
-| `triggers.language` | `"both"` | Trigger language (`ko`, `en`, or `both`) |
 
-## Execution Modes
+## FAQ
 
-### Solo (`--solo`)
-Sequential execution. One subtask at a time, each in a clean context.
+**How is this different from just using Claude Code?**
+Claude Code is one brain doing everything. Athanor gives it a team — separate workers for research, planning, execution, and review, each with clean context. The main session stays lightweight no matter how long you work.
 
-### Team (`--team`)
-Wave-based parallel execution. Subtasks grouped by dependency, each wave runs in parallel with discovery relay between waves.
+**Why cross-model adversarial planning?**
+A single model reviewing its own plan misses blind spots. Two independent planners reviewing each other's work catches assumptions and risks that self-review can't.
 
-```
-Wave 1: [task 1, task 2]  ← parallel, no dependencies
-  ↓ discovery relay
-Wave 2: [task 3]          ← depends on wave 1
-  ↓ discovery relay
-Wave 3: [task 4]          ← depends on wave 2
-```
+**Does this work without Codex?**
+Yes. Planning uses dual-perspective Claude (standard + contrarian planner) by default. Set `codex.enabled: true` to use Codex as Planner B when available.
 
-## Design Philosophy
+**How much token overhead does this add?**
+The leader session stays minimal — it only dispatches and collects. Workers use tokens in clean contexts that are discarded after each task. Net cost is comparable to doing the same work manually, but with better plan quality.
 
-- **5 commands, not 100 features** — focused workflow, not feature collection
-- **Thin leader** — leader context never grows, workers get clean starts
-- **Cross-model adversarial** — competing perspectives produce better plans
-- **Grow with use** — lessons accumulate, future sessions benefit
-- **Plan before execute** — explicit mode separation prevents accidental changes
+**Who is this for?**
+Solo developers who want structured planning. Tech leads who want reproducible quality. Teams who want their Claude Code sessions to share learned lessons.
+
+## Roadmap
+
+- [x] Core workflow (discuss, analyze, plan, work)
+- [x] Cross-model adversarial planning
+- [x] Solo and team execution modes
+- [x] 2-tier learning system with memory decay
+- [ ] Codex native integration
+- [ ] Multi-project lesson sharing
+- [ ] Custom worker agent definitions
+- [ ] CI/CD integration hooks
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Docs
 
 - [DESIGN.md](docs/DESIGN.md) — Architecture and design decisions
 - [CONVENTIONS.md](docs/CONVENTIONS.md) — Dispatch, session, and lesson conventions
 - [ROADMAP.md](docs/ROADMAP.md) — Implementation roadmap
-- [STATE.md](docs/STATE.md) — Current implementation state
 
 ## License
 
