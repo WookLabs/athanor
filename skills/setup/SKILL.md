@@ -53,7 +53,7 @@ Agent({
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
   "models": {
     "researcher": "sonnet", "analyst": "sonnet", "planner": "opus", "critic": "opus",
-    "executor": "sonnet", "cleaner": "haiku", "learner": "sonnet"
+    "executor": "opus", "cleaner": "sonnet", "learner": "sonnet"
   },
   "triggers": { "language": "both" }
 }

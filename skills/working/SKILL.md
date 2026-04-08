@@ -80,7 +80,7 @@ Read the subtask definition and build the executor prompt:
 ```
 Agent({
   description: "Athanor executor: {subtask title short}",
-  model: "sonnet",
+  model: "opus",
   prompt: "You are an Athanor executor worker.
 
 ## Subtask {id}: {title}
@@ -273,7 +273,7 @@ Only extract genuinely useful lessons. If nothing significant, say so."
 ```
 Agent({
   description: "Athanor cleaner: decay + cleanup",
-  model: "haiku",
+  model: "sonnet",
   prompt: "You are the Athanor Cleaner agent.
 
 ## Task
@@ -402,9 +402,9 @@ Dispatch all wave subtasks in a **single message with multiple Agent calls**:
 
 ```
 // Single message with N parallel Agent calls
-Agent({ description: "executor: subtask 1", model: "sonnet", prompt: "..." })
-Agent({ description: "executor: subtask 2", model: "sonnet", prompt: "..." })
-Agent({ description: "executor: subtask 3", model: "sonnet", prompt: "..." })
+Agent({ description: "executor: subtask 1", model: "opus", prompt: "..." })
+Agent({ description: "executor: subtask 2", model: "opus", prompt: "..." })
+Agent({ description: "executor: subtask 3", model: "opus", prompt: "..." })
 ```
 
 ### Discovery Relay

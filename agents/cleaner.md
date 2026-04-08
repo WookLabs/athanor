@@ -1,6 +1,6 @@
 ---
 name: athanor-cleaner
-model: haiku
+model: sonnet
 description: Memory decay and session cleaner. Applies smart promotion based on access_count, cleans old sessions and stale lessons.
 tools:
   - Read
