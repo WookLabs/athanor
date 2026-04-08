@@ -237,3 +237,60 @@ discoveries/worker-{agent-description-slug}-{timestamp}.md
 - Command: {what was run}
 - Result: {pass/fail}
 ```
+
+---
+
+## 6. Lesson File Convention
+
+### Location
+
+```
+.athanor/lessons/{skill}-{YYYY-MM-DD}-{NNN}.md
+```
+
+예: `.athanor/lessons/plan-2026-04-08-001.md`
+
+### Format
+
+```markdown
+---
+type: lesson
+skill: plan|work|analyze|discuss
+confidence: high|medium|low
+source: 2026-04-08-001
+access_count: 0
+created: 2026-04-08
+importance: permanent|working
+---
+
+## Lesson: {title}
+
+{Concrete, actionable lesson content}
+
+### When to apply
+{Situations where this lesson is relevant}
+
+### Evidence
+{What happened that taught this lesson}
+```
+
+### Lifecycle
+
+```
+  Created by Learner
+       ↓
+  Working (age-based decay)
+       ↓
+  ┌─ access_count >= 5 → PROMOTED to permanent
+  └─ age > decayDays + low access → DELETED by Cleaner
+  
+  Permanent → NEVER deleted
+```
+
+### How Workers Read Lessons
+
+Workers dispatched by `/athanor:plan` and `/athanor:work` receive this instruction:
+"Before starting, read `.athanor/lessons/` for lessons tagged with `skill: {your skill}`.
+Apply relevant lessons to your approach."
+
+When a worker reads a lesson, the Learner should increment `access_count` on next run.
