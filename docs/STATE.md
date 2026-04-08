@@ -3,7 +3,7 @@
 > 이 파일은 현재 구현 진행 상태를 추적합니다.
 > 각 Phase 완료 시 업데이트합니다.
 
-## Current Phase: 9 — Polish & Release
+## Current Phase: COMPLETE — v0.1.0
 
 ## History
 
@@ -70,6 +70,13 @@
 - 테스트 성공: /work 완료 → Learner 자동 실행 → 2개 lesson 생성
   - Learner가 테스트 fixture를 진짜 교훈과 구분하는 자기 인식 보여줌
   - .athanor/lessons/ 에 structured YAML frontmatter로 저장
+
+### 2026-04-08: Phase 9 완료 — v0.1.0 Release
+- Agent model 설정 통일 (7개 agent 전부 model 필드 추가)
+- Defense mechanisms: stop-phrase 감지, read-before-edit, effort 레벨 (CLAUDE.md)
+- Lessons system 가이드라인 추가 (CLAUDE.md)
+- README.md 작성 (설치, 아키텍처, 커맨드, 설정, 실행 모드)
+- v0.1.0 태그 + release
 
 ## Phase 1 Checklist
 

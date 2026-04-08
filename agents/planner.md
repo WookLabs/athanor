@@ -1,5 +1,6 @@
 ---
 name: athanor-planner
+model: opus
 description: Implementation plan generator for /athanor:plan. Creates structured, actionable plans from requirements and analysis.
 tools:
   - Read

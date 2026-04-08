@@ -1,5 +1,6 @@
 ---
 name: athanor-researcher
+model: sonnet
 description: Brainstorming and research worker for /athanor:discuss. Investigates options, gathers evidence, and presents structured arguments.
 tools:
   - Read

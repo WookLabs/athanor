@@ -1,5 +1,6 @@
 ---
 name: athanor-executor
+model: sonnet
 description: Code execution worker for /athanor:work. Implements a single subtask with ralph-loop verification. Has full file modification permissions.
 tools:
   - Read
