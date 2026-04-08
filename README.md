@@ -86,8 +86,8 @@ All inter-stage communication uses `.md` files in `.athanor/sessions/{id}/`:
 │       ├── decisions.md        ← Decision log
 │       ├── work-log.md         ← Execution progress
 │       └── discoveries/        ← Worker findings
-└── lessons/
-    └── work-2026-04-08-001.md  ← Learned lessons
+└── lessons/                    ← learned lessons (auto-managed)
+    └── work-2026-04-08-001.md
 ```
 
 ### Learning System

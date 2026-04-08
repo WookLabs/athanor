@@ -81,6 +81,7 @@ Read the subtask definition and build the executor prompt:
 ```
 Agent({
   description: "Athanor executor: {subtask title short}",
+  model: "sonnet",
   prompt: "You are an Athanor executor worker.
 
 ## Subtask {id}: {title}
@@ -93,6 +94,10 @@ Agent({
 
 ### Decisions to Follow
 {from decisions.md — relevant decisions for this subtask}
+
+### Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: work.
+Read any relevant lessons and apply them to your approach.
 
 ### Constraints
 {any constraints or rules}
@@ -133,6 +138,13 @@ END_RESULT"
 #### 2b. Process Result
 
 After worker returns:
+
+**Stop-phrase check:**
+If the worker result contains any of these patterns, re-dispatch with instruction "Complete the task. Do not stop early.":
+- "이 정도면 멈춰도 될 것 같습니다"
+- "계속할까요?" / "Should I continue?"
+- "기존 이슈입니다" / "pre-existing issue"
+- "새 세션에서 계속"
 
 **If success:**
 - `consecutiveFailures = 0`
@@ -194,34 +206,16 @@ After all subtasks processed, finalize `.athanor/sessions/{id}/work-log.md`:
 {appended entries from Step 2b}
 ```
 
-### Step 4: Completion Summary
+### Step 4: Learning (automatic)
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Athanor Work Complete: {plan title}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Subtasks:    {completedCount}/{N} completed
-Failed:      {failedCount}
+After all subtasks complete, dispatch the Learner.
 
-Learning:    {lesson_count} lessons extracted
-             {permanent_count} permanent, {working_count} working
-Cleanup:     {promoted_count} promoted, {deleted_count} expired
-
-Session: .athanor/sessions/{id}/
-Log:     work-log.md
-Lessons: .athanor/lessons/
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-### Step 5: Learning & Cleanup (automatic)
-
-After all subtasks complete, dispatch Learner then Cleaner **sequentially**.
-
-**5a. Dispatch Learner:**
+**4a. Dispatch Learner:**
 
 ```
 Agent({
   description: "Athanor learner: session analysis",
+  model: "sonnet",
   prompt: "You are the Athanor Learner agent.
 
 ## Task
@@ -257,11 +251,14 @@ Only extract genuinely useful lessons. If nothing significant, say so."
 })
 ```
 
-**5b. Dispatch Cleaner (after Learner completes):**
+### Step 5: Cleanup (automatic, after Learner completes)
+
+**5a. Dispatch Cleaner:**
 
 ```
 Agent({
   description: "Athanor cleaner: decay + cleanup",
+  model: "haiku",
   prompt: "You are the Athanor Cleaner agent.
 
 ## Task
@@ -290,7 +287,26 @@ When in doubt, KEEP — false retention is better than lost knowledge."
 })
 ```
 
-**5c. Update completion summary** with learning + cleanup results.
+### Step 6: Final Summary
+
+After learning and cleanup complete, present results including their metrics:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Athanor Work Complete: {plan title}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subtasks:    {completedCount}/{N} completed
+Failed:      {failedCount}
+
+Learning:    {lesson_count} lessons extracted
+             {permanent_count} permanent, {working_count} working
+Cleanup:     {promoted_count} promoted, {deleted_count} expired
+
+Session: .athanor/sessions/{id}/
+Log:     work-log.md
+Lessons: .athanor/lessons/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 ---
 

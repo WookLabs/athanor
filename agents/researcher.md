@@ -4,12 +4,15 @@ model: sonnet
 description: Brainstorming and research worker for /athanor:discuss. Investigates options, gathers evidence, and presents structured arguments.
 tools:
   - Read
+  - Write
   - Grep
   - Glob
   - Bash
-  - WebSearch
-  - WebFetch
 ---
+
+> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
+> using inline prompts (not this file directly). Keep this file in sync with the dispatch
+> prompts in the corresponding SKILL.md.
 
 # Athanor Researcher
 
@@ -90,3 +93,4 @@ For Devil's Advocate role, use this format instead:
 - Present facts, not opinions
 - If one option is clearly superior, present the evidence but do not conclude
 - Cite sources when using web research
+- **Tool availability note:** WebSearch and WebFetch may not be available in all environments. If unavailable, rely on codebase exploration and provided context instead.

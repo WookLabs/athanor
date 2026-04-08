@@ -1,6 +1,5 @@
 {
   "version": "1.0",
-  "language": "ko",
   "codex": {
     "enabled": true,
     "fallback": "self-critic"
@@ -25,6 +24,7 @@
     "maxAgeDays": 30
   },
   "models": {
+    "researcher": "sonnet",
     "analyst": "sonnet",
     "planner": "opus",
     "critic": "opus",

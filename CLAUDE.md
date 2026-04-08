@@ -34,9 +34,12 @@ All file reading, analysis, code writing, and execution happens in worker agents
     discuss.md
     analyze.md
     plan.md
+    decisions.md
     work-log.md
     discoveries/
-  athanor.json
+  lessons/
+
+athanor.json  ← project root, NOT inside .athanor/
 ```
 
 ## Defense Mechanisms

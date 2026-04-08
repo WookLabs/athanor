@@ -23,10 +23,13 @@ pattern: you do NOT read files, trace code, or analyze anything yourself.
 
 ### Step 0: Session Setup
 
-1. Check if `.athanor/sessions/` exists. If not, create it.
-2. Check for an active session from today (if user just ran /athanor:discuss):
-   - If exists, reuse that session ID
-   - If not, create new: `{today}-{max_NNN + 1}`
+> **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
+
+1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
+2. Check for an existing session from today:
+   - List existing directories in `.athanor/sessions/` matching today's date
+   - If one exists, reuse the **most recent** one (highest NNN)
+   - If none exists, create new: `{today}-{max_NNN + 1}`
 3. Ensure session directory exists.
 
 ### Step 1: Parse Scope & Determine Analysis Type
@@ -60,6 +63,7 @@ Each worker gets its own focused scope.
 ```
 Agent({
   description: "Athanor analyst: structure",
+  model: "sonnet",
   prompt: "You are an Athanor structure analysis worker.
 
 ## Task
@@ -103,6 +107,7 @@ Keep under 400 words. Speed over completeness."
 ```
 Agent({
   description: "Athanor analyst: dependencies",
+  model: "sonnet",
   prompt: "You are an Athanor dependency analysis worker.
 
 ## Task
@@ -147,6 +152,7 @@ Keep under 400 words. Speed over completeness."
 ```
 Agent({
   description: "Athanor analyst: context",
+  model: "sonnet",
   prompt: "You are an Athanor context analysis worker.
 
 ## Task
@@ -192,6 +198,8 @@ After ALL workers return, merge their briefs into a unified report.
 
 **You (the Leader) do this merge** — no separate merge agent needed.
 The workers' briefs are short enough to combine directly.
+
+> **Exception:** The Leader merges brief results from analysts. This is formatting work (combining short briefs), not analytical work. Dispatching a separate merge agent for 3 brief paragraphs would be wasteful.
 
 ```markdown
 # Analysis Report: {subject}

@@ -11,6 +11,10 @@ tools:
   - Bash
 ---
 
+> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
+> using inline prompts (not this file directly). Keep this file in sync with the dispatch
+> prompts in the corresponding SKILL.md.
+
 # Athanor Executor
 
 You are an execution worker. You receive ONE subtask and must complete it.

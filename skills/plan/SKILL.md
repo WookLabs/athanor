@@ -23,9 +23,12 @@ This is Athanor's **killer feature**.
 
 ### Step 0: Session Setup
 
-1. Check for active session from today (from /discuss or /analyze)
-   - If exists, reuse that session ID
-   - If not, create new: `{today}-{max_NNN + 1}`
+> **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
+
+1. Check for an existing session from today (from /discuss or /analyze):
+   - List existing directories in `.athanor/sessions/` matching today's date
+   - If one exists, reuse the **most recent** one (highest NNN)
+   - If none exists, create new: `{today}-{max_NNN + 1}`
 2. Ensure session directory exists
 
 ### Step 1: Gather Context & Parse Request
@@ -59,6 +62,7 @@ Dispatch TWO planners **simultaneously**.
 ```
 Agent({
   description: "Athanor planner A: standard approach",
+  model: "opus",
   prompt: "You are Athanor Planner A — the Standard Planner.
 
 ## Task
@@ -68,6 +72,10 @@ Create an implementation plan for:
 ## Context from Previous Stages
 {discuss.md content if exists, otherwise 'No previous discussion'}
 {analyze.md content if exists, otherwise 'No previous analysis'}
+
+### Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: plan.
+Read any relevant lessons and apply them to your approach.
 
 ## Plan Structure
 Write a structured implementation plan:
@@ -104,7 +112,13 @@ Write a structured implementation plan:
 - Each step should be independently verifiable
 - Include verification criteria per phase
 
-Save your plan to: .athanor/sessions/{session-id}/plan-claude.md"
+Save your plan to: .athanor/sessions/{session-id}/plan-claude.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of plan approach}
+END_RESULT"
 })
 ```
 
@@ -113,6 +127,7 @@ Save your plan to: .athanor/sessions/{session-id}/plan-claude.md"
 ```
 Agent({
   description: "Athanor planner B: contrarian approach",
+  model: "opus",
   prompt: "You are Athanor Planner B — the Contrarian Planner.
 
 ## Task
@@ -121,6 +136,10 @@ Create an ALTERNATIVE implementation plan for:
 
 ## Context from Previous Stages
 {same context as Planner A}
+
+### Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: plan.
+Read any relevant lessons and apply them to your approach.
 
 ## Your Role
 You MUST find a fundamentally different approach than the obvious one.
@@ -157,7 +176,13 @@ Same format as standard plan:
 - Explain WHY your approach might be better
 - Be realistic — this is a serious alternative, not a strawman
 
-Save your plan to: .athanor/sessions/{session-id}/plan-codex.md"
+Save your plan to: .athanor/sessions/{session-id}/plan-codex.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of alternative approach}
+END_RESULT"
 })
 ```
 
@@ -172,6 +197,7 @@ Each reviewer reads the OTHER planner's output file.
 ```
 Agent({
   description: "Athanor reviewer: critiquing Plan B",
+  model: "opus",
   prompt: "You are an Athanor plan reviewer.
 
 ## Task
@@ -205,7 +231,13 @@ Read the plan from: .athanor/sessions/{session-id}/plan-codex.md
 ## Verdict
 {1-2 sentences: overall assessment}
 
-Save to: .athanor/sessions/{session-id}/review-of-codex.md"
+Save to: .athanor/sessions/{session-id}/review-of-codex.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence review verdict}
+END_RESULT"
 })
 ```
 
@@ -214,6 +246,7 @@ Save to: .athanor/sessions/{session-id}/review-of-codex.md"
 ```
 Agent({
   description: "Athanor reviewer: critiquing Plan A",
+  model: "opus",
   prompt: "You are an Athanor plan reviewer.
 
 ## Task
@@ -248,7 +281,13 @@ Read the plan from: .athanor/sessions/{session-id}/plan-claude.md
 ## Verdict
 {1-2 sentences: overall assessment}
 
-Save to: .athanor/sessions/{session-id}/review-of-claude.md"
+Save to: .athanor/sessions/{session-id}/review-of-claude.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence review verdict}
+END_RESULT"
 })
 ```
 
@@ -259,6 +298,7 @@ After BOTH reviewers return, dispatch the Critic to synthesize everything.
 ```
 Agent({
   description: "Athanor critic: plan synthesis",
+  model: "opus",
   prompt: "You are the Athanor Critic in Plan Synthesis mode.
 
 ## Task
@@ -317,7 +357,13 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 - Be explicit about WHY you chose one approach over another
 - UNRESOLVED conflicts must present both options fairly
 
-Save to: .athanor/sessions/{session-id}/plan.md"
+Save to: .athanor/sessions/{session-id}/plan.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of synthesized plan}
+END_RESULT"
 })
 ```
 
@@ -361,6 +407,7 @@ Dispatch a Task Splitter worker:
 ```
 Agent({
   description: "Athanor task splitter",
+  model: "opus",
   prompt: "You are the Athanor Task Splitter.
 
 ## Task
@@ -406,7 +453,13 @@ Also create .athanor/sessions/{session-id}/decisions.md with this content:
 {list all key decisions from the plan with their reasoning}
 
 Save updated plan to: .athanor/sessions/{session-id}/plan.md
-Save decisions to: .athanor/sessions/{session-id}/decisions.md"
+Save decisions to: .athanor/sessions/{session-id}/decisions.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of subtask count and structure}
+END_RESULT"
 })
 ```
 

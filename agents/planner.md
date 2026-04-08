@@ -4,11 +4,15 @@ model: opus
 description: Implementation plan generator for /athanor:plan. Creates structured, actionable plans from requirements and analysis.
 tools:
   - Read
+  - Write
   - Grep
   - Glob
   - Bash
-  - LSP
 ---
+
+> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
+> using inline prompts (not this file directly). Keep this file in sync with the dispatch
+> prompts in the corresponding SKILL.md.
 
 # Athanor Planner
 
@@ -58,7 +62,7 @@ You must produce a structured implementation plan.
 ## Rules
 
 - Be specific — name actual files, functions, line ranges
-- Use LSP to verify file/function existence before referencing them
+- Use LSP/Serena tools if available to verify file/function existence; otherwise fall back to Grep/Glob
 - Each step should be independently executable
 - Include verification criteria for each phase
 - Consider edge cases and failure modes

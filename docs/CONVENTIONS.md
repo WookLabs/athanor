@@ -147,6 +147,8 @@ END_RESULT
   sessions/
     {YYYY-MM-DD-NNN}/          ← 세션 디렉토리
       discuss.md               ← /athanor:discuss 결과
+      research-a.md            ← researcher worker A 결과 (discuss 중간 산출물)
+      research-b.md            ← researcher worker B 결과 (discuss 중간 산출물)
       analyze.md               ← /athanor:analyze 결과
       plan.md                  ← /athanor:plan 확정 플랜 + subtask list
       plan-claude.md           ← Claude planner 원본 (plan 중간 산출물)
@@ -164,7 +166,8 @@ END_RESULT
 
 | 누가 쓰나 | 파일 | 시점 |
 |-----------|------|------|
-| discuss worker | `discuss.md` | /athanor:discuss 완료 시 |
+| researcher workers | `research-a.md`, `research-b.md` | /athanor:discuss 중 각 researcher 완료 시 |
+| discuss leader (critic) | `discuss.md` | /athanor:discuss 완료 시 (critic이 research 결과 통합) |
 | analyze workers | `analyze.md` | /athanor:analyze 완료 시 (Leader가 merge) |
 | planner workers | `plan-claude.md`, `plan-codex.md` | /athanor:plan Step 2 |
 | review workers | `review-of-claude.md`, `review-of-codex.md` | /athanor:plan Step 3 |
@@ -177,7 +180,8 @@ END_RESULT
 | 누가 읽나 | 파일 | 목적 |
 |-----------|------|------|
 | planner | `discuss.md`, `analyze.md` | 이전 단계 컨텍스트 |
-| critic | `plan-claude.md`, `plan-codex.md`, `review-of-*.md` | 통합 입력 |
+| critic (discuss) | `research-a.md`, `research-b.md` | 두 researcher 결과 통합 |
+| critic (plan) | `plan-claude.md`, `plan-codex.md`, `review-of-*.md` | 플랜 통합 입력 |
 | executor | `plan.md`, `decisions.md` | 작업 지시 + 재논의 방지 |
 | executor (team) | `discoveries/worker-*.md` | 이전 wave 발견 |
 
@@ -206,10 +210,10 @@ YYYY-MM-DD-NNN
 ### Naming
 
 ```
-discoveries/worker-{agent-description-slug}-{timestamp}.md
+discoveries/worker-{subtask-id}.md
 ```
 
-예: `discoveries/worker-executor-otp-reset-20260408-143022.md`
+예: `discoveries/worker-1.md`, `discoveries/worker-2.md`
 
 ### Content Format
 

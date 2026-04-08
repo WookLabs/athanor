@@ -200,7 +200,7 @@ Worker에게 넘기는 정보:
 
 **완료 시:**
 1. 자동 메모리 저장 (2-tier)
-2. working_cleaner 실행
+2. cleaner 실행
 
 **중간 취소:**
 /btw로 취소 가능. 현재까지 진행 상황 저장.
@@ -225,10 +225,13 @@ subtask 반복 실패 → 사용자에게 물어봄.
       discuss.md       ← /athanor:discuss 결과
       analyze.md       ← /athanor:analyze 결과
       plan.md          ← /athanor:plan 확정안 + subtask 목록
+      decisions.md     ← 확정된 결정 기록
       work-log.md      ← /athanor:work 진행 기록
       discoveries/
         worker-{id}.md ← team 모드 discovery relay
-  athanor.json           ← 프로젝트 config
+  lessons/               ← learned lessons (auto-managed)
+
+athanor.json             ← project root, NOT inside .athanor/
 ```
 
 ### Discovery Relay (Team Mode)
@@ -257,7 +260,7 @@ Discovery brief 내용:
 **작업 메모리 (Working/Cache)**
 - 작업 내용, 변경 기록, 중간 결과
 - 자동 저장 (/athanor:work 완료 시)
-- working_cleaner가 자동 관리:
+- cleaner가 자동 관리:
   - 오래된 항목 삭제
   - 쓸모없어진 항목 삭제
   - `important` 태그 → 영구로 승격
@@ -273,7 +276,7 @@ Worker가 작업 중 발견한 것에 중요도 태그:
 PR #42에서 lint 경고 3개 수정함.
 ```
 
-working_cleaner는:
+cleaner는:
 - `permanent` 태그 → mem-search 영구 저장으로 승격
 - `working` 태그 → 기간 경과 후 자동 삭제
 - 태그 없음 → working으로 간주
@@ -352,6 +355,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 
 ```json
 "models": {
+  "researcher": "sonnet",
   "analyst": "sonnet",
   "planner": "opus",
   "critic": "opus",
@@ -370,7 +374,6 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 ```json
 {
   "version": "1.0",
-  "language": "ko",
   "codex": {
     "enabled": true,
     "fallback": "self-critic"
@@ -395,6 +398,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
     "maxAgeDays": 30
   },
   "models": {
+    "researcher": "sonnet",
     "analyst": "sonnet",
     "planner": "opus",
     "critic": "opus",

@@ -4,9 +4,14 @@ model: opus
 description: Synthesis and review worker. Merges multiple perspectives into a unified output. Used by both /athanor:discuss (decision synthesis) and /athanor:plan (plan synthesis).
 tools:
   - Read
+  - Write
   - Grep
   - Glob
 ---
+
+> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
+> using inline prompts (not this file directly). Keep this file in sync with the dispatch
+> prompts in the corresponding SKILL.md.
 
 # Athanor Critic
 

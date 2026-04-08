@@ -21,11 +21,14 @@ pattern: you do NOT research, analyze, or form opinions yourself.
 
 ### Step 0: Session Setup
 
-1. Check if `.athanor/sessions/` exists. If not, create it.
-2. Determine today's session ID:
+> **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
+
+1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
+2. Check for an existing session from today:
    - List existing directories in `.athanor/sessions/` matching today's date
-   - New session ID = `{today}-{max_NNN + 1}` (e.g., `2026-04-08-001`)
-3. Create the session directory: `.athanor/sessions/{id}/`
+   - If one exists, reuse the **most recent** one (highest NNN)
+   - If none exists, create new: `{today}-{max_NNN + 1}` (e.g., `2026-04-08-001`)
+3. Ensure session directory exists: `.athanor/sessions/{id}/`
 
 ### Step 1: Parse Dilemma
 
@@ -52,6 +55,7 @@ Dispatch TWO workers simultaneously using the Agent tool.
 ```
 Agent({
   description: "Athanor researcher: objective analysis",
+  model: "sonnet",
   prompt: "You are an Athanor researcher worker.
 
 ## Task
@@ -95,7 +99,13 @@ You are the OBJECTIVE RESEARCHER. Research ALL options fairly.
 - Facts, not opinions
 - Do NOT recommend — the Critic will synthesize
 
-Save your results to: .athanor/sessions/{session-id}/research-a.md"
+Save your results to: .athanor/sessions/{session-id}/research-a.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of key findings}
+END_RESULT"
 })
 ```
 
@@ -104,6 +114,7 @@ Save your results to: .athanor/sessions/{session-id}/research-a.md"
 ```
 Agent({
   description: "Athanor researcher: devil's advocate",
+  model: "sonnet",
   prompt: "You are an Athanor Devil's Advocate researcher.
 
 ## Task
@@ -144,13 +155,23 @@ You are the DEVIL'S ADVOCATE. Your job is to:
 - Be constructive, not contrarian for its own sake
 - Back challenges with evidence or reasoning
 
-Save your results to: .athanor/sessions/{session-id}/research-b.md"
+Save your results to: .athanor/sessions/{session-id}/research-b.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of key findings}
+END_RESULT"
 })
 ```
 
-**Note on Codex integration:** If `athanor.json` has `codex.enabled: true` AND Codex
-tools are available, replace Worker B with a Codex dispatch for truly independent
-perspective. The Devil's Advocate fallback above works when Codex is unavailable.
+**Codex branching (Step 2 variant):**
+If athanor.json `codex.enabled` is true AND Codex tools are available in this session:
+  - Replace Worker B with a Codex dispatch instead of Devil's Advocate
+  - Dispatch prompt is the same content, sent via codex tool
+  
+If Codex is NOT available (default):
+  - Use the Devil's Advocate Worker B as defined above
 
 ### Step 3: Dispatch Critic (after both workers complete)
 
@@ -159,6 +180,7 @@ After receiving both workers' results, dispatch the Critic:
 ```
 Agent({
   description: "Athanor critic: discussion synthesis",
+  model: "opus",
   prompt: "You are the Athanor Critic in Discussion Synthesis mode.
 
 ## Task
@@ -210,7 +232,13 @@ Worker B (Devil's Advocate) findings:
 ## Technique Applied
 {which technique and why}
 
-Save your synthesis to: .athanor/sessions/{session-id}/discuss.md"
+Save your synthesis to: .athanor/sessions/{session-id}/discuss.md
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary of recommendation}
+END_RESULT"
 })
 ```
 
