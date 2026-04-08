@@ -3,7 +3,7 @@
 > 이 파일은 현재 구현 진행 상태를 추적합니다.
 > 각 Phase 완료 시 업데이트합니다.
 
-## Current Phase: 1 — Foundation
+## Current Phase: 3 — /athanor:discuss
 
 ## History
 
@@ -13,8 +13,15 @@
 - plugin.json, CLAUDE.md, 5 skills, 7 agents, DESIGN.md, ROADMAP.md
 - Push to https://github.com/WookLabs/athanor
 
-### 2026-04-08: Phase 1 시작
-- 진행 중
+### 2026-04-08: Phase 1 완료
+- /athanor:setup 구현 및 테스트 (8554ebe)
+- Health check worker dispatch 동작 확인
+- Status table 출력 정상
+
+### 2026-04-08: Phase 2 완료
+- CONVENTIONS.md 작성 (dispatch packet, result brief, session I/O, discovery 규약)
+- Smoke test 통과: worker가 파일 생성→읽기→보고 성공
+- Thin leader 패턴 실증 완료
 
 ## Phase 1 Checklist
 
