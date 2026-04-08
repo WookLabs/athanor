@@ -1,9 +1,8 @@
 ---
 name: analyze
 description: >
-  병렬 고속 분석. '/athanor:analyze', '/분석', 'analyze',
-  '분석해줘', '현재 상태', '코드 분석', '구조 파악',
-  '다각도 분석' 요청 시 사용.
+  병렬 고속 분석. '/athanor:analyze', '/분석', 'athanor analyze',
+  '분석해줘', '코드 분석', '구조 파악', '다각도 분석' 요청 시 사용.
 user-invocable: true
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: discuss
 description: >
-  의사결정 브레인스토밍. '/athanor:discuss', '/논의', 'brainstorm',
+  의사결정 브레인스토밍. '/athanor:discuss', '/논의', 'athanor discuss',
   '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B',
-  '브레인스토밍', 'discuss' 요청 시 사용.
+  '브레인스토밍' 요청 시 사용.
 user-invocable: true
 ---
 
