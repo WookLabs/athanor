@@ -67,6 +67,10 @@ Options:
 - Option A: {description}
 - Option B: {description}
 
+## Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: discuss.
+Read any relevant lessons and apply them to your approach.
+
 ## Role
 You are the OBJECTIVE RESEARCHER. Research ALL options fairly.
 
@@ -126,6 +130,10 @@ Options:
 - Option A: {description}
 - Option B: {description}
 
+## Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: discuss.
+Read any relevant lessons and apply them to your approach.
+
 ## Role
 You are the DEVIL'S ADVOCATE. Your job is to:
 1. Identify which option SEEMS like the obvious winner
@@ -166,10 +174,13 @@ END_RESULT"
 ```
 
 **Codex branching (Step 2 variant):**
+> Note: Codex integration requires a compatible Codex plugin. When available,
+> Worker B can be dispatched via the Codex runtime for truly independent perspective.
+> Currently, the Devil's Advocate fallback is the default and recommended path.
+
 If athanor.json `codex.enabled` is true AND Codex tools are available in this session:
   - Replace Worker B with a Codex dispatch instead of Devil's Advocate
-  - Dispatch prompt is the same content, sent via codex tool
-  
+
 If Codex is NOT available (default):
   - Use the Devil's Advocate Worker B as defined above
 

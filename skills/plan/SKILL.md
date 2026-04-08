@@ -76,6 +76,8 @@ Create an implementation plan for:
 ### Prior Lessons
 Before starting, check .athanor/lessons/ for files tagged with skill: plan.
 Read any relevant lessons and apply them to your approach.
+**Report which lesson files you read** in your ATHANOR_RESULT under a `lessons_read:` field.
+Example: lessons_read: [plan-2026-04-01-001.md, plan-2026-04-05-002.md]
 
 ## Plan Structure
 Write a structured implementation plan:
@@ -118,6 +120,7 @@ Return your findings as:
 ATHANOR_RESULT
 status: success
 summary: {1-2 sentence summary of plan approach}
+lessons_read: [{list of lesson filenames you read, or empty}]
 END_RESULT"
 })
 ```
@@ -140,6 +143,8 @@ Create an ALTERNATIVE implementation plan for:
 ### Prior Lessons
 Before starting, check .athanor/lessons/ for files tagged with skill: plan.
 Read any relevant lessons and apply them to your approach.
+**Report which lesson files you read** in your ATHANOR_RESULT under a `lessons_read:` field.
+Example: lessons_read: [plan-2026-04-01-001.md, plan-2026-04-05-002.md]
 
 ## Your Role
 You MUST find a fundamentally different approach than the obvious one.
@@ -182,6 +187,7 @@ Return your findings as:
 ATHANOR_RESULT
 status: success
 summary: {1-2 sentence summary of alternative approach}
+lessons_read: [{list of lesson filenames you read, or empty}]
 END_RESULT"
 })
 ```

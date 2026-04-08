@@ -98,6 +98,8 @@ Agent({
 ### Prior Lessons
 Before starting, check .athanor/lessons/ for files tagged with skill: work.
 Read any relevant lessons and apply them to your approach.
+**Report which lesson files you read** in your ATHANOR_RESULT under a `lessons_read:` field.
+Example: lessons_read: [work-2026-04-01-001.md, work-2026-04-05-002.md]
 
 ### Constraints
 {any constraints or rules}
@@ -130,6 +132,7 @@ decisions:
   - {decisions made}
 discoveries:
   {tagged with importance}
+lessons_read: [{list of lesson filenames you read, or empty}]
 verification: {what was run} → {pass|fail}
 END_RESULT"
 })
@@ -158,7 +161,7 @@ If the worker result contains any of these patterns, re-dispatch with instructio
   - Summary: {from result brief}
   - Files: {changed files}
   ```
-- If worker reported discoveries, save to `.athanor/sessions/{id}/discoveries/worker-executor-{subtask-id}.md`
+- If worker reported discoveries, save to `.athanor/sessions/{id}/discoveries/worker-{subtask-id}.md`
 
 **If failure:**
 - `consecutiveFailures += 1`
@@ -245,7 +248,10 @@ Analyze the completed work session and extract reusable lessons.
    importance: {permanent|working}
    ---
 3. Deduplicate: check .athanor/lessons/ for existing similar lessons
-4. Report: return ATHANOR_RESULT with lesson count and top finding
+4. Update access_count: for each lesson file listed in workers' `lessons_read` fields
+   (found in work-log.md or discovery files), increment the `access_count` in that
+   lesson file's YAML frontmatter by 1.
+5. Report: return ATHANOR_RESULT with lesson count and top finding
 
 Only extract genuinely useful lessons. If nothing significant, say so."
 })
@@ -378,9 +384,9 @@ Dispatch all wave subtasks in a **single message with multiple Agent calls**:
 
 ```
 // Single message with N parallel Agent calls
-Agent({ description: "executor: subtask 1", prompt: "..." })
-Agent({ description: "executor: subtask 2", prompt: "..." })
-Agent({ description: "executor: subtask 3", prompt: "..." })
+Agent({ description: "executor: subtask 1", model: "sonnet", prompt: "..." })
+Agent({ description: "executor: subtask 2", model: "sonnet", prompt: "..." })
+Agent({ description: "executor: subtask 3", model: "sonnet", prompt: "..." })
 ```
 
 ### Discovery Relay

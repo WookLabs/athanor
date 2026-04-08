@@ -158,8 +158,10 @@ END_RESULT
       decisions.md             ← 확정 결정 로그
       work-log.md              ← /athanor:work 진행 기록
       discoveries/             ← worker discovery briefs
-        worker-{agent-id}.md   ← 개별 worker 발견
-  athanor.json                 ← 프로젝트 루트에 위치 (sessions 안이 아님)
+        worker-{subtask-id}.md ← 개별 worker 발견
+  lessons/                     ← learned lessons (auto-managed)
+
+athanor.json                   ← project root (NOT inside .athanor/)
 ```
 
 ### 파일 쓰기 규칙

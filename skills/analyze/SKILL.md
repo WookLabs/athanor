@@ -70,6 +70,10 @@ Agent({
 Analyze the structure of: {analysis target}
 Working directory: {cwd}
 
+## Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: analyze.
+Read any relevant lessons and apply them to your approach.
+
 ## Focus
 - File/directory organization
 - Module/class hierarchy
@@ -113,6 +117,10 @@ Agent({
 ## Task
 Analyze dependencies and coupling in: {analysis target}
 Working directory: {cwd}
+
+## Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: analyze.
+Read any relevant lessons and apply them to your approach.
 
 ## Focus
 - Import/require/use relationships
@@ -158,6 +166,10 @@ Agent({
 ## Task
 Gather relevant context for: {analysis target}
 Working directory: {cwd}
+
+## Prior Lessons
+Before starting, check .athanor/lessons/ for files tagged with skill: analyze.
+Read any relevant lessons and apply them to your approach.
 
 ## Focus
 - Project configuration (package.json, Makefile, etc.)

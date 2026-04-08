@@ -203,11 +203,11 @@ Worker에게 넘기는 정보:
 2. cleaner 실행
 
 **중간 취소:**
-/btw로 취소 가능. 현재까지 진행 상황 저장.
+사용자가 취소할 수 있다 (Escape or Ctrl+C). 현재까지 진행 상황 저장.
 
 **Worker 실패 시:**
 Worker가 죽으면 Leader가 감지 → 재dispatch.
-ralph-loop 무한루프 → /btw로 사용자가 취소.
+ralph-loop 무한루프 → 사용자가 취소할 수 있다 (Escape or Ctrl+C).
 subtask 반복 실패 → 사용자에게 물어봄.
 
 ---
@@ -222,16 +222,22 @@ subtask 반복 실패 → 사용자에게 물어봄.
 .athanor/
   sessions/
     {session-id}/
-      discuss.md       ← /athanor:discuss 결과
-      analyze.md       ← /athanor:analyze 결과
-      plan.md          ← /athanor:plan 확정안 + subtask 목록
-      decisions.md     ← 확정된 결정 기록
-      work-log.md      ← /athanor:work 진행 기록
+      discuss.md               ← /athanor:discuss 결과
+      research-a.md            ← intermediate (discuss)
+      research-b.md            ← intermediate (discuss)
+      analyze.md               ← /athanor:analyze 결과
+      plan-claude.md           ← intermediate (plan A)
+      plan-codex.md            ← intermediate (plan B)
+      review-of-claude.md      ← intermediate (review of A)
+      review-of-codex.md       ← intermediate (review of B)
+      plan.md                  ← /athanor:plan 확정안 + subtask 목록
+      decisions.md             ← 확정된 결정 기록
+      work-log.md              ← /athanor:work 진행 기록
       discoveries/
-        worker-{id}.md ← team 모드 discovery relay
-  lessons/               ← learned lessons (auto-managed)
+        worker-{subtask-id}.md ← team 모드 discovery relay
+  lessons/                     ← learned lessons (auto-managed)
 
-athanor.json             ← project root, NOT inside .athanor/
+athanor.json                   ← project root, NOT inside .athanor/
 ```
 
 ### Discovery Relay (Team Mode)

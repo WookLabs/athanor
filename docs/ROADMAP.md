@@ -60,7 +60,7 @@
 ### 2.2 .md 파일 I/O 규약
 - [x] 세션 파일 읽기/쓰기 규약 (어디에 뭘 저장)
 - [x] 파일 잠금 없음 확인 (solo에서는 순차라 불필요)
-- [x] discovery 파일 naming 규약 (`worker-{id}-{timestamp}.md`)
+- [x] discovery 파일 naming 규약 (`worker-{subtask-id}.md`)
 
 ### 2.3 Smoke Test
 - [x] 단순 agent dispatch → 파일 하나 읽기 → brief 반환

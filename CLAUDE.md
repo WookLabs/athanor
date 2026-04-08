@@ -31,13 +31,19 @@ All file reading, analysis, code writing, and execution happens in worker agents
 ```
 .athanor/
   sessions/{id}/
-    discuss.md
-    analyze.md
-    plan.md
-    decisions.md
-    work-log.md
-    discoveries/
-  lessons/
+    discuss.md               ← /athanor:discuss 결과
+    research-a.md            ← intermediate (discuss)
+    research-b.md            ← intermediate (discuss)
+    analyze.md               ← /athanor:analyze 결과
+    plan-claude.md           ← intermediate (plan A)
+    plan-codex.md            ← intermediate (plan B)
+    review-of-claude.md      ← intermediate (review of A)
+    review-of-codex.md       ← intermediate (review of B)
+    plan.md                  ← /athanor:plan 확정안 + subtasks
+    decisions.md             ← 확정 결정 로그
+    work-log.md              ← /athanor:work 진행 기록
+    discoveries/             ← worker discovery briefs
+  lessons/                   ← learned lessons (auto-managed)
 
 athanor.json  ← project root, NOT inside .athanor/
 ```

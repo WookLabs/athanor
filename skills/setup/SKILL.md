@@ -23,10 +23,13 @@ you do NOT perform checks yourself — you dispatch a worker and present results
 Dispatch a **single** general-purpose worker agent with the following prompt.
 Include ALL instructions in the dispatch — the worker has no context about Athanor.
 
-**Worker dispatch prompt:**
+**Worker dispatch:**
 
 ```
-You are an Athanor setup worker. Perform these health checks and report results.
+Agent({
+  description: "Athanor setup: health check",
+  model: "sonnet",
+  prompt: "You are an Athanor setup worker. Perform these health checks and report results.
 
 ## Checks
 
@@ -40,7 +43,6 @@ You are an Athanor setup worker. Perform these health checks and report results.
 - If not, create it with this content:
 {
   "version": "1.0",
-  "language": "ko",
   "codex": { "enabled": true, "fallback": "self-critic" },
   "work": {
     "defaultMode": "solo",
@@ -50,7 +52,7 @@ You are an Athanor setup worker. Perform these health checks and report results.
   "team": { "waveSize": 3, "discoveryRelay": true },
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
   "models": {
-    "analyst": "sonnet", "planner": "opus", "critic": "opus",
+    "researcher": "sonnet", "analyst": "sonnet", "planner": "opus", "critic": "opus",
     "executor": "sonnet", "cleaner": "haiku", "learner": "sonnet"
   },
   "triggers": { "language": "both" }
@@ -82,7 +84,10 @@ You are an Athanor setup worker. Perform these health checks and report results.
 Return your results in this EXACT format:
 
 ```
-ATHANOR_HEALTH_CHECK_RESULTS
+ATHANOR_RESULT
+status: success
+summary: Health check complete
+details:
 session_dir: [EXISTS|CREATED]
 config: [EXISTS|CREATED]
 memsearch: [AVAILABLE|UNAVAILABLE] [tool_name_if_available]
@@ -90,8 +95,10 @@ lsp: [AVAILABLE|UNAVAILABLE] [tool_name_if_available]
 codex: [AVAILABLE|UNAVAILABLE]
 agent_teams: [ENABLED|DISABLED]
 notes: [any additional observations]
-END_RESULTS
+END_RESULT
 ```
+"
+})
 ```
 
 ### Step 2: Parse Results and Display Status Table
