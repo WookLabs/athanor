@@ -3,7 +3,7 @@
 > 이 파일은 현재 구현 진행 상태를 추적합니다.
 > 각 Phase 완료 시 업데이트합니다.
 
-## Current Phase: 4 — /athanor:analyze
+## Current Phase: 5 — /athanor:plan
 
 ## History
 
@@ -29,6 +29,12 @@
 - critic.md 범용화 (discuss + plan 양쪽 지원)
 - 테스트 성공: "TS vs Markdown" 질문 → Researcher + Devil's Advocate 병렬 → Critic 합성 → discuss.md 생성
 - 출력 포맷 정상 (status bar + 세션 정보 + 다음 단계 안내)
+
+### 2026-04-08: Phase 4 완료
+- /athanor:analyze SKILL.md 전면 보강 (분석 유형 판단 + 병렬 dispatch + leader merge)
+- analyst.md 보강 (LSP/Serena 우선 + Grep/Glob fallback + brevity 규칙)
+- 테스트 성공: Athanor 프로젝트 자체 분석 → 3 worker 병렬 → 구조화된 리포트
+- 실제 유용한 리스크 발견 (세션 스키마 검증 부재, critic 과부하 등)
 
 ## Phase 1 Checklist
 
