@@ -18,24 +18,34 @@
 
 ## Phase 1 Checklist
 
-### 1.1 플러그인 로딩 검증
-- [ ] Claude Code에서 `--plugin-dir` 로 로딩 테스트
-- [ ] 5개 스킬이 `/athanor:` prefix로 표시되는지 확인
-- [ ] plugin.json 필드 누락/오류 수정
+### 1.1 플러그인 로딩 검증 ✅
+- [x] Claude Code에서 `--plugin-dir` 로 로딩 테스트
+- [x] 5개 스킬이 `/athanor:` prefix로 표시 확인 (setup, discuss, analyze, plan, work)
+- [x] plugin.json → .claude-plugin/plugin.json 이동 (Claude Code 규약)
 
-### 1.2 Session 디렉토리 관리
-- [ ] `.athanor/sessions/` 자동 생성 로직
-- [ ] 세션 ID 규칙: `YYYY-MM-DD-NNN`
-- [ ] 세션 디렉토리 템플릿
+### 1.2 Session 디렉토리 관리 ✅
+- [x] `.athanor/sessions/` 자동 생성 로직 (setup SKILL.md에 구현)
+- [x] 세션 ID 규칙: `YYYY-MM-DD-NNN`
+- [x] 세션 디렉토리 템플릿 (discuss.md, analyze.md, plan.md, decisions.md, work-log.md, discoveries/)
 
-### 1.3 Config 관리
-- [ ] athanor.json 로딩 로직
-- [ ] 기본값 fallback
+### 1.3 Config 관리 ✅
+- [x] athanor.json 로딩 로직 (setup worker가 처리)
+- [x] 기본값 fallback (template에서 복사)
 
-### 1.4 /athanor:setup 구현
-- [ ] Health check worker agent
-- [ ] 상태 테이블 출력
-- [ ] 트리거 언어 설정
+### 1.4 /athanor:setup 구현 ✅
+- [x] Health check worker dispatch (thin leader 패턴)
+- [x] 상태 테이블 출력 (6개 항목)
+- [x] 트리거 언어 설정 (ko/en/both)
 
-### 1.5 테스트
-- [ ] `/athanor:setup` 실행 → 동작 확인
+### 1.5 테스트 ✅
+- [x] `/athanor:setup` 실행 → 동작 확인
+- [x] Status table 정상 출력 확인
+- [x] Agent Teams: ✓ enabled
+- [x] LSP: ✓ available (built-in)
+- [x] mem-search: ✗ — `-p` 모드 테스트 한계 (MCP 미로드). 사용자 세션에서 재테스트 필요.
+
+### MCP 접근성 결론
+- `-p` (non-interactive) 모드에서는 MCP 서버가 로드되지 않아 mem-search 미감지
+- 이는 테스트 환경 한계. 실제 사용자 세션에서는 MCP가 로드되어 있을 것
+- **실제 세션에서 사용자가 `/athanor:setup` 실행하여 재검증 필요**
+- fallback (.md 파일 통신)은 이미 설계에 포함되어 있음
