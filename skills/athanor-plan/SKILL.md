@@ -372,23 +372,51 @@ END_RESULT"
 })
 ```
 
-### Step 5: Present to User
+### Step 5: Present Full Plan to User
 
-After the Critic returns, present the unified plan:
+After the Critic returns, read `.athanor/sessions/{id}/plan.md` and present the
+**complete plan** in a structured, scannable format. The user must see everything
+before confirming.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Athanor Plan: {title}
+📋 Athanor Plan: {title}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{Critic's unified plan — reformatted}
+## Goal
+{무엇을 왜 하는지 — 1-3문장}
+
+## Approach
+{전략 요약 — 어떤 방식으로 접근하는지}
+
+## Phases
+
+Phase 1: {이름}
+  ├── Step 1.1: {구체적 행동} → {대상 파일}
+  ├── Step 1.2: {구체적 행동} → {대상 파일}
+  └── Verify: {검증 방법}
+
+Phase 2: {이름}
+  ├── Step 2.1: {구체적 행동} → {대상 파일}
+  └── Verify: {검증 방법}
+
+## Key Decisions
+  • {결정 1}: {이유}
+  • {결정 2}: {이유}
+
+## Risks
+  ⚠ {리스크 1}: {대응}
+  ⚠ {리스크 2}: {대응}
+
+## Scope
+  Files to modify: {N}개  |  New files: {N}개  |  Complexity: {low/medium/high}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**If UNRESOLVED conflicts exist:**
+**If UNRESOLVED conflicts exist, show them AFTER the plan:**
 ```
-⚠ {N}개 미해결 충돌이 있습니다:
+⚠ {N}개 미해결 충돌:
 
 1. {conflict description}
    [A] {Plan A approach}
@@ -397,13 +425,20 @@ Athanor Plan: {title}
 선택해주세요 (예: "1A, 2B") 또는 직접 피드백을 주세요.
 ```
 
-Wait for user to resolve conflicts, then update plan.md.
+Wait for user to resolve, update plan.md, then re-display the full plan.
 
 **If no conflicts:**
 ```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ 모든 충돌이 해결되었습니다.
-이 플랜을 확정하고 Task Splitter를 실행할까요? [Y/n]
+이 플랜을 확정하고 Task Splitter를 실행할까요?
+  [Y] 확정  [N] 수정 필요
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**If user says N (수정 필요):**
+Ask what to modify. Apply changes to plan.md. Re-display the full plan.
+Repeat until user confirms.
 
 ### Step 6: Task Splitter (after user confirms)
 
@@ -468,34 +503,61 @@ END_RESULT"
 })
 ```
 
-### Step 7: Final Output
+### Step 7: Show Final Plan + Subtask Details
 
-After Task Splitter completes:
+After Task Splitter completes, show the **complete plan AND detailed subtask list**.
+The user must see exactly what /athanor:athanor-work will execute.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Athanor Plan Confirmed: {title}
+📋 Athanor Plan Confirmed: {title}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Planners:  2 (Standard + Contrarian)
-Reviews:   2 (Cross-review)
-Critic:    1 (Synthesis)
-Subtasks:  {N}개
-Decisions: {N}개 기록
 
-Session: .athanor/sessions/{id}/
-Files:
-  plan-claude.md      ← Plan A
-  plan-codex.md       ← Plan B
-  review-of-claude.md ← Review of A
-  review-of-codex.md  ← Review of B
-  plan.md             ← Final + Subtasks
-  decisions.md        ← Decision Log
+## Goal
+{goal from plan}
+
+## Approach
+{approach from plan}
+
+## Key Decisions
+  • {decision 1}: {rationale}
+  • {decision 2}: {rationale}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ Subtasks ({N}개)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] 1. {제목}
+     → {구체적으로 뭘 하는지 — 1-2줄 설명}
+     📁 {대상 파일들}
+     ✓ 검증: {검증 방법}
+
+[ ] 2. {제목} (← depends on: #1)
+     → {구체적으로 뭘 하는지}
+     📁 {대상 파일들}
+     ✓ 검증: {검증 방법}
+
+[ ] 3. {제목} (← depends on: #1, #2)
+     → {구체적으로 뭘 하는지}
+     📁 {대상 파일들}
+     ✓ 검증: {검증 방법}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pipeline: 2 planners → 2 reviewers → 1 critic → {N} subtasks
+Session:  .athanor/sessions/{id}/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:work --solo  — 순차 실행
-  /athanor:work --team  — 병렬 실행
+  /athanor:athanor-work --solo  순차 실행
+  /athanor:athanor-work --team  병렬 실행
+
+💡 플랜이나 subtask를 수정하려면 지금 말씀해주세요.
+   /athanor:athanor-work 실행 전까지 자유롭게 변경 가능합니다.
 ```
+
+**IMPORTANT**: The user can modify the plan or subtasks at this point.
+If they request changes, update plan.md and re-display.
+Only proceed to /athanor:athanor-work when the user explicitly starts it.
 
 ---
 
