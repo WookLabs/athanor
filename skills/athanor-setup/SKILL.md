@@ -1,5 +1,5 @@
 ---
-name: setup
+name: athanor-setup
 description: >
   Athanor 인프라 점검 및 설정. '/athanor:setup', '/셋업', 'athanor 설정',
   'athanor 셋업', 'health check', '환경 점검' 요청 시 사용.
