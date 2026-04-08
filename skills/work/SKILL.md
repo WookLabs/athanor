@@ -42,12 +42,25 @@ This is the ONLY Athanor command that modifies project files (via workers).
 
 Create a TodoList from the subtasks. Announce:
 
+**For solo mode:**
 ```
 ⚡ Athanor Work: {plan title}
    Mode: solo (순차 실행)
    Subtasks: {N}개
    Max retries: {maxRetries}/subtask
    Circuit breaker: {consecutiveFailures}회 연속 실패 시 중단
+
+   실행 시작...
+```
+
+**For team mode:**
+```
+⚡ Athanor Work: {plan title}
+   Mode: team (wave 병렬 실행)
+   Subtasks: {N}개 → {W}개 wave
+   Wave size: max {waveSize}
+   Max retries: {maxRetries}/subtask
+   Discovery relay: enabled
 
    실행 시작...
 ```
@@ -201,18 +214,112 @@ For now, just present the summary.
 
 ---
 
-## Team Mode (Phase 7 — Not Yet Implemented)
+## Team Mode (Wave-Based Parallel Execution)
+
+When `--team` is specified, subtasks run in parallel waves.
+
+### Wave Grouping (Leader performs this)
+
+Group subtasks into waves based on `depends_on`:
 
 ```
-⚠ Team mode는 아직 구현되지 않았습니다.
-  --solo 모드로 실행합니다.
+Algorithm:
+1. remaining = all subtasks
+2. wave_number = 1
+3. while remaining is not empty:
+     wave = subtasks whose depends_on are ALL already completed or in prior waves
+     cap wave at waveSize (from athanor.json, default 3)
+     if wave is empty → error: circular dependency
+     assign wave_number to these subtasks
+     move them from remaining to assigned
+     wave_number += 1
 ```
 
-When implemented (Phase 7), team mode will:
-- Group subtasks into waves by dependency
-- Dispatch wave subtasks in parallel
-- Collect discoveries and relay to next wave
-- Use worktrees for isolation
+Example:
+```
+Subtasks: [1(no dep), 2(no dep), 3(dep:1), 4(dep:1,2), 5(dep:4)]
+waveSize: 3
+
+Wave 1: [1, 2]       ← no dependencies, run in parallel
+Wave 2: [3, 4]       ← depend on wave 1, run in parallel
+Wave 3: [5]          ← depends on wave 2
+```
+
+### Wave Execution
+
+```
+for each wave:
+    1. Announce: "Wave {N}/{total}: subtasks [{ids}]"
+    
+    2. Dispatch ALL wave subtasks simultaneously:
+       - Each gets the same executor dispatch prompt as solo mode
+       - PLUS: previous_discoveries from prior waves
+       
+    3. Wait for ALL workers in this wave to complete
+    
+    4. Process results:
+       - Update TodoList for each completed/failed subtask
+       - Save discoveries to .athanor/sessions/{id}/discoveries/
+       - Append to work-log.md
+    
+    5. Build discovery relay for next wave:
+       - Read all discovery files from this wave
+       - Compress into a brief summary (under 300 words)
+       - This summary is injected into next wave workers' prompts
+    
+    6. Circuit breaker check:
+       - If ALL subtasks in a wave failed → trip
+       - Individual failures within a wave don't trip (other workers may succeed)
+    
+    7. Handle failures:
+       - Failed subtasks: ask user — retry in next wave? skip? abort?
+       - If a failed subtask blocks later subtasks: warn user
+```
+
+### Parallel Dispatch (within a wave)
+
+Dispatch all wave subtasks in a **single message with multiple Agent calls**:
+
+```
+// Single message with N parallel Agent calls
+Agent({ description: "executor: subtask 1", prompt: "..." })
+Agent({ description: "executor: subtask 2", prompt: "..." })
+Agent({ description: "executor: subtask 3", prompt: "..." })
+```
+
+### Discovery Relay
+
+After each wave, compile discoveries into a relay brief:
+
+```markdown
+## Discoveries from Wave {N}
+
+### Subtask {id}: {title}
+- {key discovery or change}
+
+### Subtask {id}: {title}
+- {key discovery or change}
+```
+
+Next wave workers receive this in their dispatch packet under `previous_discoveries`.
+
+### Team Mode Announcement (per wave)
+
+```
+Wave {N}/{total}
+├── Subtask {id}: {title} ── dispatching...
+├── Subtask {id}: {title} ── dispatching...
+└── Subtask {id}: {title} ── dispatching...
+```
+
+After wave completes:
+```
+Wave {N}/{total} complete
+├── Subtask {id}: ✓
+├── Subtask {id}: ✓
+└── Subtask {id}: ✗ (failure reason)
+Discoveries relayed: {count} items
+```
 
 ---
 
@@ -229,9 +336,10 @@ If the user interrupts or cancels:
 ## IMPORTANT RULES
 
 1. You are the **Leader**. Do NOT write code or edit files yourself.
-2. Dispatch ONE worker at a time (solo mode).
+2. **Solo**: dispatch ONE worker at a time. **Team**: dispatch wave workers in parallel.
 3. Workers get **clean context** — include ALL needed info in the dispatch prompt.
 4. This is **Execution Mode** — workers CAN and SHOULD modify project files.
 5. Track progress via TodoList + work-log.md.
 6. Circuit breaker is mandatory — never let failures cascade silently.
 7. Save discoveries from workers to the session directory.
+8. **Team mode**: always relay discoveries between waves. Never skip the relay.
