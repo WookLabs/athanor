@@ -16,13 +16,45 @@ Input ───┤                                          ├── Critic →
 
 ## Install
 
-```bash
-git clone https://github.com/WookLabs/athanor.git
-claude --plugin-dir /path/to/athanor          # macOS/Linux
-claude --plugin-dir C:\path\to\athanor        # Windows
+Claude Code 내에서:
+
+```
+/install-plugin WookLabs/athanor
 ```
 
-Then run `/athanor:setup` to verify your environment.
+또는 수동 설치:
+
+1. `settings.json`의 `extraKnownMarketplaces`에 추가:
+```json
+{
+  "extraKnownMarketplaces": {
+    "athanor-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "WookLabs/athanor"
+      },
+      "autoUpdate": true
+    }
+  }
+}
+```
+
+2. `enabledPlugins`에 추가:
+```json
+{
+  "enabledPlugins": {
+    "athanor@athanor-marketplace": true
+  }
+}
+```
+
+3. Claude Code 재시작 후 `/athanor:setup` 실행.
+
+**개발용 (로컬):**
+```bash
+git clone https://github.com/WookLabs/athanor.git
+claude --plugin-dir /path/to/athanor
+```
 
 ## Commands
 
