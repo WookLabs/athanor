@@ -1,0 +1,19 @@
+{
+  "name": "athanor",
+  "version": "0.1.0",
+  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch",
+  "author": {
+    "name": "WookLabs"
+  },
+  "homepage": "https://github.com/WookLabs/athanor",
+  "repository": "https://github.com/WookLabs/athanor",
+  "license": "MIT",
+  "keywords": [
+    "orchestration",
+    "adversarial-planning",
+    "workflow",
+    "thin-leader",
+    "cross-model",
+    "claude-code"
+  ]
+}

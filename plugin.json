@@ -1,8 +1,0 @@
-{
-  "name": "athanor",
-  "version": "0.1.0",
-  "description": "General-purpose agentic workflow orchestrator — 5 commands, not 100 features",
-  "author": "WookLabs",
-  "license": "MIT",
-  "repository": "https://github.com/WookLabs/athanor"
-}
