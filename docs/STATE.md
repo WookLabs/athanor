@@ -3,7 +3,7 @@
 > 이 파일은 현재 구현 진행 상태를 추적합니다.
 > 각 Phase 완료 시 업데이트합니다.
 
-## Current Phase: 5 — /athanor:plan
+## Current Phase: 6 — /athanor:work
 
 ## History
 
@@ -35,6 +35,15 @@
 - analyst.md 보강 (LSP/Serena 우선 + Grep/Glob fallback + brevity 규칙)
 - 테스트 성공: Athanor 프로젝트 자체 분석 → 3 worker 병렬 → 구조화된 리포트
 - 실제 유용한 리스크 발견 (세션 스키마 검증 부재, critic 과부하 등)
+
+### 2026-04-08: Phase 5 완료 — 킬러 피처
+- /athanor:plan SKILL.md 전면 작성 (6-step adversarial pipeline)
+- 테스트 성공: "README.md 작성" 시나리오
+  - plan-claude.md (190줄), plan-codex.md (133줄) — 병렬 생성
+  - review-of-claude.md, review-of-codex.md — 교차 리뷰 병렬 생성
+  - plan.md (172줄) — Critic이 8개 충돌 자동 해결 + 통합 플랜
+- Cross-model adversarial planning 실증 완료
+- Task Splitter/decisions.md는 -p 모드 제한으로 미생성 (interactive 세션에서 동작할 것)
 
 ## Phase 1 Checklist
 
