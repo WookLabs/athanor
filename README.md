@@ -19,19 +19,10 @@ Other tools give Claude more skills. Athanor gives Claude a **team**.
 
 **Prerequisites:** [Claude Code](https://claude.ai/code)
 
-In Claude Code, paste this:
-
-> Install Athanor: run `claude plugin marketplace add WookLabs/athanor` in your terminal, then restart Claude Code and run `/plugin install athanor@athanor`. Then run `/athanor:setup` to verify.
-
-Or step by step:
-
-```bash
-# Terminal (outside Claude Code)
-claude plugin marketplace add WookLabs/athanor
-```
+In Claude Code:
 
 ```
-# Inside Claude Code (after restart)
+/plugin marketplace add WookLabs/athanor
 /plugin install athanor@athanor
 /athanor:setup
 ```
