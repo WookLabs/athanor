@@ -16,41 +16,18 @@ Input ───┤                                          ├── Critic →
 
 ## Install
 
-Claude Code 내에서:
+```bash
+# 1. Add marketplace
+claude plugin marketplace add WookLabs/athanor
 
-```
-/install-plugin WookLabs/athanor
-```
+# 2. Install plugin
+claude plugin install athanor
 
-또는 수동 설치:
-
-1. `settings.json`의 `extraKnownMarketplaces`에 추가:
-```json
-{
-  "extraKnownMarketplaces": {
-    "athanor-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "WookLabs/athanor"
-      },
-      "autoUpdate": true
-    }
-  }
-}
+# 3. Restart Claude Code, then run:
+/athanor:setup
 ```
 
-2. `enabledPlugins`에 추가:
-```json
-{
-  "enabledPlugins": {
-    "athanor@athanor-marketplace": true
-  }
-}
-```
-
-3. Claude Code 재시작 후 `/athanor:setup` 실행.
-
-**개발용 (로컬):**
+**For development (local):**
 ```bash
 git clone https://github.com/WookLabs/athanor.git
 claude --plugin-dir /path/to/athanor
@@ -93,7 +70,7 @@ This keeps the leader's context clean regardless of session length.
 
 | Agent | Model | Role |
 |-------|-------|------|
-| researcher | sonnet | Brainstorming research |
+| researcher | sonnet | Brainstorming research + Devil's Advocate |
 | analyst | sonnet | Fast parallel analysis |
 | planner | opus | Implementation planning |
 | critic | opus | Plan synthesis and review |
@@ -109,8 +86,10 @@ All inter-stage communication uses `.md` files in `.athanor/sessions/{id}/`:
 .athanor/
 ├── sessions/
 │   └── 2026-04-08-001/
-│       ├── discuss.md          ← brainstorming results
-│       ├── analyze.md          ← analysis report
+│       ├── research-a.md        ← researcher findings (intermediate)
+│       ├── research-b.md        ← devil's advocate findings (intermediate)
+│       ├── discuss.md           ← brainstorming synthesis
+│       ├── analyze.md           ← analysis report
 │       ├── plan-claude.md      ← Plan A
 │       ├── plan-codex.md       ← Plan B (contrarian)
 │       ├── review-of-claude.md ← Review of Plan A
