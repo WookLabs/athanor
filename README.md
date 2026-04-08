@@ -19,17 +19,25 @@ Other tools give Claude more skills. Athanor gives Claude a **team**.
 
 **Prerequisites:** [Claude Code](https://claude.ai/code)
 
+In Claude Code, paste this:
+
+> Install Athanor: run `claude plugin marketplace add WookLabs/athanor` in your terminal, then restart Claude Code and run `/plugin install athanor@athanor`. Then run `/athanor:setup` to verify.
+
+Or step by step:
+
 ```bash
-# 1. Add marketplace
+# Terminal (outside Claude Code)
 claude plugin marketplace add WookLabs/athanor
+```
 
-# 2. Install
-claude plugin install athanor
-
-# 3. Restart Claude Code, then:
+```
+# Inside Claude Code (after restart)
+/plugin install athanor@athanor
 /athanor:setup
+```
 
-# 4. Try it
+Then try it:
+```
 /athanor:discuss "Add user authentication — OAuth vs session-based?"
 ```
 
