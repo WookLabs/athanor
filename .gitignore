@@ -1,0 +1,13 @@
+# Reference repos (local only, not tracked)
+ref/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
