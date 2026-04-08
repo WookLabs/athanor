@@ -18,7 +18,8 @@ Input ───┤                                          ├── Critic →
 
 ```bash
 git clone https://github.com/WookLabs/athanor.git
-claude --plugin-dir /path/to/athanor
+claude --plugin-dir /path/to/athanor          # macOS/Linux
+claude --plugin-dir C:\path\to\athanor        # Windows
 ```
 
 Then run `/athanor:setup` to verify your environment.

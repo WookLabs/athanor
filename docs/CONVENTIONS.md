@@ -27,9 +27,8 @@ Leader (SKILL.md)                 Worker (Agent tool)
 ```
 Agent({
   description: "간결한 작업 설명 (3-5 단어)",
-  prompt: "{dispatch packet — 아래 포맷 참조}",
-  subagent_type: "general-purpose",
-  model: "{athanor.json models 설정에 따라}"
+  model: "{athanor.json models 설정에 따라}",
+  prompt: "{dispatch packet — 아래 포맷 참조}"
 })
 ```
 
@@ -174,7 +173,7 @@ athanor.json                   ← project root (NOT inside .athanor/)
 | planner workers | `plan-claude.md`, `plan-codex.md` | /athanor:plan Step 2 |
 | review workers | `review-of-claude.md`, `review-of-codex.md` | /athanor:plan Step 3 |
 | critic worker | `plan.md` | /athanor:plan Step 4 (최종 통합) |
-| Leader | `decisions.md` | /athanor:plan 확정 시 |
+| task splitter worker | `decisions.md` | /athanor:plan Step 6 (Task Splitter가 생성) |
 | executor workers | `work-log.md`, `discoveries/worker-*.md` | /athanor:work 각 subtask 완료 시 |
 
 ### 파일 읽기 규칙

@@ -78,7 +78,7 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 ```
 입력: "A vs B?" (고민)
   ↓
-처리: Claude critic + Codex가 각각 독립 리서치/의견
+처리: Claude Researcher + Devil's Advocate가 병렬 리서치 (Codex 사용 가능 시 대체)
   ↓
 출력: 선택지 나열 + 각 장단점 + 추천
   ↓
@@ -122,9 +122,10 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 
 **흐름:**
 ```
-         ┌── Claude → Plan A ──→ Codex Review A ──┐
-입력 ────┤                                         ├── Critic 통합
-         └── Codex  → Plan B ──→ Claude Review B ──┘
+         ┌── Claude Planner A (standard)  ──→ Reviewer B ──┐
+입력 ────┤                                                  ├── Critic 통합
+         └── Claude Planner B (contrarian) ──→ Reviewer A ──┘
+         (Codex 사용 가능 시 Planner B를 Codex로 대체)
                                                       ↓
                                               충돌 없으면 → 사용자에게 제시
                                               충돌 있으면 → 선택지 제시

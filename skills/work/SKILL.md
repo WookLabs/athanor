@@ -251,7 +251,17 @@ Analyze the completed work session and extract reusable lessons.
 4. Update access_count: for each lesson file listed in workers' `lessons_read` fields
    (found in work-log.md or discovery files), increment the `access_count` in that
    lesson file's YAML frontmatter by 1.
-5. Report: return ATHANOR_RESULT with lesson count and top finding
+5. Report your results as:
+
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence learning summary}
+lessons_new: {count}
+lessons_reinforced: {count}
+lessons_permanent: {count}
+lessons_working: {count}
+top_lesson: {most significant finding}
+END_RESULT
 
 Only extract genuinely useful lessons. If nothing significant, say so."
 })
@@ -287,7 +297,16 @@ Apply memory decay rules and clean old sessions.
 3. Clean old sessions (older than maxAgeDays days)
    - NEVER delete today's sessions
    - Promote permanent discoveries before deleting
-4. Report: return ATHANOR_RESULT with counts
+4. Report your results as:
+
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence cleanup summary}
+promoted: {count}
+deleted_lessons: {count}
+deleted_sessions: {count}
+retained: {count}
+END_RESULT
 
 When in doubt, KEEP — false retention is better than lost knowledge."
 })
