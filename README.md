@@ -5,13 +5,13 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**5 commands. Clean-context workers. Cross-model adversarial planning. Sessions that compound.**
+**8 commands. Clean-context workers. 3-tier adversarial planning. Sessions that compound.**
 
 ## Why Athanor Exists
 
 **Without Athanor**, your Claude Code session is a single brain trying to hold everything at once — the analysis, the plan, the implementation, and quality checks. Context fills up. Quality degrades. When you ask for a plan, the same model that writes code also evaluates it — no second opinion.
 
-**With Athanor**, the main session never touches a file. It dispatches work to clean-context specialists — a researcher who brainstorms, a planner who architects, a critic who cross-reviews, an executor who implements with verification loops. Two independent planners create competing plans, then a critic synthesizes the best of both. Lessons from every session compound — future workers start smarter than the last.
+**With Athanor**, the main session never touches a file. It dispatches work to clean-context specialists — a researcher who brainstorms, a planner who architects, a critic who cross-reviews, an executor who implements with verification loops. By default, a single planner gets cross-model review from Codex. In deep mode, two independent planners compete and cross-review each other. Lessons from every session compound — future workers start smarter than the last.
 
 Other tools give Claude more skills. Athanor gives Claude a **team**.
 
@@ -56,13 +56,11 @@ You:     /athanor:discuss "Add a caching layer for the API"
 
 You:     /athanor:plan
 
-         [dispatches Planner A (standard) + Planner B (contrarian)]
-
-         Plan A: Cache middleware, 4 subtasks
-         Plan B: Why not cache at DB query level instead?
-         [cross-review + critic synthesis]
-         Final plan: DB-level caching for reads, middleware for headers.
-         6 subtasks, dependency-ordered.
+         [dispatches Planner (Claude)]
+         Plan: Cache middleware, 4 phases
+         [Codex reviews the plan]
+         [Critic refines with review feedback]
+         Final plan: 6 subtasks, dependency-ordered.
 
 You:     /athanor:work --team
 
@@ -74,6 +72,9 @@ You:     /athanor:work --team
          All 6 subtasks complete. 2 lessons saved for next time.
 ```
 
+> Need deeper analysis? Try `/athanor:deep-plan` for full adversarial planning.
+> In a hurry? `/athanor:lite-plan` skips the review step.
+
 ## Commands
 
 | Command | Mode | What it does |
@@ -81,37 +82,56 @@ You:     /athanor:work --team
 | `/athanor:setup` | — | Health check and configuration |
 | `/athanor:discuss` | Plan | Decision brainstorming (researcher + devil's advocate + critic) |
 | `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers simultaneously) |
-| `/athanor:plan` | Plan | Cross-model adversarial planning + task splitting |
+| `/athanor:debug` | Plan | Triage-first parallel failure diagnosis |
+| `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex cross-review) |
+| `/athanor:plan` | Plan | Standard planning + review + task splitting (default) |
+| `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, no review) |
 | `/athanor:work` | Execute | Grinding through every subtask until done |
 
 ```
-/athanor:discuss  →  /athanor:analyze  →  /athanor:plan  →  /athanor:work
-   "What?"              "Where?"             "How?"            "Do it."
+/athanor:discuss  →  /athanor:analyze  →  /athanor:debug (optional)
+   "What?"              "Where?"              "Why broken?"
+
+                  →  /athanor:plan (or deep-plan / lite-plan)  →  /athanor:work
+                        "How?"                                       "Do it."
 ```
 
 Everything before `/athanor:work` is **Plan Mode** — no files are modified.
 
-## Key Feature: Cross-Model Adversarial Planning
+## Key Feature: 3-Tier Planning Pipeline
 
 ```
-         ┌── Planner A (standard)  ──→ Reviewer B ──┐
-Input ───┤                                           ├── Critic → Final Plan
-         └── Planner B (contrarian) ──→ Reviewer A ──┘
+Deep (/athanor:deep-plan):
+         ┌── Planner A ──→ Reviewer B ──┐
+Input ───┤                               ├── Critic → Final Plan
+         └── Planner B ──→ Reviewer A ──┘
+
+Standard (/athanor:plan, default):
+Input ── Planner ──→ Reviewer ──→ Refinement → Final Plan
+
+Lite (/athanor:lite-plan):
+Input ── Planner ──→ Final Plan
 ```
 
-A single model reviewing its own plan misses blind spots. Two independent planners creating competing plans, cross-reviewing each other's work, and a critic synthesizing — that catches assumptions self-review can't.
+| Tier | When to use | Cost |
+|------|------------|------|
+| lite | Quick iteration, low-risk changes | 1 worker |
+| standard | Default for most tasks | 2-3 workers |
+| deep | High-stakes architecture, complex refactors | 5-6 workers |
 
 ## Design Philosophy
 
-**5 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
+**8 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
 
 **Thin leader.** The main session never reads files, analyzes code, or writes code. It dispatches and collects. Your context stays clean regardless of session length.
 
-**Cross-model adversarial.** Competing perspectives produce better plans than any single model reviewing itself. Two planners, two reviewers, one critic.
+**3-tier adversarial planning.** Choose the review depth that fits the task: lite for speed, standard for balanced quality, deep for competing perspectives with cross-model review.
 
 **Grow with use.** Lessons from every session are extracted, scored, and surfaced to future workers. The system gets better at your codebase over time.
 
 **Plan before execute.** No files are modified until you confirm the plan. Explicit mode separation prevents accidental changes.
+
+**Session isolation.** If a work-log exists in a session, a new session is automatically created. Every planning cycle starts clean.
 
 ## Architecture
 
@@ -125,7 +145,10 @@ A single model reviewing its own plan misses blind spots. Two independent planne
 | critic | opus | Plan synthesis and review |
 | executor | sonnet | Code execution with verification loop |
 | learner | sonnet | Session learning extraction |
+| task splitter | sonnet | Plan → subtask decomposition |
 | cleaner | haiku | Memory decay and cleanup |
+
+When Codex is available, it serves as Planner B (deep tier) or Reviewer (standard tier).
 
 **Session communication** via `.md` files — workers read and write to `.athanor/sessions/{id}/`. No shared state in the leader's context.
 
@@ -165,10 +188,18 @@ Wave 2: [task 3]          ← depends on wave 1
 Claude Code is one brain doing everything. Athanor gives it a team — separate workers for research, planning, execution, and review, each with clean context. The main session stays lightweight no matter how long you work.
 
 **Why cross-model adversarial planning?**
-A single model reviewing its own plan misses blind spots. Two independent planners reviewing each other's work catches assumptions and risks that self-review can't.
+
+Different models have different blind spots. In deep mode, Claude and Codex create competing plans and review each other's work. Standard mode gets Codex review on a single plan. Lite mode skips review entirely. Each tier degrades gracefully:
+- **Deep**: Planner B falls back to Claude contrarian; Reviewer B falls back to Claude.
+- **Standard**: Codex review falls back to Claude self-review.
+- **Lite**: Unaffected (Claude only by design).
+
+**What does /athanor:debug do?**
+
+Triage-first failure diagnosis. It analyzes errors, git history, and code traces in parallel to pinpoint root causes before you plan a fix.
 
 **Does this work without Codex?**
-Yes. Planning uses dual-perspective Claude (standard + contrarian planner) by default. Set `codex.enabled: true` to use Codex as Planner B when available.
+Yes. All tiers degrade gracefully — deep mode uses Claude contrarian instead of Codex as Planner B, standard mode falls back to Claude self-review. Set `codex.enabled: true` to use Codex when available.
 
 **How much token overhead does this add?**
 The leader session stays minimal — it only dispatches and collects. Workers use tokens in clean contexts that are discarded after each task. Net cost is comparable to doing the same work manually, but with better plan quality.
@@ -182,7 +213,7 @@ Solo developers who want structured planning. Tech leads who want reproducible q
 - [x] Cross-model adversarial planning
 - [x] Solo and team execution modes
 - [x] 2-tier learning system with memory decay
-- [ ] Codex native integration
+- [x] Codex native integration (codex exec CLI)
 - [ ] Multi-project lesson sharing
 - [ ] Custom worker agent definitions
 - [ ] CI/CD integration hooks
