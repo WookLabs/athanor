@@ -53,7 +53,8 @@ Agent({
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
   "models": {
     "researcher": "sonnet", "analyst": "sonnet", "planner": "opus", "critic": "opus",
-    "executor": "opus", "cleaner": "sonnet", "learner": "sonnet"
+    "executor": "opus", "cleaner": "sonnet", "learner": "sonnet",
+    "debugger": "sonnet", "debugger-tracer": "opus"
   },
   "triggers": { "language": "both" }
 }
@@ -131,6 +132,20 @@ Based on the mem-search result, announce:
 ⚠ MCP 접근 불가 — Worker agent에서 mem-search를 사용할 수 없습니다.
   .md 파일 기반 fallback 모드로 동작합니다.
   mem-search MCP 서버가 설정되어 있는지 확인하세요.
+```
+
+### Step 3.5: Codex Tier Impact
+
+Based on the Codex check result, announce tier impact:
+
+**If Codex AVAILABLE:**
+```
+✓ Codex 사용 가능 — deep-plan은 cross-model 교차 검증, plan은 Codex review 사용
+```
+
+**If Codex UNAVAILABLE:**
+```
+○ Codex 미감지 — 모든 tier Claude-only fallback
 ```
 
 ### Step 4: Trigger Language Configuration

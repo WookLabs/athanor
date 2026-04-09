@@ -27,7 +27,9 @@ pattern: you do NOT read files, trace code, or analyze anything yourself.
 1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
 2. Check for an existing session from today:
    - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, reuse the **most recent** one (highest NNN)
+   - If one exists, check if `work-log.md` exists inside it
+     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
+     - If `work-log.md` does not exist → reuse (same pipeline in progress)
    - If none exists, create new: `{today}-{max_NNN + 1}`
 3. Ensure session directory exists.
 
@@ -41,6 +43,10 @@ Extract what the user wants analyzed and classify:
 | **Specific Module** | "이 파일", "이 모듈", specific path | Focused + Dependency |
 | **Impact Analysis** | "영향 범위", "이거 바꾸면", "의존성" | Dependency + Risk |
 | **Full Scan** | "전체 분석", "프로젝트 분석" | Structure + Dependency + Context |
+
+> **Note:** 사용자 입력에 에러 메시지, 스택 트레��스, 또는 실패 관련
+> 트리거("에러", "실패", "깨졌다", "왜 안 돼")가 포함된 경우,
+> `/athanor:debug`를 제안하세요.
 
 Announce the analysis plan briefly:
 
@@ -257,7 +263,9 @@ Workers: {N} parallel analysts
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:plan — 분석 결과 기반 구현 계획
+  /athanor:deep-plan  — 분석 결과 기반 심층 계획
+  /athanor:plan       — 분석 결과 기반 구현 계획 (기본값)
+  /athanor:lite-plan  — 빠른 계획
 ```
 
 ---

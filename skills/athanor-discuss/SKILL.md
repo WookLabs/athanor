@@ -25,7 +25,9 @@ pattern: you do NOT research, analyze, or form opinions yourself.
 1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
 2. Check for an existing session from today:
    - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, reuse the **most recent** one (highest NNN)
+   - If one exists, check if `work-log.md` exists inside it
+     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
+     - If `work-log.md` does not exist → reuse (same pipeline in progress)
    - If none exists, create new: `{today}-{max_NNN + 1}` (e.g., `2026-04-08-001`)
 3. Ensure session directory exists: `.athanor/sessions/{id}/`
 
@@ -271,8 +273,10 @@ Files:   research-a.md, research-b.md, discuss.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:analyze  — 관련 코드/시스템 분석
-  /athanor:plan     — 선택한 방향으로 구현 계획
+  /athanor:analyze    — 관련 코드/시스템 분석
+  /athanor:deep-plan  — 심층 계획 (교차 검증)
+  /athanor:plan       — 표준 계획 (기본값)
+  /athanor:lite-plan  — 빠른 계획 (리뷰 없음)
 ```
 
 ---

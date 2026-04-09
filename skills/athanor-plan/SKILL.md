@@ -24,11 +24,25 @@ This is Athanor's **killer feature**.
 
 > **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
 
-1. Check for an existing session from today (from /discuss or /analyze):
+1. Check for an existing session from today:
    - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, reuse the **most recent** one (highest NNN)
-   - If none exists, create new: `{today}-{max_NNN + 1}`
+   - If one exists, check if `work-log.md` exists inside it
+     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
+     - If `work-log.md` does not exist → reuse (same pipeline in progress)
+   - If no today session exists, create new: `{today}-{max_NNN + 1}`
 2. Ensure session directory exists
+
+#### Codex Availability Check
+
+> **Exception:** The Leader MAY run Bash commands to check Codex CLI availability.
+
+1. Check if `codex` CLI is installed:
+   ```bash
+   codex --version 2>/dev/null
+   ```
+2. If the command succeeds (exit code 0), set `codex_available = true`.
+   If it fails (command not found), set `codex_available = false`.
+3. Announce Codex status briefly.
 
 ### Step 1: Gather Context & Parse Request
 
@@ -41,16 +55,43 @@ This is Athanor's **killer feature**.
 
 ```
 ⚒ Athanor Plan: {request title}
-  Mode: Cross-model adversarial planning
+  Tier: {deep|standard|lite}
+  Codex: {available|unavailable}
   
-  Step 2: 병렬 플래닝 (Planner A + Planner B)
-  Step 3: 교차 리뷰 (A reviews B, B reviews A)
-  Step 4: Critic 통합
-  Step 5: 사용자 확정
-  Step 6: Task Splitter
+  {tier-specific pipeline description}
   
   시작합니다...
 ```
+
+Tier-specific pipeline descriptions:
+- deep: "2 planners (Claude + Codex) → 2 cross-reviews → Critic 통합"
+- standard: "Claude plan → Codex review → Refinement"
+- lite: "Claude plan only → 바로 Task Splitter"
+
+#### Tier Classification
+
+Determine the planning tier based on user input:
+
+| Tier | Trigger | Description |
+|------|---------|-------------|
+| deep | `/athanor:deep-plan` 또는 "딥 플랜", "심층", "교차 모델" | Full adversarial: Claude + Codex cross-planning |
+| standard | `/athanor:plan` (기본값) | Claude plan + Codex review |
+| lite | `/athanor:lite-plan` 또는 "라이트 플랜", "빠른", "간단" | Claude plan only |
+
+Default: **standard**
+
+### Tier Dispatch Table
+
+| Tier | Step 2: Planners | Step 3: Reviews | Step 4: Critic | Step 6: Task Splitter |
+|------|-----------------|-----------------|----------------|----------------------|
+| deep | Planner A (Claude) + Planner B (Codex) | Claude reviews B + Codex reviews A | 4-input synthesis | Yes |
+| standard | Planner A (Claude) only | Codex review (or Claude self-review) | 2-input refinement | Yes |
+| lite | Planner A (Claude) only | skip | skip | Yes |
+
+When `codex_available == false`:
+- deep tier: Planner B falls back to Claude contrarian. Reviewer B falls back to Claude.
+- standard tier: Codex review falls back to Claude self-review.
+- lite tier: unaffected.
 
 ### Step 2: Dispatch Parallel Planners
 
@@ -113,7 +154,7 @@ Write a structured implementation plan:
 - Each step should be independently verifiable
 - Include verification criteria per phase
 
-Save your plan to: .athanor/sessions/{session-id}/plan-claude.md
+Save your plan to: .athanor/sessions/{session-id}/plan-a.md
 
 Return your findings as:
 ATHANOR_RESULT
@@ -125,6 +166,62 @@ END_RESULT"
 ```
 
 **Planner B — Contrarian Planner:**
+
+> Planner B dispatch depends on tier and Codex availability. See conditionals below.
+
+#### Deep Tier: Planner B (Codex)
+
+> When `tier == deep AND codex_available == true`: dispatch Planner B via Codex CLI.
+
+```
+Agent({
+  description: "Athanor planner B: Codex contrarian via Bash",
+  model: "sonnet",
+  prompt: "You are an Athanor worker that dispatches a planning task to Codex CLI.
+
+## Task
+Call Codex to create an alternative implementation plan.
+
+## Codex Invocation
+Run this command via Bash (timeout 300000ms):
+```bash
+codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \"Create an ALTERNATIVE implementation plan for:
+
+{user's planning request}
+
+Context: {previous stage context — discuss.md/analyze.md content if available}
+
+Requirements:
+- Find a fundamentally different approach than the obvious one
+- Be specific: name actual files, functions
+- Include verification criteria per phase
+- Output as structured markdown
+
+Format your plan as:
+# Plan B: [title] — Alternative Approach
+## Goal
+## Approach (explain WHY this alternative)
+## Phases (with Steps, files, verify)
+## Risks
+## Why This Alternative?
+## Estimated Scope\"
+```
+
+## After Codex Returns
+1. Check exit code and verify output file exists
+2. If Codex fails or times out, report failure
+
+Return:
+ATHANOR_RESULT
+status: {success|failure}
+summary: Codex planning complete
+END_RESULT"
+})
+```
+
+#### Deep Tier Fallback: Planner B (Claude Contrarian)
+
+> When `tier == deep AND codex_available == false`: use this Claude-based contrarian planner as fallback.
 
 ```
 Agent({
@@ -180,7 +277,7 @@ Same format as standard plan:
 - Explain WHY your approach might be better
 - Be realistic — this is a serious alternative, not a strawman
 
-Save your plan to: .athanor/sessions/{session-id}/plan-codex.md
+Save your plan to: .athanor/sessions/{session-id}/plan-b.md
 
 Return your findings as:
 ATHANOR_RESULT
@@ -190,6 +287,22 @@ lessons_read: [{list of lesson filenames you read, or empty}]
 END_RESULT"
 })
 ```
+
+#### Standard Tier: Planner A Only
+
+When `tier == standard`:
+- Dispatch ONLY Planner A (Claude) — use the existing Planner A prompt above
+- Save to `plan-a.md`
+- Skip Planner B entirely
+
+#### Lite Tier: Planner A Only (No Review)
+
+When `tier == lite`:
+- Dispatch ONLY Planner A (Claude) — same prompt as above
+- Save to `plan-a.md`
+- Skip Steps 3 and 4 entirely
+- Copy `plan-a.md` content to `plan.md` (Leader runs: `cp .athanor/sessions/{id}/plan-a.md .athanor/sessions/{id}/plan.md` via Bash)
+- Proceed directly to Step 5 (Present to User)
 
 ### Step 3: Dispatch Cross-Reviews (after Step 2 completes)
 
@@ -208,7 +321,7 @@ Agent({
 ## Task
 Critically review Plan B (the contrarian/alternative plan).
 
-Read the plan from: .athanor/sessions/{session-id}/plan-codex.md
+Read the plan from: .athanor/sessions/{session-id}/plan-b.md
 
 ## Review Criteria
 1. **Feasibility**: Can this actually be implemented as described?
@@ -236,7 +349,7 @@ Read the plan from: .athanor/sessions/{session-id}/plan-codex.md
 ## Verdict
 {1-2 sentences: overall assessment}
 
-Save to: .athanor/sessions/{session-id}/review-of-codex.md
+Save to: .athanor/sessions/{session-id}/review-of-b.md
 
 Return your findings as:
 ATHANOR_RESULT
@@ -248,6 +361,61 @@ END_RESULT"
 
 **Reviewer B — Reviews Plan A:**
 
+> Reviewer B dispatch depends on tier and Codex availability. See conditionals below.
+
+#### Deep Tier: Reviewer B (Codex)
+
+> When `tier == deep AND codex_available == true`: dispatch Reviewer B via Codex CLI.
+
+```
+Agent({
+  description: "Athanor reviewer B: Codex critiquing Plan A via Bash",
+  model: "sonnet",
+  prompt: "You are an Athanor worker that dispatches a review task to Codex CLI.
+
+## Task
+Call Codex to critically review Plan A (the standard approach plan).
+
+## Codex Invocation
+Run this command via Bash (timeout 300000ms):
+```bash
+codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/review-of-a.md \"Critically review this implementation plan:
+
+$(cat .athanor/sessions/{session-id}/plan-a.md)
+
+Review Criteria:
+1. Feasibility: Can this actually be implemented as described?
+2. Completeness: Are there missing steps or unconsidered scenarios?
+3. Risks: What could go wrong that the plan doesn't address?
+4. Strengths: What does this plan do BETTER than an alternative approach?
+5. Weaknesses: Where does this plan fall short?
+6. Convention: Does it play it too safe? Could a bolder approach be better?
+
+Output as structured markdown:
+# Review of Plan A
+## Strengths
+## Weaknesses
+## Missing Steps
+## Risk Assessment
+## Verdict\"
+```
+
+## After Codex Returns
+1. Check exit code and verify output file exists
+2. If Codex fails or times out, report failure
+
+Return:
+ATHANOR_RESULT
+status: {success|failure}
+summary: Codex review of Plan A complete
+END_RESULT"
+})
+```
+
+#### Deep Tier Fallback: Reviewer B (Claude)
+
+> When `tier == deep AND codex_available == false`: use this Claude-based reviewer as fallback.
+
 ```
 Agent({
   description: "Athanor reviewer: critiquing Plan A",
@@ -257,7 +425,7 @@ Agent({
 ## Task
 Critically review Plan A (the standard approach plan).
 
-Read the plan from: .athanor/sessions/{session-id}/plan-claude.md
+Read the plan from: .athanor/sessions/{session-id}/plan-a.md
 
 ## Review Criteria
 1. **Feasibility**: Can this actually be implemented as described?
@@ -286,7 +454,7 @@ Read the plan from: .athanor/sessions/{session-id}/plan-claude.md
 ## Verdict
 {1-2 sentences: overall assessment}
 
-Save to: .athanor/sessions/{session-id}/review-of-claude.md
+Save to: .athanor/sessions/{session-id}/review-of-a.md
 
 Return your findings as:
 ATHANOR_RESULT
@@ -296,9 +464,28 @@ END_RESULT"
 })
 ```
 
+#### Standard Tier: Codex Review (or Claude Self-Review)
+
+When `tier == standard`:
+- If `codex_available == true`: Dispatch a Codex review worker (same pattern as deep tier Reviewer B but reviewing plan-a.md)
+- If `codex_available == false`: Dispatch a Claude self-review Agent (critical review of plan-a.md)
+- Save to `review-of-a.md`
+- Skip Reviewer B (no plan-b.md exists to review)
+
+#### Lite Tier: Skip
+
+When `tier == lite`: Steps 3 and 4 are skipped. plan-a.md was copied to plan.md in Step 2.
+
 ### Step 4: Dispatch Critic (after Step 3 completes)
 
 After BOTH reviewers return, dispatch the Critic to synthesize everything.
+
+#### Deep Tier: 4-Input Synthesis Critic
+
+> The Critic is always Claude (opus), regardless of tier or Codex availability.
+> In deep tier, it receives all 4 inputs (plan-a, plan-b, review-of-a, review-of-b).
+> In standard tier, it receives 2 inputs (plan-a, review-of-a) for refinement.
+> In lite tier, this step is skipped entirely.
 
 ```
 Agent({
@@ -310,10 +497,10 @@ Agent({
 Synthesize two competing plans and their cross-reviews into one superior plan.
 
 Read these 4 files from .athanor/sessions/{session-id}/:
-1. plan-claude.md (Plan A — standard approach)
-2. plan-codex.md (Plan B — contrarian approach)
-3. review-of-claude.md (Review of Plan A)
-4. review-of-codex.md (Review of Plan B)
+1. plan-a.md (Plan A — standard approach)
+2. plan-b.md (Plan B — contrarian approach)
+3. review-of-a.md (Review of Plan A)
+4. review-of-b.md (Review of Plan B)
 
 ## Process
 1. Read all 4 documents
@@ -368,6 +555,60 @@ Return your findings as:
 ATHANOR_RESULT
 status: success
 summary: {1-2 sentence summary of synthesized plan}
+END_RESULT"
+})
+```
+
+#### Lite Tier: Skip
+
+When `tier == lite`: Steps 3 and 4 are skipped. plan-a.md was copied to plan.md in Step 2.
+
+#### Standard Tier: 2-Input Refinement Critic
+
+When `tier == standard`:
+
+```
+Agent({
+  description: "Athanor critic: plan refinement",
+  model: "opus",
+  prompt: "You are the Athanor Critic in Plan Refinement mode.
+
+## Task
+Improve this implementation plan by incorporating review feedback.
+
+Read these 2 files from .athanor/sessions/{session-id}/:
+1. plan-a.md (the original plan)
+2. review-of-a.md (critical review of the plan)
+
+## Process
+1. Read both documents
+2. For each piece of feedback in the review:
+   - If valid and actionable → incorporate into the plan
+   - If disagree → explain why you're not incorporating it
+3. Produce an improved plan that addresses the review's concerns
+
+## Output Format
+
+# Final Plan: {title}
+
+## Changes from Review
+- {feedback point}: {how addressed OR why not}
+
+## Improved Implementation Plan
+{the full plan with improvements incorporated}
+
+## Rules
+- Incorporate ALL valid feedback — don't ignore any
+- If you disagree with feedback, state why explicitly
+- Maintain the original plan's structure and specificity
+- This is refinement, not synthesis — one plan in, one plan out
+
+Save to: .athanor/sessions/{session-id}/plan.md
+
+Return:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary}
 END_RESULT"
 })
 ```
@@ -447,7 +688,7 @@ Dispatch a Task Splitter worker:
 ```
 Agent({
   description: "Athanor task splitter",
-  model: "opus",
+  model: "sonnet",
   prompt: "You are the Athanor Task Splitter.
 
 ## Task
@@ -563,21 +804,33 @@ Only proceed to /athanor:athanor-work when the user explicitly starts it.
 
 ## Dispatch Sequence Summary
 
+### Deep Tier (6 worker dispatches)
 ```
-Step 2: [Planner A] ──┐ parallel
-        [Planner B] ──┘
-             ↓ wait
-Step 3: [Reviewer A reviews B] ──┐ parallel
-        [Reviewer B reviews A] ──┘
-             ↓ wait
-Step 4: [Critic: 4 inputs → 1 merged plan]
-             ↓
-Step 5: User confirmation (resolve conflicts if any)
-             ↓
-Step 6: [Task Splitter → subtasks + decisions.md]
+Step 2: [Planner A (Claude)] + [Planner B (Codex/Claude)] ──┐ parallel
+Step 3: [Reviewer A reviews B] + [Reviewer B (Codex/Claude) reviews A] ──┐ parallel
+Step 4: [Critic: 4 inputs → merged plan]
+Step 5: User confirmation
+Step 6: [Task Splitter → subtasks]
+Step 7: Show final plan + subtasks
 ```
 
-Total: **6 worker dispatches** (2 parallel + 2 parallel + 1 + 1)
+### Standard Tier (3-4 worker dispatches, default)
+```
+Step 2: [Planner A (Claude)]
+Step 3: [Reviewer (Codex/Claude) reviews A]
+Step 4: [Refinement Critic: 2 inputs → improved plan]
+Step 5: User confirmation
+Step 6: [Task Splitter → subtasks]
+Step 7: Show final plan + subtasks
+```
+
+### Lite Tier (1 worker dispatch + task splitter)
+```
+Step 2: [Planner A (Claude)] → plan-a.md copied to plan.md
+Step 5: User confirmation
+Step 6: [Task Splitter → subtasks]
+Step 7: Show final plan + subtasks
+```
 
 ---
 
@@ -587,5 +840,5 @@ Total: **6 worker dispatches** (2 parallel + 2 parallel + 1 + 1)
 2. Steps 2 and 3 are **parallel**. Steps 4-6 are **sequential**.
 3. Step 3 MUST wait for Step 2 to complete (reviewers need the plans).
 4. This is **Plan Mode** — do NOT modify project files.
-5. Always save intermediate files (plan-claude, plan-codex, reviews) for traceability.
+5. Always save intermediate files (plan-a, plan-b, reviews) for traceability.
 6. If a worker fails, report and offer retry.

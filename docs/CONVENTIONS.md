@@ -45,6 +45,14 @@ Agent({
 | Worker 부분 결과 | 받은 결과만 표시 + 실패 부분 안내 |
 | MCP 미접근 | .md fallback 안내 |
 
+### Codex CLI 호출 (plan tiers)
+
+deep/standard tier에서 Codex가 필요한 경우, Worker가 Bash로 직접 호출:
+```bash
+codex exec --full-auto --ephemeral -o <output_file> "<prompt>"
+```
+Codex 불가 시 Claude Agent() fallback.
+
 ---
 
 ## 2. Dispatch Packet Format
@@ -73,6 +81,14 @@ Save your results to: .athanor/sessions/{session-id}/{output-file}
 Return a brief summary (under 300 words) of your findings.
 Format: ATHANOR_RESULT ... END_RESULT
 ```
+
+### 디버그 작업 (debug)
+
+debug는 2-step dispatch를 사용:
+1. Triage worker (순차) → 에러 분류 + 영향 범위 특정
+2. 병렬 workers (Triage 결과의 classification 기반 dispatch table 매핑)
+
+자세한 dispatch 프롬프트는 `skills/athanor-debug/SKILL.md` 참조.
 
 ### 실행 작업 (work — executor)
 
@@ -149,11 +165,12 @@ END_RESULT
       research-a.md            ← researcher worker A 결과 (discuss 중간 산출물)
       research-b.md            ← researcher worker B 결과 (discuss 중간 산출물)
       analyze.md               ← /athanor:analyze 결과
+      debug.md                 ← /athanor:debug 결과
       plan.md                  ← /athanor:plan 확정 플랜 + subtask list
-      plan-claude.md           ← Claude planner 원본 (plan 중간 산출물)
-      plan-codex.md            ← Codex planner 원본 (plan 중간 산출물)
-      review-of-claude.md      ← Codex의 Claude plan 리뷰
-      review-of-codex.md       ← Claude의 Codex plan 리뷰
+      plan-a.md                ← plan A (standard approach)
+      plan-b.md                ← plan B (alternative, deep tier only)
+      review-of-a.md           ← review of plan A
+      review-of-b.md           ← review of plan B (deep tier only)
       decisions.md             ← 확정 결정 로그
       work-log.md              ← /athanor:work 진행 기록
       discoveries/             ← worker discovery briefs
@@ -170,8 +187,11 @@ athanor.json                   ← project root (NOT inside .athanor/)
 | researcher workers | `research-a.md`, `research-b.md` | /athanor:discuss 중 각 researcher 완료 시 |
 | discuss leader (critic) | `discuss.md` | /athanor:discuss 완료 시 (critic이 research 결과 통합) |
 | analyze workers | `analyze.md` | /athanor:analyze 완료 시 (Leader가 merge) |
-| planner workers | `plan-claude.md`, `plan-codex.md` | /athanor:plan Step 2 |
-| review workers | `review-of-claude.md`, `review-of-codex.md` | /athanor:plan Step 3 |
+| triage worker | triage 결과 (Leader 컨텍스트 내) | /athanor:debug Step 1 |
+| debug workers | — (Leader가 merge) | /athanor:debug Step 2 |
+| debug leader | `debug.md` | /athanor:debug 완료 시 (Leader가 merge) |
+| planner workers | `plan-a.md` (all tiers) + `plan-b.md` (deep tier only) | /athanor:plan Step 2 |
+| review workers | `review-of-a.md` (deep + standard) + `review-of-b.md` (deep only) | /athanor:plan Step 3 |
 | critic worker | `plan.md` | /athanor:plan Step 4 (최종 통합) |
 | task splitter worker | `decisions.md` | /athanor:plan Step 6 (Task Splitter가 생성) |
 | executor workers | `work-log.md`, `discoveries/worker-*.md` | /athanor:work 각 subtask 완료 시 |
@@ -180,9 +200,10 @@ athanor.json                   ← project root (NOT inside .athanor/)
 
 | 누가 읽나 | 파일 | 목적 |
 |-----------|------|------|
-| planner | `discuss.md`, `analyze.md` | 이전 단계 컨텍스트 |
+| planner | `discuss.md`, `analyze.md`, `debug.md` | 이전 단계 컨텍스트 |
+| debug workers | `analyze.md` (있으면) | 이전 분석 컨텍스트 |
 | critic (discuss) | `research-a.md`, `research-b.md` | 두 researcher 결과 통합 |
-| critic (plan) | `plan-claude.md`, `plan-codex.md`, `review-of-*.md` | 플랜 통합 입력 |
+| critic (plan) | `plan-a.md`, `plan-b.md`, `review-of-*.md` | 플랜 통합 입력 |
 | executor | `plan.md`, `decisions.md` | 작업 지시 + 재논의 방지 |
 | executor (team) | `discoveries/worker-*.md` | 이전 wave 발견 |
 
@@ -260,7 +281,7 @@ discoveries/worker-{subtask-id}.md
 ```markdown
 ---
 type: lesson
-skill: plan|work|analyze|discuss
+skill: plan|work|analyze|discuss|debug|deep-plan|lite-plan
 confidence: high|medium|low
 source: 2026-04-08-001
 access_count: 0

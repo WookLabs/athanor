@@ -5,10 +5,10 @@
 
 ## Philosophy
 
-**"기능 100개 모음이 아니라, 5개 워크플로우 단계."**
+**"기능 100개 모음이 아니라, 소수의 핵심 워크플로우 단계."**
 
-기존 플러그인(ECC, Citadel, superpowers)은 기능을 많이 제공하지만 실제로 쓰는 건 일부.
-Athanor은 실제 작업 흐름에 맞춘 5개 커맨드만 제공한다.
+기존 플러그인(ECC, Citadel, superpowers)��� 기능을 많이 제공하지만 실제�� 쓰는 건 일���.
+Athanor은 실제 작��� 흐름에 맞춘 소수의 핵심 커맨드만 제공한다.
 
 ## Architecture
 
@@ -24,8 +24,11 @@ Leader (thin router) ── 파일 안 읽음, 분석 안 함, 코드 안 씀
   │
   ├── /athanor:discuss ──→ worker(들) ──→ 결과 brief
   ├── /athanor:analyze ──→ worker(들) ──→ 결과 brief
-  ├── /athanor:plan    ──→ worker(들) ──→ 결과 brief
-  ├── /athanor:work    ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:debug      ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:deep-plan  ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:plan       ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:lite-plan  ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:work       ──→ worker(들) ──→ 결과 brief
   └── /athanor:setup   ──→ worker      ──→ 결과 brief
 ```
 
@@ -38,16 +41,17 @@ Leader 컨텍스트에는 dispatch 기록 + 결과 brief만 쌓이므로,
 ### Mode Separation
 
 ```
-┌─────────── Plan Mode (읽기/생각만) ───────────┐
-│                                                │
-│  /athanor:discuss → /athanor:analyze → /athanor:plan │
-│  → 사용자 확정                                  │
-│                                                │
-└────────────────────┬───────────────────────────┘
-                     ↓
-              /athanor:work (Execution Mode)
-              실제 코드 수정, 빌드, 테스트
-              완료 시 → 메모리 자동 저장
+┌─────────── Plan Mode (읽기/생각만) ──────────────────────┐
+│                                                          │
+│  /athanor:discuss → /athanor:analyze → /athanor:debug    │
+│  → /athanor:deep-plan | /athanor:plan | /athanor:lite-plan │
+│  → 사용자 확정                                            │
+│                                                          │
+└────────────────────────┬─────────────────────────────────┘
+                         ↓
+                  /athanor:work (Execution Mode)
+                  실제 코드 수정, 빌드, 테스트
+                  완료 시 → 메모리 자동 저장
 ```
 
 Plan Mode에서는 절대 파일을 수정하지 않는다.
@@ -116,16 +120,47 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 - LSP 우선 (파일 통째로 읽기 금지)
 - 병렬 에이전트 산개
 
-### /athanor:plan — Cross-Model Adversarial Planning
+### /athanor:debug — Structured Failure Diagnosis
 
-두 모델이 독립적으로 계획을 세우고, 서로 교차 리뷰한다.
+에러 로그, 스택 트레이스, 실패 증상으로부터 근본 원인을 구조적으로 진단한다.
 
 **흐름:**
 ```
-         ┌── Claude Planner A (standard)  ──→ Reviewer B ──┐
-입력 ────┤                                                  ├── Critic 통합
-         └── Claude Planner B (contrarian) ──→ Reviewer A ──┘
-         (Codex 사용 가능 시 Planner B를 Codex로 대체)
+입력: 에러 메시지/실패 증상
+  ↓
+처리: Triage worker (에러 분류, 영향 범위 특정)
+      → 병렬 에이전트 투입 (Triage 결과 기반)
+      - Error Analyst: 에러 로그/스택 트레이스 파싱
+      - Git History Analyst: 시간축 추론 (언제 깨졌나)
+      - Code Tracer: 데이터 흐름 역추적
+  ↓
+출력: 근본 원인 가설 + 증거 + 수정 권고
+  ↓
+저장: .athanor/sessions/{id}/debug.md
+```
+
+**특징:**
+- Triage-first: 먼저 분류, 그 후 병렬 조사
+- 가설 기반: ranked hypotheses with evidence
+- Depth over speed (analyze와 반대)
+
+### /athanor:plan — 3-Tier Cross-Model Planning
+
+3단계 티어로 프로젝트 규모와 복잡도에 맞는 플래닝 깊이를 선택한다.
+
+**Plan Tiers:**
+
+| Tier | Command | Planner A | Planner B / Review | Use Case |
+|------|---------|-----------|-------------------|----------|
+| Deep | `/athanor:deep-plan` | Claude (standard) | Codex CLI (contrarian) + 교차 리뷰 | 대규모 아키텍처, 위험한 변경 |
+| Standard | `/athanor:plan` | Claude (standard) | Codex CLI review (단방향) | 일반적인 기능 구현 (default) |
+| Lite | `/athanor:lite-plan` | Claude (standard) | 없음 (리뷰 스킵) | 소규모 변경, 빠른 작업 |
+
+**Deep Tier 흐름:**
+```
+         ┌── Claude Planner A (standard)  ──→ Codex reviews A ──┐
+입력 ────┤                                                       ├── Critic 통합
+         └── Codex Planner B (contrarian) ──→ Claude reviews B ──┘
                                                       ↓
                                               충돌 없으면 → 사용자에게 제시
                                               충돌 있으면 → 선택지 제시
@@ -135,10 +170,35 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
                                               Task Splitter → 세세한 subtask 목록
 ```
 
-**Codex fallback:**
-Codex 없으면 Claude-only에서:
-- Claude Plan → Claude Self-Critic Review
-- 단일 모델이지만 critic이 plan을 공격적으로 비판
+**Standard Tier 흐름:**
+```
+입력 → Claude Planner A → plan-a.md
+                            ↓
+                      Codex CLI review → review-of-a.md
+                            ↓
+                      Critic 통합 → 사용자 확정 → Task Splitter
+```
+
+**Lite Tier 흐름:**
+```
+입력 → Claude Planner A → plan-a.md → 사용자 확정 → Task Splitter
+       (리뷰 없이 바로 확정 단계)
+```
+
+**Codex CLI Integration:**
+Deep/Standard 티어에서 Codex는 `codex exec` CLI를 통해 호출한다:
+```
+codex exec --full-auto --ephemeral -o <output_file> "<prompt>"
+```
+- `codex-companion.mjs task`는 Windows에서 spawn ENOENT 버그로 사용 불가
+- `codex exec` CLI가 정상 동작하는 유일한 패턴
+- 출력은 `-o` 플래그로 파일에 저장, worker가 읽어서 처리
+
+**Graceful Degradation:**
+Codex 사용 불가 시 자동 fallback:
+- Deep tier → Standard tier (Claude-only 교차 리뷰)
+- Standard tier → Lite tier + Claude self-critic
+- Lite tier → 변경 없음 (이미 Claude-only)
 
 **Task Splitter:**
 확정된 플랜을 매우 세세한 subtask로 쪼갠다.
@@ -227,10 +287,11 @@ subtask 반복 실패 → 사용자에게 물어봄.
       research-a.md            ← intermediate (discuss)
       research-b.md            ← intermediate (discuss)
       analyze.md               ← /athanor:analyze 결과
-      plan-claude.md           ← intermediate (plan A)
-      plan-codex.md            ← intermediate (plan B)
-      review-of-claude.md      ← intermediate (review of A)
-      review-of-codex.md       ← intermediate (review of B)
+      debug.md                 ← /athanor:debug 결과
+      plan-a.md                ← plan A (standard approach)
+      plan-b.md                ← plan B (alternative, deep tier only)
+      review-of-a.md           ← review of plan A
+      review-of-b.md           ← review of plan B (deep tier only)
       plan.md                  ← /athanor:plan 확정안 + subtask 목록
       decisions.md             ← 확정된 결정 기록
       work-log.md              ← /athanor:work 진행 기록
@@ -365,10 +426,13 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
   "researcher": "sonnet",
   "analyst": "sonnet",
   "planner": "opus",
+  "planner-codex": "codex",
   "critic": "opus",
   "executor": "sonnet",
   "cleaner": "haiku",
-  "learner": "sonnet"
+  "learner": "sonnet",
+  "debugger": "sonnet",
+  "debugger-tracer": "opus"
 }
 ```
 
@@ -425,9 +489,9 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 
 | | 기존 도구들 | Athanor |
 |---|---|---|
-| 플래닝 | 단일 모델 플랜 | Cross-model adversarial (Claude×Codex 교차리뷰) |
+| 플래닝 | 단일 모델 플랜 | 3-tier (deep/standard/lite) + real Codex CLI integration |
 | 실행 | 한번 시도 | TodoList grinding (전부 완료까지) |
 | 리더 | 오케스트레이터가 직접 작업 | Thin leader (dispatch만) |
 | 메모리 | 수동 저장 | 자동 2-tier (영구 + 작업캐시 auto-evict) |
-| 철학 | 기능 N개 모음 | 5개 워크플로우 단계 |
+| ��학 | 기능 N개 모음 | 소수의 핵심 워크플로우 ���계 |
 | 모드 | 항상 같음 | Plan mode → Execution mode 명시적 전환 |

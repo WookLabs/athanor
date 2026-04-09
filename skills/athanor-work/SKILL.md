@@ -239,7 +239,7 @@ Analyze the completed work session and extract reusable lessons.
    Each lesson file needs YAML frontmatter:
    ---
    type: lesson
-   skill: {plan|work|analyze|discuss}
+   skill: {plan|work|analyze|discuss|debug}
    confidence: {high|medium|low}
    source: {session-id}
    access_count: 0

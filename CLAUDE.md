@@ -15,7 +15,10 @@ All file reading, analysis, code writing, and execution happens in worker agents
 | `/athanor:setup` | — | Infrastructure health check and configuration |
 | `/athanor:discuss` | Plan | Decision brainstorming (Claude × Codex) |
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
-| `/athanor:plan` | Plan | Cross-model adversarial planning + task splitting |
+| `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
+| `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex 교차 검증) |
+| `/athanor:plan` | Plan | Standard planning + Codex review (default) |
+| `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, 리뷰 없음) |
 | `/athanor:work` | Execute | TodoList grinding with ralph-loop |
 
 ## Rules
@@ -35,10 +38,11 @@ All file reading, analysis, code writing, and execution happens in worker agents
     research-a.md            ← intermediate (discuss)
     research-b.md            ← intermediate (discuss)
     analyze.md               ← /athanor:analyze 결과
-    plan-claude.md           ← intermediate (plan A)
-    plan-codex.md            ← intermediate (plan B)
-    review-of-claude.md      ← intermediate (review of A)
-    review-of-codex.md       ← intermediate (review of B)
+    debug.md                 ← /athanor:debug 결과
+    plan-a.md                ← plan A (standard approach)
+    plan-b.md                ← plan B (alternative, deep tier only)
+    review-of-a.md           ← review of plan A
+    review-of-b.md           ← review of plan B (deep tier only)
     plan.md                  ← /athanor:plan 확정안 + subtasks
     decisions.md             ← 확정 결정 로그
     work-log.md              ← /athanor:work 진행 기록

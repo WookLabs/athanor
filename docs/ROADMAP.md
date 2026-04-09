@@ -301,6 +301,16 @@
 
 ---
 
+## Post-Release: 구조 개선
+
+### 3-Tier Plan 재구조화 + Real Codex Integration
+- [x] `/athanor:plan` → 3-tier 분리: `deep-plan`, `plan` (standard), `lite-plan`
+- [x] 파일명 중립화: `plan-claude/codex` → `plan-a/b`, `review-of-claude/codex` → `review-of-a/b`
+- [x] Codex CLI 직접 호출 패턴: `codex exec --full-auto --ephemeral`
+- [x] CONVENTIONS.md, ROADMAP.md 문서 반영
+
+---
+
 ## Dependency Graph
 
 ```
