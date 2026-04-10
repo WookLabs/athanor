@@ -1,5 +1,5 @@
 ---
-name: athanor-debug
+name: debug
 description: >
   구조적 실패 진단. Triage → 병렬 조사로 근본 원인 특정.
   '디버그', '디버깅', '왜 안 돼', '에러', '실패 원인', '버그 찾아줘',

@@ -1,5 +1,5 @@
 ---
-name: athanor-plan
+name: plan
 description: >
   Standard planning + Codex review. 계획 수립 → 리뷰 → 개선의 기본 파이프라인.
   '플랜', '계획 세워줘', '플랜 짜줘', '작업 계획', '구현 계획' 요청 시 사용.
@@ -747,7 +747,7 @@ END_RESULT"
 ### Step 7: Show Final Plan + Subtask Details
 
 After Task Splitter completes, show the **complete plan AND detailed subtask list**.
-The user must see exactly what /athanor:athanor-work will execute.
+The user must see exactly what /athanor:work will execute.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -789,16 +789,16 @@ Session:  .athanor/sessions/{id}/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:athanor-work --solo  순차 실행
-  /athanor:athanor-work --team  병렬 실행
+  /athanor:work --solo  순차 실행
+  /athanor:work --team  병렬 실행
 
 💡 플랜이나 subtask를 수정하려면 지금 말씀해주세요.
-   /athanor:athanor-work 실행 전까지 자유롭게 변경 가능합니다.
+   /athanor:work 실행 전까지 자유롭게 변경 가능합니다.
 ```
 
 **IMPORTANT**: The user can modify the plan or subtasks at this point.
 If they request changes, update plan.md and re-display.
-Only proceed to /athanor:athanor-work when the user explicitly starts it.
+Only proceed to /athanor:work when the user explicitly starts it.
 
 ---
 
