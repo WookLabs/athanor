@@ -88,7 +88,7 @@ debug는 2-step dispatch를 사용:
 1. Triage worker (순차) → 에러 분류 + 영향 범위 특정
 2. 병렬 workers (Triage 결과의 classification 기반 dispatch table 매핑)
 
-자세한 dispatch 프롬프트는 `skills/athanor-debug/SKILL.md` 참조.
+자세한 dispatch 프롬프트는 `skills/debug/SKILL.md` 참조.
 
 ### 실행 작업 (work — executor)
 
