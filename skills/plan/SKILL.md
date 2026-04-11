@@ -66,7 +66,7 @@ This is Athanor's **killer feature**.
 Tier-specific pipeline descriptions:
 - deep: "2 planners (Claude + Codex) → 2 cross-reviews → Critic 통합"
 - standard: "Claude plan → Codex review → Refinement"
-- lite: "Claude plan only → 바로 Task Splitter"
+- lite: "Claude plan only → 바로 확정"
 
 #### Tier Classification
 
@@ -82,11 +82,11 @@ Default: **standard**
 
 ### Tier Dispatch Table
 
-| Tier | Step 2: Planners | Step 3: Reviews | Step 4: Critic | Step 6: Task Splitter |
-|------|-----------------|-----------------|----------------|----------------------|
-| deep | Planner A (Claude) + Planner B (Codex) | Claude reviews B + Codex reviews A | 4-input synthesis | Yes |
-| standard | Planner A (Claude) only | Codex review (or Claude self-review) | 2-input refinement | Yes |
-| lite | Planner A (Claude) only | skip | skip | Yes |
+| Tier | Step 2: Planners | Step 3: Reviews | Step 4: Critic |
+|------|-----------------|-----------------|----------------|
+| deep | Planner A (Claude) + Planner B (Codex) | Claude reviews B + Codex reviews A | 4-input synthesis |
+| standard | Planner A (Claude) only | Codex review (or Claude self-review) | 2-input refinement |
+| lite | Planner A (Claude) only | skip | skip |
 
 When `codex_available == false`:
 - deep tier: Planner B falls back to Claude contrarian. Reviewer B falls back to Claude.
@@ -672,164 +672,44 @@ Wait for user to resolve, update plan.md, then re-display the full plan.
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ 모든 충돌이 해결되었습니다.
-이 플랜을 확정하고 Task Splitter를 실행할까요?
+이 플랜을 확정할까요? 확정 후 /athanor:work 로 실행하세요.
   [Y] 확정  [N] 수정 필요
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**IMPORTANT**: 확정 후 plan.md는 as-authored 상태입니다.
+/athanor:work 실행 전까지는 plan.md를 자유롭게 편집할 수 있으며,
+/athanor:work는 항상 최신 plan.md를 기준으로 subtasks를 생성합니다.
+(단, 이미 진행 중인 작업은 resume guard에 의해 보호됩니다.)
 
 **If user says N (수정 필요):**
 Ask what to modify. Apply changes to plan.md. Re-display the full plan.
 Repeat until user confirms.
 
-### Step 6: Task Splitter (after user confirms)
-
-Dispatch a Task Splitter worker:
-
-```
-Agent({
-  description: "Athanor task splitter",
-  model: "sonnet",
-  prompt: "You are the Athanor Task Splitter.
-
-## Task
-Split this confirmed plan into granular, executable subtasks.
-
-Read the confirmed plan from: .athanor/sessions/{session-id}/plan.md
-
-## Rules
-- Each subtask should be ONE atomic unit of work
-- A subtask should take a single worker 5-30 minutes
-- Include verification strategy for each
-- Respect dependency ordering
-- Be specific: name files, functions, expected changes
-
-## Output Format
-
-Append this section to plan.md:
-
----
-
-## Subtasks
-
-- [ ] **Subtask 1: {title}**
-  - task: {what to do}
-  - files: [{file paths}]
-  - verify: {type: command|check|review|none, value: ...}
-  - depends_on: []
-
-- [ ] **Subtask 2: {title}**
-  - task: {what to do}
-  - files: [{file paths}]
-  - verify: {type: command|check|review|none, value: ...}
-  - depends_on: [1]
-
-...
-
-Also create .athanor/sessions/{session-id}/decisions.md with this content:
-
-# Decision Log
-
-| # | Decision | Rationale | Date |
-|---|----------|-----------|------|
-{list all key decisions from the plan with their reasoning}
-
-Save updated plan to: .athanor/sessions/{session-id}/plan.md
-Save decisions to: .athanor/sessions/{session-id}/decisions.md
-
-Return your findings as:
-ATHANOR_RESULT
-status: success
-summary: {1-2 sentence summary of subtask count and structure}
-END_RESULT"
-})
-```
-
-### Step 7: Show Final Plan + Subtask Details
-
-After Task Splitter completes, show the **complete plan AND detailed subtask list**.
-The user must see exactly what /athanor:work will execute.
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 Athanor Plan Confirmed: {title}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-## Goal
-{goal from plan}
-
-## Approach
-{approach from plan}
-
-## Key Decisions
-  • {decision 1}: {rationale}
-  • {decision 2}: {rationale}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ Subtasks ({N}개)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] 1. {제목}
-     → {구체적으로 뭘 하는지 — 1-2줄 설명}
-     📁 {대상 파일들}
-     ✓ 검증: {검증 방법}
-
-[ ] 2. {제목} (← depends on: #1)
-     → {구체적으로 뭘 하는지}
-     📁 {대상 파일들}
-     ✓ 검증: {검증 방법}
-
-[ ] 3. {제목} (← depends on: #1, #2)
-     → {구체적으로 뭘 하는지}
-     📁 {대상 파일들}
-     ✓ 검증: {검증 방법}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Pipeline: 2 planners → 2 reviewers → 1 critic → {N} subtasks
-Session:  .athanor/sessions/{id}/
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-다음 단계:
-  /athanor:work --solo  순차 실행
-  /athanor:work --team  병렬 실행
-
-💡 플랜이나 subtask를 수정하려면 지금 말씀해주세요.
-   /athanor:work 실행 전까지 자유롭게 변경 가능합니다.
-```
-
-**IMPORTANT**: The user can modify the plan or subtasks at this point.
-If they request changes, update plan.md and re-display.
-Only proceed to /athanor:work when the user explicitly starts it.
-
 ---
 
 ## Dispatch Sequence Summary
 
-### Deep Tier (6 worker dispatches)
+### Deep Tier (5 worker dispatches)
 ```
 Step 2: [Planner A (Claude)] + [Planner B (Codex/Claude)] ──┐ parallel
 Step 3: [Reviewer A reviews B] + [Reviewer B (Codex/Claude) reviews A] ──┐ parallel
 Step 4: [Critic: 4 inputs → merged plan]
 Step 5: User confirmation
-Step 6: [Task Splitter → subtasks]
-Step 7: Show final plan + subtasks
 ```
 
-### Standard Tier (3-4 worker dispatches, default)
+### Standard Tier (2-3 worker dispatches, default)
 ```
 Step 2: [Planner A (Claude)]
 Step 3: [Reviewer (Codex/Claude) reviews A]
 Step 4: [Refinement Critic: 2 inputs → improved plan]
 Step 5: User confirmation
-Step 6: [Task Splitter → subtasks]
-Step 7: Show final plan + subtasks
 ```
 
-### Lite Tier (1 worker dispatch + task splitter)
+### Lite Tier (1 worker dispatch)
 ```
 Step 2: [Planner A (Claude)] → plan-a.md copied to plan.md
 Step 5: User confirmation
-Step 6: [Task Splitter → subtasks]
-Step 7: Show final plan + subtasks
 ```
 
 ---
@@ -837,7 +717,7 @@ Step 7: Show final plan + subtasks
 ## IMPORTANT RULES
 
 1. You are the **Leader**. Do NOT create plans or reviews yourself.
-2. Steps 2 and 3 are **parallel**. Steps 4-6 are **sequential**.
+2. Steps 2 and 3 are **parallel**. Steps 4-5 are **sequential**.
 3. Step 3 MUST wait for Step 2 to complete (reviewers need the plans).
 4. This is **Plan Mode** — do NOT modify project files.
 5. Always save intermediate files (plan-a, plan-b, reviews) for traceability.

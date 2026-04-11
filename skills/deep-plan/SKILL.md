@@ -16,4 +16,4 @@ Deep tier dispatches:
 - Step 2: Planner A (Claude) + Planner B (Codex, or Claude contrarian fallback)
 - Step 3: Cross-reviews (Claude reviews B + Codex reviews A)
 - Step 4: 4-input Synthesis Critic
-- Steps 5-7: User confirmation + Task Splitter + Final output
+- Step 5: User confirmation (Task Splitter runs later at /athanor:work Step 0.5)

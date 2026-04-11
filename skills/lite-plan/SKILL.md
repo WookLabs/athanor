@@ -15,4 +15,4 @@ Set `tier = lite` and follow the complete protocol in `skills/plan/SKILL.md`.
 Lite tier dispatches:
 - Step 2: Planner A (Claude) only → plan-a.md copied to plan.md
 - Steps 3-4: Skipped
-- Steps 5-7: User confirmation + Task Splitter + Final output
+- Step 5: User confirmation (Task Splitter runs later at /athanor:work Step 0.5)

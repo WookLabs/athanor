@@ -23,13 +23,13 @@ This is the ONLY Athanor command that modifies project files (via workers).
 ### Step 0: Load Plan & Determine Mode
 
 1. Find the active session in `.athanor/sessions/` (most recent today)
-2. Read `.athanor/sessions/{id}/plan.md`
-3. Parse the **Subtasks** section — extract the subtask list
-4. Read `.athanor/sessions/{id}/decisions.md` if it exists
-5. Determine mode:
+2. Read plan.md — verify it exists; do NOT yet parse subtasks
+   (Step 0.5 will handle splitter/guard logic).
+3. Check for work-log.md existence (needed by Step 0.5 resume guard).
+4. Determine mode:
    - If user specified `--solo` or `--team` → use that
    - Otherwise → read `work.defaultMode` from `athanor.json` (default: solo)
-6. Read config: `work.ralphLoop.maxRetries` and `work.circuitBreaker`
+5. Read config: `work.ralphLoop.maxRetries` and `work.circuitBreaker`
 
 **If no plan.md found:**
 ```
@@ -37,7 +37,165 @@ This is the ONLY Athanor command that modifies project files (via workers).
   먼저 /athanor:plan으로 계획을 세워주세요.
 ```
 
+### Step 0.5: Task Splitter Dispatch
+
+Load plan.md 후, TodoList 초기화(Step 1) 이전에 실행된다.
+세 가지 pre-flight 가드를 거쳐 Task Splitter 워커를 조건부로 디스패치한다.
+
+#### Pre-flight State Detection
+
+Leader는 다음을 확인한다 (파일 존재 확인만 수행 — Thin Leader 예외):
+- `plan.md`에 `## Subtasks` 헤더가 존재하는가? → `has_subtasks`
+- `.athanor/sessions/{id}/work-log.md`가 존재하는가? → `work_in_progress`
+- `## Subtasks` 섹션 직전 또는 직후에 `<!-- athanor:subtasks:manual -->` 마커가 있는가? → `manual_marker`
+
+#### Dispatch Decision Matrix
+
+| has_subtasks | work_in_progress | 동작 |
+|---|---|---|
+| No | - | [신규] Splitter 무조건 디스패치 |
+| Yes | Yes | [Resume] 사용자 확인: R(기본)/S/A |
+| Yes | No | [Manual Edit 가능성] manual_marker 있으면 자동 Keep; 없으면 사용자 확인: K/R(기본)/A |
+
+**Resume 프롬프트** (has_subtasks AND work_in_progress):
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ 진행 중인 작업이 감지되었습니다.
+  work-log.md가 이미 존재합니다.
+
+  [R] Resume  - 기존 subtasks 유지 (기본값)
+  [S] Re-split - subtask 재생성 (진행 상태 초기화)
+  [A] Abort
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Manual Edit 프롬프트** (has_subtasks AND NOT work_in_progress AND NOT manual_marker):
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ℹ 기존 Subtasks 섹션이 감지되었습니다.
+  (수동 편집되었을 수 있습니다)
+
+  [K] Keep as-is - 기존 Subtasks 유지
+  [R] Regenerate - plan.md로부터 재생성 (기본값)
+  [A] Abort
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+(구 세션에서는 R 선택이 기존 /athanor:plan Task Splitter와 동일한 결과를 줍니다.)
+
+#### Snapshot & Restore
+
+Splitter를 디스패치하기로 결정한 경우, 직전에 `plan.md`를 `plan.md.bak`으로 복사한다
+(leader의 기존 session-creation 예외와 같은 infra 수준의 파일 조작).
+Splitter 완료 후 post-split 검증에 실패하면 `plan.md.bak`을 `plan.md`로 복원하고 abort한다.
+
+#### Splitter Worker Dispatch
+
+Note: outer fence uses ~~~ to avoid clashing with inner ``` blocks.
+
+~~~
+Agent({
+  description: "Athanor task splitter",
+  model: "sonnet",
+  prompt: "You are the Athanor Task Splitter.
+
+## Task
+Split this confirmed plan into granular, executable subtasks.
+Read the confirmed plan from: .athanor/sessions/{session-id}/plan.md
+
+## Idempotency (strip-then-append)
+plan.md MAY already contain a `## Subtasks` section from a previous run.
+If it does, remove that entire section (from the `## Subtasks` header through
+the next `## ` header or EOF, whichever comes first) before appending the new one.
+Do NOT touch any content under other `## ` headers that come after Subtasks.
+This keeps re-runs clean without eating unrelated sections.
+
+## Atomic Write Rule
+Prepare the complete new plan.md content in memory first. Only when the full
+new content (original body + fresh Subtasks block) is ready, write it to plan.md
+in a single write. Do not perform incremental writes.
+
+## Rules (per subtask)
+- ONE atomic unit of work, 5-30 minutes
+- Include verification strategy (type: command|check|review|none)
+- Respect dependency ordering
+- Be specific: files, functions, expected changes
+- IDs must be stable, unique, sequential (Subtask 1, 2, ...)
+- depends_on references must all point to existing subtask IDs
+
+## Output Format
+Append this section to plan.md (after stripping any old Subtasks block):
+
+---
+
+## Subtasks
+
+- [ ] **Subtask 1: {title}**
+  - task: {what to do}
+  - files: [{file paths}]
+  - verify: {type: command|check|review|none, value: ...}
+  - depends_on: []
+
+- [ ] **Subtask 2: {title}**
+  - task: {what to do}
+  - files: [...]
+  - verify: {...}
+  - depends_on: [1]
+
+...
+
+<!-- athanor:subtasks:generated -->
+
+Also create .athanor/sessions/{session-id}/decisions.md (OVERWRITE if exists):
+
+# Decision Log
+
+| # | Decision | Rationale | Date |
+|---|----------|-----------|------|
+{list all key decisions from the plan}
+
+Save to: .athanor/sessions/{session-id}/plan.md
+Save to: .athanor/sessions/{session-id}/decisions.md
+
+Return:
+ATHANOR_RESULT
+status: success
+summary: {subtask count and structure, 1-2 sentences}
+END_RESULT"
+})
+~~~
+
+#### Post-split Validation
+
+Splitter 복귀 후 leader는 plan.md를 재로드하고 다음을 검증:
+1. `## Subtasks` 헤더가 존재하는가?
+2. 최소 1개 이상의 `- [ ] **Subtask N:**` 항목이 있는가?
+3. 각 subtask에 task/files/verify/depends_on 필드가 모두 있는가?
+4. 모든 depends_on 참조가 실제 존재하는 subtask 번호인가?
+5. decisions.md가 생성/갱신되었는가?
+6. Subtasks 섹션 끝에 `<!-- athanor:subtasks:generated -->` 마커가 존재하는가?
+
+하나라도 실패하면:
+- `plan.md.bak` → `plan.md`로 복원
+- `decisions.md`는 복원 대상 제외 (다음 성공 run에서 overwrite됨)
+- Leader 메시지:
+  `⚠ Task Splitter 검증 실패 — plan.md를 원복했습니다.
+  /athanor:plan으로 돌아가 플랜을 검토하거나 plan.md를 직접 수정 후
+  /athanor:work를 재실행해주세요.`
+- Abort.
+
+검증 성공 시 `plan.md.bak` 삭제 후 Step 1로 진행.
+
+#### Fast Paths
+
+- **Resume(R) 선택**: Splitter 디스패치 스킵. 기존 `## Subtasks`와 기존 `decisions.md`를 그대로 사용.
+  Subtask ID와 진행 상태가 안전하게 유지된다.
+- **Keep as-is(K) 선택**: 수동 편집된 Subtasks를 그대로 사용.
+  `decisions.md`가 없으면 경고만 띄우고 진행한다.
+
 ### Step 1: Initialize TodoList & Announce
+
+1. Re-read plan.md — parse the `## Subtasks` section (guaranteed fresh or explicitly preserved by Step 0.5).
+2. Read decisions.md if it exists (may be absent if user chose Keep-as-is without prior decisions.md).
 
 Create a TodoList from the subtasks. Announce:
 

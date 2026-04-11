@@ -166,8 +166,7 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
                                               충돌 있으면 → 선택지 제시
                                                       ↓
                                               사용자 확정
-                                                      ↓
-                                              Task Splitter → 세세한 subtask 목록
+(subtasks는 /athanor:work 시작 시 생성/검증된다)
 ```
 
 **Standard Tier 흐름:**
@@ -176,13 +175,15 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
                             ↓
                       Codex CLI review → review-of-a.md
                             ↓
-                      Critic 통합 → 사용자 확정 → Task Splitter
+                      Critic 통합 → 사용자 확정
+(subtasks는 /athanor:work 시작 시 생성/검증된다)
 ```
 
 **Lite Tier 흐름:**
 ```
-입력 → Claude Planner A → plan-a.md → 사용자 확정 → Task Splitter
+입력 → Claude Planner A → plan-a.md → 사용자 확정
        (리뷰 없이 바로 확정 단계)
+(subtasks는 /athanor:work 시작 시 생성/검증된다)
 ```
 
 **Codex CLI Integration:**
@@ -200,7 +201,13 @@ Codex 사용 불가 시 자동 fallback:
 - Standard tier → Lite tier + Claude self-critic
 - Lite tier → 변경 없음 (이미 Claude-only)
 
-**Task Splitter:**
+**저장:** .athanor/sessions/{id}/plan.md
+
+### /athanor:work — Execution with TodoList Grinding
+
+확정된 플랜의 모든 subtask를 완료할 때까지 실행한다.
+
+**Task Splitter (runs at work start with guards):**
 확정된 플랜을 매우 세세한 subtask로 쪼갠다.
 각 subtask에는 검증 전략이 포함된다:
 
@@ -211,11 +218,7 @@ Codex 사용 불가 시 자동 fallback:
 - none: true                    # 1회 실행 (검증 불필요)
 ```
 
-**저장:** .athanor/sessions/{id}/plan.md
-
-### /athanor:work — Execution with TodoList Grinding
-
-확정된 플랜의 모든 subtask를 완료할 때까지 실행한다.
+Task Splitter는 `/athanor:work`의 Step 0.5에서 실행되며, **Resume Guard**와 **Manual Edit Guard** 두 가지 pre-flight 체크를 거친다. 기존 진행 중 작업이 감지되면 resume을 우선하고, 수동 편집이 감지되면 사용자에게 확인한다. 재분할 실행 시에는 plan.md 스냅샷을 백업하고 post-split 검증에 실패하면 자동 복원한다.
 
 **모드:**
 ```
@@ -292,7 +295,7 @@ subtask 반복 실패 → 사용자에게 물어봄.
       plan-b.md                ← plan B (alternative, deep tier only)
       review-of-a.md           ← review of plan A
       review-of-b.md           ← review of plan B (deep tier only)
-      plan.md                  ← /athanor:plan 확정안 + subtask 목록
+      plan.md                  ← /athanor:plan 확정안 (+ /athanor:work Step 0.5에서 Subtasks 섹션 생성/갱신)
       decisions.md             ← 확정된 결정 기록
       work-log.md              ← /athanor:work 진행 기록
       discoveries/

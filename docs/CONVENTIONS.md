@@ -166,7 +166,7 @@ END_RESULT
       research-b.md            ← researcher worker B 결과 (discuss 중간 산출물)
       analyze.md               ← /athanor:analyze 결과
       debug.md                 ← /athanor:debug 결과
-      plan.md                  ← /athanor:plan 확정 플랜 + subtask list
+      plan.md                  ← /athanor:plan 확정 플랜 (+ /athanor:work 시 Subtasks 섹션 생성·갱신, 진행 중이면 resume)
       plan-a.md                ← plan A (standard approach)
       plan-b.md                ← plan B (alternative, deep tier only)
       review-of-a.md           ← review of plan A
@@ -192,8 +192,8 @@ athanor.json                   ← project root (NOT inside .athanor/)
 | debug leader | `debug.md` | /athanor:debug 완료 시 (Leader가 merge) |
 | planner workers | `plan-a.md` (all tiers) + `plan-b.md` (deep tier only) | /athanor:plan Step 2 |
 | review workers | `review-of-a.md` (deep + standard) + `review-of-b.md` (deep only) | /athanor:plan Step 3 |
-| critic worker | `plan.md` | /athanor:plan Step 4 (최종 통합) |
-| task splitter worker | `decisions.md` | /athanor:plan Step 6 (Task Splitter가 생성) |
+| critic worker | `plan.md` (goal/approach/phases, Subtasks 섹션 없음) | /athanor:plan Step 4 (최종 통합) |
+| task splitter worker | `plan.md` (Subtasks section, atomic write) + `decisions.md` | /athanor:work Step 0.5 (Resume/Manual Edit guard 통과 시 실행) |
 | executor workers | `work-log.md`, `discoveries/worker-*.md` | /athanor:work 각 subtask 완료 시 |
 
 ### 파일 읽기 규칙
@@ -204,6 +204,7 @@ athanor.json                   ← project root (NOT inside .athanor/)
 | debug workers | `analyze.md` (있으면) | 이전 분석 컨텍스트 |
 | critic (discuss) | `research-a.md`, `research-b.md` | 두 researcher 결과 통합 |
 | critic (plan) | `plan-a.md`, `plan-b.md`, `review-of-*.md` | 플랜 통합 입력 |
+| task splitter | `plan.md`, `work-log.md`(존재 여부) | 가드 판정 + subtask 생성 |
 | executor | `plan.md`, `decisions.md` | 작업 지시 + 재논의 방지 |
 | executor (team) | `discoveries/worker-*.md` | 이전 wave 발견 |
 

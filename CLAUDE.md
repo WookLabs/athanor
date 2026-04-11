@@ -43,8 +43,8 @@ All file reading, analysis, code writing, and execution happens in worker agents
     plan-b.md                ← plan B (alternative, deep tier only)
     review-of-a.md           ← review of plan A
     review-of-b.md           ← review of plan B (deep tier only)
-    plan.md                  ← /athanor:plan 확정안 + subtasks
-    decisions.md             ← 확정 결정 로그
+    plan.md                  ← /athanor:plan 확정안 (Subtasks는 /athanor:work Step 0.5에서 생성)
+    decisions.md             ← 확정 결정 로그 (/athanor:work Task Splitter가 기록)
     work-log.md              ← /athanor:work 진행 기록
     discoveries/             ← worker discovery briefs
   lessons/                   ← learned lessons (auto-managed)
