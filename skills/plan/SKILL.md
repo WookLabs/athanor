@@ -103,7 +103,9 @@ Dispatch TWO planners **simultaneously**.
 Agent({
   description: "Athanor planner A: standard approach",
   model: "opus",
-  prompt: "You are Athanor Planner A — the Standard Planner.
+  prompt: "ultrathink
+
+You are Athanor Planner A — the Standard Planner.
 
 ## Task
 Create an implementation plan for:
@@ -227,7 +229,9 @@ END_RESULT"
 Agent({
   description: "Athanor planner B: contrarian approach",
   model: "opus",
-  prompt: "You are Athanor Planner B — the Contrarian Planner.
+  prompt: "ultrathink
+
+You are Athanor Planner B — the Contrarian Planner.
 
 ## Task
 Create an ALTERNATIVE implementation plan for:
@@ -316,7 +320,9 @@ Each reviewer reads the OTHER planner's output file.
 Agent({
   description: "Athanor reviewer: critiquing Plan B",
   model: "opus",
-  prompt: "You are an Athanor plan reviewer.
+  prompt: "ultrathink
+
+You are an Athanor plan reviewer.
 
 ## Task
 Critically review Plan B (the contrarian/alternative plan).
@@ -420,7 +426,9 @@ END_RESULT"
 Agent({
   description: "Athanor reviewer: critiquing Plan A",
   model: "opus",
-  prompt: "You are an Athanor plan reviewer.
+  prompt: "ultrathink
+
+You are an Athanor plan reviewer.
 
 ## Task
 Critically review Plan A (the standard approach plan).
@@ -491,7 +499,9 @@ After BOTH reviewers return, dispatch the Critic to synthesize everything.
 Agent({
   description: "Athanor critic: plan synthesis",
   model: "opus",
-  prompt: "You are the Athanor Critic in Plan Synthesis mode.
+  prompt: "ultrathink
+
+You are the Athanor Critic in Plan Synthesis mode.
 
 ## Task
 Synthesize two competing plans and their cross-reviews into one superior plan.
@@ -571,7 +581,9 @@ When `tier == standard`:
 Agent({
   description: "Athanor critic: plan refinement",
   model: "opus",
-  prompt: "You are the Athanor Critic in Plan Refinement mode.
+  prompt: "ultrathink
+
+You are the Athanor Critic in Plan Refinement mode.
 
 ## Task
 Improve this implementation plan by incorporating review feedback.

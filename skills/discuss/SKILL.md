@@ -193,7 +193,9 @@ After receiving both workers' results, dispatch the Critic:
 Agent({
   description: "Athanor critic: discussion synthesis",
   model: "opus",
-  prompt: "You are the Athanor Critic in Discussion Synthesis mode.
+  prompt: "ultrathink
+
+You are the Athanor Critic in Discussion Synthesis mode.
 
 ## Task
 Synthesize two research perspectives on this dilemma:

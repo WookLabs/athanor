@@ -277,7 +277,9 @@ Max 15 tool calls. Keep under 400 words."
 Agent({
   description: "Athanor debug: code tracer",
   model: "opus",
-  prompt: "You are an Athanor code tracing worker.
+  prompt: "ultrathink
+
+You are an Athanor code tracing worker.
 
 ## Task
 Trace the code path leading to the failure: {failure description}
