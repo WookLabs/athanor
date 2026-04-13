@@ -68,6 +68,16 @@ If a worker uses stop-phrases, Leader should instruct: "Complete the task. Do no
 Workers MUST read relevant files before editing. If a worker edits a file it hasn't read,
 this indicates quality degradation. Leader should re-dispatch with explicit "read first" instruction.
 
+### Completion-Claim Verification (Stop hook)
+
+On every `Stop` event, athanor injects a prompt instructing the active model to
+invoke the vendored `verification-before-completion` skill if the turn contained
+any completion/success claim. Enforced at plugin layer via `hooks/hooks.json`.
+
+- Skill source: `skills/verification-before-completion/SKILL.md` (MIT, vendored)
+- Hook config: `hooks/hooks.json` → Stop event, type `prompt`
+- Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained any completion/success claim before invoking the skill
+
 ### Effort Level
 - Planner and Critic agents: always use highest reasoning effort
 - Executor and Analyst: standard effort is sufficient

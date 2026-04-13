@@ -228,6 +228,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [CONVENTIONS.md](docs/CONVENTIONS.md) — Dispatch, session, and lesson conventions
 - [ROADMAP.md](docs/ROADMAP.md) — Implementation roadmap
 
+## Acknowledgments
+
+Athanor vendors the following open-source component:
+
+- **`verification-before-completion` skill** from [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT).
+  Triggered by the athanor Stop hook to enforce evidence-before-claims discipline
+  at turn boundaries. Full attribution in [NOTICE.md](NOTICE.md).
+
 ## License
 
 MIT
