@@ -179,6 +179,71 @@ Triggers: {ko|en|both}
 
 ---
 
+## Companion Plugins
+
+After the core health check completes, run an **informational** audit for
+recommended companion plugins. This audit prints guidance only — it never
+blocks activation, never runs `/plugin install` itself, and never errors on
+missing plugins. The auditor prints; the user decides.
+
+### Superpowers Detection
+
+Dispatch a lightweight worker (or fold into Step 1) to detect `superpowers`
+via filesystem read:
+
+- **Primary**: read `~/.claude/plugins/installed_plugins.json` and look for an
+  entry whose name or source matches `superpowers`.
+- **Fallback**: check if `~/.claude/plugins/cache/claude-plugins-official/superpowers/`
+  exists as a directory.
+
+(`~` resolves to `%USERPROFILE%` on Windows — use `~/.claude/...` syntax; the
+worker adapts for the platform.)
+
+### If Superpowers ABSENT
+
+Print verbatim:
+
+```
+Recommended companion: superpowers
+  Install (official): /plugin install superpowers@claude-plugins-official
+  Install (fallback): /plugin marketplace add obra/superpowers-marketplace
+                      /plugin install superpowers@superpowers-marketplace
+```
+
+### If Superpowers PRESENT
+
+Parse `plugin.json` `version` field from the installed copy and report:
+
+```
+Tested with 5.0.7, you have {installed_version}
+```
+
+If versions differ, note the difference informationally — do NOT block.
+Athanor's known-tested superpowers version is `5.0.7`.
+
+### Collision Report
+
+If both athanor and superpowers expose the `verification-before-completion`
+skill, print:
+
+```
+Both athanor and superpowers provide `verification-before-completion`.
+Athanor's vendored copy takes precedence in the Stop hook; this is intentional.
+```
+
+### Air-Gapped / Offline Note
+
+```
+The Companion Plugins audit is informational only. Install instructions
+are printed for convenience but no network connectivity is required to
+run athanor. If you cannot install superpowers (air-gapped, restricted
+environment), athanor remains fully functional — its vendored
+verification-before-completion skill ensures the Stop hook works
+regardless.
+```
+
+---
+
 ## Session ID Convention
 
 Sessions use the format `YYYY-MM-DD-NNN`:

@@ -207,6 +207,23 @@ The leader session stays minimal — it only dispatches and collects. Workers us
 **Who is this for?**
 Solo developers who want structured planning. Tech leads who want reproducible quality. Teams who want their Claude Code sessions to share learned lessons.
 
+## Companion Plugins
+
+Athanor recommends (does not require) the following companion plugin:
+
+**superpowers** — provides foundational skills like `verification-before-completion`. Athanor vendors a copy of this skill for guaranteed Stop hook behavior, but having superpowers installed adds the rest of its skill catalog (TDD, debugging, collaboration patterns).
+
+```
+# Official marketplace
+/plugin install superpowers@claude-plugins-official
+
+# Fallback marketplace
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+Run `/athanor:setup` to audit installed companions. If superpowers is absent, athanor remains fully functional — its vendored skill ensures the Stop hook works regardless. See [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the full policy.
+
 ## Roadmap
 
 - [x] Core workflow (discuss, analyze, plan, work)
@@ -227,6 +244,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [DESIGN.md](docs/DESIGN.md) — Architecture and design decisions
 - [CONVENTIONS.md](docs/CONVENTIONS.md) — Dispatch, session, and lesson conventions
 - [ROADMAP.md](docs/ROADMAP.md) — Implementation roadmap
+- [DEPENDENCIES.md](docs/DEPENDENCIES.md) — Companion plugin policy and vendored-file inventory
 
 ## Acknowledgments
 
@@ -235,6 +253,9 @@ Athanor vendors the following open-source component:
 - **`verification-before-completion` skill** from [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT).
   Triggered by the athanor Stop hook to enforce evidence-before-claims discipline
   at turn boundaries. Full attribution in [NOTICE.md](NOTICE.md).
+- **`scope-drift` skill** from [claude-octopus](https://github.com/nyldn/claude-octopus) by nyldn (MIT).
+  On-demand skill that detects scope drift between current branch changes and the canonical plan-of-record.
+  Full attribution in [NOTICE.md](NOTICE.md).
 
 ## License
 

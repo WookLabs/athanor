@@ -3,6 +3,18 @@ name: verification-before-completion
 description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
 ---
 
+<!--
+Provenance:
+  upstream: ref/superpowers/skills/verification-before-completion/SKILL.md
+  source-commit: 917e5f53b16b115b70a3a355ed5f4993b9f8b73d
+  license: MIT (Copyright (c) 2025 Jesse Vincent)
+  modifications:
+    - Vendored verbatim from upstream (no body modifications)
+    - Frontmatter `name:` and `description:` preserved unchanged
+    - Added this Provenance comment block after the frontmatter
+-->
+
+
 # Verification Before Completion
 
 ## Overview

@@ -78,6 +78,14 @@ any completion/success claim. Enforced at plugin layer via `hooks/hooks.json`.
 - Hook config: `hooks/hooks.json` → Stop event, type `prompt`
 - Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained any completion/success claim before invoking the skill
 
+### Scope Drift Detection (on-demand skill)
+
+Use the `scope-drift` skill on demand to compare current changes against the canonical plan-of-record (glob: `[plan.md > deep-plan.md > lite-plan.md]` in latest `.athanor/sessions/<id>/`). Pilot wiring = on-demand only; no automatic invocation.
+
+- Skill source: `skills/scope-drift/SKILL.md` (MIT, vendored from claude-octopus)
+- Trigger: user-invoked ("check scope drift", "scope check", "did I drift", "drifted from plan", "still on track", "off-track", "스코프 드리프트 체크", "스코프 체크", "드리프트 확인", "계획 벗어났나")
+- Self-reference exclusion: `.athanor/sessions/**/*`, `.athanor/lessons/**/*`, `.athanor/discoveries/**/*`
+
 ### Effort Level
 - Planner and Critic agents: always use highest reasoning effort
 - Executor and Analyst: standard effort is sufficient
