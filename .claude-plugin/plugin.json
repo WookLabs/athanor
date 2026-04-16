@@ -15,6 +15,5 @@
     "thin-leader",
     "cross-model",
     "claude-code"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }
