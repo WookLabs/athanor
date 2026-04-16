@@ -1,6 +1,5 @@
 {
   "name": "athanor",
-  "description": "Athanor workflow orchestrator plugin marketplace",
   "owner": {
     "name": "WookLabs"
   },
@@ -8,7 +7,7 @@
     {
       "name": "athanor",
       "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch",
-      "version": "0.4.8",
+      "version": "0.6.1",
       "source": "./",
       "author": {
         "name": "WookLabs"

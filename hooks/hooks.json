@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "command": "Before ending this turn, check whether you made any completion, success, or \"done\" claims in your last response. If you did, invoke the `verification-before-completion` skill NOW to produce fresh evidence (command output, exit code, or explicit verification check) supporting each claim. If no completion claim was made, proceed normally."
+            "prompt": "Before ending this turn, check whether you made any completion, success, or \"done\" claims in your last response. If you did, invoke the `verification-before-completion` skill NOW to produce fresh evidence (command output, exit code, or explicit verification check) supporting each claim. If no completion claim was made, proceed normally."
           }
         ]
       }

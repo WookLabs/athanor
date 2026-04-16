@@ -59,3 +59,16 @@ Every vendored skill file under `skills/` MUST carry a `<!-- Provenance: ... -->
 - `modifications`: list of local changes
 
 See `skills/scope-drift/SKILL.md` for the canonical format.
+
+## Hook Schema Reference
+
+Claude Code hook field requirements per `type`:
+
+| type    | required field | notes                                         |
+|---------|---------------|-----------------------------------------------|
+| command | command       | shell command (default choice)                |
+| http    | url           | POST target                                   |
+| prompt  | prompt        | prompt text; supports `$ARGUMENTS` placeholder |
+| agent   | prompt        | prompt text; invoked agentically              |
+
+Source: `code.claude.com/docs/en/hooks`.
