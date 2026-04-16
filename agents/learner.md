@@ -1,7 +1,7 @@
 ---
 name: athanor-learner
 model: sonnet
-description: Session learning agent. Analyzes completed work sessions to extract patterns, lessons, and insights. Saves lessons to .athanor/lessons/ as structured .md files.
+description: Standalone manual assistant for extracting patterns and insights from completed sessions. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Write

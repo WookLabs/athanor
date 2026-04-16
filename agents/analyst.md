@@ -1,7 +1,7 @@
 ---
 name: athanor-analyst
 model: sonnet
-description: Fast parallel analysis worker for /athanor:analyze. Prioritizes LSP/Serena when available, falls back to Grep/Glob/Read.
+description: Standalone manual assistant for codebase exploration and structural inspection. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Grep

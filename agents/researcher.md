@@ -1,7 +1,7 @@
 ---
 name: athanor-researcher
 model: sonnet
-description: Brainstorming and research worker for /athanor:discuss. Investigates options, gathers evidence, and presents structured arguments.
+description: Standalone manual assistant for option investigation and evidence gathering. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Write

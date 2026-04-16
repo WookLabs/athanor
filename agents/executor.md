@@ -1,7 +1,7 @@
 ---
 name: athanor-executor
 model: opus
-description: Code execution worker for /athanor:work. Implements a single subtask with ralph-loop verification. Has full file modification permissions.
+description: Standalone manual assistant for implementing individual code changes with verification. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Write

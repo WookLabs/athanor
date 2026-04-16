@@ -1,7 +1,7 @@
 ---
 name: athanor-cleaner
 model: sonnet
-description: Memory decay and session cleaner. Applies smart promotion based on access_count, cleans old sessions and stale lessons.
+description: Standalone manual assistant for housekeeping old sessions and stale data. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Write

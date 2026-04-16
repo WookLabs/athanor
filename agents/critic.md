@@ -1,7 +1,7 @@
 ---
 name: athanor-critic
 model: opus
-description: Synthesis and review worker. Merges multiple perspectives into a unified output. Used by both /athanor:discuss (decision synthesis) and /athanor:plan (plan synthesis).
+description: Standalone manual assistant for merging documents and evaluating trade-offs. Invoke directly via @-mention for independent use.
 tools:
   - Read
   - Write

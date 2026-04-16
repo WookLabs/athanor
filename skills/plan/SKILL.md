@@ -97,6 +97,17 @@ When `codex_available == false`:
 
 Dispatch TWO planners **simultaneously**.
 
+#### Dispatch Gate Checkpoint (mandatory)
+
+Before dispatching planners, the Leader MUST announce its dispatch decision:
+
+```
+Planner B dispatch: {codex|claude-fallback|none}
+  Reason: codex_available={true|false}, tier={deep|standard|lite}
+```
+
+This checkpoint makes the branch decision visible in the transcript.
+
 **Planner A — Standard Planner:**
 
 ```
@@ -175,6 +186,8 @@ END_RESULT"
 
 > When `tier == deep AND codex_available == true`: dispatch Planner B via Codex CLI.
 
+> **COLLISION GUARD**: Do NOT dispatch Planner B as a registered Claude plugin agent when `codex_available == true`. The Codex path MUST use the Bash tool to run `codex exec` — it is a sonnet-model wrapper, not a direct planner. If you see `athanor:athanor-planner` in the dispatch log or the worker uses tools like Grep/Read instead of a single Bash call, the dispatch has been intercepted by a registered agent — this is the WRONG behavior. Re-dispatch using the exact Agent() call below.
+
 ```
 Agent({
   description: "Athanor planner B: Codex contrarian via Bash",
@@ -221,9 +234,11 @@ END_RESULT"
 })
 ```
 
-#### Deep Tier Fallback: Planner B (Claude Contrarian)
+#### Deep Tier Fallback: Planner B (Claude Contrarian) — ONLY IF codex_available == false
 
 > When `tier == deep AND codex_available == false`: use this Claude-based contrarian planner as fallback.
+
+> **FALLBACK ONLY**: This Claude-based contrarian dispatch is the fallback path. Use it ONLY when `codex --version` check failed at Step 0. If Codex is available, you MUST use the Codex path above instead.
 
 ```
 Agent({
@@ -365,6 +380,15 @@ END_RESULT"
 })
 ```
 
+#### Reviewer Dispatch Gate Checkpoint
+
+Before dispatching Reviewer B, the Leader MUST announce:
+
+```
+Reviewer B dispatch: {codex|claude-fallback}
+  Reason: codex_available={true|false}, tier={deep|standard}
+```
+
 **Reviewer B — Reviews Plan A:**
 
 > Reviewer B dispatch depends on tier and Codex availability. See conditionals below.
@@ -372,6 +396,8 @@ END_RESULT"
 #### Deep Tier: Reviewer B (Codex)
 
 > When `tier == deep AND codex_available == true`: dispatch Reviewer B via Codex CLI.
+
+> **COLLISION GUARD**: Same rule as Planner B — do NOT let a registered plugin agent intercept this dispatch. Reviewer B Codex path MUST use Bash tool to run `codex exec`. If the worker uses Grep/Read instead of Bash, it was intercepted.
 
 ```
 Agent({
@@ -418,7 +444,7 @@ END_RESULT"
 })
 ```
 
-#### Deep Tier Fallback: Reviewer B (Claude)
+#### Deep Tier Fallback: Reviewer B (Claude) — ONLY IF codex_available == false
 
 > When `tier == deep AND codex_available == false`: use this Claude-based reviewer as fallback.
 
@@ -487,6 +513,17 @@ When `tier == lite`: Steps 3 and 4 are skipped. plan-a.md was copied to plan.md 
 ### Step 4: Dispatch Critic (after Step 3 completes)
 
 After BOTH reviewers return, dispatch the Critic to synthesize everything.
+
+#### Critic Dispatch Gate Checkpoint
+
+Before dispatching the Critic, the Leader MUST announce:
+
+```
+Critic dispatch: model=opus, inline-prompt mode
+  Expect: inline-prompt behavior, NOT registered athanor-critic agent behavior
+```
+
+> **COLLISION GUARD**: The Critic MUST use the inline prompt from this skill, NOT the registered `athanor-critic` agent's system prompt. The inline prompt contains specific session file paths (plan-a.md, plan-b.md, review files) that the registered agent does not know about.
 
 #### Deep Tier: 4-Input Synthesis Critic
 
