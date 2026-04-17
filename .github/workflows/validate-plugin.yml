@@ -14,11 +14,21 @@ jobs:
           python -m json.tool .claude-plugin/plugin.json > /dev/null
           python -m json.tool .claude-plugin/marketplace.json > /dev/null
           python -m json.tool hooks/hooks.json > /dev/null
+      - name: Duplicate hooks path check
+        # Regression guard: plugin.json must not declare `hooks` pointing to the
+        # same file Claude Code auto-discovers at hooks/hooks.json. This caused
+        # the v0.6.2 "Duplicate hooks file detected" load failure.
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          with open('.claude-plugin/plugin.json', encoding='utf-8') as f:
+              manifest = json.load(f)
+          auto = os.path.abspath('hooks/hooks.json') if os.path.exists('hooks/hooks.json') else None
+          explicit = os.path.abspath(manifest['hooks']) if 'hooks' in manifest else None
+          if auto and explicit and auto == explicit:
+              sys.exit("plugin.json declares hooks -> hooks/hooks.json which is auto-discovered; remove the field")
+          PY
       - name: Claude plugin validate
-        # PROVISIONAL: if CLI install in CI proves flaky, this step may be
-        # downgraded to continue-on-error. JSON syntax check above is the
-        # minimum-guaranteed gate.
-        continue-on-error: true
         run: |
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .claude-plugin/plugin.json
