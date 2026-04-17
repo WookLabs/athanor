@@ -53,3 +53,30 @@ claude plugin validate .claude-plugin/marketplace.json
 Both MUST exit 0. Note: `.claude-plugin/plugin.json` is the path that traverses hook schemas (verified empirically in v0.6.1 Phase 0 discovery). A repo-root invocation (`claude plugin validate .`) targets `marketplace.json` only and will NOT surface hook schema errors.
 
 Additionally, before tagging, run one fresh Claude Code session with `--plugin-dir <repo>` and confirm the plugin loads without errors in `claude plugin list`. Save a transcript snippet to the release session folder as `live-session-evidence.md`. This evidence is a blocking prerequisite for push.
+
+### `live-session-evidence.md` template
+
+The file MUST contain all three sections below. Missing any section = not valid evidence.
+
+```markdown
+# Live session evidence — vX.Y.Z
+
+## 1. Plugin loads clean
+Paste the output of `claude plugin list` or the `/plugin` TUI showing
+the athanor plugin with Status: Enabled and **zero** "Failed to load"
+or "Duplicate" errors.
+
+## 2. Stop hook fires
+Paste a turn where the active model made a completion claim and the
+`verification-before-completion` skill was invoked on Stop. Include
+the skill invocation line and at least one verification step output.
+
+## 3. Skill dispatch sanity
+Paste the result of one `/athanor:<skill>` command completing end-to-end
+with no "Hook load failed" or manifest-schema errors.
+```
+
+Rationale: the Duplicate-hooks regression (v0.6.2) shipped because neither
+CI nor a human checker ever observed the plugin actually loading. Static
+schema validation is necessary but not sufficient; runtime-load evidence
+closes that gap.
