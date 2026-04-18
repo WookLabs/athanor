@@ -102,6 +102,31 @@ Files created: {list of lesson file paths}
 END_RESULT
 ```
 
+## On Release
+
+Learner invocation is also a **release-time invariant**. Every git tag creation
+(i.e., each `git tag vX.Y.Z` on this repo) must trigger a Learner run that:
+
+1. Analyzes the release diff (`git diff <prev-tag>..<new-tag>`) plus the
+   commit log for the range.
+2. Emits at least one lesson file at `.athanor/lessons/{skill}-{YYYY-MM-DD}-{NNN}.md`
+   summarizing what was learned across the release window (patterns that
+   worked, failures avoided, architectural shifts).
+3. **Cross-links to any regression RCA:** if the release window contains a
+   regression recorded in `.athanor/sessions/*/regression-rca.md`, the
+   lesson's `Evidence` section must reference that `regression-rca.md` file
+   by path, and the lesson's `When to apply` section must describe the
+   guard rail that prevents recurrence.
+
+Rationale: a release without a lesson is a lost learning opportunity. The
+`learner-on-release` contract ensures lesson files track the release cadence
+(audit: `git tag -l` count ≈ release-tagged lesson count within a
+reasonable window). Gaps between release tags and lesson dates are a
+contract violation and must be filled retrospectively.
+
+See `docs/CONVENTIONS.md` §6 for the release-tag convention, and
+`.athanor/sessions/*/regression-rca.md` for the regression record template.
+
 ## Rules
 
 - Only extract **genuinely useful** lessons — not "subtask 1 was completed"
@@ -109,3 +134,5 @@ END_RESULT
 - Always include `skill` tag so future workers can filter
 - Never fabricate lessons — only report what the data shows
 - Keep lesson content **actionable** — not academic observations
+- On every release tag, emit at least one lesson and cross-link any
+  `regression-rca.md` in the release window (see §"On Release")

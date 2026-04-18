@@ -498,3 +498,44 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 | 메모리 | 수동 저장 | 자동 2-tier (영구 + 작업캐시 auto-evict) |
 | ��학 | 기능 N개 모음 | 소수의 핵심 워크플로우 ���계 |
 | 모드 | 항상 같음 | Plan mode → Execution mode 명시적 전환 |
+
+---
+
+## Agent Registration
+
+Athanor agents are **auto-discovered** by Claude Code from the `agents/*.md` directory.
+`.claude-plugin/plugin.json` does NOT enumerate individual agents — each `.md` file with a
+valid frontmatter `name:` is registered automatically at plugin load time.
+
+### Invariant: No-Collision
+
+All agents under `agents/` MUST have a **unique `name:` frontmatter value**. Duplicate names
+cause Claude Code to silently shadow one agent with another, leading to non-deterministic
+dispatch behavior from the Leader.
+
+Current registered agents (all prefixed `athanor-` for namespace isolation):
+
+- `athanor-analyst`
+- `athanor-cleaner`
+- `athanor-critic`
+- `athanor-executor`
+- `athanor-learner`
+- `athanor-planner`
+- `athanor-researcher`
+
+### Verification
+
+CI / pre-commit should enforce the invariant:
+
+```bash
+python -c "import os,re; names=[re.search(r'^name:\s*(.+)$',open(f,encoding='utf-8').read(),re.M).group(1).strip() for f in [os.path.join('agents',n) for n in os.listdir('agents') if n.endswith('.md')]]; assert len(names)==len(set(names)), names"
+```
+
+Exit code 0 = unique; non-zero = collision (AssertionError lists the colliding names).
+
+### Adding a New Agent
+
+1. Create `agents/<role>.md` with frontmatter `name: athanor-<role>`.
+2. Confirm `name:` does not collide with any existing agent.
+3. Run the verification command above.
+4. Reference the agent from Leader commands via the `athanor-<role>` handle.

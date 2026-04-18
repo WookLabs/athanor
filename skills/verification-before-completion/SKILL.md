@@ -3,8 +3,7 @@ name: verification-before-completion
 description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
 ---
 
-<!--
-Provenance:
+<!-- Provenance:
   upstream: ref/superpowers/skills/verification-before-completion/SKILL.md
   source-commit: 917e5f53b16b115b70a3a355ed5f4993b9f8b73d
   license: MIT (Copyright (c) 2025 Jesse Vincent)
@@ -12,6 +11,11 @@ Provenance:
     - Vendored verbatim from upstream (no body modifications)
     - Frontmatter `name:` and `description:` preserved unchanged
     - Added this Provenance comment block after the frontmatter
+  t0-t1-disproof: |
+    Why not T0/T1? superpowers is T3 per docs/DEPENDENCIES.md §Marketplace Status
+    — no Claude Code marketplace listing, so T0 (install companion) is unavailable.
+    T1 is reserved pending Claude Code plugin-spec `requires` field support
+    (see CONTRIBUTING.md §Tier ordering). Therefore T2 (vendor) is the only feasible tier.
 -->
 
 

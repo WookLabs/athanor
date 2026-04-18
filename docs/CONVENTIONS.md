@@ -283,10 +283,13 @@ discoveries/worker-{subtask-id}.md
 ---
 type: lesson
 skill: plan|work|analyze|discuss|debug|deep-plan|lite-plan
+contract-id: {e.g., learner-on-release, doc-sync, scope-drift}
 confidence: high|medium|low
 source: 2026-04-08-001
 access_count: 0
-created: 2026-04-08
+created: 2026-04-08                 # legacy alias
+date: 2026-04-08                    # preferred from Wave D onward
+version-at-time-of-lesson: v0.3.1
 importance: permanent|working
 ---
 
@@ -300,6 +303,28 @@ importance: permanent|working
 ### Evidence
 {What happened that taught this lesson}
 ```
+
+### Required frontmatter keys
+
+Every lesson file must carry the following keys. The cleaner (see
+`agents/cleaner.md` §"Step 2: Schema Validation") enforces this:
+
+| Key | Required since | Purpose |
+|-----|----------------|---------|
+| `skill` | always | Routes the lesson to workers filtering by skill |
+| `contract-id` | 2026-04-17 (Wave D) | Ties the lesson back to a convention/contract for audit |
+| `date` (or legacy `created`) | always | Age-based decay, release-window correlation |
+| `version-at-time-of-lesson` | 2026-04-17 (Wave D) | Ties the lesson to a release tag (e.g., `v0.3.1`) |
+
+**Cleaner enforcement:**
+- Lessons created **before 2026-04-17** may omit `contract-id` and
+  `version-at-time-of-lesson` — the cleaner emits a WARN and keeps them
+  (legacy lessons).
+- Lessons created **on or after 2026-04-17** MUST include all four
+  required keys — the cleaner FAILs validation and flags the lesson for
+  deletion if any new key is missing.
+- `skill` is required for any age and FAILs validation if missing.
+
 
 ### Lifecycle
 
@@ -321,3 +346,24 @@ Workers dispatched by `/athanor:plan` and `/athanor:work` receive this instructi
 Apply relevant lessons to your approach."
 
 When a worker reads a lesson, the Learner should increment `access_count` on next run.
+
+### Release-Time Learner Invocation (required)
+
+Every release tag (`git tag vX.Y.Z`) **must** trigger a Learner run. This is a
+hard convention — not optional — and exists to keep the lesson corpus in sync
+with the release cadence.
+
+- **Trigger:** creation of any `v*` git tag on the repo.
+- **Required output:** at least one lesson file at
+  `.athanor/lessons/{skill}-{YYYY-MM-DD}-{NNN}.md` dated within the release
+  window, summarizing learnings from the `git diff <prev-tag>..<new-tag>`
+  range.
+- **Cross-link rule:** if any `.athanor/sessions/*/regression-rca.md` falls
+  in the release window, the lesson's `Evidence` section must reference
+  that RCA by path and the `When to apply` section must describe the
+  recurrence guard.
+- **Audit:** release-tag count and release-tagged lesson count within a
+  given window must track each other; sustained divergence is a
+  `learner-on-release` contract violation and must be backfilled.
+- **Reference:** see `agents/learner.md` §"On Release" for the full
+  Learner-side protocol.

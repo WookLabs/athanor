@@ -32,7 +32,47 @@ Scan `.athanor/sessions/{session-id}/discoveries/` for importance tags:
   - Create a lesson file in `.athanor/lessons/` (if not already captured by Learner)
   - Format: `discovery-{YYYY-MM-DD}-{NNN}.md` with `importance: permanent`
 
-### Step 2: Apply Memory Decay to Lessons
+### Step 2: Schema Validation
+
+Before applying decay, validate every `.athanor/lessons/*.md` file's YAML frontmatter.
+
+**Required keys (4):**
+
+1. `skill` — which skill the lesson belongs to (e.g., `plan`, `work`, `debug`)
+2. `contract-id` — the contract/convention ID this lesson traces back to (added in Wave D)
+3. `date` — lesson creation date (YYYY-MM-DD); `created` is accepted as a legacy alias
+4. `version-at-time-of-lesson` — repo version tag (e.g., `v0.3.1`) at lesson creation (added in Wave D)
+
+**Behavior by lesson age:**
+
+```
+For each lesson file:
+  created_date = frontmatter.created or frontmatter.date
+
+  missing_new_keys = required_new_keys not in frontmatter
+    # required_new_keys = {contract-id, version-at-time-of-lesson}
+
+  if created_date < 2026-04-17:
+    # LEGACY lesson — new keys may be absent
+    if missing_new_keys:
+      → WARN + log "legacy lesson missing new schema keys: {keys}"
+      → KEEP (do not delete based on schema alone)
+
+  else:  # created_date >= 2026-04-17
+    # NEW lesson — MUST carry full schema
+    if missing_new_keys:
+      → FAIL validation
+      → Flag for deletion and log "new lesson missing required keys: {keys}"
+
+  if `skill` missing (any age):
+    → FAIL validation regardless of age (skill has always been required)
+```
+
+Emit a schema report in Step 5 (Report) with counts: `legacy-warned`, `new-failed`, `skill-missing`.
+
+When in doubt, keep — false retention is better than lost knowledge (see Rules §4).
+
+### Step 3: Apply Memory Decay to Lessons
 
 Scan ALL files in `.athanor/lessons/`:
 
@@ -61,7 +101,7 @@ Config values from athanor.json:
 - `memory.promotionThreshold`: 5
 - `memory.maxAgeDays`: 30
 
-### Step 3: Clean Old Sessions
+### Step 4: Clean Old Sessions
 
 Scan `.athanor/sessions/` directories:
 - Parse session date from directory name (YYYY-MM-DD-NNN)
@@ -72,7 +112,7 @@ Scan `.athanor/sessions/` directories:
 
 **NEVER delete today's sessions.**
 
-### Step 4: Report
+### Step 5: Report
 
 Return:
 ```
@@ -89,6 +129,11 @@ Lessons:
   - Working: {count}
   - Promoted (working→permanent): {count}
   - Deleted (expired): {count}
+
+Schema validation:
+  - Legacy warned (created < 2026-04-17, missing contract-id/version-at-time-of-lesson): {count}
+  - New failed (created >= 2026-04-17, missing required keys): {count}
+  - Skill-missing (any age): {count}
 
 Sessions:
   - Total: {count}
