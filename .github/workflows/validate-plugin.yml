@@ -33,3 +33,12 @@ jobs:
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .claude-plugin/plugin.json
           claude plugin validate .claude-plugin/marketplace.json
+      - name: Release gate (CI mode — CHANGELOG + manifest checks)
+        # Runs only (b) CHANGELOG-entry + (c) no-duplicate-hooks.
+        # (a) evidence-ready and (d) contract-ledger need .athanor/ session
+        # artifacts which are gitignored and absent in CI fresh checkouts.
+        run: python scripts/check_release_ready.py --ci
+      - name: Regression fixtures (pytest)
+        run: |
+          pip install pytest
+          pytest tests/ -v

@@ -11,6 +11,11 @@ description: Use when about to claim work is complete, fixed, or passing, before
     - Vendored verbatim from upstream (no body modifications)
     - Frontmatter `name:` and `description:` preserved unchanged
     - Added this Provenance comment block after the frontmatter
+  t0-t1-disproof: |
+    Why not T0/T1? superpowers is T3 per docs/DEPENDENCIES.md §Marketplace Status
+    — no Claude Code marketplace listing, so T0 (install companion) is unavailable.
+    T1 is reserved pending Claude Code plugin-spec `requires` field support
+    (see CONTRIBUTING.md §Tier ordering). Therefore T2 (vendor) is the only feasible tier.
 -->
 
 

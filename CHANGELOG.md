@@ -15,9 +15,9 @@ Contract-first audit + executable regression defense. 28-subtask `/athanor:work 
 - `agents/cleaner.md` §Schema-Validation rules for lessons files (Subtask 20)
 - `agents/learner.md` §"On Release" checklist (Subtask 19)
 - `docs/DESIGN.md` §Agent Registration section (Subtask 15)
-- 3 retrospective lessons in `.athanor/lessons/` citing contract-ids (Subtask 27)
-- `.athanor/contracts/contract-ledger.md` with 11 contracts (Subtask 10)
-- `.athanor/sessions/2026-04-17-001/regression-rca.md` — RCA for v0.6.3/v0.6.4 escapes (Subtask 8)
+- 3 retrospective lessons in `.athanor/lessons/` citing contract-ids (Subtask 27) _(local-only; `.athanor/` is gitignored)_
+- Contract ledger with 11 contracts at `.athanor/sessions/2026-04-17-001/contract-ledger.md` (Subtask 10) _(local-only; `.athanor/` is gitignored)_
+- Regression RCA for v0.6.2/v0.6.3/v0.6.4 at `.athanor/sessions/2026-04-17-001/regression-rca.md` (Subtask 8) _(local-only; `.athanor/` is gitignored)_
 
 ### Changed
 - `skills/work/SKILL.md` documents `thin-leader-rejection:bullet-1` exception for reading `athanor.json` (Subtask 16)

@@ -15,6 +15,13 @@ Checks:
       (mirrors .github/workflows/validate-plugin.yml logic).
   (d) Latest session's contract-ledger.md exists and is >= 500 bytes.
 
+Modes:
+  default     run all four checks (for local pre-tag use)
+  --ci        run only (b)+(c); skip (a)+(d) which need .athanor/
+              session artifacts that are gitignored and absent in CI
+              fresh checkouts. No evidence is written.
+  --skip-evidence   run all checks but don't write evidence file.
+
 Stdlib only, Python 3.10+. All file I/O uses encoding='utf-8' to
 avoid the Windows cp949 default.
 """
@@ -176,12 +183,13 @@ def write_evidence(
 # ---------- entry point ----------
 
 def main(argv: list[str]) -> int:
-    skip_evidence = "--skip-evidence" in argv[1:]
-    # Reject unknown args so typos surface.
+    ci_mode = "--ci" in argv[1:]
+    skip_evidence = "--skip-evidence" in argv[1:] or ci_mode
+    valid_args = {"--skip-evidence", "--ci"}
     for arg in argv[1:]:
-        if arg != "--skip-evidence":
+        if arg not in valid_args:
             print(f"unknown argument: {arg}", file=sys.stderr)
-            print("usage: check_release_ready.py [--skip-evidence]", file=sys.stderr)
+            print("usage: check_release_ready.py [--skip-evidence] [--ci]", file=sys.stderr)
             return 2
 
     source_cmd = " ".join(argv)
@@ -189,21 +197,31 @@ def main(argv: list[str]) -> int:
     session = latest_session_dir()
 
     checks: list[tuple[str, bool, str]] = []
-    a_ok, a_msg = check_a_evidence(session)
-    checks.append(("(a) evidence-ready", a_ok, a_msg))
-    b_ok, b_msg = check_b_changelog(version)
-    checks.append(("(b) changelog-entry", b_ok, b_msg))
-    c_ok, c_msg = check_c_duplicate_hooks()
-    checks.append(("(c) no-duplicate-hooks", c_ok, c_msg))
-    d_ok, d_msg = check_d_contract_ledger(session)
-    checks.append(("(d) contract-ledger", d_ok, d_msg))
+    if ci_mode:
+        # CI fresh checkout has no .athanor/ (gitignored), so (a) and (d)
+        # are structurally inapplicable. Run only the contract-independent
+        # checks so CI can still catch CHANGELOG and manifest regressions.
+        b_ok, b_msg = check_b_changelog(version)
+        checks.append(("(b) changelog-entry", b_ok, b_msg))
+        c_ok, c_msg = check_c_duplicate_hooks()
+        checks.append(("(c) no-duplicate-hooks", c_ok, c_msg))
+    else:
+        a_ok, a_msg = check_a_evidence(session)
+        checks.append(("(a) evidence-ready", a_ok, a_msg))
+        b_ok, b_msg = check_b_changelog(version)
+        checks.append(("(b) changelog-entry", b_ok, b_msg))
+        c_ok, c_msg = check_c_duplicate_hooks()
+        checks.append(("(c) no-duplicate-hooks", c_ok, c_msg))
+        d_ok, d_msg = check_d_contract_ledger(session)
+        checks.append(("(d) contract-ledger", d_ok, d_msg))
 
     all_ok = all(ok for _, ok, _ in checks)
 
-    print("Athanor release-ready gate")
+    print("Athanor release-ready gate" + (" (ci mode)" if ci_mode else ""))
     print(f"  repo: {REPO_ROOT}")
     print(f"  version: {version or '<unknown>'}")
-    print(f"  latest session: {session.name if session else '<none>'}")
+    if not ci_mode:
+        print(f"  latest session: {session.name if session else '<none>'}")
     print()
     for key, ok, detail in checks:
         tag = "PASS" if ok else "FAIL"
@@ -220,7 +238,8 @@ def main(argv: list[str]) -> int:
         return 0
 
     if all_ok:
-        print("all checks passed (--skip-evidence: no file written)")
+        tag = "(--ci: evidence skipped)" if ci_mode else "(--skip-evidence: no file written)"
+        print(f"all checks passed {tag}")
         return 0
 
     print("release gate: FAIL", file=sys.stderr)

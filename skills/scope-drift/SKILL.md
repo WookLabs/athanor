@@ -14,6 +14,11 @@ description: Use on demand to detect scope drift between current branch changes 
     - Added SELF_REFERENCE_EXCLUDES constant for athanor session/lesson/discovery artifacts
     - Dropped Dev/Knowledge context taxonomy (no athanor equivalent); replaced with "no diff" skip condition
     - Set description frontmatter triggers to on-demand only (per pilot wiring decision)
+  t0-t1-disproof: |
+    Why not T0/T1? claude-octopus is T3 per docs/DEPENDENCIES.md §Marketplace Status
+    — no Claude Code marketplace listing exists, so T0 (install companion plugin) is
+    unavailable. T1 is reserved pending Claude Code plugin-spec `requires` field support
+    (see CONTRIBUTING.md §Tier ordering). Therefore T2 (vendor) is the only feasible tier.
 -->
 <!-- Upstream-drift-note: pinned=3c260845, current=524d7e04 as of 2026-04-17; frozen pending review -->
 
