@@ -1,0 +1,16 @@
+{
+  "name": "athanor",
+  "version": "0.6.2",
+  "description": "Broken manifest fixture reproducing the v0.6.2 duplicate-hook regression.",
+  "author": {
+    "name": "WookLabs"
+  },
+  "homepage": "https://github.com/WookLabs/athanor",
+  "repository": "https://github.com/WookLabs/athanor",
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json",
+  "keywords": [
+    "orchestration",
+    "regression-fixture"
+  ]
+}

@@ -31,6 +31,17 @@ This is the ONLY Athanor command that modifies project files (via workers).
    - Otherwise → read `work.defaultMode` from `athanor.json` (default: solo)
 5. Read config: `work.ralphLoop.maxRetries` and `work.circuitBreaker`
 
+<!-- thin-leader-rejection: bullet-1 — Steps 0.4–0.5 read `athanor.json`
+     at project root (outside `.athanor/sessions/**`). Accepted as a
+     documented exception: this is infrastructure config needed to
+     parameterize dispatch (mode, retries, circuit breaker) BEFORE any
+     worker can be launched. Dispatching a worker to fetch
+     dispatch-config is circular. Mirrors the Step 0.5 pre-flight
+     precedent (line 47: "Thin Leader 예외"). Allowed reads from
+     `athanor.json` are limited to: work.defaultMode,
+     work.ralphLoop.maxRetries, work.circuitBreaker. -->
+
+
 **If no plan.md found:**
 ```
 ⚠ 실행할 플랜이 없습니다.

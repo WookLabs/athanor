@@ -3,8 +3,7 @@ name: scope-drift
 description: Use on demand to detect scope drift between current branch changes and the canonical plan-of-record in the latest athanor session. Triggers on user-invoked phrases "check scope drift", "scope check", "did I drift", "drifted from plan", "still on track", "off-track", "anything off-track", "스코프 드리프트 체크", "스코프 체크", "드리프트 확인", "계획 벗어났나", and equivalents. Does NOT auto-fire on completion claims or Stop events — on-demand pilot.
 ---
 
-<!--
-Provenance:
+<!-- Provenance:
   upstream: ref/claude-octopus/skills/skill-scope-drift/SKILL.md
   source-commit: 3c260845f136cc6e3398a1d87ca5fb053a52b1d0
   license: MIT (Copyright (c) 2026 nyldn)
@@ -16,6 +15,7 @@ Provenance:
     - Dropped Dev/Knowledge context taxonomy (no athanor equivalent); replaced with "no diff" skip condition
     - Set description frontmatter triggers to on-demand only (per pilot wiring decision)
 -->
+<!-- Upstream-drift-note: pinned=3c260845, current=524d7e04 as of 2026-04-17; frozen pending review -->
 
 # Scope Drift Detection
 

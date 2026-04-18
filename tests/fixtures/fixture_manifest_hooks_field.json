@@ -1,0 +1,6 @@
+{
+  "name": "athanor",
+  "version": "0.7.0-test",
+  "description": "fixture",
+  "hooks": "./hooks/hooks.json"
+}
