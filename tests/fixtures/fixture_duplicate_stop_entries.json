@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {"type": "prompt", "prompt": "First Stop handler — fixture for hook-uniqueness negative test."}
+        ]
+      },
+      {
+        "hooks": [
+          {"type": "prompt", "prompt": "Second Stop handler — this second entry IS the regression (double-registration)."}
+        ]
+      }
+    ]
+  }
+}
