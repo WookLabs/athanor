@@ -133,21 +133,41 @@ Procedure:
 ### 9. Hook Uniqueness (hook-uniqueness)
 
 This check asserts a single registration path for hook events: the plugin
-manifest must not declare hooks (Check #8) AND `hooks/hooks.json` must not
-declare the same Stop-event handler twice.
+manifest must not declare hooks (Check #8) AND no top-level event key in
+`hooks/hooks.json` may have more than one handler entry. Scope lock: this
+check inspects only the outer-array count per event key; inner-`hooks[]`
+dedup is covered by different checks.
 
-Procedure:
+Procedure (graceful-degradation ladder):
 
 1. If Check #8 emitted a violation, auto-fail this check with:
    `hook-uniqueness violation: manifest declares "hooks" (see manifest-no-hooks-field)`
    and skip the remaining steps.
 2. Assert `hooks/hooks.json` exists. If missing, emit:
-   `hook-uniqueness violation: hooks/hooks.json missing`
-3. Count Stop-event handler entries in `hooks/hooks.json`:
-   `grep -cE '"Stop"' hooks/hooks.json`
-   If count > 1, emit:
-   `hook-uniqueness violation: hooks/hooks.json registers Stop event N times (expected 1)`
-4. Report `PASS` when no violations, else `FAIL (N violations)`.
+   `hook-uniqueness violation: hooks/hooks.json not found`
+3. Ladder (pick the first tier whose prerequisites are available):
+
+   - **Tier A (jq)**: if `command -v jq >/dev/null 2>&1` →
+     ```bash
+     violations=$(jq -r '.hooks // {} | to_entries[] | select(.value | length > 1) | "hook-uniqueness violation: hooks/hooks.json registers \(.key) event \(.value | length) times (expected 1)"' hooks/hooks.json)
+     ```
+     If `violations` is non-empty → emit each line as a violation; else `PASS`.
+
+   - **Tier B (python + shared module)**: else if
+     `command -v python >/dev/null 2>&1 && [ -f scripts/gates/manifest_checks.py ]` →
+     ```bash
+     python -m scripts.gates.manifest_checks uniqueness hooks/hooks.json
+     ```
+     Non-zero exit → capture stdout lines as violations; exit 0 → `PASS`.
+
+   - **Tier C (fallback warning)**: else → emit ONE warning line (not a violation):
+     `hook-uniqueness check skipped: neither jq nor python+scripts/ available (expected for user-project installs without tooling; CI pytest covers the invariant)`
+     Warning does NOT count as a violation — Check #9 contract status remains `PASS` with a skip note.
+
+4. Health-row output:
+   - If violations found → `FAIL (N violations)`
+   - Else if Tier C warning emitted → `PASS` with skip note (warning row emitted separately)
+   - Else clean `PASS`.
 
 ### 10. Provenance Coverage (provenance-coverage)
 

@@ -7,7 +7,7 @@
     {
       "name": "athanor",
       "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "source": "./",
       "author": {
         "name": "WookLabs"
