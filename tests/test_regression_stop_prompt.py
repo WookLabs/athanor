@@ -35,3 +35,20 @@ def test_fixture_fails():
 def test_current_hooks_passes():
     ok, _ = stop_prompt_liveness_check(REPO_ROOT / "hooks/hooks.json")
     assert ok
+
+
+def test_current_hooks_contains_narrowed_gating_markers():
+    """Stop prompt must contain the narrowed-gating markers shipped in S4.
+
+    Guards against silent re-broadening of the completion-claim gate. Any
+    valid narrowed prompt (however worded) must mention both ``material``
+    (the claim-type qualifier) and ``Explicitly skip`` (the non-claim
+    carve-out). If a future edit drops either, this test fails.
+    """
+    with open(REPO_ROOT / "hooks/hooks.json", encoding="utf-8") as f:
+        d = json.load(f)
+    prompt = d["hooks"]["Stop"][0]["hooks"][0]["prompt"]
+    assert "material" in prompt, "Stop prompt missing 'material' gating keyword"
+    assert "Explicitly skip" in prompt, (
+        "Stop prompt missing 'Explicitly skip' non-claim carve-out"
+    )

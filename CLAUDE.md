@@ -71,12 +71,11 @@ this indicates quality degradation. Leader should re-dispatch with explicit "rea
 ### Completion-Claim Verification (Stop hook)
 
 On every `Stop` event, athanor injects a prompt instructing the active model to
-invoke the vendored `verification-before-completion` skill if the turn contained
-any completion/success claim. Enforced at plugin layer via `hooks/hooks.json`.
+invoke the vendored `verification-before-completion` skill **if the turn contained a material claim (edits/tests/releases/migrations/deployments/verification-output)**; the prompt explicitly skips analysis, planning, opinions, research Q&A, and tool-output summaries. Enforced at plugin layer via `hooks/hooks.json`.
 
 - Skill source: `skills/verification-before-completion/SKILL.md` (MIT, vendored)
 - Hook config: `hooks/hooks.json` → Stop event, type `prompt`
-- Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained any completion/success claim before invoking the skill
+- Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained a **material claim** before invoking the skill. Explicitly skipped categories: analysis, planning, opinions, research Q&A, and tool-output summaries.
 
 ### Scope Drift Detection (on-demand skill)
 

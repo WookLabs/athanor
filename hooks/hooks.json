@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before ending this turn, check whether you made any completion, success, or \"done\" claims in your last response. If you did, invoke the `verification-before-completion` skill NOW to produce fresh evidence (command output, exit code, or explicit verification check) supporting each claim. If no completion claim was made, proceed normally."
+            "prompt": "Before ending this turn, check whether your last response contained a **material** claim — meaning an assertion about: edits applied, tests passing, builds succeeding, releases/version bumps, migrations completed, deployments succeeded, files created/removed, or verification output. If it did, invoke the `verification-before-completion` skill NOW to produce fresh evidence (command output, exit code, or explicit verification check) supporting each claim. **Explicitly skip** (proceed normally) if your last response was: analysis, planning, design discussion, opinions, research Q&A, summaries of tool output you just read, or any turn where no material action was claimed."
           }
         ]
       }

@@ -1,6 +1,6 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: Use when about to make a material claim (edits, tests, releases, migrations, deployments, verification output), before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always. Skip for analysis, planning, opinions, research Q&A, and tool-output summaries.
 ---
 
 <!-- Provenance:
@@ -9,7 +9,8 @@ description: Use when about to claim work is complete, fixed, or passing, before
   license: MIT (Copyright (c) 2025 Jesse Vincent)
   modifications:
     - Vendored verbatim from upstream (no body modifications)
-    - Frontmatter `name:` and `description:` preserved unchanged
+    - Frontmatter `name:` preserved unchanged
+    - Frontmatter `description:` narrowed locally (Athanor session 2026-04-24-001 / Subtask 6) to mirror hook whitelist (material claims: edits/tests/releases/migrations/deployments/verification-output) and skip-list (analysis, planning, opinions, research Q&A, tool-output summaries)
     - Added this Provenance comment block after the frontmatter
   t0-t1-disproof: |
     Why not T0/T1? superpowers is T3 per docs/DEPENDENCIES.md §Marketplace Status

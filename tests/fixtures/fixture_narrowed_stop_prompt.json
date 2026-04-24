@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before ending this turn, check whether your last response contained a **material** claim about edits, tests, releases, migrations, or deployments. If so, verify with fresh evidence. **Explicitly skip** analysis, planning, opinions, research Q&A, and tool-output summaries."
+          }
+        ]
+      }
+    ]
+  }
+}

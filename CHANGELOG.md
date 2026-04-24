@@ -3,6 +3,18 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.2] — 2026-04-24
+
+### Changed
+- Stop hook: narrow completion-claim trigger to material claims (edits/tests/releases/migrations/deployments/verification-output); explicitly skip analysis, planning, opinions, research Q&A, and tool-output summaries.
+  - Previously fired on any "completion/success/done" claim, producing user-fatigue events on research Q&A turns (see `.athanor/sessions/2026-04-24-001/replay.md` — 5/5 fires in that session would skip under new prompt).
+  - Infra cascade preserved: 5 regression tests pass, 3 active contracts (`stop-hook-liveness`, `hook-uniqueness`, `manifest-no-hooks-field`) unaffected, CLAUDE.md §Defense Mechanisms synced.
+  - Session: 2026-04-24-001
+
+### Added
+- `tests/fixtures/fixture_narrowed_stop_prompt.json` — positive-test fixture for narrowed gating markers.
+- `tests/test_regression_stop_prompt.py` gained `test_current_hooks_contains_narrowed_gating_markers()` — asserts both `material` and `Explicitly skip` substrings are present in the shipped Stop prompt. Prevents future silent re-broadening.
+
 ## [0.7.1] — 2026-04-18
 
 PR #3 adversarial-review follow-up fixes. Closes the three concrete bypass/divergence vectors surfaced after v0.7.0 merge (Check #9 substring-grep defect, 3-way duplicate-hooks mirror, `check_a_evidence` missing THIS-run linkage) with the stronger forms (structural over substring, `Path.resolve()` over `os.path.abspath`, graceful degradation over hard-dep). Session `2026-04-17-002`.
