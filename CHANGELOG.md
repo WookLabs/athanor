@@ -3,6 +3,59 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.4] — 2026-05-02
+
+5-agent audit Tier-3 follow-up (item H): adds the missing self-review
+step to the Athanor pipeline. Stacked on top of v0.7.3.
+
+### Added
+- `agents/reviewer.md` — new `athanor-reviewer` worker. Single-lens
+  review per dispatch (one of: architecture, quality, security,
+  performance, testing, documentation). `model: opus`. Read-only —
+  never edits files.
+- `skills/review/SKILL.md` — new `/athanor:review` skill, user-invocable.
+  Trigger keywords (Korean + English): "리뷰", "review", "코드 리뷰",
+  "코드리뷰", "리뷰해줘", "code review", "PR 리뷰", "변경 점검",
+  "다각도 리뷰". Pipeline:
+  1. Session setup (reuses `.athanor/sessions/{id}/` convention).
+  2. Scope detection — three modes: (a) default = recent changes on
+     branch via `git diff --stat`, (b) explicit path/glob, (c) PR mode
+     via `gh pr diff` with `git fetch pull/<num>/head` fallback.
+  3. File-type filter — claudekit pattern. Source code gets all 6
+     lenses; doc-only gets just documentation; test-only gets testing
+     + quality; config-only gets security + architecture; mixed = union.
+  4. **Parallel dispatch** — one Reviewer per lens, single Task batch.
+  5. Worker Output Defense — same stop-phrase + format check as the
+     other plan-mode skills (v0.7.3 propagation).
+  6. Consolidate — Leader writes `review.md` grouped by severity
+     (Critical → High → Medium → Low), deduplicated across lenses,
+     with cross-lens flag promotion and a 6-row score table.
+  7. User confirmation — point at the report file, do not auto-fix.
+- `CLAUDE.md` Commands table and `README.md` headline updated:
+  "9 commands. ... 6-lens parallel review. ..." (was "8 commands").
+
+### Notes on the design
+- Pattern adapted from `ref/claudekit/src/commands/code-review.md`
+  (6-lens parallel `code-review-expert` agent dispatch). Athanor uses
+  a single `athanor-reviewer` agent with a `lens:` mode parameter
+  rather than 6 distinct agents — keeps the agent inventory at 8 (was
+  7) instead of 13. compound-engineering's 20+ ce-*-reviewer agents
+  were rejected as too heavyweight for athanor's "8 commands" promise.
+- `work.autoReview` config flag is reserved as a contract slot in this
+  release (NOT enabled by default). Future release may auto-trigger
+  `/athanor:review` from `/athanor:work` Step 6.
+- v0.7.3's `agent_descriptions_unique_check` regression already covers
+  the new agent — its description prefix was crafted to differ from the
+  existing 7 agents by the first 60 chars (verified by green pytest).
+
+### Verified
+- `pytest tests/ -v` → 31 passed (no new tests added in v0.7.4 — the
+  v0.7.3 lint regression suite already locks the new agent's
+  description-prefix-uniqueness contract).
+- `python scripts/check_release_ready.py --ci` → green at v0.7.4.
+- `python -m scripts.gates.lint_checks agent-descriptions agents` →
+  ok (8 files).
+
 ## [0.7.3] — 2026-05-02
 
 5-agent parallel audit (T2/T3 of session `2026-05-02-001`). Fixes
