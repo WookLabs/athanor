@@ -5,6 +5,7 @@ description: >
   '디버그', '디버깅', '왜 안 돼', '에러', '실패 원인', '버그 찾아줘',
   '깨졌다', 'debug', 'root cause', 'find the bug' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Grep, Glob, Task
 ---
 
 # /athanor:debug — Structured Failure Diagnosis
@@ -343,9 +344,24 @@ Max 15 tool calls. Keep under 400 words."
 })
 ```
 
+### Step 2.5: Worker Output Defense (run before Step 3)
+
+Before merging, the Leader MUST check every worker finding for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a finding — re-dispatch that worker with the same prompt prefixed by `"Diagnose to root cause. Do not stop early or dismiss as a pre-existing issue without evidence."`.
+
+Patterns enforced (English alias in parentheses):
+- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
+- "계속할까요?" / "Should I continue?"
+- "기존 이슈입니다" / "This is a pre-existing issue"
+- "새 세션에서 계속" / "Let's continue in a new session"
+- "좋은 체크포인트" / "Good checkpoint"
+
+`debug` is especially sensitive to "기존 이슈입니다 / This is a pre-existing issue" — if this phrase appears, reject the finding unless it is paired with a git blame line + a session id where the issue was first observed.
+
+Also validate that each finding contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
+
 ### Step 3: Merge Results
 
-After ALL workers return, merge their findings into a unified debug report.
+After ALL workers return (and any re-dispatch from Step 2.5 has settled), merge their findings into a unified debug report.
 
 **You (the Leader) do this merge** — no separate merge agent needed.
 The workers' findings are short enough to combine directly.

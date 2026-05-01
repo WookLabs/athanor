@@ -1,7 +1,7 @@
 ---
 name: athanor-analyst
 model: sonnet
-description: Standalone manual assistant for codebase exploration and structural inspection. Invoke directly via @-mention for independent use.
+description: Codebase exploration and structural inspection (LSP/Serena, Grep/Glob fallback). Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Grep

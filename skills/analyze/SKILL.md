@@ -4,6 +4,7 @@ description: >
   병렬 고속 분석. 여러 analyst가 동시에 코드베이스를 분석.
   '분석', '분석해줘', '코드 분석', '구조 파악', '다각도 분석' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Grep, Glob, Task
 ---
 
 # /athanor:analyze — Parallel Fast Analysis
@@ -44,7 +45,7 @@ Extract what the user wants analyzed and classify:
 | **Impact Analysis** | "영향 범위", "이거 바꾸면", "의존성" | Dependency + Risk |
 | **Full Scan** | "전체 분석", "프로젝트 분석" | Structure + Dependency + Context |
 
-> **Note:** 사용자 입력에 에러 메시지, 스택 트레��스, 또는 실패 관련
+> **Note:** 사용자 입력에 에러 메시지, 스택 트레이스, 또는 실패 관련
 > 트리거("에러", "실패", "깨졌다", "왜 안 돼")가 포함된 경우,
 > `/athanor:debug`를 제안하세요.
 
@@ -209,9 +210,22 @@ Keep under 300 words."
 })
 ```
 
+### Step 2.5: Worker Output Defense (run before Step 3)
+
+Before merging, the Leader MUST check every worker brief for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a brief — re-dispatch that worker with the same prompt prefixed by `"Complete the analysis fully. Do not stop early. Cover the full scope you were assigned."`.
+
+Patterns enforced (English alias in parentheses):
+- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
+- "계속할까요?" / "Should I continue?"
+- "기존 이슈입니다" / "This is a pre-existing issue"
+- "새 세션에서 계속" / "Let's continue in a new session"
+- "좋은 체크포인트" / "Good checkpoint"
+
+Also validate that each brief contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
+
 ### Step 3: Merge Results
 
-After ALL workers return, merge their briefs into a unified report.
+After ALL workers return (and any re-dispatch from Step 2.5 has settled), merge their briefs into a unified report.
 
 **You (the Leader) do this merge** — no separate merge agent needed.
 The workers' briefs are short enough to combine directly.

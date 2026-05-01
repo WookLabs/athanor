@@ -4,6 +4,7 @@ description: >
   Athanor 인프라 점검 및 설정. '/athanor:setup', '/셋업', 'athanor 설정',
   'athanor 셋업', 'health check', '환경 점검' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
 
 # /athanor:setup — Infrastructure Health Check
@@ -53,7 +54,7 @@ Agent({
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
   "models": {
     "researcher": "sonnet", "analyst": "sonnet", "planner": "opus", "critic": "opus",
-    "executor": "opus", "cleaner": "sonnet", "learner": "sonnet",
+    "executor": "opus", "cleaner": "haiku", "learner": "sonnet",
     "debugger": "sonnet", "debugger-tracer": "opus"
   },
   "triggers": { "language": "both" }
@@ -186,23 +187,32 @@ Procedure:
 
 ### 11. Contract Ledger (contract-ledger)
 
-The latest Athanor session MUST carry a non-empty `contract-ledger.md`
-capturing the contract rows agreed for that planning cycle.
+The latest Athanor session SHOULD carry a non-empty `contract-ledger.md`
+capturing the contract rows agreed for that planning cycle. This is a
+**release-time invariant** that `scripts/check_release_ready.py` enforces
+at tag time. Setup runs report it as INFO/PASS for user-install and
+fresh-checkout environments where `.athanor/` is gitignored and starts empty.
 
-Procedure:
+Procedure (with user-install / fresh-checkout fast-path):
 
-1. Assert `.athanor/sessions/` exists and contains at least one session
-   directory. If no session directories exist, emit:
-   `contract-ledger violation: no sessions under .athanor/sessions/`
-   and report `FAIL`.
-2. Determine latest session (lexicographic max of `YYYY-MM-DD-NNN` names):
+0. **Fast-path (skip with INFO):** If either `.athanor/sessions/` does not
+   exist, OR it exists but contains no `YYYY-MM-DD-NNN` directories, emit:
+   `contract-ledger info: no athanor sessions yet — contract-ledger is enforced at release-tag time, not at setup. Run /athanor:plan or /athanor:work to start a session.`
+   and report `PASS (info)`. Stop here.
+1. Determine latest session (lexicographic max of `YYYY-MM-DD-NNN` names):
    `ls -1 .athanor/sessions/ | sort | tail -1`
-3. Assert `.athanor/sessions/<latest>/contract-ledger.md` exists. If missing:
+2. Assert `.athanor/sessions/<latest>/contract-ledger.md` exists. If missing:
    `contract-ledger violation: .athanor/sessions/<latest>/contract-ledger.md missing`
-4. Assert the file is non-empty (size > 0 bytes AND contains non-whitespace
+3. Assert the file is non-empty (size > 0 bytes AND contains non-whitespace
    content). If empty:
    `contract-ledger violation: .athanor/sessions/<latest>/contract-ledger.md is empty`
-5. Report `PASS` when no violations, else `FAIL (N violations)`.
+4. Report `PASS` when no violations, else `FAIL (N violations)`.
+
+Rationale: `.athanor/` is in `.gitignore`, so a freshly cloned plugin
+install never has sessions on disk. Treating that state as a hard FAIL
+gives every new user a red X on first `/athanor:setup`. The release gate
+(`scripts/check_release_ready.py`) is the authoritative enforcement point
+for the contract-ledger invariant — setup is informational.
 
 ### Graceful Degradation (ref/ absence)
 

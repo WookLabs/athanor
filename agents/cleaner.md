@@ -1,7 +1,7 @@
 ---
 name: athanor-cleaner
-model: sonnet
-description: Standalone manual assistant for housekeeping old sessions and stale data. Invoke directly via @-mention for independent use.
+model: haiku
+description: Housekeeping old sessions, lesson decay/promotion, and stale data. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write

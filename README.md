@@ -143,7 +143,7 @@ Input ── Planner ──→ Final Plan
 | analyst | sonnet | Fast parallel analysis |
 | planner | opus | Implementation planning |
 | critic | opus | Plan synthesis and review |
-| executor | sonnet | Code execution with verification loop |
+| executor | opus | Code execution with verification loop |
 | learner | sonnet | Session learning extraction |
 | task splitter | sonnet | Plan → subtask decomposition |
 | cleaner | haiku | Memory decay and cleanup |

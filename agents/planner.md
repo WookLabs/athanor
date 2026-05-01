@@ -1,7 +1,7 @@
 ---
 name: athanor-planner
 model: opus
-description: Standalone manual assistant for ad-hoc task breakdowns outside the Athanor pipeline. Invoke directly via @-mention for independent use.
+description: Ad-hoc task breakdowns outside the Athanor pipeline. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write

@@ -7,8 +7,8 @@
 
 **"기능 100개 모음이 아니라, 소수의 핵심 워크플로우 단계."**
 
-기존 플러그인(ECC, Citadel, superpowers)��� 기능을 많이 제공하지만 실제�� 쓰는 건 일���.
-Athanor은 실제 작��� 흐름에 맞춘 소수의 핵심 커맨드만 제공한다.
+기존 플러그인(ECC, Citadel, superpowers)은 기능을 많이 제공하지만 실제로 쓰는 건 일부.
+Athanor은 실제 작업 흐름에 맞춘 소수의 핵심 커맨드만 제공한다.
 
 ## Architecture
 
@@ -431,7 +431,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
   "planner": "opus",
   "planner-codex": "codex",
   "critic": "opus",
-  "executor": "sonnet",
+  "executor": "opus",
   "cleaner": "haiku",
   "learner": "sonnet",
   "debugger": "sonnet",
@@ -476,7 +476,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
     "analyst": "sonnet",
     "planner": "opus",
     "critic": "opus",
-    "executor": "sonnet",
+    "executor": "opus",
     "cleaner": "haiku",
     "learner": "sonnet"
   },
@@ -496,7 +496,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 | 실행 | 한번 시도 | TodoList grinding (전부 완료까지) |
 | 리더 | 오케스트레이터가 직접 작업 | Thin leader (dispatch만) |
 | 메모리 | 수동 저장 | 자동 2-tier (영구 + 작업캐시 auto-evict) |
-| ��학 | 기능 N개 모음 | 소수의 핵심 워크플로우 ���계 |
+| 철학 | 기능 N개 모음 | 소수의 핵심 워크플로우 설계 |
 | 모드 | 항상 같음 | Plan mode → Execution mode 명시적 전환 |
 
 ---

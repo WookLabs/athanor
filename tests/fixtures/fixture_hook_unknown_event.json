@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stoped": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Fixture: this top-level event key 'Stoped' is a typo for 'Stop' and is not in the Claude Code whitelist."
+          }
+        ]
+      }
+    ]
+  }
+}

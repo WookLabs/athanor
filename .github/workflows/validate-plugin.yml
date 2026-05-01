@@ -6,15 +6,27 @@ on:
     tags: ['v*']
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - name: JSON syntax check
+        shell: bash
         run: |
           python -m json.tool .claude-plugin/plugin.json > /dev/null
           python -m json.tool .claude-plugin/marketplace.json > /dev/null
           python -m json.tool hooks/hooks.json > /dev/null
-      - name: Claude plugin validate
+      - name: Claude plugin validate (Linux only)
+        # Skip on Windows: claude CLI install path / shim differs and the
+        # JSON schema check above is OS-independent.
+        if: runner.os == 'Linux'
         run: |
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .claude-plugin/plugin.json
@@ -26,8 +38,10 @@ jobs:
         # Runs only (b) CHANGELOG-entry + (c) no-duplicate-hooks.
         # (a) evidence-ready and (d) contract-ledger need .athanor/ session
         # artifacts which are gitignored and absent in CI fresh checkouts.
+        shell: bash
         run: python scripts/check_release_ready.py --ci
       - name: Regression fixtures (pytest)
+        shell: bash
         run: |
           pip install pytest
           pytest tests/ -v

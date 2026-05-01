@@ -4,6 +4,7 @@ description: >
   Lightweight planning — Claude only, no review.
   '라이트 플랜', 'lite plan', '간단한 계획', '빠른 플랜', 'quick plan' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
 
 # /athanor:lite-plan
