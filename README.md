@@ -5,7 +5,7 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**8 commands. Clean-context workers. 3-tier adversarial planning. Sessions that compound.**
+**9 commands. Clean-context workers. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound.**
 
 ## Why Athanor Exists
 
@@ -87,6 +87,7 @@ You:     /athanor:work --team
 | `/athanor:plan` | Plan | Standard planning + review + task splitting (default) |
 | `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, no review) |
 | `/athanor:work` | Execute | Grinding through every subtask until done |
+| `/athanor:review` | Plan | Parallel 6-lens code review (architecture, quality, security, performance, testing, docs) |
 
 ```
 /athanor:discuss  →  /athanor:analyze  →  /athanor:debug (optional)

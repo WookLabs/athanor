@@ -20,6 +20,7 @@ All file reading, analysis, code writing, and execution happens in worker agents
 | `/athanor:plan` | Plan | Standard planning + Codex review (default) |
 | `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, 리뷰 없음) |
 | `/athanor:work` | Execute | TodoList grinding with ralph-loop |
+| `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
 
 ## Rules
 
