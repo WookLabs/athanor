@@ -138,7 +138,12 @@ Severity rules:
 - low: nit (style, doc polish)
 
 Every finding MUST cite `file:line` and quote ≤3 surrounding lines (or describe
-absence concretely if the finding is `missing X`).
+absence concretely if the finding is `missing X`). Every finding MUST also carry a
+`confidence: {0-100}` value on the anchored rubric (100 = mechanically constructible
+from diff alone; 75 = traceable from code; 50 = judgment-based; 25 = speculative;
+< 25 = suppress) — see agents/reviewer.md §Confidence anchoring. Findings with
+confidence < {min_confidence} (default 25, sourced from athanor.json
+review.minConfidence) MUST be suppressed at the worker level.
 
 Score the lens 0-10 (10 = ideal, 0 = catastrophic) and write a one-sentence rationale.
 
@@ -170,6 +175,12 @@ Consolidation rules:
    wants to see "what to fix first", not "what each reviewer thought".
 2. Within a severity, sort by lens in this order: security, architecture, performance,
    testing, quality, documentation.
+2.5. **Confidence-based suppression.** Read `review.minConfidence` from
+   `athanor.json` (default 25). Drop any finding whose `confidence` is below this
+   threshold before grouping. If the same `file:line` appears in multiple lenses,
+   the consolidated entry's confidence is the **maximum** across lenses (not the
+   sum, not the average — confidence anchoring is a max-evidence claim, not a
+   democracy).
 3. **Deduplicate.** If two lenses surfaced the same `file:line` with overlapping
    evidence, merge into one entry and tag it `(found by: {lens-A}, {lens-B})`. Pick
    the higher severity.
