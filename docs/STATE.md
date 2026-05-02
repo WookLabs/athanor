@@ -1,84 +1,63 @@
 # Athanor — Implementation State
 
 > 이 파일은 현재 구현 진행 상태를 추적합니다.
-> 각 Phase 완료 시 업데이트합니다.
+> 각 Phase / 릴리스 완료 시 업데이트합니다.
+> 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: COMPLETE — v0.1.0
+## Current Phase: SHIPPING — v0.7.2 (Stop hook narrowing)
 
-## History
+- 10 user-invocable skills (`setup`, `discuss`, `analyze`, `debug`, `deep-plan`, `plan`, `lite-plan`, `work`) + 2 internal vendored skills (`scope-drift`, `verification-before-completion`).
+- 7 worker agents (`analyst`, `cleaner`, `critic`, `executor`, `learner`, `planner`, `researcher`).
+- 1 hook (Stop, `type: prompt`) — narrowed to material-claim trigger (v0.7.2).
+- 5 regression test files / 18 pytest cases / 6 fixtures, all passing on Python 3.14.
+- Release gate (`scripts/check_release_ready.py --ci`) green.
+- 3 active executable contracts: `stop-hook-liveness`, `hook-uniqueness`, `manifest-no-hooks-field`.
 
-### 2026-04-08: Phase 0 완료
-- Initial scaffold commit (5bc253d)
-- 18 files, 1800 lines
-- plugin.json, CLAUDE.md, 5 skills, 7 agents, DESIGN.md, ROADMAP.md
-- Push to https://github.com/WookLabs/athanor
+## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 
-### 2026-04-08: Phase 1 완료
-- /athanor:setup 구현 및 테스트 (8554ebe)
-- Health check worker dispatch 동작 확인
-- Status table 출력 정상
+### Foundation — v0.1.0 ~ v0.5.x (2026-04-08 ~ 2026-04-14)
 
-### 2026-04-08: Phase 2 완료
-- CONVENTIONS.md 작성 (dispatch packet, result brief, session I/O, discovery 규약)
-- Smoke test 통과: worker가 파일 생성→읽기→보고 성공
-- Thin leader 패턴 실증 완료
+- **Phase 0–9 (v0.1.0)**: 초기 scaffold → /athanor:setup → CONVENTIONS.md → /athanor:discuss → /athanor:analyze → /athanor:plan (cross-model adversarial pipeline) → /athanor:work solo → /athanor:work --team (wave grouping, discovery relay) → Lessons system (learner + cleaner) → README & defense mechanisms 문서화.
+- **v0.2.x ~ v0.5.x**: tier 분리 (lite/standard/deep plan), `/athanor:debug` triage, 파일명 중립화 (plan-claude/plan-codex → plan-a/plan-b), Codex CLI fallback 정비.
 
-### 2026-04-08: Phase 3 완료
-- /athanor:discuss SKILL.md 전면 보강 (세션 생성 + 병렬 dispatch + critic 합성)
-- researcher.md 보강 (Researcher/Devil's Advocate 이중 역할)
-- critic.md 범용화 (discuss + plan 양쪽 지원)
-- 테스트 성공: "TS vs Markdown" 질문 → Researcher + Devil's Advocate 병렬 → Critic 합성 → discuss.md 생성
-- 출력 포맷 정상 (status bar + 세션 정보 + 다음 단계 안내)
+### Hook hardening cycle — v0.6.x (2026-04-15 ~ 2026-04-17)
 
-### 2026-04-08: Phase 4 완료
-- /athanor:analyze SKILL.md 전면 보강 (분석 유형 판단 + 병렬 dispatch + leader merge)
-- analyst.md 보강 (LSP/Serena 우선 + Grep/Glob fallback + brevity 규칙)
-- 테스트 성공: Athanor 프로젝트 자체 분석 → 3 worker 병렬 → 구조화된 리포트
-- 실제 유용한 리스크 발견 (세션 스키마 검증 부재, critic 과부하 등)
+- **v0.6.0**: `scope-drift` skill 추가.
+- **v0.6.1**: `hooks.json` prompt-type 필드 수정, marketplace manifest 정리.
+- **v0.6.2**: agent description 충돌 해소 (Codex dispatch collision in `/athanor:deep-plan`).
+- **v0.6.3**: plugin.json `hooks` 필드 잔존 → `Duplicate hooks file detected` 회귀 fix.
+- **v0.6.4**: validate-plugin gate 강화, duplicate-hooks path check 추가, live-load evidence enforce.
 
-### 2026-04-08: Phase 5 완료 — 킬러 피처
-- /athanor:plan SKILL.md 전면 작성 (6-step adversarial pipeline)
-- 테스트 성공: "README.md 작성" 시나리오
-  - plan-claude.md (190줄), plan-codex.md (133줄) — 병렬 생성
-  - review-of-claude.md, review-of-codex.md — 교차 리뷰 병렬 생성
-  - plan.md (172줄) — Critic이 8개 충돌 자동 해결 + 통합 플랜
-- Cross-model adversarial planning 실증 완료
-- Task Splitter/decisions.md는 -p 모드 제한으로 미생성 (interactive 세션에서 동작할 것)
+### Contract-first defense — v0.7.x (2026-04-17 ~ 2026-04-24)
 
-### 2026-04-08: Phase 6 완료
-- /athanor:work SKILL.md 전면 작성 (solo mode)
-- executor.md 보강 (ralph-loop, 검증 전략별 동작, result brief 포맷)
-- 테스트 성공: 3-subtask plan → solo 순차 실행
-  - HELLO.md 생성 + 타임스탬프 추가 (subtask 1,2 — depends_on 순서 준수)
-  - work-log.md 자동 생성 (타임라인 + 요약)
-  - 3/3 completed, 0 failed
-- Circuit breaker, 실패 처리 로직 구현 (실패 테스트는 미수행 — happy path 검증)
+- **v0.7.0**: 28-subtask `/athanor:work --team` 세션 (`2026-04-17-001`)으로 11개 contract 종결. CHANGELOG.md bootstrap (15개 historical tag), `scripts/check_release_ready.py`, 3개 regression fixture + pytest 도입, `/athanor:setup` self-audit Check #7–11 (vendoring-gate + regression invariants), `agents/cleaner.md` §Schema-Validation, `agents/learner.md` §On Release, `docs/DESIGN.md` §Agent Registration.
+- **v0.7.1**: PR #3 adversarial-review follow-up. `check_a_evidence`를 `## v<version>` anchor 기반 word-boundary regex로 강화, `scripts/gates/manifest_checks.py` 모듈로 hook 게이트 일원화 (3-way duplicate path 통합), `Path.resolve()`로 cross-platform 통일.
+- **v0.7.2**: Stop hook을 material-claim 트리거로 narrow. analysis/planning/research Q&A turn에서의 user-fatigue 제거. `fixture_narrowed_stop_prompt.json` + `test_current_hooks_contains_narrowed_gating_markers` 회귀 추가.
 
-### 2026-04-08: Phase 7 완료
-- /athanor:work --team SKILL.md 구현 (wave grouping + 병렬 dispatch + discovery relay)
-- 테스트 성공: 4-subtask plan → 3 wave 실행
-  - Wave 1: ALPHA.md + BETA.md 병렬 생성
-  - Wave 2: GAMMA.md (depends_on:[1,2] 준수)
-  - Wave 3: Summary (모든 파일 존재 확인)
-  - 4/4 completed, 0 failed
+## Live invariants (현 시점 contract status)
 
-### 2026-04-08: Phase 8 완료
-- learner.md 보강: .athanor/lessons/ 기반 structured lesson 저장
-- cleaner.md 보강: decay model (age + access_count), smart promotion, maxAgeDays
-- work SKILL.md: Step 5 추가 (Learner → Cleaner 자동 트리거)
-- CONVENTIONS.md: Section 6 추가 (lesson file convention + lifecycle)
-- 테스트 성공: /work 완료 → Learner 자동 실행 → 2개 lesson 생성
-  - Learner가 테스트 fixture를 진짜 교훈과 구분하는 자기 인식 보여줌
-  - .athanor/lessons/ 에 structured YAML frontmatter로 저장
+| Contract | 상태 | 보호 위치 |
+|---|---|---|
+| `stop-hook-liveness` | ✅ enforced | `tests/test_regression_stop_prompt.py` |
+| `hook-uniqueness` | ✅ enforced | `tests/test_regression_hook_uniqueness.py`, `scripts/gates/manifest_checks.py::hook_uniqueness_check` |
+| `manifest-no-hooks-field` | ✅ enforced | `tests/test_regression_manifest_hooks.py`, `scripts/gates/manifest_checks.py::duplicate_hooks_path_check` |
+| `check_a_evidence` (release-time) | ✅ enforced | `scripts/check_release_ready.py::check_a_evidence` (word-boundary regex) |
+| `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
+| `contract-ledger` presence | ⚠️ user-install 환경에서 항상 fail | `/athanor:setup` Check #11. fresh-checkout 분기 필요 (개선 후보) |
+| `learner-on-release` | ⚠️ contract만 있음 | `agents/learner.md` §On Release. 자동 트리거 없음 |
+| `agent-frontmatter-consistency` | ❌ 회귀 0건 | v0.6.2 클래스 재발 시 잡지 못함 (개선 후보) |
+| `stop-phrase-detection` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
+| `read-before-edit` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 
-### 2026-04-08: Phase 9 완료 — v0.1.0 Release
-- Agent model 설정 통일 (7개 agent 전부 model 필드 추가)
-- Defense mechanisms: stop-phrase 감지, read-before-edit, effort 레벨 (CLAUDE.md)
-- Lessons system 가이드라인 추가 (CLAUDE.md)
-- README.md 작성 (설치, 아키텍처, 커맨드, 설정, 실행 모드)
-- v0.1.0 태그 + release
+## Known gaps (다음 작업 후보)
 
-## Phase 1 Checklist
+- 신규 user 환경에서 `/athanor:setup` Check #11이 항상 빨간 X (`.athanor/sessions/`이 gitignored이므로 fresh checkout에 ledger 없음). `--ci` 모드처럼 user-install fresh 환경 분기 필요.
+- Memory 2-tier (`permanent → mem-search`)이 디자인 문서에는 있으나 실제 구현은 frontmatter `importance` 마킹뿐 — mem-search MCP에 영구 저장하는 코드 부재.
+- agent / skill frontmatter 회귀 테스트 부재 (v0.6.2 클래스 재발 시 잡지 못함).
+- CI matrix는 ubuntu-latest 단일 — Windows-specific 회귀(case-insensitive FS 등) 자동 검증 부재.
+- Stop hook이 모델 자기-식별에 100% 의존 (false-negative 위험). 외부 transcript-parser 마이그레이션 후보.
+
+## Phase 1 Checklist (historical, archived)
 
 ### 1.1 플러그인 로딩 검증 ✅
 - [x] Claude Code에서 `--plugin-dir` 로 로딩 테스트
@@ -104,10 +83,9 @@
 - [x] Status table 정상 출력 확인
 - [x] Agent Teams: ✓ enabled
 - [x] LSP: ✓ available (built-in)
-- [x] mem-search: ✗ — `-p` 모드 테스트 한계 (MCP 미로드). 사용자 세션에서 재테스트 필요.
+- [x] mem-search: 사용자 세션에서 검증 (MCP가 로드되어 있을 때)
 
 ### MCP 접근성 결론
-- `-p` (non-interactive) 모드에서는 MCP 서버가 로드되지 않아 mem-search 미감지
+- `-p` (non-interactive) 모드에서는 MCP 서버가 로드되지 않아 mem-search 미감지 가능
 - 이는 테스트 환경 한계. 실제 사용자 세션에서는 MCP가 로드되어 있을 것
-- **실제 세션에서 사용자가 `/athanor:setup` 실행하여 재검증 필요**
 - fallback (.md 파일 통신)은 이미 설계에 포함되어 있음

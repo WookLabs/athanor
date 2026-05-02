@@ -4,6 +4,7 @@ description: >
   의사결정 브레인스토밍. Researcher + Devil's Advocate + Critic 합성.
   '논의', '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B', '브레인스토밍' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
 
 # /athanor:discuss — Decision Brainstorming
@@ -185,9 +186,22 @@ If athanor.json `codex.enabled` is true AND Codex tools are available in this se
 If Codex is NOT available (default):
   - Use the Devil's Advocate Worker B as defined above
 
+### Step 2.5: Worker Output Defense (run before Step 3)
+
+Before dispatching the Critic, the Leader MUST check both worker results for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a worker's `details:` body — re-dispatch that worker with the same prompt prefixed by `"Complete the task fully. Do not stop early. Address every part of the dilemma."`.
+
+Patterns enforced (English alias in parentheses):
+- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
+- "계속할까요?" / "Should I continue?"
+- "기존 이슈입니다" / "This is a pre-existing issue"
+- "새 세션에서 계속" / "Let's continue in a new session"
+- "좋은 체크포인트" / "Good checkpoint"
+
+Also validate that each worker's output contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
+
 ### Step 3: Dispatch Critic (after both workers complete)
 
-After receiving both workers' results, dispatch the Critic:
+After receiving both workers' results (and any re-dispatch from Step 2.5 has settled), dispatch the Critic:
 
 ```
 Agent({

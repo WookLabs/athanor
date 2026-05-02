@@ -1,7 +1,7 @@
 ---
 name: athanor-executor
 model: opus
-description: Standalone manual assistant for implementing individual code changes with verification. Invoke directly via @-mention for independent use.
+description: Implementing individual code changes with ralph-loop verification. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write

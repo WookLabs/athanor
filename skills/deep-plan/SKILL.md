@@ -4,6 +4,7 @@ description: >
   Full adversarial planning with cross-model dispatch.
   '딥 플랜', 'deep plan', '심층 계획', '교차 모델 계획', '풀 플랜' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
 
 # /athanor:deep-plan

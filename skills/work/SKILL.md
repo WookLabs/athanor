@@ -4,6 +4,7 @@ description: >
   TodoList grinding execution. subtask를 전부 완료할 때까지 실행.
   '워크', '실행해줘', '작업 시작', '구현 시작', '--solo', '--team' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
 ---
 
 # /athanor:work — Execution Engine
@@ -312,10 +313,11 @@ After worker returns:
 
 **Stop-phrase check:**
 If the worker result contains any of these patterns, re-dispatch with instruction "Complete the task. Do not stop early.":
-- "이 정도면 멈춰도 될 것 같습니다"
+- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
 - "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "pre-existing issue"
-- "새 세션에서 계속"
+- "기존 이슈입니다" / "This is a pre-existing issue"
+- "새 세션에서 계속" / "Let's continue in a new session"
+- "좋은 체크포인트" / "Good checkpoint"
 
 **If success:**
 - `consecutiveFailures = 0`

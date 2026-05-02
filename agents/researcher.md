@@ -1,7 +1,7 @@
 ---
 name: athanor-researcher
 model: sonnet
-description: Standalone manual assistant for option investigation and evidence gathering. Invoke directly via @-mention for independent use.
+description: Option investigation and evidence gathering for decision dilemmas. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write

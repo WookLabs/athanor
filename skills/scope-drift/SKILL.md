@@ -1,6 +1,7 @@
 ---
 name: scope-drift
 description: Use on demand to detect scope drift between current branch changes and the canonical plan-of-record in the latest athanor session. Triggers on user-invoked phrases "check scope drift", "scope check", "did I drift", "drifted from plan", "still on track", "off-track", "anything off-track", "스코프 드리프트 체크", "스코프 체크", "드리프트 확인", "계획 벗어났나", and equivalents. Does NOT auto-fire on completion claims or Stop events — on-demand pilot.
+allowed-tools: Bash, Read, Glob, Grep
 ---
 
 <!-- Provenance:
@@ -67,7 +68,7 @@ Athanor's own session/lesson/discovery artifacts must be stripped from the chang
 .athanor/discoveries/**/*
 ```
 
-Apply these exclusions to `git diff --name-only` output. Any other path (including `.athanor/CLAUDE.md`, `.athanor/plugin.json`, `athanor/skills/**`) remains in scope.
+Apply these exclusions to `git diff --name-only` output. Any other path (including the plugin's own `CLAUDE.md`, `.claude-plugin/plugin.json`, `skills/**`, `agents/**`, `hooks/**`, `scripts/**`, `tests/**`, `docs/**`) remains in scope.
 
 ## How It Works
 

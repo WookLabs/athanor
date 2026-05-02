@@ -1,6 +1,7 @@
 ---
 name: verification-before-completion
 description: Use when about to make a material claim (edits, tests, releases, migrations, deployments, verification output), before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always. Skip for analysis, planning, opinions, research Q&A, and tool-output summaries.
+allowed-tools: Bash, Read
 ---
 
 <!-- Provenance:

@@ -4,6 +4,7 @@ description: >
   Standard planning + Codex review. 계획 수립 → 리뷰 → 개선의 기본 파이프라인.
   '플랜', '계획 세워줘', '플랜 짜줘', '작업 계획', '구현 계획' 요청 시 사용.
 user-invocable: true
+allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
 
 # /athanor:plan — Standard Planning Pipeline
@@ -19,6 +20,22 @@ This is Athanor's **killer feature**.
 ---
 
 ## Protocol
+
+### Worker Output Defense (applies to every worker dispatch in this Protocol)
+
+After every worker (Planner A, Planner B, Reviewer A, Reviewer B, Critic) returns, the Leader MUST check the result for **stop-phrase patterns** before proceeding to the next step. See `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection". If any pattern appears in a worker's output:
+
+- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
+- "계속할까요?" / "Should I continue?"
+- "기존 이슈입니다" / "This is a pre-existing issue"
+- "새 세션에서 계속" / "Let's continue in a new session"
+- "좋은 체크포인트" / "Good checkpoint"
+
+→ Re-dispatch that worker once with the same prompt prefixed by `"Complete the planning task fully. Do not stop early. Address every aspect of the assignment."`. Subsequent workers (Reviewer, Critic) depend on a complete, well-formed predecessor output.
+
+Also validate that each worker output contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field, and that the expected output file (e.g., `plan-a.md`, `plan-b.md`, `review-of-a.md`, `review-of-b.md`, `plan.md`) exists with a non-trivial header (`# Plan A`, `# Plan B`, `# Review of Plan A`, etc.) and minimum length (~500 bytes for plans, ~200 bytes for reviews). If absent, truncated, or header-mismatched — re-dispatch once with the same prompt.
+
+This defense applies in `lite-plan` and `deep-plan` tiers as well, since they share this Protocol via `skills/plan/SKILL.md`.
 
 ### Step 0: Session Setup
 

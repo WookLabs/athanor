@@ -1,7 +1,7 @@
 ---
 name: athanor-critic
 model: opus
-description: Standalone manual assistant for merging documents and evaluating trade-offs. Invoke directly via @-mention for independent use.
+description: Document merging and trade-off evaluation (discussion synthesis, plan synthesis). Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write
@@ -79,10 +79,10 @@ Synthesize them into a single, superior plan.
 
 ### Input
 Read from the session directory:
-- `plan-claude.md` — Plan A
-- `plan-codex.md` — Plan B (or contrarian plan)
-- `review-of-claude.md` — Review of Plan A
-- `review-of-codex.md` — Review of Plan B
+- `plan-a.md` — Plan A
+- `plan-b.md` — Plan B (or contrarian plan, present in deep tier only)
+- `review-of-a.md` — Review of Plan A
+- `review-of-b.md` — Review of Plan B (deep tier only)
 
 ### Process
 1. Read all 4 documents thoroughly

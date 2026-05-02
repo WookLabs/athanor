@@ -1,7 +1,7 @@
 ---
 name: athanor-learner
 model: sonnet
-description: Standalone manual assistant for extracting patterns and insights from completed sessions. Invoke directly via @-mention for independent use.
+description: Extracting patterns and insights from completed sessions into reusable lessons. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
 tools:
   - Read
   - Write
@@ -46,10 +46,13 @@ Lesson file format:
 ```markdown
 ---
 type: lesson
-skill: {plan|work|analyze|discuss}
+skill: {plan|work|analyze|discuss|debug|setup}
+contract-id: {contract or convention id this lesson traces to, e.g. "stop-hook-narrowing", "hook-uniqueness"}
+version-at-time-of-lesson: {repo version tag at creation, e.g. "v0.7.2"; read from .claude-plugin/plugin.json}
 confidence: {high|medium|low}
 source: {session-id}
 access_count: 0
+date: {YYYY-MM-DD}
 created: {YYYY-MM-DD}
 importance: {permanent|working}
 ---
@@ -131,7 +134,13 @@ See `docs/CONVENTIONS.md` §6 for the release-tag convention, and
 
 - Only extract **genuinely useful** lessons — not "subtask 1 was completed"
 - If nothing significant was learned, report honestly: "No significant lessons"
-- Always include `skill` tag so future workers can filter
+- Always emit the **4 required schema keys** that `agents/cleaner.md` §Step 2
+  validates: `skill`, `contract-id`, `date` (or legacy alias `created`),
+  `version-at-time-of-lesson`. Lessons missing any of these on or after
+  2026-04-17 will be flagged for deletion by the next Cleaner run — keep
+  the schema in sync with `agents/cleaner.md` and `docs/CONVENTIONS.md`.
+- Read the version tag from `.claude-plugin/plugin.json` (`version` field)
+  when populating `version-at-time-of-lesson`.
 - Never fabricate lessons — only report what the data shows
 - Keep lesson content **actionable** — not academic observations
 - On every release tag, emit at least one lesson and cross-link any
