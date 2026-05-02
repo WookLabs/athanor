@@ -3,6 +3,78 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.5] — 2026-05-02
+
+Cross-model hook audit follow-up (Codex review session
+`2026-05-02-001/codex-hook-review.md`). Closes the four highest-ROI
+findings (Codex TOP 5 #1, #2, #3, #5) from a Codex CLI deep review of
+Athanor's Stop hook architecture against six reference plugins
+(claudekit, ralph-wiggum, GSD, ECC, superpowers, octopus).
+
+### Why this release
+The v0.7.2 narrowing reduced user-fatigue but introduced a documented
+false-negative vector: "evidence already present in same turn"
+self-rationalization, in which the model treats prior-turn or
+earlier-in-same-turn tool output as evidence and skips fresh
+verification. Codex review §2 traced this to a structural conflict
+between the prompt's skip-list ("summaries of tool output you just
+read") and material-list ("verification output"). v0.7.5 disambiguates
+both sides and adds Korean-verb parity that the v0.7.2 narrowing did
+not cover.
+
+### Changed
+- `hooks/hooks.json` Stop prompt — disambiguation pass:
+  - Material-claim list expanded to include `files created/removed/
+    renamed`, `lint/typecheck clean`, `builds succeeding`, `bug fixed`,
+    `requirements met`, `agent task completed`. Previously these were
+    in the verification skill body but not in the hook gate, creating
+    whitelist drift.
+  - Korean-verb parity added: `수정/반영/구현/완료/통과/성공/배포/생성/
+    삭제/수행/적용했습니다`, `테스트 통과`, `빌드 성공`, `머지 완료`,
+    `마이그레이션 완료`, `배포됨` flagged as material when describing
+    repo/tests/build/release/migration/deployment/verification state.
+    Closes Codex review §3 (self-classification ambiguity for Korean
+    final responses).
+  - Tool-output skip carve-out tightened: skippable summaries are
+    those that "describe what the tool printed" only. Summaries that
+    claim `tests pass`, `build succeeded`, `files changed`, `merged`,
+    `통과/성공/완료/배포`, or `verification confirmed` remain material.
+    Closes the false-negative vector in Codex review §1+§2.
+  - Fresh-evidence requirement made explicit: evidence must be IN THIS
+    RESPONSE; references to prior turns or earlier-in-same-turn tool
+    output do NOT satisfy the gate. Closes the rationalization
+    documented in this session's transcript.
+- `CLAUDE.md` §Defense Mechanisms — added Status table at the top
+  of the section. Each mechanism marked `enforced` (Stop hook only) /
+  `advisory` (stop-phrase, read-before-edit) / `on-demand` (scope-drift).
+  Closes Codex review §10 expectation-mismatch concern. Read-Before-Edit
+  rule clarified that Claude Code runtime auto-enforces it on Claude
+  workers, so the rule applies primarily to Codex/non-Claude dispatches.
+
+### Added
+- `tests/test_regression_stop_prompt.py` — 5 new semantic fixture tests
+  (Codex review TOP 5 #3) that lock the v0.7.5 contract:
+  - `test_prompt_lists_expanded_material_categories` — whitelist parity
+    enforced (builds/files/lint/bug fixed/requirements met present)
+  - `test_prompt_marks_korean_success_verbs_as_material` — Korean
+    parity enforced (수정/통과/성공/배포/완료 listed)
+  - `test_prompt_disambiguates_tool_output_summary_from_status_claim`
+    — skip-list/material-list conflict resolution locked in
+  - `test_prompt_requires_fresh_evidence_in_this_response` —
+    rationalization closure verified
+  - `test_prompt_length_within_cognitive_budget` — prompt ≤ 2500 chars,
+    crossing the limit signals it is time to migrate to type=command
+    + transcript-parser (Codex TOP 5 #4, deferred)
+- pytest count: 31 → 36 (+5 new semantic cases). Total runtime ≈ 0.25s.
+
+### Deferred to v0.7.6+
+- Codex TOP 5 #4: `type=prompt` → `type=command` + transcript-parser
+  migration. Listed as M-difficulty in the review and requires a
+  polyglot wrapper (Windows-first), transcript JSONL parser, and a
+  loop-guard. v0.7.5's prompt is now within cognitive budget (verified
+  by `test_prompt_length_within_cognitive_budget`); migration is the
+  next-natural step but a larger PR.
+
 ## [0.7.4] — 2026-05-02
 
 5-agent audit Tier-3 follow-up (item H): adds the missing self-review

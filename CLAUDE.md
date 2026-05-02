@@ -55,7 +55,18 @@ athanor.json  ← project root, NOT inside .athanor/
 
 ## Defense Mechanisms
 
-### Stop-Phrase Detection
+### Status table
+
+| Mechanism | Enforcement |
+|---|---|
+| Completion-Claim Verification (Stop hook) | **enforced** — `hooks/hooks.json` Stop prompt fires on every Stop event; model self-classifies and invokes `verification-before-completion` skill on material claims |
+| Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
+| Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
+| Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
+
+Detail follows.
+
+### Stop-Phrase Detection (advisory)
 Workers must NOT use these patterns. If detected in worker output, Leader flags it:
 - "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
 - "계속할까요?" / "Should I continue?"
@@ -65,11 +76,13 @@ Workers must NOT use these patterns. If detected in worker output, Leader flags 
 
 If a worker uses stop-phrases, Leader should instruct: "Complete the task. Do not stop early."
 
-### Read-Before-Edit Rule
+### Read-Before-Edit Rule (advisory)
 Workers MUST read relevant files before editing. If a worker edits a file it hasn't read,
 this indicates quality degradation. Leader should re-dispatch with explicit "read first" instruction.
+Note: Claude Code runtime enforces read-before-edit on Claude-based workers automatically;
+this rule still matters for Codex-based dispatches and other non-Claude runtimes.
 
-### Completion-Claim Verification (Stop hook)
+### Completion-Claim Verification (Stop hook — enforced)
 
 On every `Stop` event, athanor injects a prompt instructing the active model to
 invoke the vendored `verification-before-completion` skill **if the turn contained a material claim (edits/tests/releases/migrations/deployments/verification-output)**; the prompt explicitly skips analysis, planning, opinions, research Q&A, and tool-output summaries. Enforced at plugin layer via `hooks/hooks.json`.
@@ -78,7 +91,7 @@ invoke the vendored `verification-before-completion` skill **if the turn contain
 - Hook config: `hooks/hooks.json` → Stop event, type `prompt`
 - Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained a **material claim** before invoking the skill. Explicitly skipped categories: analysis, planning, opinions, research Q&A, and tool-output summaries.
 
-### Scope Drift Detection (on-demand skill)
+### Scope Drift Detection (on-demand skill — advisory)
 
 Use the `scope-drift` skill on demand to compare current changes against the canonical plan-of-record (glob: `[plan.md > deep-plan.md > lite-plan.md]` in latest `.athanor/sessions/<id>/`). Pilot wiring = on-demand only; no automatic invocation.
 
