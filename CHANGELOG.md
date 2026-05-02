@@ -3,6 +3,78 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.6] — 2026-05-02
+
+5-agent ref deep-dive + Codex cross-validation outcome (session
+`2026-05-02-001`). Closes the most critical contract default
+(missing `athanor.json`) and lands the highest-ROI quick-win from the
+collective audit (confidence-anchored review findings, pattern from
+compound-engineering ce-* persona reviewers).
+
+### Why this release
+The 5-parallel-agent ref mining audit identified ~80 upgrade candidates
+across claudekit, superpowers, compound-engineering, gstack, GSD, ECC,
+Octopus, ralph-wiggum, wshobson-agents, bmad-plugin, roboco-plugins,
+and claude-code-templates. The highest-priority discovery was a
+**contract default**: `athanor.json` is referenced from `CLAUDE.md`
+line 53 and 116 ("project root, NOT inside .athanor/") and from
+`docs/DESIGN.md` §Configuration as the source of truth for memory /
+codex / work / team / triggers settings — but the file did not exist
+in the repository. User installs of the plugin had no template to
+copy from, and athanor's own development could not honor its
+documented contract. v0.7.6 ships the missing file.
+
+### Fixed
+- **Critical contract default**: `athanor.json` now exists in the
+  repository root with the documented schema. Includes inline `_doc:`
+  fields for every section explaining what each setting controls,
+  pulled from `docs/DESIGN.md` §Configuration and the working
+  documentation in skills/. New `hooks` section reserves
+  `profile: standard` and `disabled: []` for v0.7.7+ HOOK_PROFILE
+  gating work (Researcher D #2 from the audit). New `review` section
+  with `lenses: [...]` and `minConfidence: 25` to back the
+  v0.7.6 reviewer confidence-rubric work below.
+- `agents/cleaner.md` model dropped to `haiku` already in v0.7.3 —
+  athanor.json now codifies that decision in the `models` block, so
+  future drift is caught by the next run that reads `athanor.json`.
+
+### Changed
+- `agents/reviewer.md` §Process — added Step 5 "Confidence anchoring"
+  with the 4-anchor rubric (100 mechanically constructible / 75
+  traceable from code / 50 judgment-based / 25 speculative / <25
+  suppress). Pattern adapted from compound-engineering's ce-* persona
+  reviewer agents (julik / kieran / dhh / adversarial), where every
+  finding carries an anchored confidence value to fight finding-flood
+  fatigue. Severity (critical/high/medium/low) and confidence (0-100)
+  are now orthogonal dimensions: severity = "how bad if true",
+  confidence = "how sure I am it's true".
+- `agents/reviewer.md` §Output Format — Critical/High/Medium/Low
+  finding template now includes `confidence: {0-100}` next to the
+  `file:line` reference. Findings with confidence < 25 must be
+  suppressed at the worker level (do not surface in `ATHANOR_RESULT`).
+- `skills/review/SKILL.md` Step 2 dispatch prompt — every Reviewer is
+  instructed to attach a `confidence:` value (0-100) on the rubric,
+  and to suppress findings below `min_confidence` (sourced from
+  athanor.json `review.minConfidence`, default 25).
+- `skills/review/SKILL.md` Step 3 consolidation — added a 2.5
+  "Confidence-based suppression" rule. When the same `file:line`
+  appears across multiple lenses, the consolidated finding's
+  confidence is the **max** across lenses (not sum, not average —
+  confidence is a max-evidence claim, not a democracy).
+
+### Notes on the audit
+The 5-agent + Codex audit will continue to ship in subsequent v0.7.7,
+v0.7.8, v0.7.9, v0.8.0 releases per the priority matrix in the audit
+session digest. v0.7.6 deliberately stays small (XS-S only, no infra
+change, no new hook) so the full audit's larger work — HANDOFF.json /
+PreCompact hook (Researcher A/C/D triple-vote), Stop-event Todo Gate
++ transcript-parser (Codex review #4 follow-up), Lessons-Refresh
+(Researcher B), Lens-based plan review (Researcher C), File-Guard
+(Researcher A) — can each get their own focused PR.
+
+Audit artifact: `.athanor/sessions/2026-05-02-001/codex-hook-review.md`
++ codex-plan-critique + codex-memory-comparison (gitignored, local).
+
 ## [0.7.5] — 2026-05-02
 
 Cross-model hook audit follow-up (Codex review session

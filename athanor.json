@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/main/schemas/athanor-config.schema.json",
+  "version": "1.0",
+  "_doc": "Athanor runtime configuration. Project root file. Source of truth for memory/codex/work/team/triggers settings referenced from CLAUDE.md and skills/. User installs may override individual fields; missing fields fall back to these defaults.",
+  "codex": {
+    "enabled": true,
+    "fallback": "self-critic",
+    "_doc": "Cross-model planning via Codex CLI. enabled=true makes /athanor:plan deep tier dispatch a Codex Planner B in parallel with Claude Planner A. fallback strategy when codex CLI is unavailable: 'self-critic' (Claude self-reviews) | 'skip' (single-planner only) | 'fail' (abort). See skills/plan/SKILL.md §Step 0 codex_available probe."
+  },
+  "work": {
+    "defaultMode": "solo",
+    "ralphLoop": {
+      "maxRetries": 5,
+      "_doc": "Max ralph-loop iterations per subtask before circuit breaker engages. Each iteration re-runs the executor with the same subtask plus latest verify output. Increase for fragile verify commands; decrease for fast-fail policy."
+    },
+    "circuitBreaker": {
+      "consecutiveFailures": 3,
+      "action": "ask_user",
+      "_doc": "After N consecutive subtask failures, leader pauses and asks user: action options are 'ask_user' (default), 'continue' (next subtask), 'abort' (stop pipeline)."
+    }
+  },
+  "team": {
+    "waveSize": 3,
+    "discoveryRelay": true,
+    "_doc": "/athanor:work --team mode. waveSize is max parallel workers per wave (limited by Claude Code concurrent Task slots). discoveryRelay=true injects previous wave discoveries into next wave's worker prompts."
+  },
+  "memory": {
+    "decayDays": 7,
+    "promotionThreshold": 5,
+    "maxAgeDays": 30,
+    "_doc": "Lessons lifecycle in .athanor/lessons/. Working lessons decay after decayDays unless they reach promotionThreshold reads (then auto-promoted to permanent). Sessions older than maxAgeDays are cleaned by the cleaner agent (permanent lessons preserved)."
+  },
+  "models": {
+    "researcher": "sonnet",
+    "analyst": "sonnet",
+    "planner": "opus",
+    "critic": "opus",
+    "executor": "opus",
+    "reviewer": "opus",
+    "learner": "sonnet",
+    "cleaner": "haiku",
+    "_doc": "Model assignment per worker role. Effort levels: opus=highest reasoning (planning, critique, execution, review), sonnet=standard (research, analysis, learning), haiku=minimal (cleanup). User installs may swap (e.g., executor: 'sonnet' for cost optimization). Skills read this config in their dispatch templates."
+  },
+  "triggers": {
+    "language": "both",
+    "_doc": "Slash-command trigger language: 'ko' (Korean only), 'en' (English only), 'both' (default — both Korean and English keywords trigger skills). See each skill's frontmatter description for trigger keyword lists."
+  },
+  "hooks": {
+    "profile": "standard",
+    "disabled": [],
+    "_doc": "Stop hook profile: 'off' (skip verification gate entirely — for analysis-only or trusted-pipeline sessions), 'lenient' (only invoke on explicit success claims like 'tests pass'), 'standard' (default — material-claim trigger as defined in hooks/hooks.json), 'strict' (invoke on any work-state assertion). disabled[] is a list of hook ids to skip individually (currently only Stop hook ships, but future PostToolUse/PreCompact hooks will respect this list). Honored by hook prompts via ATHANOR_HOOK_PROFILE / ATHANOR_DISABLED_HOOKS environment variables (set by Claude Code from this config)."
+  },
+  "review": {
+    "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
+    "minConfidence": 25,
+    "_doc": "/athanor:review skill default lenses dispatched in parallel (file-type filtering may narrow this). minConfidence (0-100 anchored rubric) suppresses findings below threshold during consolidation; raise to reduce noise, lower to surface speculative concerns. See agents/reviewer.md §Confidence Rubric."
+  }
+}
