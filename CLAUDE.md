@@ -91,7 +91,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **advisory (prompt-based)** — `hooks/hooks.json` Stop prompt fires on every Stop event; model self-classifies whether to invoke `verification-before-completion`. Plugin layer cannot force invocation. v0.7.8 upgrades to **enforced (command-based)** — see `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
+| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via the v0.7.7-derived English + Korean phrase whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=1 -->` so the hook detects its own evidence emission and exits 0 silently (no re-entry loop). `athanor.json` `hooks.profile: "off"` disables the gate per-project. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
@@ -114,31 +114,66 @@ this indicates quality degradation. Leader should re-dispatch with explicit "rea
 Note: Claude Code runtime enforces read-before-edit on Claude-based workers automatically;
 this rule still matters for Codex-based dispatches and other non-Claude runtimes.
 
-### Completion-Claim Verification (Stop hook — advisory, prompt-based)
+### Completion-Claim Verification (Stop hook — enforced, command-based)
 
-On every `Stop` event, athanor injects a prompt asking the active model to
-**self-classify** whether its preceding response contained a material claim
-(edits/tests/releases/migrations/deployments/verification-output). If so,
-the prompt asks the model to invoke the vendored
-`verification-before-completion` skill to produce fresh evidence.
+On every `Stop` event, Claude Code invokes `scripts/hooks/stop_verify_claims.py`
+(registered as `type: command` in `hooks/hooks.json`) with the Stop event
+JSON on stdin. The script:
 
-**Limitation:** This is a prompt nudge, not a runtime gate. The model decides
-whether the classification applies. A determined model can rationalize past
-the check ("my claim was just a tool-output summary, not material"). The
-plugin layer cannot force skill invocation in v0.7.7 — Claude Code did not
-expose a hook-can-block-Stop primitive at design time. The 2026-05-18 spike
-confirmed `type: "command"` Stop hooks with exit 2 DO block Stop and feed
-stderr back as continuation context (see `docs/STATE.md` §"Command-hook Stop
-blocking spike (2026-05-18)"). v0.7.8 upgrades this gate to a real command
-hook.
+1. Reads the payload; extracts `last_assistant_message`. Fail-open on
+   missing/unparseable stdin.
+2. Reads `hooks.profile` from `athanor.json`. If `"off"`, exits 0 silently
+   — the user has opted out of the runtime gate.
+3. Checks whether the response begins with the emission sentinel
+   `<!-- athanor:verification-emission v=1 -->` (anchored at the first
+   non-whitespace line). If yes, exits 0 silently to prevent re-entry on
+   the verification skill's own output.
+4. Greps the response body for material-claim phrases (English + Korean,
+   whitelist ported verbatim from the v0.7.7 prompt). On no match, exits 0.
+5. On match, exits 2 with stderr directing the model to invoke the
+   `verification-before-completion` skill. Claude Code feeds the stderr
+   back to the model as continuation context; the model must produce
+   fresh evidence before Stop succeeds.
+
+**Spike evidence:** the 2026-05-18 dry-run confirmed Claude Code honors
+`exit 2` from `type: command` Stop hooks (the user's intended next message
+never reached the model; instead the model received the stderr as system
+feedback). Full result in `docs/STATE.md` §"Command-hook Stop blocking
+spike (2026-05-18)".
+
+**Re-entry prevention:** the `verification-before-completion` skill is now
+contractually required to prefix every response with the v=1 sentinel
+(see `skills/verification-before-completion/SKILL.md` §"Emission Sentinel").
+The hook script matches the sentinel anchored at response-start (line 1,
+optional leading whitespace). Sentinels on line 2 or later do NOT count —
+that's the brittleness trade-off documented in the skill.
+
+**Per-project opt-out:** set `"hooks": {"profile": "off"}` in `athanor.json`
+to disable the gate. The script exits 0 unconditionally; no claim detection
+runs. `"standard"` (default) is the only other supported value;
+`lenient` / `strict` are deferred to a future release.
 
 - **Skill source:** `skills/verification-before-completion/SKILL.md` (MIT, vendored)
-- **Hook config:** `hooks/hooks.json` → Stop event, type `prompt`
-- **Scope:** fires on every Stop event; the model self-identifies whether its preceding turn contained a **material claim** before invoking the skill. Explicitly skipped categories: analysis, planning, opinions, research Q&A, and tool-output summaries.
+- **Hook config:** `hooks/hooks.json` → Stop event, type `command` → `scripts/hooks/stop_verify_claims.py`
+- **Detection scope:** material claims (edits applied / files
+  created-removed-renamed / tests passing-failing / lint-typecheck clean /
+  builds succeeding / bug fixed / requirements met / releases shipped /
+  migrations completed / deployments succeeded / agent task completed /
+  verification output) — English + Korean phrase whitelist. Explicitly
+  skipped (no exit 2): pure analysis, planning, design, opinions, research
+  Q&A, tool-output summaries that don't assert work status.
 
-**What it catches:** Honest in-distribution turns where the model would benefit from being reminded to verify. The prompt is well-tuned (see `hooks/hooks.json` for the material-claim whitelist with Korean parity).
+**What it catches:** material-claim turns without fresh evidence — the
+model must invoke the verification skill before Stop succeeds. Adversarial
+rationalization that previously bypassed the v0.7.7 prompt nudge now hits
+a runtime exit-2 gate.
 
-**What it does NOT catch:** Adversarial rationalization, novel claim phrasings outside the whitelist, or turns where the model decides the skill invocation is "obviously unnecessary." v0.7.8's command-hook upgrade addresses adversarial rationalization by gating at the runtime layer.
+**What it does NOT catch:** material claims phrased outside the whitelist
+(false negative — the whitelist mirrors v0.7.7's well-tuned set; expand
+deliberately, not greedily), or quoted historical references that contain
+trigger phrases (e.g., "the v0.7.6 docs claimed 'tests pass'"). Sentence-
+level attributed-history detection is v0.8.0+ work. Users encountering
+false positives can set `profile: "off"` as the escape hatch.
 
 ### Scope Drift Detection (on-demand skill — advisory)
 

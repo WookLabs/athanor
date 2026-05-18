@@ -4,14 +4,14 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.7.2 (Stop hook narrowing)
+## Current Phase: SHIPPING — v0.7.8 (Stop hook command-mode + re-entry sentinel)
 
-- 10 user-invocable skills (`setup`, `discuss`, `analyze`, `debug`, `deep-plan`, `plan`, `lite-plan`, `work`) + 2 internal vendored skills (`scope-drift`, `verification-before-completion`).
-- 7 worker agents (`analyst`, `cleaner`, `critic`, `executor`, `learner`, `planner`, `researcher`).
-- 1 hook (Stop, `type: prompt`) — narrowed to material-claim trigger (v0.7.2).
-- 5 regression test files / 18 pytest cases / 6 fixtures, all passing on Python 3.14.
+- 10 user-invocable skills + 2 internal vendored skills (`scope-drift`, `verification-before-completion` — v0.7.8 added §Emission Sentinel).
+- 7 worker agents.
+- 1 hook (Stop, **`type: command` as of v0.7.8** — invokes `scripts/hooks/stop_verify_claims.py` for runtime gating; exit 2 blocks Stop and feeds stderr to the model). v0.7.7 was the final prompt-mode release; v0.7.8 delivers the spike-promised enforcement upgrade.
+- Regression test suite passing on Python 3.x with `jsonschema` dependency. v0.7.7 added 41 tests; v0.7.8 adds 28 more (command-hook contract + script-decision-flow + doc-string contract refinements).
 - Release gate (`scripts/check_release_ready.py --ci`) green.
-- 3 active executable contracts: `stop-hook-liveness`, `hook-uniqueness`, `manifest-no-hooks-field`.
+- Active executable contracts: `stop-hook-command-contract` (replaces `stop-hook-liveness` from v0.7.2), `hook-uniqueness`, `manifest-no-hooks-field`, `schema-validates-config`, `schema-url-version-pin`, `session-lookup-convention`, `_doc-honesty` (split into models-deprecated + hooks-working-contract for v0.7.8).
 
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 
@@ -33,15 +33,22 @@
 - **v0.7.0**: 28-subtask `/athanor:work --team` 세션 (`2026-04-17-001`)으로 11개 contract 종결. CHANGELOG.md bootstrap (15개 historical tag), `scripts/check_release_ready.py`, 3개 regression fixture + pytest 도입, `/athanor:setup` self-audit Check #7–11 (vendoring-gate + regression invariants), `agents/cleaner.md` §Schema-Validation, `agents/learner.md` §On Release, `docs/DESIGN.md` §Agent Registration.
 - **v0.7.1**: PR #3 adversarial-review follow-up. `check_a_evidence`를 `## v<version>` anchor 기반 word-boundary regex로 강화, `scripts/gates/manifest_checks.py` 모듈로 hook 게이트 일원화 (3-way duplicate path 통합), `Path.resolve()`로 cross-platform 통일.
 - **v0.7.2**: Stop hook을 material-claim 트리거로 narrow. analysis/planning/research Q&A turn에서의 user-fatigue 제거. `fixture_narrowed_stop_prompt.json` + `test_current_hooks_contains_narrowed_gating_markers` 회귀 추가.
+- **v0.7.6 (2026-05-02)**: 5-agent ref deep-dive + Codex cross-validation. 최우선 contract-default `athanor.json` 파일 신설. `agents/reviewer.md` confidence-anchored review findings (CE persona reviewer pattern).
+- **v0.7.7 (2026-05-18)**: Truth-in-documentation release. Stop hook 라벨을 `enforced` → `advisory (prompt-based)`로 정직하게 demote, schema/template/config `_doc` 거짓 claim 시정, `schemas/athanor-config.schema.json` (draft-07) 신설 + `$schema` URL을 release tag pin, `templates/athanor.json` 추출 + setup이 읽도록 변경, 6개 session-touching skill을 CLAUDE.md §Session Lookup Convention canonical rule로 정렬, `plan/SKILL.md` Step 3/4 intro tier-aware 재작성, `plan/discuss` skill에 `codex.enabled` + `codex.fallback` matrix 도입. 41 regression test 추가. PR #10 dual review (Opus + Codex)로 `_doc` 거짓 claim 잔존 catch + commit 6fdbd05로 시정.
+- **v0.7.8 (2026-05-18)**: 스파이크-약속 enforcement upgrade. Stop hook이 `type: prompt` → `type: command`로 전환, `scripts/hooks/stop_verify_claims.py`가 stdin payload를 읽어 material-claim detection 수행 (English + Korean whitelist v0.7.7 prompt에서 verbatim 포팅) + exit 2로 Stop 차단, stderr가 모델 컨텍스트로 피드백. `verification-before-completion` skill에 §Emission Sentinel 추가 (`<!-- athanor:verification-emission v=1 -->` 응답 prefix로 hook이 re-entry 방지). `hooks.profile`의 `off`/`standard` 값만 honoured (`lenient`/`strict`는 deferred), `hooks.disabled[]` orphan 키 삭제. CLAUDE.md 라벨 `advisory (prompt-based)` → `enforced (command-based)`로 재승급. PR #10 dual-review에서 catch한 Major 4건 (Step 2 tier prose, Deep-tier 2-input Critic, /work review-skipped marker, analyze:301 today residual) 함께 처리.
 
 ## Live invariants (현 시점 contract status)
 
 | Contract | 상태 | 보호 위치 |
 |---|---|---|
-| `stop-hook-liveness` | ✅ enforced | `tests/test_regression_stop_prompt.py` |
+| `stop-hook-command-contract` | ✅ enforced (v0.7.8 — runtime gate via `type: command` + exit 2) | `tests/test_regression_stop_command_hook.py` (registration) + `tests/test_regression_stop_hook_script.py` (decision flow) |
 | `hook-uniqueness` | ✅ enforced | `tests/test_regression_hook_uniqueness.py`, `scripts/gates/manifest_checks.py::hook_uniqueness_check` |
 | `manifest-no-hooks-field` | ✅ enforced | `tests/test_regression_manifest_hooks.py`, `scripts/gates/manifest_checks.py::duplicate_hooks_path_check` |
 | `check_a_evidence` (release-time) | ✅ enforced | `scripts/check_release_ready.py::check_a_evidence` (word-boundary regex) |
+| `schema-validates-config` (v0.7.7) | ✅ enforced | `tests/test_regression_schema_validates_config.py` |
+| `schema-url-version-pin` (v0.7.7) | ✅ enforced | `tests/test_regression_schema_url_version_pin.py` |
+| `session-lookup-convention` (v0.7.7) | ✅ enforced | `tests/test_regression_session_lookup_convention.py` |
+| `_doc-honesty` (v0.7.7+v0.7.8) | ✅ enforced | `tests/test_regression_doc_string_honesty.py` (models deprecated; hooks working contract) |
 | `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
 | `contract-ledger` presence | ⚠️ user-install 환경에서 항상 fail | `/athanor:setup` Check #11. fresh-checkout 분기 필요 (개선 후보) |
 | `learner-on-release` | ⚠️ contract만 있음 | `agents/learner.md` §On Release. 자동 트리거 없음 |

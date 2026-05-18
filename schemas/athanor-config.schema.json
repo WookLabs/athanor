@@ -149,19 +149,13 @@
     "hooks": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Hook configuration. NOTE: `profile` and `disabled` are deprecated and scheduled for deletion in v0.7.8 (the runtime does not currently honor them). Treat them as advisory until then.",
+      "description": "Stop hook configuration. As of v0.7.8, profile is honored at runtime by scripts/hooks/stop_verify_claims.py. `disabled[]` was removed in v0.7.8 (orphan in v0.7.7).",
       "properties": {
         "_doc": { "type": "string" },
         "profile": {
-          "deprecated": true,
           "type": "string",
-          "description": "DEPRECATED (v0.7.8 deletion target) — currently NOT honored at runtime. See plan §4 C2."
-        },
-        "disabled": {
-          "deprecated": true,
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "DEPRECATED (v0.7.8 deletion target) — currently NOT honored at runtime. See plan §4 C2."
+          "enum": ["off", "standard"],
+          "description": "Stop hook gate mode: 'off' disables the gate (script exits 0 silently); 'standard' (default) enables full material-claim detection. Unknown values fall back to standard with a stderr warning at runtime. 'lenient' and 'strict' are not yet supported (deferred per plan §10)."
         }
       }
     },
