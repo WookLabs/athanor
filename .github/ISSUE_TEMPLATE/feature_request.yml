@@ -1,0 +1,68 @@
+name: Feature request
+description: Propose a new skill, agent role, hook, dispatch policy, or config option.
+title: "feat: <short description>"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a feature request, please skim `docs/ROADMAP.md` and existing
+        issues to avoid duplicates. Athanor's design favors small, composable additions
+        over large new surfaces.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What real workflow does this address? What goes wrong today without it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: |
+        Concrete shape of the addition. Which file(s), which skill, which agent.
+        If it touches `athanor.json`, propose the schema fragment.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      multiple: true
+      options:
+        - new skill (`skills/<name>/SKILL.md`)
+        - new agent role (`agents/<name>.md`)
+        - new hook (`hooks/hooks.json`)
+        - new config key (`athanor.json`)
+        - new lens for /athanor:review
+        - new dispatch mode for /athanor:work
+        - documentation / convention change
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any simpler shape that would also work, and why the proposed one wins.
+
+  - type: textarea
+    id: compat
+    attributes:
+      label: Backward compatibility
+      description: |
+        Does this break existing `athanor.json` files, session artifacts, or
+        downstream consumers? If yes, propose the migration path.
+
+  - type: textarea
+    id: refs
+    attributes:
+      label: References
+      description: |
+        Links to prior art in other plugins (superpowers, compound-engineering, GSD,
+        gstack, ECC, BMAD, etc.) that informed the proposal.

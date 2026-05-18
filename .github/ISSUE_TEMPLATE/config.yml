@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/WookLabs/athanor/security/advisories/new
+    about: Report security issues privately. See SECURITY.md for scope and fallback channel.
+  - name: How it works (read first)
+    url: https://github.com/WookLabs/athanor/blob/main/docs/DESIGN.md
+    about: docs/DESIGN.md and docs/CONVENTIONS.md answer most "how does it work" questions before opening an issue.
