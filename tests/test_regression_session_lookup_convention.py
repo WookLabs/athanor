@@ -104,11 +104,17 @@ def test_no_skill_uses_old_today_prose():
     `today's date` (literal) MAY appear in the canonical stale-session
     announcement wording — that is canonical, not the bug. The forbidden
     forms are the older prose patterns that caused drift between skills.
+
+    v0.7.8 widens the blocklist to include the paraphrase `earlier today`
+    (PR #10 dual review caught the analyze:301 escapee that v0.7.7's
+    narrower blocklist missed).
     """
     forbidden = [
         "matching today's date",
         "most recent today",
         "existing session from today",
+        "earlier today",
+        "user ran /athanor",  # any "user ran /athanor:<x> ... today" variant
     ]
     offenders = []
     for skill in SESSION_SKILLS:
@@ -119,6 +125,6 @@ def test_no_skill_uses_old_today_prose():
                 offenders.append((skill, phrase))
     assert not offenders, (
         "Found OLD per-skill 'today' prose (forbidden by v0.7.7 M4 "
-        f"canonical-lookup rule): {offenders}. "
+        f"canonical-lookup rule, widened in v0.7.8 PR #10 review): {offenders}. "
         "Defer to CLAUDE.md §Session Lookup Convention instead."
     )

@@ -35,6 +35,24 @@ This is the ONLY Athanor command that modifies project files (via workers).
    (The Step 0.5 resume guard below still runs on `<LATEST>` regardless of date.)
 2. Read plan.md — verify it exists; do NOT yet parse subtasks
    (Step 0.5 will handle splitter/guard logic).
+2a. **Detect review-skipped marker.** If the first line of `plan.md` is the
+    literal HTML header comment `<!-- athanor:review-skipped -->`, the plan
+    was produced with `codex.fallback=skip` and no Critic refinement pass
+    (see `skills/plan/SKILL.md` §Step 4 standard-tier pass-through and the
+    deep-tier 2-input variant). Announce verbatim:
+    ```
+    ⚠ Working from an unreviewed plan (review_strategy=none).
+      The plan was generated without a Critic refinement pass.
+      Consider running /athanor:review on it before executing risky changes.
+      Proceeding — interrupt to switch to /athanor:plan and rerun with
+      codex_available=true if available.
+    ```
+    Bash reference:
+    ```bash
+    head -1 .athanor/sessions/<LATEST>/plan.md | grep -Fq '<!-- athanor:review-skipped -->'
+    ```
+    Continue with the normal Step 0 / 0.5 flow regardless — the announcement
+    is advisory, not blocking.
 3. Check for work-log.md existence (needed by Step 0.5 resume guard).
 4. Determine mode:
    - If user specified `--solo` or `--team` → use that
