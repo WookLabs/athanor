@@ -33,28 +33,58 @@ hosts, Claude Code's plugin runtime resolves `python3` via the installed
 Python distribution; the GitHub Actions Python setup-action handles this for
 CI. Pure-Python (no jq dependency).
 
-Known limitations (see docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-
-command-mode-plan.md §11 Risk Analysis and the v0.7.8 PR code review):
-  - Sentinel forgery: a determined model can emit the sentinel as line 1
-    without actually invoking verification. Fix requires evidence-binding
-    (transcript event check, HMAC) — design work deferred to v0.7.9+.
-  - Paraphrase evasion: literal-substring matching catches the whitelist;
-    paraphrases ("CI is green", "verified the suite") slip through. Closing
-    requires regex/semantic patterns — deferred.
-  - Parent-directory athanor.json hijack: walk-up resolution will silently
-    apply an ancestor's `profile: off`. Fix requires explicit project-root
-    resolution — deferred.
+v0.7.9 hardening (docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md):
+  - Sentinel forgery (sec-001): v=2 nonce-bound protocol. The verification
+    skill writes {nonce, body_hash, timestamp} via scripts/hooks/sentinel_helper.py;
+    this script validates all three before exiting 0. v=1 bare-string sentinels
+    are rejected (fall through to material-claim check). Forgery cost raised
+    from "emit one string" to "write JSON with matching hash + emit sentinel".
+  - Parent-dir hijack (sec-002): config resolution priority is $CLAUDE_PROJECT_DIR
+    → git-root → walk-up-stops-at-.git. Never crosses .git/ boundary upward.
+  - Paraphrase bypass (sec-003): is_material_claim now layers regex pattern
+    matching (verb-anchor) + unicode normalization (NFKC + confusables fold)
+    on top of the v0.7.8 literal substring whitelist.
+  - Cyrillic homoglyph (ADV-006): closed by the unicode normalization step.
+  - Sentinel-loop circuit breaker (rel-001): consecutive exit-2 blocks per
+    session are counted; after hooks.stopLoopThreshold (default 3), the gate
+    releases (exit 0) with a stderr warning to prevent infinite loops.
+
+Residual known limitations (deferred):
+  - A model with file-system access can write its own nonce state and emit
+    matching sentinel — bypass cost raised but not eliminated. v0.8.0+ via
+    Claude Code transcript-event introspection.
+  - Mid-session profile mutation (model writes athanor.json mid-turn) is not
+    guarded.
+  - LLM-class paraphrase patterns not covered by regex layer.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
-# Sentinel prefix: emission marker from skills/verification-before-completion/SKILL.md.
-# Anchored at start of last_assistant_message (first non-whitespace line).
-SENTINEL_PATTERN = re.compile(r"^\s*<!--\s*athanor:verification-emission\s+v=")
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+import hook_state  # noqa: E402
+
+# v=2 sentinel: nonce-bound, SHA-256 body hash, TTL-checked.
+# Anchored at first non-whitespace line of last_assistant_message.
+SENTINEL_PATTERN = re.compile(
+    r"^\s*<!--\s*athanor:verification-emission\s+v=2\s+nonce=([a-f0-9]{32})\s*-->",
+    re.IGNORECASE,
+)
+# Legacy v=1 detector — used only to emit a deprecation stderr warning so
+# users running mixed v0.7.8 ↔ v0.7.9 skill versions get a clear signal.
+LEGACY_V1_PATTERN = re.compile(
+    r"^\s*<!--\s*athanor:verification-emission\s+v=1\s*-->",
+    re.IGNORECASE,
+)
+ACTIVE_SESSION = hook_state.__dict__.get("ACTIVE_SESSION", "active")
 
 # Material-claim phrase whitelist — ported verbatim from the v0.7.7 prompt
 # in hooks/hooks.json (commit 999d747 v0.7.2 narrowed gating + v0.7.5
@@ -265,15 +295,64 @@ def _read_profile() -> tuple[str, Path | None]:
     return (profile, config_path)
 
 
-def has_emission_sentinel(message: str) -> bool:
-    """True iff the message's first non-whitespace line is the verification
-    emission sentinel `<!-- athanor:verification-emission v=N -->`."""
+def validate_emission_sentinel(message: str) -> bool:
+    """True iff `message` is a valid v=2 sentinel-bound verification response.
+
+    v=2 protocol (athanor v0.7.9):
+      1. Sentinel `<!-- athanor:verification-emission v=2 nonce=<32-hex> -->`
+         must be the first non-whitespace line.
+      2. The nonce must match the state file at
+         `.athanor/sessions/active/.hook-state/nonce.json`.
+      3. State timestamp must be within NONCE_TTL_SECONDS (60s).
+      4. SHA-256 of the message body AFTER the sentinel line must match the
+         stored `body_hash` from the verification skill's emit step.
+      5. On all-pass: atomic-delete the state file (one-shot) and return True.
+      6. On any-fail: return False; main() falls through to material-claim
+         check and exits 2 if a claim is detected.
+
+    Legacy v=1 sentinels are rejected (logged via stderr) — they were
+    trivially forgeable in v0.7.8.
+    """
     if not message:
         return False
-    # Match the sentinel only at the start of the message (allowing leading
-    # whitespace). A sentinel placed on line 2 after a greeting/heading does
-    # NOT count — that's the brittleness trade-off documented in the skill.
-    return bool(SENTINEL_PATTERN.match(message))
+    # v=1 legacy detection (emit deprecation warning; don't accept).
+    if LEGACY_V1_PATTERN.match(message):
+        _stderr(
+            "rejected legacy v=1 sentinel — v0.7.9 requires v=2 nonce-bound "
+            "format. Update your verification skill or upgrade vendored copy."
+        )
+        return False
+    m = SENTINEL_PATTERN.match(message)
+    if not m:
+        return False
+    nonce_in_msg = m.group(1).lower()
+    state = hook_state.read_nonce_state(ACTIVE_SESSION)
+    if state is None:
+        return False  # No state — likely forgery attempt
+    if not hook_state.is_nonce_fresh(state):
+        _stderr("nonce state is stale (TTL exceeded); falling through")
+        return False
+    stored_nonce = state.get("nonce", "")
+    if not isinstance(stored_nonce, str) or stored_nonce.lower() != nonce_in_msg:
+        _stderr("nonce mismatch — sentinel rejected")
+        return False
+    # Extract body after the sentinel line and verify SHA-256.
+    body_after = message[m.end():]
+    # The helper hashed exactly what was piped in. The skill must emit
+    # that same body byte-for-byte AFTER the sentinel line. Allow one
+    # trailing newline between sentinel and body (markdown rendering quirks).
+    body_canonical = body_after.lstrip("\n")
+    actual_hash = hashlib.sha256(body_canonical.encode("utf-8")).hexdigest()
+    stored_hash = state.get("body_hash", "")
+    if not isinstance(stored_hash, str) or actual_hash != stored_hash:
+        _stderr(
+            "body hash mismatch — sentinel rejected. The response body after "
+            "the sentinel does not match what was piped to sentinel_helper.py."
+        )
+        return False
+    # One-shot: delete state so this nonce cannot be replayed.
+    hook_state.delete_nonce_state(ACTIVE_SESSION)
+    return True
 
 
 def is_material_claim(message: str) -> bool:
@@ -296,6 +375,32 @@ def is_material_claim(message: str) -> bool:
         if phrase in message:
             return True
     return False
+
+
+def _read_stop_loop_threshold() -> int:
+    """Read `hooks.stopLoopThreshold` from athanor.json or default."""
+    config_path = _find_athanor_config()
+    if config_path is None:
+        return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
+    if not isinstance(data, dict):
+        return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
+    hooks_section = data.get("hooks", {})
+    if not isinstance(hooks_section, dict):
+        return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
+    threshold = hooks_section.get("stopLoopThreshold")
+    if not isinstance(threshold, int) or threshold < 1:
+        if threshold is not None:
+            _stderr(
+                f"invalid hooks.stopLoopThreshold {threshold!r}; "
+                f"using default {hook_state.DEFAULT_STOP_LOOP_THRESHOLD}"
+            )
+        return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
+    return threshold
 
 
 def main() -> int:
@@ -328,12 +433,31 @@ def main() -> int:
         _stderr("last_assistant_message is empty; passing (fail-open)")
         return 0
 
-    if has_emission_sentinel(last_msg):
+    if validate_emission_sentinel(last_msg):
+        # v=2 sentinel validated — verification skill output. Reset counter.
+        hook_state.reset_stop_counter(ACTIVE_SESSION)
         return 0  # silent re-entry skip
 
     if not is_material_claim(last_msg):
         return 0  # no material claim; nothing to gate
 
+    # Material claim present → check circuit breaker before blocking.
+    threshold = _read_stop_loop_threshold()
+    counter = hook_state.read_stop_counter(ACTIVE_SESSION)
+    if counter >= threshold:
+        # Circuit breaker opens — release the loop.
+        _stderr(
+            f"circuit breaker open after {counter} consecutive blocks "
+            f"(threshold={threshold}) — gate releasing this turn. If you keep "
+            f"hitting this, the verification skill may be misconfigured or your "
+            f"model is consistently producing material claims without invoking it. "
+            f"Set hooks.profile=\"off\" in athanor.json to disable the gate, or "
+            f"raise hooks.stopLoopThreshold to allow more retries."
+        )
+        hook_state.reset_stop_counter(ACTIVE_SESSION)
+        return 0
+
+    hook_state.write_stop_counter(ACTIVE_SESSION, counter + 1)
     _stderr(
         "material claim detected in last response without fresh verification "
         "evidence. Invoke the `verification-before-completion` skill NOW to "

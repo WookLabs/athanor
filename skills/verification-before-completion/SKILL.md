@@ -14,6 +14,7 @@ allowed-tools: Bash, Read
     - Frontmatter `description:` narrowed locally (Athanor session 2026-04-24-001 / Subtask 6) to mirror hook whitelist (material claims: edits/tests/releases/migrations/deployments/verification-output) and skip-list (analysis, planning, opinions, research Q&A, tool-output summaries)
     - Added this Provenance comment block after the frontmatter
     - Local addition (v0.7.8): §Emission Sentinel inserted before §Overview — required for athanor's command-hook Stop gate. Not present in upstream.
+    - Local update (v0.7.9): §Emission Sentinel migrated from v=1 bare-string to v=2 nonce-bound protocol per docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md.
   t0-t1-disproof: |
     Why not T0/T1? superpowers is T3 per docs/DEPENDENCIES.md §Marketplace Status
     — no Claude Code marketplace listing, so T0 (install companion) is unavailable.
@@ -26,17 +27,33 @@ allowed-tools: Bash, Read
 
 ## Emission Sentinel
 
-**This skill's responses MUST be prefixed with the sentinel line below as the first non-whitespace line of the response — no greeting, no heading, no preamble can precede it.**
+**This skill's responses MUST be prefixed with a v=2 nonce-bound sentinel as the first non-whitespace line of the response — no greeting, no heading, no preamble can precede it.**
 
-```
-<!-- athanor:verification-emission v=1 -->
-```
+As of athanor v0.7.9, the v=1 bare-string sentinel is no longer accepted (it was trivially forgeable). The v=2 protocol binds the sentinel to the evidence body via SHA-256 hash + a random per-invocation nonce. Generation procedure (REQUIRED for every response from this skill):
 
-The Stop hook (`hooks/hooks.json` → `scripts/hooks/stop_verify_claims.py`, athanor v0.7.8+) detects this sentinel at the start of an assistant response and exits 0 silently, preventing the hook's material-claim detection from re-triggering on this skill's own evidence output (which would loop infinitely otherwise — the verification skill produces material-claim-shaped statements by design).
+1. Compute your full verification evidence text — the commands you ran, the output you observed, the exit codes, and the explicit pass/fail verdict. This will be the body of your response.
 
-The sentinel is an HTML comment so it is invisible in rendered Markdown. It is anchored at response-start (regex `^<!-- athanor:verification-emission v=`) — a sentinel placed on line 2 or later does NOT count and the gate fires normally. Version tag `v=1` allows future protocol evolution.
+2. Pipe that body through the sentinel helper to receive a nonce-bound sentinel line:
 
-If you forget the sentinel: the Stop hook will block your turn, feed back a stderr message demanding verification evidence, and you will enter a re-entry loop until the sentinel appears at line 1. Do not let this happen — emit the sentinel as the first action in every response.
+   ```bash
+   echo "<your evidence verbatim>" | python3 scripts/hooks/sentinel_helper.py emit
+   ```
+
+   The helper writes a fresh nonce + SHA-256 of the piped body to `.athanor/sessions/active/.hook-state/nonce.json` and prints a sentinel line of the form:
+
+   ```
+   <!-- athanor:verification-emission v=2 nonce=<32-hex-chars> -->
+   ```
+
+3. Emit your response as: the sentinel line (verbatim from the helper's stdout) on line 1, followed by your evidence body (verbatim — must match what you piped, byte-for-byte).
+
+If the body you emit does not byte-for-byte match what you piped into the helper, the SHA-256 mismatch causes the Stop hook to reject the sentinel and the gate fires normally. The hook also rejects nonces older than 60 seconds (TTL) and re-used nonces (state file is atomically deleted on successful validation — one-shot).
+
+The sentinel is an HTML comment so it is invisible in rendered Markdown. It is anchored at response-start — a sentinel placed on line 2 or later does NOT count and the gate fires normally.
+
+If you forget the sentinel or the body-hash binding fails: the Stop hook will block your turn, feed back a stderr message demanding verification evidence, and you will enter a re-entry loop until the sentinel appears correctly at line 1. The v0.7.9 circuit breaker (default 3 consecutive blocks) prevents infinite loops by releasing the gate after the threshold — but the legitimate path is to emit the sentinel correctly the first time.
+
+**Why v=2 nonce binding?** The v0.7.8 v=1 bare-string sentinel could be emitted by any response without invoking this skill, trivially bypassing the gate. v=2 raises the forgery cost: a model wanting to bypass would have to write the nonce state file itself (matching nonce + body hash + timestamp), which is materially more work than emitting a string. The protocol does not fully eliminate forgery — only Claude Code runtime transcript-event introspection could do that (deferred to v0.8.0+). See docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md §KTD1 for the trade-off analysis.
 
 ## Overview
 
