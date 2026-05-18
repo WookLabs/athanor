@@ -3,6 +3,161 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.8] — 2026-05-18
+
+**Stop hook command-mode release — the v0.7.7-promised enforcement upgrade.**
+v0.7.7 demoted the Stop hook label from "enforced" to "advisory (prompt-based)"
+because the implementation was a prompt nudge, not a runtime gate, and promised
+v0.7.8 would deliver real enforcement (per the 2026-05-18 spike PASS). This
+release delivers it: `hooks/hooks.json` now registers `type: command` invoking
+`scripts/hooks/stop_verify_claims.py`, which reads the Stop event payload,
+detects material claims, and exits 2 to block Stop with stderr fed back to the
+model as continuation context.
+
+Same security-honesty framing as v0.7.7 — we said v0.7.8 would deliver
+enforcement; v0.7.8 delivers it. If the spike had failed (`exit 2` didn't
+actually block), this release would have shipped an honest "no, the runtime
+doesn't support it yet" instead. The spike PASSED, so the upgrade is real.
+
+Session: `2026-05-18-001` (continuation of v0.7.7 session). Plan:
+`docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md`.
+
+### Why this release
+
+Three threads converge:
+
+1. **v0.7.7 promised it.** CLAUDE.md and CHANGELOG both stated v0.7.8 would
+   re-promote the label to `enforced (command-based)` if the spike confirmed
+   the runtime contract. Not delivering would be a fresh trust-erosion event
+   identical to the one v0.7.7 fixed.
+2. **The spike PASSED.** Empirically verified (`docs/STATE.md` §"Command-hook
+   Stop blocking spike (2026-05-18)") that Claude Code runtime honors
+   `type: command` Stop hooks with `exit 2` and feeds stderr back as model
+   continuation context.
+3. **PR #10 dual review caught 4 Majors v0.7.7 deferred.** Bundling them here
+   keeps the residual list closed rather than letting it grow.
+
+### Added
+
+- `scripts/hooks/stop_verify_claims.py` (replaces v0.7.7 spike no-op stub) —
+  production Stop-hook gate script. Reads stdin (Stop event JSON), extracts
+  `last_assistant_message`, checks `hooks.profile` (off → exit 0 silently;
+  unknown → fail-open with stderr warning), checks emission sentinel
+  anchored at response-start (skip on match), runs material-claim detection
+  via English + Korean phrase whitelist ported verbatim from the v0.7.7
+  prompt, exits 2 with stderr directing the model to invoke
+  `verification-before-completion`.
+- `skills/verification-before-completion/SKILL.md` §"Emission Sentinel" —
+  required prefix `<!-- athanor:verification-emission v=1 -->` (HTML
+  comment, invisible in rendered Markdown, anchored at first non-whitespace
+  line). Hook script detects and exits 0 to prevent re-entry loops on the
+  skill's own evidence output. Versioned (v=1) for forward compatibility.
+- `tests/test_regression_stop_command_hook.py` (7 tests) — hooks.json
+  registration contract (`type=command`, command field, script existence
+  + executable bit, no leftover prompt-type hook).
+- `tests/test_regression_stop_hook_script.py` (21 tests) — script decision
+  flow with synthetic stdin (empty/unparseable, English + Korean material
+  claims, sentinel anchoring including line-2-not-detected, version-tag
+  forward-compat, profile=off opt-out, profile=standard engagement,
+  unknown-profile fallback warning, missing athanor.json default,
+  two-turn re-entry prevention).
+- `docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md`
+  — full implementation plan covering U1-U12 with KTDs, risks, phased
+  delivery, and rollback notes.
+
+### Changed
+
+- **M1 (re-promote)** — CLAUDE.md status table row and §Completion-Claim
+  Verification subsection re-promoted from `advisory (prompt-based)` to
+  `enforced (command-based)`. Subsection rewritten to describe the 5-step
+  decision flow, cite the spike evidence, document the sentinel mechanism,
+  and surface the `hooks.profile: "off"` per-project opt-out.
+  `tests/test_regression_claude_md_honesty.py` retargeted: now asserts the
+  v0.7.8 contract (enforced label, script path cited, sentinel mentioned,
+  opt-out documented, spike cited). The v0.7.6 false phrase "Enforced at
+  plugin layer" remains forbidden — that exact phrasing was a lie even
+  though "enforced (command-based)" is now true.
+- **C2 (configurable)** — `hooks.profile` is now consumed by the gate script.
+  Schema enum tightened to `["off", "standard"]` (lenient/strict deferred
+  per plan §10). `hooks._doc` rewritten to describe the working contract
+  (cites the script, both profiles, fail-open on unknown values).
+  `tests/test_regression_doc_string_honesty.py` split: `models._doc`
+  retains the v0.7.7 DEPRECATED-lead invariant; `hooks._doc` switches to
+  a working-contract invariant.
+- **`hooks/hooks.json`** — Stop entry converted from `type: prompt`
+  (v0.7.7) to `type: command` invoking
+  `python3 scripts/hooks/stop_verify_claims.py`.
+- **PR #10 review residuals** (4 Majors):
+  - **U8** — `skills/plan/SKILL.md` Step 2 intro tier-aware (parallel to
+    v0.7.7 Step 3/4 fix). "Dispatch TWO planners simultaneously" replaced
+    with explicit Deep/Standard/Lite preamble.
+  - **U9** — `skills/plan/SKILL.md` deep-tier 2-input Critic variant.
+    Previous 4-input block silently malformed when `review_strategy=none`.
+    New `#### Deep Tier: 2-Input Synthesis Critic (when review_strategy ==
+    none)` subsection with concrete dispatch prompt reading only the two
+    plans and prepending the review-skipped header.
+  - **U10** — `skills/work/SKILL.md` detects `<!-- athanor:review-skipped -->`
+    marker prepended to `plan.md` by U9 (and v0.7.7 standard-tier pass-
+    through). Announces `⚠ Working from an unreviewed plan` advisory
+    before proceeding.
+  - **U11** — `skills/analyze/SKILL.md:301` residual "earlier today"
+    prose replaced with canonical Session Lookup Convention reference.
+    `tests/test_regression_session_lookup_convention.py` blocklist widened
+    to catch `earlier today` and `user ran /athanor` paraphrases.
+- **`docs/STATE.md`** — Current Phase header bumped to v0.7.8, Live
+  invariants table updated (stop-hook-command-contract replaces
+  stop-hook-liveness; schema/template/_doc/session-lookup contracts added),
+  History section appended with v0.7.6 / v0.7.7 / v0.7.8 summaries (file
+  had been frozen at v0.7.2).
+
+### Removed
+
+- `hooks.disabled[]` from `athanor.json` + `templates/athanor.json` +
+  `schemas/athanor-config.schema.json`. The key was unread in v0.7.7
+  (marked deprecated in schema) and is now formally gone.
+- `tests/test_regression_stop_prompt.py` — its `type: prompt` invariant
+  is obsolete after the v0.7.8 contract change. Replaced atomically by
+  `tests/test_regression_stop_command_hook.py` in the same commit. The
+  legacy fixture `tests/fixtures/fixture_wrong_stop_prompt.json` is
+  preserved as historical regression evidence.
+
+### Migration
+
+- **For users who set `hooks.profile`** to a non-default value in v0.7.7:
+  - `"off"` — fully honored in v0.7.8; the script exits 0 silently. Same
+    semantic as "no Stop gate"; you keep your opt-out.
+  - `"standard"` — fully honored; same as default. No action.
+  - `"lenient"` or `"strict"` — these values had no effect in v0.7.7
+    (orphan config). v0.7.8 logs a stderr warning at every Stop event:
+    `unknown hooks.profile value '<X>'; treating as 'standard'`. To
+    silence the warning, set the value to `"off"` or `"standard"`
+    explicitly, or remove the field. The values themselves remain
+    deferred per plan §10.
+- **For users with `hooks.disabled` in their config**: the key was
+  always orphan; v0.7.8 schema rejects it via `additionalProperties:
+  false`. Remove the field from your `athanor.json`. CHANGELOG entry
+  in v0.7.7 already flagged this as the deprecation target.
+- **For workflows depending on the v0.7.7 prompt-mode hook**: the
+  trigger surface (claim phrases) is identical between v0.7.7 prompt
+  mode and v0.7.8 command mode — the script's whitelist is a verbatim
+  port of the prompt's whitelist. Behavioral difference: v0.7.8 blocks
+  Stop with exit 2 (vs. v0.7.7 nudging the model via prompt injection).
+  Recoverable: invoke the verification skill (with the new emission
+  sentinel) to satisfy the gate.
+
+### CI
+
+- `.github/workflows/validate-plugin.yml` unchanged from v0.7.7 (the
+  hook-script behavior tests are pure-Python with synthetic stdin —
+  fully portable on the existing ubuntu-latest + windows-latest matrix).
+
+### Spike result reference
+
+`docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)" remains
+the authoritative empirical record. v0.7.7 forward-referenced it; v0.7.8
+fulfills the forward-reference. The spike entry now has a companion
+v0.7.8-landed history note in the same file.
+
 ## [0.7.7] — 2026-05-18
 
 **Truth-in-documentation release.** Discovered that several documented
