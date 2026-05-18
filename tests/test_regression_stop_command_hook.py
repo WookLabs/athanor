@@ -25,7 +25,10 @@ import json
 import os
 import re
 import stat
+import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOOKS_JSON = REPO_ROOT / "hooks/hooks.json"
@@ -83,6 +86,16 @@ def test_stop_handler_script_file_exists():
     assert HOOK_SCRIPT.is_file(), f"Hook script not found at {HOOK_SCRIPT}"
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" or os.name == "nt",
+    reason=(
+        "Executable bits are POSIX-only. On Windows, .py files are executed "
+        "via the Python interpreter resolved through PATHEXT/the py launcher, "
+        "not via a file-permission bit. The hooks.json command is "
+        "`python3 scripts/hooks/...` regardless of platform; the script's "
+        "POSIX execute bit only matters on Linux/macOS hosts."
+    ),
+)
 def test_stop_handler_script_is_executable():
     """The script must be executable (chmod +x) so the command invocation works."""
     mode = HOOK_SCRIPT.stat().st_mode
