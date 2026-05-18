@@ -26,12 +26,19 @@ pattern: you do NOT read files, trace code, or analyze anything yourself.
 > **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
 
 1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
-2. Check for an existing session from today:
-   - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, check if `work-log.md` exists inside it
-     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
-     - If `work-log.md` does not exist → reuse (same pipeline in progress)
-   - If none exists, create new: `{today}-{max_NNN + 1}`
+2. Find the active session using the canonical lookup rule from
+   `CLAUDE.md` §Session Lookup Convention. Bash reference (skills MAY embed inline):
+   ```bash
+   LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+     | sort | tail -1)
+   ```
+   `/athanor:analyze` reuses `<LATEST>` as read-only / append intent — it does NOT
+   create a new session even if `work-log.md` is present in `<LATEST>`.
+   If `<LATEST>` date != today's date, announce:
+   `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
+   If no matching directory exists, this is the first session — create
+   `{today}-001` (where `{today}` is `YYYY-MM-DD`).
 3. Ensure session directory exists.
 
 ### Step 1: Parse Scope & Determine Analysis Type
