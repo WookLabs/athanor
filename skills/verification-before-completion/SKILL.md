@@ -13,6 +13,7 @@ allowed-tools: Bash, Read
     - Frontmatter `name:` preserved unchanged
     - Frontmatter `description:` narrowed locally (Athanor session 2026-04-24-001 / Subtask 6) to mirror hook whitelist (material claims: edits/tests/releases/migrations/deployments/verification-output) and skip-list (analysis, planning, opinions, research Q&A, tool-output summaries)
     - Added this Provenance comment block after the frontmatter
+    - Local addition (v0.7.8): §Emission Sentinel inserted before §Overview — required for athanor's command-hook Stop gate. Not present in upstream.
   t0-t1-disproof: |
     Why not T0/T1? superpowers is T3 per docs/DEPENDENCIES.md §Marketplace Status
     — no Claude Code marketplace listing, so T0 (install companion) is unavailable.
@@ -22,6 +23,20 @@ allowed-tools: Bash, Read
 
 
 # Verification Before Completion
+
+## Emission Sentinel
+
+**This skill's responses MUST be prefixed with the sentinel line below as the first non-whitespace line of the response — no greeting, no heading, no preamble can precede it.**
+
+```
+<!-- athanor:verification-emission v=1 -->
+```
+
+The Stop hook (`hooks/hooks.json` → `scripts/hooks/stop_verify_claims.py`, athanor v0.7.8+) detects this sentinel at the start of an assistant response and exits 0 silently, preventing the hook's material-claim detection from re-triggering on this skill's own evidence output (which would loop infinitely otherwise — the verification skill produces material-claim-shaped statements by design).
+
+The sentinel is an HTML comment so it is invisible in rendered Markdown. It is anchored at response-start (regex `^<!-- athanor:verification-emission v=`) — a sentinel placed on line 2 or later does NOT count and the gate fires normally. Version tag `v=1` allows future protocol evolution.
+
+If you forget the sentinel: the Stop hook will block your turn, feed back a stderr message demanding verification evidence, and you will enter a re-entry loop until the sentinel appears at line 1. Do not let this happen — emit the sentinel as the first action in every response.
 
 ## Overview
 
