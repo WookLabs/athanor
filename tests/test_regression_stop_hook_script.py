@@ -323,6 +323,74 @@ def test_missing_athanor_json_defaults_to_standard(tmp_path):
     assert rc == 2
 
 
+# --- v0.7.9 U4: config resolution priority ($CLAUDE_PROJECT_DIR, git-root, walk-stops-at-git)
+
+
+def test_claude_project_dir_env_var_honored(tmp_path):
+    """When $CLAUDE_PROJECT_DIR points at a directory with athanor.json,
+    that config is used (priority 1)."""
+    project = tmp_path / "claude_project"
+    project.mkdir()
+    (project / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "off"}}), encoding="utf-8"
+    )
+    # Run from a different cwd so only the env var resolves the config
+    other_dir = tmp_path / "elsewhere"
+    other_dir.mkdir()
+    env = os.environ.copy()
+    env["CLAUDE_PROJECT_DIR"] = str(project)
+    rc, _, err = _run(
+        {"last_assistant_message": "tests pass"},
+        cwd=str(other_dir),
+        env=env,
+    )
+    assert rc == 0, f"profile=off via $CLAUDE_PROJECT_DIR should disable gate; got rc={rc}"
+    assert "CLAUDE_PROJECT_DIR" in err, (
+        f"stderr should announce resolution via $CLAUDE_PROJECT_DIR; got: {err!r}"
+    )
+
+
+def test_parent_dir_hijack_blocked_by_git_boundary(tmp_path):
+    """v0.7.9 closes PR #16 sec-002: ancestor athanor.json with profile=off
+    must NOT silently disable the gate when called from inside a git repo
+    whose root has no athanor.json. Walk-up stops at .git boundary."""
+    # Set up: /tmp/X/athanor.json (profile=off) is a hostile ancestor.
+    # /tmp/X/myrepo/ is a git repo with no athanor.json.
+    # Run from /tmp/X/myrepo/subdir/ — the hostile athanor.json must NOT apply.
+    ancestor = tmp_path / "hostile_ancestor"
+    ancestor.mkdir()
+    (ancestor / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "off"}}), encoding="utf-8"
+    )
+    repo = ancestor / "myrepo"
+    repo.mkdir()
+    (repo / ".git").mkdir()  # simulate git repo (just need the dir to exist)
+    subdir = repo / "subdir"
+    subdir.mkdir()
+    rc, _, _ = _run({"last_assistant_message": "tests pass"}, cwd=str(subdir))
+    assert rc == 2, (
+        f"v0.7.9 must NOT honor ancestor athanor.json above a .git boundary; got rc={rc} "
+        f"(if 0, the parent-dir hijack from PR #16 sec-002 is still exploitable)"
+    )
+
+
+def test_athanor_json_at_git_root_resolved_via_git_root(tmp_path):
+    """When athanor.json is at the git repo root, mechanism is 'git-root'."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    (repo / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "off"}}), encoding="utf-8"
+    )
+    subdir = repo / "src"
+    subdir.mkdir()
+    rc, _, err = _run({"last_assistant_message": "tests pass"}, cwd=str(subdir))
+    assert rc == 0, f"profile=off at git root should disable gate; got rc={rc}"
+    assert "git-root" in err, (
+        f"stderr should announce resolution via 'git-root'; got: {err!r}"
+    )
+
+
 # --- Integration: re-entry prevention -------------------------------------
 
 

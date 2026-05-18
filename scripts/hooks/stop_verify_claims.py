@@ -220,49 +220,70 @@ def _read_stdin_payload() -> dict | None:
         return None
 
 
-def _find_athanor_config() -> Path | None:
-    """Locate athanor.json by walking up from CWD.
+def _find_athanor_config() -> tuple[Path | None, str]:
+    """Locate athanor.json via priority chain (v0.7.9):
 
-    Claude Code's command-hook invocation sets the working directory to the
-    plugin install root (or the project root for local plugin develops). We
-    walk up to support both layouts plus user-projects that have athanor.json
-    in a parent dir.
+    1. ``$CLAUDE_PROJECT_DIR/athanor.json`` if env var set and file exists.
+    2. Git repository root (first ancestor with ``.git/``) — but only if
+       athanor.json is at that root. Closes the v0.7.8 parent-dir hijack
+       (sec-002): an athanor.json in a parent of the repo no longer
+       silently applies.
+    3. Walk up from cwd, but STOP at any ``.git/`` boundary. Athanor configs
+       above a repo root are no longer trusted from inside that repo.
+       Also bounded by $HOME and depth=8.
 
-    KNOWN LIMITATION: an ancestor-directory athanor.json silently applies if
-    the project has none. v0.7.9+ may switch to explicit project-root
-    resolution via $CLAUDE_PROJECT_DIR or git-root detection.
+    Returns ``(config_path, mechanism)`` where mechanism is one of
+    ``"$CLAUDE_PROJECT_DIR"``, ``"git-root"``, ``"walk-up"``, or
+    ``"none"``. The mechanism string is surfaced in the profile=off
+    audit breadcrumb so users can see WHICH path resolved the config.
     """
+    # 1. Explicit env var from Claude Code (when present).
+    env_proj = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_proj:
+        candidate = Path(env_proj) / ATHANOR_CONFIG_NAME
+        if candidate.is_file():
+            return (candidate.resolve(), "$CLAUDE_PROJECT_DIR")
+
     cur = Path.cwd().resolve()
-    # Cap walk depth to avoid runaway on weird filesystems.
+    try:
+        home = Path.home().resolve()
+    except (OSError, RuntimeError):
+        home = None
+
+    # 2 + 3. Walk up; stop at .git boundary, $HOME, or depth 8.
     for _ in range(8):
         candidate = cur / ATHANOR_CONFIG_NAME
+        has_git = (cur / ".git").is_dir()
         if candidate.is_file():
-            return candidate
+            mechanism = "git-root" if has_git else "walk-up"
+            return (candidate, mechanism)
+        if has_git:
+            # Hit a .git boundary without finding athanor.json at this level.
+            # Don't cross repo root upward — that was the v0.7.8 hijack.
+            return (None, "none")
+        if home is not None and cur == home:
+            break
         if cur.parent == cur:
             break
         cur = cur.parent
-    return None
+    return (None, "none")
 
 
-def _read_profile() -> tuple[str, Path | None]:
+def _read_profile() -> tuple[str, Path | None, str]:
     """Read `hooks.profile` from athanor.json.
 
-    Returns ``(profile, config_path)`` where ``profile`` is one of the
-    SUPPORTED_PROFILES values (or "standard" as the default) and ``config_path``
-    is the resolved athanor.json path (or None if no config was found).
-    Returning the path lets the caller audit WHICH config disabled the gate
-    — useful for diagnosing ancestor-directory hijacks.
+    Returns ``(profile, config_path, mechanism)``:
+      - ``profile`` is one of SUPPORTED_PROFILES (or "standard" default).
+      - ``config_path`` is the resolved athanor.json path (or None).
+      - ``mechanism`` is the resolution mechanism — "$CLAUDE_PROJECT_DIR",
+        "git-root", "walk-up", or "none". Surfaced in the profile=off
+        audit breadcrumb (v0.7.9 closes the v0.7.8 parent-dir hijack).
 
-    Defensive handling:
-      - Missing/unreadable config -> ("standard", None)
-      - Malformed JSON -> ("standard", config_path)
-      - Bad encoding (UnicodeDecodeError, BOM, mojibake) -> ("standard", config_path)
-      - `hooks` field is not a dict (e.g., string/null/list) -> ("standard", config_path)
-      - Unknown profile value -> ("standard", config_path) with stderr warning
+    Defensive handling unchanged from v0.7.8.
     """
-    config_path = _find_athanor_config()
+    config_path, mechanism = _find_athanor_config()
     if config_path is None:
-        return ("standard", None)
+        return ("standard", None, mechanism)
     try:
         with open(config_path, encoding="utf-8") as f:
             data = json.load(f)
@@ -271,28 +292,28 @@ def _read_profile() -> tuple[str, Path | None]:
             f"could not read {config_path} ({type(e).__name__}); "
             f"falling back to profile=standard"
         )
-        return ("standard", config_path)
+        return ("standard", config_path, mechanism)
     if not isinstance(data, dict):
         _stderr(
             f"{config_path} top-level is not an object; "
             f"falling back to profile=standard"
         )
-        return ("standard", config_path)
+        return ("standard", config_path, mechanism)
     hooks_section = data.get("hooks", {})
     if not isinstance(hooks_section, dict):
         _stderr(
             f"{config_path} `hooks` field is not an object "
             f"(got {type(hooks_section).__name__}); falling back to profile=standard"
         )
-        return ("standard", config_path)
+        return ("standard", config_path, mechanism)
     profile = hooks_section.get("profile", "standard")
     if not isinstance(profile, str) or profile not in SUPPORTED_PROFILES:
         _stderr(
             f"unknown hooks.profile value {profile!r}; treating as 'standard'. "
             f"Supported values: {sorted(SUPPORTED_PROFILES)}."
         )
-        return ("standard", config_path)
-    return (profile, config_path)
+        return ("standard", config_path, mechanism)
+    return (profile, config_path, mechanism)
 
 
 def validate_emission_sentinel(message: str) -> bool:
@@ -379,7 +400,7 @@ def is_material_claim(message: str) -> bool:
 
 def _read_stop_loop_threshold() -> int:
     """Read `hooks.stopLoopThreshold` from athanor.json or default."""
-    config_path = _find_athanor_config()
+    config_path, _ = _find_athanor_config()
     if config_path is None:
         return hook_state.DEFAULT_STOP_LOOP_THRESHOLD
     try:
@@ -409,13 +430,15 @@ def main() -> int:
         _stderr("stdin missing or unparseable; passing (fail-open)")
         return 0
 
-    profile, config_path = _read_profile()
+    profile, config_path, mechanism = _read_profile()
     if profile == "off":
         # Audit breadcrumb — makes ancestor-hijack visible. The user (or a
-        # future auditor) can see WHICH athanor.json disabled the gate.
+        # future auditor) can see WHICH athanor.json disabled the gate AND
+        # via which resolution mechanism (v0.7.9 closes parent-dir hijack).
         _stderr(
             f"gate disabled by hooks.profile=off in "
-            f"{config_path if config_path else '<no config found>'}"
+            f"{config_path if config_path else '<no config found>'} "
+            f"(resolved via {mechanism})"
         )
         return 0
 
