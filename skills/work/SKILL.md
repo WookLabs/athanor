@@ -160,6 +160,20 @@ in a single write. Do not perform incremental writes.
 - Be specific: files, functions, expected changes
 - IDs must be stable, unique, sequential (Subtask 1, 2, ...)
 - depends_on references must all point to existing subtask IDs
+- **v0.8.0**: Assign `execution_note` per subtask using these classification heuristics:
+  - **source code modification** (.py/.js/.ts/.rb/.go/etc.) introducing new
+    behavior or contract → `execution_note: spec-then-tdd`
+  - **source code modification** preserving existing behavior (refactor,
+    narrow bug fix without contract change) → `execution_note: test-aware`
+  - **prose-only modification** (.md / `_doc` strings in config / CHANGELOG /
+    README / doc-only edits) → `execution_note: direct`
+- **v0.8.0**: For `execution_note: spec-then-tdd` subtasks, copy the parent
+  phase's `Verify:` MUST/SHOULD bullets into the subtask's
+  `acceptance_criteria` field. If the parent phase has free-form prose Verify
+  (no MUST/SHOULD bullets), reclassify the subtask to `test-aware` and note
+  the reclassification reason in the subtask's task description. The
+  `acceptance_criteria` field is **only** populated for spec-then-tdd subtasks
+  (test-aware and direct subtasks must NOT have an `acceptance_criteria` line).
 
 ## Output Format
 Append this section to plan.md (after stripping any old Subtasks block):
@@ -173,12 +187,18 @@ Append this section to plan.md (after stripping any old Subtasks block):
   - files: [{file paths}]
   - verify: {type: command|check|review|none, value: ...}
   - depends_on: []
+  - execution_note: {spec-then-tdd|test-aware|direct}  # v0.8.0 — required
+  - acceptance_criteria:                                # v0.8.0 — ONLY when execution_note == spec-then-tdd
+    - MUST <observable assertion copied from parent phase Verify>
+    - MUST <observable assertion>
+    - SHOULD <quality assertion>
 
 - [ ] **Subtask 2: {title}**
   - task: {what to do}
   - files: [...]
   - verify: {...}
   - depends_on: [1]
+  - execution_note: {spec-then-tdd|test-aware|direct}
 
 ...
 
@@ -212,6 +232,10 @@ Splitter 복귀 후 leader는 plan.md를 재로드하고 다음을 검증:
 4. 모든 depends_on 참조가 실제 존재하는 subtask 번호인가?
 5. decisions.md가 생성/갱신되었는가?
 6. Subtasks 섹션 끝에 `<!-- athanor:subtasks:generated -->` 마커가 존재하는가?
+7. **v0.8.0**: 각 subtask에 `execution_note` 필드가 존재하는가? 값은
+   `spec-then-tdd | test-aware | direct` 셋 중 하나여야 한다.
+8. **v0.8.0**: `execution_note: spec-then-tdd` 인 subtask는 `acceptance_criteria`
+   필드를 가지며 최소 1개 MUST bullet이 있어야 한다.
 
 하나라도 실패하면:
 - `plan.md.bak` → `plan.md`로 복원
@@ -305,7 +329,19 @@ Example: lessons_read: [work-2026-04-01-001.md, work-2026-04-05-002.md]
 - value: {verification command or condition}
 - maxRetries: {from config}
 
-### Ralph-Loop Instructions
+### Execution Instructions (v0.8.0 — branches on execution_note)
+
+The leader MUST inject ONE of the three blocks below based on the subtask's
+`execution_note` value. If the `execution_note` field is absent (grandfathered
+plan from before v0.8.0), the leader treats the subtask as `direct` and
+includes the Direct block. The worker should be told which block applies and
+report `execution_note_source: grandfathered` in ATHANOR_RESULT when the
+fallback fires.
+
+#### Direct (execution_note: direct OR field absent — grandfathered)
+
+Standard Ralph-Loop unchanged from earlier athanor releases:
+
 1. Read the relevant files first (targeted, not full files)
 2. Implement the change
 3. Run verification:
@@ -315,6 +351,65 @@ Example: lessons_read: [work-2026-04-01-001.md, work-2026-04-05-002.md]
    - none: just implement once, no retry
 4. If verification fails: analyze why, adjust, retry
 5. If all retries exhausted: return failure brief
+
+#### Spec-then-TDD Instructions (execution_note: spec-then-tdd)
+
+You have a list of `acceptance_criteria` (passed as the subtask's
+acceptance_criteria field). Process each criterion in order:
+
+For each criterion (e.g., \"MUST exit 2 when material claim detected\"):
+
+1. **WRITE**: Write a failing test for this criterion in the test file listed
+   under Files. Do NOT touch implementation code in this step.
+2. **RUN**: Execute `pytest <test_file>::<new_test_function> -v` via Bash.
+   Capture full output.
+3. **VERIFY RED**: Confirm the test FAILED (exit code non-zero). Record
+   per-criterion `red_evidence` with these required fields:
+   - `command`: the exact pytest command you ran
+   - `test_node_id`: the parametrized test node id
+     (e.g., `tests/test_foo.py::test_bar[case-1]`)
+   - `exit_code`: integer exit code from pytest
+   - `output_tail`: last ~10 lines of pytest output proving the failure mode
+   If the test PASSES on first run (exit_code == 0), set
+   `red_status: never_red` for this criterion in your ATHANOR_RESULT (still
+   record the GREEN-on-first-run command and exit_code as red_evidence) and
+   SKIP to the next criterion. The auto-downgrade is handled by the leader,
+   not by you.
+4. **IMPLEMENT**: Add the minimum implementation to satisfy this criterion.
+5. **VERIFY GREEN**: Execute the same pytest command. Confirm the test PASSES
+   (exit code 0). Also run the full test suite (`pytest tests/`) — all
+   existing tests must still pass.
+
+After all criteria processed:
+- Optional refactor pass (improve naming, dedupe — no behavior change)
+- Final pytest run — all tests green
+- Report ATHANOR_RESULT with per-criterion `red_evidence` list AND aggregate
+  `red_status`:
+  - `red` if all criteria recorded a RED exit_code != 0 in their red_evidence
+  - `partial_never_red` if some criteria had RED but others were never_red
+  - `never_red` if all criteria's first-run exit_code was 0 (i.e. tests
+    didn't actually go RED)
+
+The leader will validate that every criterion in your acceptance_criteria
+list has a matching red_evidence entry. Missing or malformed red_evidence
+for any criterion is treated as `never_red` for that criterion (defensive —
+workers cannot silently skip the RED check by omitting evidence).
+
+#### Test-Aware End Gate (execution_note: test-aware)
+
+You may write tests and implementation in any order. Before reporting success,
+the end gate enforces test artifact changes:
+
+1. Run `git diff --name-only` and confirm at least one path is under
+   `tests/` (i.e. matches `^tests/.*` regex — this includes any file under
+   `tests/`: `test_*.py` files, `conftest.py`, fixture modules under
+   `tests/fixtures/`, snapshot files, golden files, etc. — a broader test
+   artifact pattern than just `test_*.py`).
+   If no path under `tests/` has changes, REPORT failure — test-aware
+   subtasks require test artifact changes.
+2. Run `pytest tests/` — full suite must pass.
+3. Report `tests_modified: true` and the list of test artifact paths touched
+   in your ATHANOR_RESULT (`test_paths_touched: [...]`).
 
 ### Output Format
 Return your result as:
@@ -330,7 +425,18 @@ discoveries:
   {tagged with importance}
 lessons_read: [{list of lesson filenames you read, or empty}]
 verification: {what was run} → {pass|fail}
-END_RESULT"
+execution_note: {spec-then-tdd|test-aware|direct}   # v0.8.0
+execution_note_source: {plan|grandfathered}          # v0.8.0
+red_evidence:                                         # v0.8.0 — only when spec-then-tdd
+  - criterion: \"MUST <text>\"
+    command: \"pytest tests/...\"
+    test_node_id: \"tests/...::test_...\"
+    exit_code: <int>
+    output_tail: \"...\"
+red_status: {red|partial_never_red|never_red}        # v0.8.0 — only when spec-then-tdd
+tests_modified: {true|false}                          # v0.8.0 — only when test-aware
+test_paths_touched: [{paths}]                         # v0.8.0 — only when test-aware
+END_RESULT\"
 })
 ```
 
@@ -346,7 +452,63 @@ If the worker result contains any of these patterns, re-dispatch with instructio
 - "새 세션에서 계속" / "Let's continue in a new session"
 - "좋은 체크포인트" / "Good checkpoint"
 
-**If success:**
+**v0.8.0 Spec-then-TDD result handler** (runs BEFORE the success/failure branch):
+
+This handler is an **advisory self-report shape** — the leader validates the
+shape of the worker's `red_evidence` (command, test_node_id, exit_code,
+output_tail) but does NOT independently re-execute the RED check. A worker
+that fabricates evidence can still pass. The handler's value is catching
+the most common failure mode (worker forgets the RED step entirely → no
+evidence shape) rather than adversarial forgery. Runtime hard-enforcement
+of `red_evidence` authenticity is deferred to v0.8.1+ (verification skill
+extension candidate).
+
+**Phase 1 — validate red_evidence shape** (only when subtask.execution_note == "spec-then-tdd"):
+
+For each criterion in `subtask.acceptance_criteria`:
+- Find the matching entry in `ATHANOR_RESULT.red_evidence`.
+- If absent OR missing any of {command, test_node_id, exit_code, output_tail},
+  mark this criterion as `never_red` (defensive default).
+- If `exit_code == 0` (RED check did not actually fail), mark this criterion
+  as `never_red`.
+
+Compute `red_status_resolved`:
+- All criteria `never_red` → `red_status_resolved = "never_red"`
+- Some `never_red` but not all → `red_status_resolved = "partial_never_red"`
+- All criteria had non-zero RED exit_code → `red_status_resolved = "red"`
+
+**Phase 2 — apply downgrade rule**:
+
+If `red_status_resolved in {"never_red", "partial_never_red"}`:
+- Treat the subtask as completed via test-aware path (auto-downgrade applied)
+- Append to work-log.md:
+  ```
+  ## Subtask {id}: ✓ {title} [auto-downgraded: spec-then-tdd → test-aware]
+  - Reason: red_status_resolved={value} (one or more criteria did not produce RED evidence)
+  - Detected by: leader validation of worker's red_evidence shape
+    (criteria with missing/malformed evidence were defaulted to never_red)
+  - Remediation: leader auto-downgraded the completion criteria to test-aware
+  - Original execution_note: spec-then-tdd
+  - never_red criteria: [list of criterion text]
+  ```
+- No user escalation. The downgrade is silent except for the work-log entry.
+
+**Phase 3 — test-aware gate enforcement** (only when subtask.execution_note == "test-aware"):
+
+If `ATHANOR_RESULT.tests_modified == false` OR `test_paths_touched` is empty:
+- This is a worker-side gate violation — test-aware subtask completed without
+  any `tests/**` path modifications.
+- Mark subtask as failed (NOT success), increment `consecutiveFailures`.
+- work-log message: `test-aware gate violation — no tests/** paths modified
+  in git diff (test_paths_touched empty)`
+
+**Phase 4 — grandfathered fallback breadcrumb** (only when execution_note absent in plan):
+
+If `ATHANOR_RESULT.execution_note_source == "grandfathered"`:
+- Append `[grandfathered: execution_note field absent in plan; treated as direct]`
+  to the work-log entry for traceability.
+
+**If success** (after v0.8.0 phases above resolve to success):
 - `consecutiveFailures = 0`
 - `completedCount += 1`
 - Mark subtask complete in TodoList
