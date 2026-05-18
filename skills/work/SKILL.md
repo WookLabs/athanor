@@ -321,12 +321,14 @@ END_RESULT"
 After worker returns:
 
 **Stop-phrase check:**
-If the worker result contains any of these patterns, re-dispatch with instruction "Complete the task. Do not stop early.":
+If the worker result contains any of these patterns, re-dispatch ONCE only with instruction "Complete the task. Do not stop early.":
 - "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
 - "계속할까요?" / "Should I continue?"
 - "기존 이슈입니다" / "This is a pre-existing issue"
 - "새 세션에서 계속" / "Let's continue in a new session"
 - "좋은 체크포인트" / "Good checkpoint"
+
+If the re-dispatched worker returns another stop-phrase, mark the subtask as failure and continue through the normal failure/circuit-breaker handling below. Do NOT re-dispatch indefinitely.
 
 **If success:**
 - `consecutiveFailures = 0`

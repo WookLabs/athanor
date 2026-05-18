@@ -263,9 +263,15 @@ Agent({
 Call Codex to create an alternative implementation plan.
 
 ## Codex Invocation
-Run this command via Bash (timeout 300000ms):
+Run this command via Bash (timeout 300000ms). **Safety rule:** write the prompt
+with a quoted heredoc and pass it through stdin; do NOT inline user input inside
+a double-quoted shell argument. Before running Bash, choose a fresh high-entropy
+`{unique-delimiter}` value that does not appear anywhere in the user request or
+context (for example, include a new UUID). Never use a fixed delimiter for
+untrusted prompt content.
 ```bash
-codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \"Create an ALTERNATIVE implementation plan for:
+cat > ".athanor/sessions/{session-id}/codex-plan-b.prompt.md" <<'{unique-delimiter}'
+Create an ALTERNATIVE implementation plan for:
 
 {user's planning request}
 
@@ -284,7 +290,9 @@ Format your plan as:
 ## Phases (with Steps, files, verify)
 ## Risks
 ## Why This Alternative?
-## Estimated Scope\"
+## Estimated Scope
+{unique-delimiter}
+codex exec --full-auto --ephemeral -o ".athanor/sessions/{session-id}/plan-b.md" < ".athanor/sessions/{session-id}/codex-plan-b.prompt.md"
 ```
 
 ## After Codex Returns
@@ -508,11 +516,18 @@ Agent({
 Call Codex to critically review Plan A (the standard approach plan).
 
 ## Codex Invocation
-Run this command via Bash (timeout 300000ms):
+Run this command via Bash (timeout 300000ms). **Safety rule:** copy Plan A into
+a prompt file and pass it through stdin; do NOT use `$(cat ...)` inside a
+double-quoted shell argument. Quote every path. For any heredoc that contains
+untrusted or plan-derived content, choose a fresh high-entropy `{unique-delimiter}`
+value that does not appear in that content. The static header/footer heredocs
+below contain only fixed text, so fixed delimiters are acceptable there.
 ```bash
-codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/review-of-a.md \"Critically review this implementation plan:
-
-$(cat .athanor/sessions/{session-id}/plan-a.md)
+cat > ".athanor/sessions/{session-id}/codex-review-a.prompt.md" <<'ATHANOR_CODEX_REVIEW_HEADER'
+Critically review this implementation plan:
+ATHANOR_CODEX_REVIEW_HEADER
+cat ".athanor/sessions/{session-id}/plan-a.md" >> ".athanor/sessions/{session-id}/codex-review-a.prompt.md"
+cat >> ".athanor/sessions/{session-id}/codex-review-a.prompt.md" <<'ATHANOR_CODEX_REVIEW_FOOTER'
 
 Review Criteria:
 1. Feasibility: Can this actually be implemented as described?
@@ -528,7 +543,9 @@ Output as structured markdown:
 ## Weaknesses
 ## Missing Steps
 ## Risk Assessment
-## Verdict\"
+## Verdict
+ATHANOR_CODEX_REVIEW_FOOTER
+codex exec --full-auto --ephemeral -o ".athanor/sessions/{session-id}/review-of-a.md" < ".athanor/sessions/{session-id}/codex-review-a.prompt.md"
 ```
 
 ## After Codex Returns
