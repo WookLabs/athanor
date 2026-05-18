@@ -480,27 +480,41 @@ Compute `red_status_resolved`:
 **Phase 2 — apply downgrade rule**:
 
 If `red_status_resolved in {"never_red", "partial_never_red"}`:
-- Treat the subtask as completed via test-aware path (auto-downgrade applied)
+- Mark the subtask as a downgrade-pending candidate. The actual completion
+  decision is deferred to Phase 3 below — a downgraded subtask must STILL
+  pass the test-aware gate (test files touched + pytest green) before being
+  marked complete. Without this rule, a worker that fabricates `red_evidence`
+  failures (or simply never writes any tests) could be silently marked
+  successful via downgrade. Phase 3 enforcement closes that loophole.
 - Append to work-log.md:
   ```
-  ## Subtask {id}: ✓ {title} [auto-downgraded: spec-then-tdd → test-aware]
+  ## Subtask {id}: pending [auto-downgraded: spec-then-tdd → test-aware, awaiting gate]
   - Reason: red_status_resolved={value} (one or more criteria did not produce RED evidence)
   - Detected by: leader validation of worker's red_evidence shape
     (criteria with missing/malformed evidence were defaulted to never_red)
-  - Remediation: leader auto-downgraded the completion criteria to test-aware
+  - Remediation: leader auto-downgraded the completion criteria to test-aware;
+    Phase 3 below now applies and the subtask completes ONLY if the
+    test-aware gate (tests/** paths modified + pytest green) passes
   - Original execution_note: spec-then-tdd
+  - effective_execution_note: test-aware (downgrade applied)
   - never_red criteria: [list of criterion text]
   ```
-- No user escalation. The downgrade is silent except for the work-log entry.
+- No user escalation. The downgrade and subsequent gate check are silent
+  except for the work-log entries.
 
-**Phase 3 — test-aware gate enforcement** (only when subtask.execution_note == "test-aware"):
+**Phase 3 — test-aware gate enforcement** (applies when subtask.execution_note == "test-aware" OR Phase 2 downgraded a spec-then-tdd subtask to test-aware):
 
 If `ATHANOR_RESULT.tests_modified == false` OR `test_paths_touched` is empty:
-- This is a worker-side gate violation — test-aware subtask completed without
-  any `tests/**` path modifications.
+- This is a worker-side gate violation — test-aware (or downgraded
+  spec-then-tdd) subtask completed without any `tests/**` path modifications.
 - Mark subtask as failed (NOT success), increment `consecutiveFailures`.
 - work-log message: `test-aware gate violation — no tests/** paths modified
-  in git diff (test_paths_touched empty)`
+  in git diff (test_paths_touched empty)`. If this subtask was a Phase 2
+  downgrade, the work-log entry is updated from `pending` to `✗ failed
+  [downgraded then gate-rejected]` so the audit trail captures both steps.
+- If the gate passes (test_paths_touched non-empty + pytest green), the
+  subtask is marked complete and the work-log `pending` entry is updated to
+  `✓ {title} [auto-downgraded: spec-then-tdd → test-aware]`.
 
 **Phase 4 — grandfathered fallback breadcrumb** (only when execution_note absent in plan):
 

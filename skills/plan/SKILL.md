@@ -810,6 +810,24 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 - Be explicit about WHY you chose one approach over another
 - UNRESOLVED conflicts must present both options fairly
 
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+In addition to the general rules above, apply the two-axis Spec-then-TDD
+readiness rubric to the synthesized plan (acceptance_criteria coverage +
+execution_note classification appropriateness) — full text in
+`skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD Readiness\".
+
+Axis (A) — acceptance_criteria coverage: for every behavior-bearing phase
+in the synthesized plan, ensure the Verify field is written as MUST/SHOULD
+observable assertions (not free-form prose). At least one MUST per behavior
+phase. Reformulate prose Verify fields where needed.
+
+Axis (B) — classification appropriateness: predict the likely execution_note
+value for each phase. Flag over-classification (CHANGELOG-only / _doc-only
+phase forced into MUST/SHOULD) and under-classification (source code
+modification with prose-only Verify). Adjust phase scope or Verify formality
+to match.
+
 Save to: .athanor/sessions/{session-id}/plan.md
 
 Return your findings as:
@@ -876,6 +894,16 @@ Begin the output file with this exact line (so /athanor:work detects the skipped
 ## Unified Implementation Plan
 {... same shape as 4-input variant ...}
 
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+Apply the same two-axis Spec-then-TDD readiness rubric as the 4-input
+variant: (A) acceptance_criteria coverage — every behavior-bearing phase's
+Verify field must be MUST/SHOULD observable assertions; reformulate prose
+Verify fields where needed. (B) classification appropriateness — predict
+each phase's likely execution_note value and flag over-/under-classification.
+Full rubric text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
+Spec-then-TDD Readiness\".
+
 Save to: .athanor/sessions/{session-id}/plan.md (with the header comment as line 1)
 
 Return your findings as:
@@ -931,6 +959,19 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 - If you disagree with feedback, state why explicitly
 - Maintain the original plan's structure and specificity
 - This is refinement, not synthesis — one plan in, one plan out
+
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+In addition to the rules above, apply the two-axis Spec-then-TDD readiness
+rubric to the refined plan: (A) acceptance_criteria coverage — every
+behavior-bearing phase's Verify field must be MUST/SHOULD observable
+assertions; reformulate prose Verify fields where needed. (B) classification
+appropriateness — predict each phase's likely execution_note value and flag
+over-classification (CHANGELOG-only / _doc-only phase with MUST/SHOULD)
+and under-classification (source code with prose-only Verify). Full rubric
+text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD
+Readiness\". This rubric applies whether the upstream review came from
+Codex or from Claude self-review (claude-self-review fallback).
 
 Save to: .athanor/sessions/{session-id}/plan.md
 

@@ -266,3 +266,101 @@ def test_advisory_self_report_framing_acknowledged():
         f"Result handler must acknowledge advisory self-report nature. "
         f"Expected one of: {honesty_signals}"
     )
+
+
+# --- Codex implementation-review Major #2 fix: downgraded spec-then-tdd
+# --- must still pass the test-aware gate (not silently succeed via downgrade) ---
+
+
+def test_downgraded_subtask_must_pass_test_aware_gate():
+    """MUST: Phase 2 downgrade is now downgrade-pending; Phase 3 enforces
+    test-aware gate on downgraded subtasks too.
+
+    Codex review (2026-05-19) Major #2: 'Phase 2 downgrades on
+    never_red/partial_never_red but Phase 3 only applies when original
+    execution_note == test-aware. A malformed/missing red_evidence spec task
+    can be marked completed without verifying tests/** changes.'
+
+    The fix: Phase 2 marks pending; Phase 3 applies to BOTH original
+    test-aware subtasks AND Phase-2-downgraded subtasks.
+    """
+    body = _load()
+    body_lower = body.lower()
+    # Phase 2 should now produce a 'pending' / 'awaiting gate' status
+    pending_signals = [
+        "downgrade-pending",
+        "downgrade pending",
+        "awaiting gate",
+        "pending [auto-downgraded",
+    ]
+    assert any(s in body_lower for s in pending_signals), (
+        f"Phase 2 auto-downgrade must produce a pending status (not immediate "
+        f"success) so Phase 3 can still enforce the test-aware gate. "
+        f"Expected one of: {pending_signals}"
+    )
+
+    # Phase 3 must explicitly cover downgraded subtasks
+    phase_3_coverage_signals = [
+        "phase 2 downgraded a spec-then-tdd",
+        "downgraded a spec-then-tdd",
+        "or phase 2 downgraded",
+        "downgrade applied",
+    ]
+    assert any(s in body_lower for s in phase_3_coverage_signals), (
+        f"Phase 3 must explicitly apply to downgraded spec-then-tdd subtasks, "
+        f"not just original test-aware ones. Expected one of: "
+        f"{phase_3_coverage_signals}"
+    )
+
+
+# --- Codex implementation-review Medium #4 fix: grandfathered legacy plans
+# --- still parse via fallback to direct ---
+
+
+def test_grandfathered_legacy_plan_docs_are_present():
+    """MUST: the named grandfathered plan docs from CHANGELOG migration claim
+    actually exist in docs/plans/ — protects the documented migration path.
+
+    Codex review (2026-05-19) Medium: 'No regression test exercises the four
+    grandfathered docs/plans/ files through the new missing-execution_note
+    fallback. CHANGELOG claims that migration path explicitly.'
+    """
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent
+    grandfathered = [
+        "docs/plans/2026-04-08-001-feat-phase1-foundation-setup-plan.md",
+        "docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md",
+        "docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md",
+    ]
+    for path in grandfathered:
+        assert (repo_root / path).exists(), (
+            f"Grandfathered plan doc '{path}' is missing — the CHANGELOG "
+            f"migration path explicitly names this file and the test "
+            f"verifies its continued presence so the fallback path is exercised."
+        )
+
+
+def test_grandfathered_legacy_plans_have_no_execution_note():
+    """MUST: the legacy plan docs MUST NOT have execution_note fields (they
+    pre-date v0.8.0). The fallback-to-direct prose in skills/work/SKILL.md
+    is what handles them."""
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent
+    grandfathered = [
+        "docs/plans/2026-04-08-001-feat-phase1-foundation-setup-plan.md",
+        "docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md",
+        "docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md",
+    ]
+    for path in grandfathered:
+        content = (repo_root / path).read_text(encoding="utf-8")
+        # The v0.8.0 execution_note FIELD (as a YAML/markdown key) must not
+        # appear in legacy plan docs. We check for the field-as-key pattern
+        # specifically ("execution_note:") rather than the bare word, so that
+        # incidental discussion of the term elsewhere doesn't false-positive.
+        assert "execution_note:" not in content, (
+            f"Legacy plan doc '{path}' contains 'execution_note:' field which "
+            f"pre-dates v0.8.0. Either the doc was modified or the "
+            f"grandfathered assumption is wrong."
+        )

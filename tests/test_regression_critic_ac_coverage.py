@@ -172,3 +172,78 @@ def test_critic_corrective_behavior_prose():
         f"Critic prompt should describe corrective behavior on violations. "
         f"Expected at least one of: {reformulate_candidates + adjust_candidates}"
     )
+
+
+# --- Codex implementation-review Major #1 fix: each Critic Agent prompt must
+# --- reference the v0.8.0 rubric so the dispatched Critic actually sees it ---
+
+
+def _critic_agent_prompt_blocks(content: str) -> list[str]:
+    """Return the text of each `Agent({ ... })` block under the Critic
+    dispatch subsections. We find each ``` block that follows a
+    `#### ... Critic` heading AND contains 'Agent(' near the top
+    (so we skip non-Agent blocks like the Gate Checkpoint notification)."""
+    lines = content.splitlines()
+    blocks: list[str] = []
+    section_active = False
+    in_code_fence = False
+    current_block: list[str] = []
+    for line in lines:
+        if line.startswith("#### ") and "Critic" in line:
+            section_active = True
+            continue
+        if section_active and not in_code_fence and line.startswith("```"):
+            in_code_fence = True
+            current_block = []
+            continue
+        if section_active and in_code_fence and line.startswith("```"):
+            block_text = "\n".join(current_block)
+            # Only keep blocks that look like Agent dispatch payloads
+            if "Agent(" in block_text and "prompt:" in block_text:
+                blocks.append(block_text)
+            in_code_fence = False
+            current_block = []
+            # Section stays active until the next heading; do not reset
+            continue
+        if section_active and in_code_fence:
+            current_block.append(line)
+        # If we leave one #### Critic section by entering another heading,
+        # the next iteration's `#### ...` check resets section_active anyway.
+        if section_active and not in_code_fence and line.startswith("#### "):
+            # New subsection — re-evaluate section_active
+            section_active = "Critic" in line
+    return blocks
+
+
+def test_each_critic_agent_prompt_references_rubric():
+    """MUST: every Critic Agent({prompt: ...}) block must reference the v0.8.0
+    Critic Rubric so the dispatched leader doesn't drop it.
+
+    Codex review (2026-05-19) Major #1: 'the shared rubric is prose before
+    the dispatch blocks, but the concrete Agent({prompt: ...}) payloads do
+    not include or reference it. A leader following the inline prompt blocks
+    can dispatch Critics that never see the two-axis rubric.'
+    """
+    content = _load()
+    blocks = _critic_agent_prompt_blocks(content)
+    assert len(blocks) >= 3, (
+        f"Expected at least 3 Critic Agent({{prompt: ...}}) blocks "
+        f"(deep 4-input, deep 2-input review-skipped, standard 2-input), "
+        f"found {len(blocks)}"
+    )
+    for i, block in enumerate(blocks):
+        # Each block must reference the v0.8.0 rubric — either inline or by
+        # explicit reference to the shared subsection.
+        block_lower = block.lower()
+        rubric_signals = [
+            "v0.8.0 critic rubric",
+            "spec-then-tdd readiness",
+            "two-axis spec-then-tdd",
+            "axis (a)",
+            "axis (b)",
+        ]
+        assert any(s in block_lower for s in rubric_signals), (
+            f"Critic Agent prompt block #{i + 1} does not reference the "
+            f"v0.8.0 rubric. Expected one of: {rubric_signals}. "
+            f"Block first 200 chars: {block[:200]!r}"
+        )
