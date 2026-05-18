@@ -23,14 +23,22 @@ pattern: you do NOT research, analyze, or form opinions yourself.
 
 > **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
 
+Use the canonical lookup rule from `CLAUDE.md` §Session Lookup Convention.
+Bash reference there. Lex-max selection — no "today" semantics.
+
 1. Check if `.athanor/sessions/` exists. If not, create it (`mkdir -p`).
-2. Check for an existing session from today:
-   - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, check if `work-log.md` exists inside it
-     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
-     - If `work-log.md` does not exist → reuse (same pipeline in progress)
-   - If none exists, create new: `{today}-{max_NNN + 1}` (e.g., `2026-04-08-001`)
-3. Ensure session directory exists: `.athanor/sessions/{id}/`
+2. Resolve `<LATEST>` using the canonical Bash one-liner:
+   ```bash
+   LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+     | sort | tail -1)
+   ```
+3. Reuse vs. create:
+   - If `<LATEST>` exists AND it has no `work-log.md` → **reuse** `<LATEST>` (same pipeline in progress).
+   - Otherwise (no matching session, or `<LATEST>` already has `work-log.md` from a completed pipeline) → **create new** session named `{today}-{max_NNN + 1}` (where `max_NNN` is the highest `NNN` already used under the current `YYYY-MM-DD` prefix, or `001` if none).
+4. **Stale-session announcement:** If reusing `<LATEST>` and its date prefix (`YYYY-MM-DD`) does not equal the current date, announce:
+   > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually or wait for the --new-session flag (v0.8.0).`
+5. Ensure session directory exists: `.athanor/sessions/{id}/`
 
 ### Step 1: Parse Dilemma
 
@@ -178,13 +186,48 @@ END_RESULT"
 **Codex branching (Step 2 variant):**
 > Note: Codex integration requires a compatible Codex plugin. When available,
 > Worker B can be dispatched via the Codex runtime for truly independent perspective.
-> Currently, the Devil's Advocate fallback is the default and recommended path.
+> The Devil's Advocate fallback is the default when Codex is disabled or absent.
 
-If athanor.json `codex.enabled` is true AND Codex tools are available in this session:
-  - Replace Worker B with a Codex dispatch instead of Devil's Advocate
+Before dispatching workers, the Leader resolves `codex_available` using the
+same configuration matrix as `/athanor:plan` (kept in sync — see
+`skills/plan/SKILL.md` Step 0). This is a Leader Bash exception (config read
+gating dispatch, not analytical work):
 
-If Codex is NOT available (default):
-  - Use the Devil's Advocate Worker B as defined above
+```bash
+if command -v jq >/dev/null 2>&1; then
+  CODEX_CONFIG_ENABLED=$(jq -r '.codex.enabled // true' athanor.json 2>/dev/null)
+  CODEX_FALLBACK=$(jq -r '.codex.fallback // "self-critic"' athanor.json 2>/dev/null)
+else
+  # jq absent — match shipped defaults (graceful degradation, mirrors skills/setup/SKILL.md)
+  CODEX_CONFIG_ENABLED=true
+  CODEX_FALLBACK=self-critic
+fi
+if codex --version >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
+
+if [ "$CODEX_CONFIG_ENABLED" = "true" ] && [ "$CODEX_CLI" = "true" ]; then
+  codex_available=true
+else
+  codex_available=false
+  # Discuss has no Reviewer A/B + review_strategy threading like plan —
+  # the only branching is Worker B (Codex Researcher vs. Claude Devil's Advocate).
+  # Honor codex.fallback purely as an announcement reason; Worker B still dispatches
+  # via the Devil's Advocate path for self-critic / skip (single-perspective discuss
+  # is degenerate, so skip degrades to self-critic in practice for this skill).
+  case "$CODEX_FALLBACK" in
+    self-critic) announce="proceeding Claude-only (codex disabled — self-critic fallback)" ;;
+    skip)        announce="proceeding Claude-only (codex disabled — skip)" ;;
+    fail)        echo "ERROR: codex unavailable but codex.fallback=fail — abort" >&2; exit 1 ;;
+  esac
+fi
+```
+
+Then thread `codex_available` into the Worker B dispatch:
+
+- If `codex_available == true`: replace Worker B with a Codex dispatch (truly
+  independent contrarian perspective).
+- If `codex_available == false`: dispatch the Devil's Advocate Worker B as
+  defined above, and announce `$announce` so the user sees why Codex was not
+  used.
 
 ### Step 2.5: Worker Output Defense (run before Step 3)
 
