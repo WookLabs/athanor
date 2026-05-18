@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.7.7/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.7.8/schemas/athanor-config.schema.json",
   "version": "1.0",
   "_doc": "Athanor runtime configuration template — copied verbatim by /athanor:setup. _doc fields act as inline schema; root athanor.json (dev) and templates/athanor.json (user-install) stay shape-identical. To customize, edit your project root athanor.json after setup creates it.",
   "codex": {
@@ -47,8 +47,7 @@
   },
   "hooks": {
     "profile": "standard",
-    "disabled": [],
-    "_doc": "DEPRECATED in v0.7.7 — NO code reads `profile` or `disabled`. The v0.7.6 documentation claimed honoring via ATHANOR_HOOK_PROFILE / ATHANOR_DISABLED_HOOKS environment variables, but no script or hook references those variables. The only Stop hook in v0.7.7 is the fixed `type: prompt` injection at hooks/hooks.json. To disable today, remove the Stop entry from hooks/hooks.json or remove the file. v0.7.8 introduces a real command-hook gate (per 2026-05-18 spike, docs/STATE.md) which will replace these keys."
+    "_doc": "Stop hook configuration. As of v0.7.8 the Stop hook is registered as `type: command` invoking scripts/hooks/stop_verify_claims.py (per docs/STATE.md §Command-hook Stop blocking spike (2026-05-18)). `profile: \"standard\"` (default) enables full material-claim detection — the script reads stdin, detects English/Korean claim phrases ported verbatim from the v0.7.7 prompt whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. `profile: \"off\"` is the per-project opt-out: the script exits 0 silently regardless of message content. Unknown profile values fall back to standard with a stderr warning (fail-open). `lenient` and `strict` profiles are not yet supported (deferred per plan §10). The v0.7.7 `hooks.disabled[]` orphan key has been removed in v0.7.8 — no code consumed it."
   },
   "review": {
     "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],

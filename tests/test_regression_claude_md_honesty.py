@@ -1,17 +1,23 @@
-"""Regression test for the v0.7.7 M1 finding — CLAUDE.md Stop-hook honesty.
+"""Regression test for CLAUDE.md Stop-hook contract honesty.
 
-Pins the v0.7.7 relabel of the Stop hook from a false "enforced" claim to
-"advisory (prompt-based)". Guards against silent reintroduction of the
-v0.7.6 lie that the Stop hook is "Enforced at plugin layer".
+History:
+  - v0.7.6 falsely claimed the Stop hook was "Enforced at plugin layer".
+  - v0.7.7 demoted to "advisory (prompt-based)" — the spike was not yet
+    in place; the prompt-mode hook genuinely could not force invocation.
+  - v0.7.8 RE-PROMOTES to "enforced (command-based)" — the spike (PASS,
+    docs/STATE.md §"Command-hook Stop blocking spike (2026-05-18)") and
+    the new `type: command` registration deliver real runtime gating.
 
-Covers:
-  - status table row uses `advisory` + `prompt-based` wording
-  - "Enforced at plugin layer" phrase removed entirely
-  - subsection heading renamed to advisory
-  - Limitation paragraph present and names model self-classification
-  - v0.7.8 command-hook upgrade forward-referenced in subsection
+This test pins the v0.7.8 contract. Three invariants:
+  1. Status-table row uses the `enforced (command-based)` label.
+  2. The v0.7.6 lie "Enforced at plugin layer" MUST remain absent
+     (different from v0.7.8's honest "enforced (command-based)" —
+     the v0.7.6 string was wrong; the v0.7.8 string is true).
+  3. Subsection describes the runtime gate concretely: mentions the
+     script path, the sentinel mechanism, and the `profile: "off"`
+     opt-out.
 
-Plan reference: `.athanor/sessions/2026-05-18-001/plan.md` §4 M1.
+Plan reference: docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md §U7.
 """
 
 from __future__ import annotations
@@ -27,11 +33,7 @@ def _load_claude_md() -> str:
 
 
 def _extract_stop_hook_subsection(content: str) -> str:
-    """Return the body between the Stop hook `###` heading and the next `##` or `###` heading.
-
-    The subsection of interest starts at `### Completion-Claim Verification (Stop hook`
-    and ends at the next markdown heading at H2 (`## `) or H3 (`### `) level.
-    """
+    """Return the body between the Stop hook `###` heading and the next H2/H3 heading."""
     lines = content.splitlines()
     start_idx = None
     for i, line in enumerate(lines):
@@ -49,7 +51,7 @@ def _extract_stop_hook_subsection(content: str) -> str:
 
 
 def _extract_stop_hook_table_row(content: str) -> str:
-    """Return the status-table row that mentions the Stop hook completion-claim entry."""
+    """Return the status-table row mentioning the Stop hook entry."""
     for line in content.splitlines():
         if "Completion-Claim Verification (Stop hook)" in line and line.lstrip().startswith("|"):
             return line
@@ -58,68 +60,85 @@ def _extract_stop_hook_table_row(content: str) -> str:
 
 # ---- tests ----
 
-def test_stop_hook_row_uses_advisory_label():
-    """Status table row must mark Stop hook as `advisory` AND `prompt-based`."""
+
+def test_stop_hook_row_uses_enforced_command_based_label():
+    """v0.7.8 contract: status table row uses `enforced (command-based)` label."""
     row = _extract_stop_hook_table_row(_load_claude_md())
     assert row, "Status-table row for Stop hook not found in CLAUDE.md"
     lower = row.lower()
-    assert "advisory" in lower, (
-        f"Stop hook status row must contain 'advisory' (case-insensitive); got: {row!r}"
+    assert "enforced" in lower, (
+        f"v0.7.8: Stop hook row must contain 'enforced'; got: {row!r}"
     )
-    assert "prompt-based" in lower, (
-        f"Stop hook status row must contain 'prompt-based' (case-insensitive); got: {row!r}"
+    assert "command-based" in lower or "command-hook" in lower or "command hook" in lower, (
+        f"v0.7.8: Stop hook row must say 'command-based' (or equivalent); got: {row!r}"
     )
 
 
 def test_enforced_at_plugin_layer_phrase_absent():
-    """The v0.7.6 lie 'Enforced at plugin layer' must NOT appear anywhere in CLAUDE.md."""
+    """The v0.7.6 false phrase 'Enforced at plugin layer via `hooks/hooks.json`'
+    must NOT reappear. Note: 'enforced (command-based)' is honest v0.7.8
+    wording — this test only forbids the specific v0.7.6 false phrasing."""
     content = _load_claude_md()
     assert "Enforced at plugin layer" not in content, (
-        "CLAUDE.md still contains the phrase 'Enforced at plugin layer' — "
-        "this is the v0.7.6 false claim that v0.7.7 M1 explicitly removed."
+        "CLAUDE.md contains 'Enforced at plugin layer' — that exact v0.7.6 "
+        "phrasing was a lie. v0.7.8 honest wording is 'enforced (command-based)'."
     )
 
 
-def test_subsection_renamed():
-    """The Stop hook subsection heading must contain `advisory` (not `enforced`)."""
+def test_subsection_heading_says_enforced_command_based():
+    """Subsection heading reflects v0.7.8 contract."""
     content = _load_claude_md()
     heading = None
     for line in content.splitlines():
-        if line.startswith("## Completion-Claim Verification (Stop hook") or \
-           line.startswith("### Completion-Claim Verification (Stop hook"):
+        if line.startswith("### Completion-Claim Verification (Stop hook"):
             heading = line
             break
     assert heading is not None, (
         "Subsection heading 'Completion-Claim Verification (Stop hook ...' not found"
     )
     lower = heading.lower()
-    assert "advisory" in lower, (
-        f"Subsection heading must contain 'advisory'; got: {heading!r}"
+    assert "enforced" in lower, (
+        f"v0.7.8: subsection heading must say 'enforced'; got: {heading!r}"
+    )
+    assert "command" in lower, (
+        f"v0.7.8: subsection heading must mention 'command'; got: {heading!r}"
     )
 
 
-def test_stop_hook_limitation_paragraph_present():
-    """The Stop-hook subsection must include a Limitation paragraph naming self-classification."""
-    content = _load_claude_md()
-    subsection = _extract_stop_hook_subsection(content)
-    assert subsection, "Stop hook subsection not found"
-    assert "Limitation" in subsection, (
-        "Stop hook subsection must include a 'Limitation' paragraph that "
-        "describes what the prompt nudge cannot guarantee."
-    )
-    assert "self-classif" in subsection, (
-        "Limitation paragraph must reference 'self-classif' (e.g., "
-        "'model self-classifies') to make the failure mode explicit."
-    )
-
-
-def test_v078_forward_reference_present():
-    """The Stop hook subsection must forward-reference the v0.7.8 command-hook upgrade."""
+def test_subsection_describes_script_path():
+    """Subsection must cite the actual gate script."""
     subsection = _extract_stop_hook_subsection(_load_claude_md())
     assert subsection, "Stop hook subsection not found"
-    assert ("command-based" in subsection) or ("command hook" in subsection) or (
-        "command-hook" in subsection
-    ), (
-        "Stop hook subsection must forward-reference the v0.7.8 command-hook "
-        "upgrade (mention 'command-based' or 'command hook')."
+    assert "scripts/hooks/stop_verify_claims.py" in subsection, (
+        "Subsection must name the gate script `scripts/hooks/stop_verify_claims.py` "
+        "so users can find it."
+    )
+
+
+def test_subsection_describes_sentinel_mechanism():
+    """Subsection must describe the re-entry-prevention sentinel."""
+    subsection = _extract_stop_hook_subsection(_load_claude_md())
+    assert "athanor:verification-emission" in subsection, (
+        "Subsection must describe the verification-emission sentinel that "
+        "prevents re-entry loops on the verification skill's own output."
+    )
+
+
+def test_subsection_describes_profile_off_opt_out():
+    """Subsection must document the per-project opt-out."""
+    subsection = _extract_stop_hook_subsection(_load_claude_md())
+    assert 'profile: "off"' in subsection or '"profile": "off"' in subsection or "profile: 'off'" in subsection, (
+        "Subsection must document the `hooks.profile: \"off\"` per-project opt-out "
+        "so users have a documented escape hatch."
+    )
+
+
+def test_subsection_cites_spike_evidence():
+    """Subsection must reference the empirical spike evidence in docs/STATE.md."""
+    subsection = _extract_stop_hook_subsection(_load_claude_md())
+    assert "STATE.md" in subsection, (
+        "Subsection must cite docs/STATE.md (where the 2026-05-18 spike evidence lives)."
+    )
+    assert "spike" in subsection.lower() or "2026-05-18" in subsection, (
+        "Subsection must reference the spike (by name or date)."
     )

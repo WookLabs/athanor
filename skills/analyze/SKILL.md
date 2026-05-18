@@ -298,4 +298,4 @@ Workers: {N} parallel analysts
 3. Leader **merges** results directly — no merge agent.
 4. **Speed priority**: 2-3 workers, each under 400 words.
 5. This is **Plan Mode** — do NOT modify project files. Only write to `.athanor/sessions/`.
-6. Reuse existing session if user ran /athanor:discuss earlier today.
+6. Reuse the latest session per `CLAUDE.md` §Session Lookup Convention (lexicographic max). The Step 0 setup already announces a stale-session reuse when `<LATEST>` date is not the current date; honor that announcement when deciding whether to reuse or create new.

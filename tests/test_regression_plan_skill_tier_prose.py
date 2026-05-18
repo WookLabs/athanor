@@ -86,6 +86,40 @@ def test_step_4_intro_has_tier_labels():
     )
 
 
+def test_step_2_intro_has_tier_labels():
+    """Step 2 intro must name all three tiers (v0.7.8 U8 — PR #10 review residual).
+
+    v0.7.7 fixed Step 3 + Step 4 intros but missed Step 2, which still said
+    "Dispatch TWO planners simultaneously" — true only for deep tier; misled
+    standard/lite readers. v0.7.8 U8 closes the residual.
+    """
+    content = _load_plan_skill()
+    intro = extract_section(content, "### Step 2:", "#### ", "### Step 3:")
+    assert intro, "Step 2 section not found in skills/plan/SKILL.md"
+    missing = [
+        label for label in ("Deep tier:", "Standard tier:", "Lite tier:")
+        if label not in intro
+    ]
+    assert not missing, (
+        f"Step 2 intro must name all three tiers; missing labels: {missing}.\n"
+        f"v0.7.8 U8 (PR #10 review residual) requires tier-aware preamble "
+        f"parallel to the Step 3/4 fix."
+    )
+
+
+def test_step_2_intro_does_not_unconditionally_say_dispatch_two():
+    """The v0.7.7 generic preamble 'Dispatch TWO planners **simultaneously**.'
+    must not appear in the Step 2 intro (it's deep-tier-only behavior)."""
+    content = _load_plan_skill()
+    intro = extract_section(content, "### Step 2:", "#### ", "### Step 3:")
+    assert intro, "Step 2 section not found in skills/plan/SKILL.md"
+    # The exact v0.7.7 phrasing (with markdown emphasis) is the forbidden form
+    assert "Dispatch TWO planners **simultaneously**" not in intro, (
+        "Step 2 intro contains the v0.7.7 generic preamble. v0.7.8 U8 should "
+        "have replaced this with the tier-aware Deep/Standard/Lite preamble."
+    )
+
+
 def test_no_generic_after_both_planners():
     """The deep-tier-presumptive phrase 'After BOTH planners return' must NOT appear."""
     content = _load_plan_skill()

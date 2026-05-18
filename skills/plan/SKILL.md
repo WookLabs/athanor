@@ -156,9 +156,20 @@ When `codex_available == false`:
 - standard tier: Codex review falls back to Claude self-review.
 - lite tier: unaffected.
 
-### Step 2: Dispatch Parallel Planners
+### Step 2: Dispatch Planners
 
-Dispatch TWO planners **simultaneously**.
+Per the Tier Dispatch Table, the number and identity of planners depends on tier:
+
+- **Deep tier:** TWO planners in parallel — Planner A (Claude) + Planner B
+  (Codex if `codex_available`, else Claude contrarian fallback per
+  `review_strategy`).
+- **Standard tier:** ONE planner — Planner A only. Planner B is skipped (no
+  Plan B exists; Plan A flows directly to Step 3 review).
+- **Lite tier:** ONE planner — Planner A only. Steps 3-4 (review + critic)
+  are skipped entirely; `plan-a.md` is copied directly to `plan.md` per the
+  Lite Tier flow below.
+
+The per-tier dispatch blocks below show the exact prompt for each case.
 
 #### Dispatch Gate Checkpoint (mandatory)
 
@@ -643,12 +654,14 @@ Critic dispatch: model=opus, inline-prompt mode, tier={deep|standard}, review_st
 > ```
 > Then announce: "Review skipped per codex.fallback=skip; plan-a.md copied to plan.md with review-skipped header."
 
-#### Deep Tier: 4-Input Synthesis Critic
+#### Deep Tier: 4-Input Synthesis Critic (when review_strategy != none)
 
 > The Critic is always Claude (opus), regardless of tier or Codex availability.
-> In deep tier, it receives all 4 inputs (plan-a, plan-b, review-of-a, review-of-b).
-> (When `review_strategy == none` in deep tier, the Critic receives only the 2 plans — adjust the prompt to omit review file references.)
-> In standard tier, it receives 2 inputs (plan-a, review-of-a) for refinement.
+> In deep tier with reviews present, it receives all 4 inputs (plan-a, plan-b,
+> review-of-a, review-of-b). For the `review_strategy == none` case, use the
+> 2-input variant below instead — do NOT dispatch this 4-input block with
+> empty or missing review files.
+> In standard tier, see §"Standard Tier: 2-Input Refinement Critic" below.
 > When `review_strategy == none` in standard tier, the Critic step is replaced
 > by the Bash pass-through above; no Agent is dispatched.
 > In lite tier, this step is skipped entirely.
@@ -723,6 +736,72 @@ Return your findings as:
 ATHANOR_RESULT
 status: success
 summary: {1-2 sentence summary of synthesized plan}
+END_RESULT"
+})
+```
+
+#### Deep Tier: 2-Input Synthesis Critic (when review_strategy == none)
+
+When `tier == deep AND review_strategy == none`: no review files exist, but
+the deep-tier Synthesis Critic is still useful because two contrarian plans
+(plan-a + plan-b) need merging. Dispatch this 2-input variant instead of the
+4-input block above. The output `plan.md` MUST be prepended with the
+`<!-- athanor:review-skipped -->` HTML header comment so `/athanor:work` can
+detect that no review pass ran.
+
+```
+Agent({
+  description: "Athanor critic: plan synthesis (review-skipped)",
+  model: "opus",
+  prompt: "ultrathink
+
+You are the Athanor Critic in Plan Synthesis mode (review-skipped variant).
+
+## Task
+Synthesize two competing plans into one superior plan. Reviews were skipped
+this session (codex.fallback=skip); rely on the plans themselves.
+
+Read these 2 files from .athanor/sessions/{session-id}/:
+1. plan-a.md (Plan A — standard approach)
+2. plan-b.md (Plan B — contrarian approach)
+
+## Process
+1. Read both plans
+2. Identify where they AGREE — these are high-confidence choices
+3. Identify where they DISAGREE — note both options and which has stronger
+   internal evidence (cite-back specificity, test scenarios, risk treatment)
+4. For each conflict, lean toward the option with more concrete grounding;
+   mark genuinely ambiguous conflicts as UNRESOLVED for the user to decide
+5. Merge into a unified plan
+
+## Output Format
+
+Begin the output file with this exact line (so /athanor:work detects the skipped review):
+<!-- athanor:review-skipped -->
+
+# Final Plan: {title}
+
+## Merged Elements (both plans agreed)
+- {element}: {why it's high-confidence}
+
+## Resolved Conflicts (deep tier — no external reviews to lean on)
+- {conflict}: chose {approach} because {reasoning grounded in plan content alone}
+
+## UNRESOLVED — User Decision Required
+### Conflict 1: {description}
+- **Option A** (from Plan A): {approach}
+- **Option B** (from Plan B): {approach}
+- **Critic's lean** (no external review evidence): {note that this is plan-only}
+
+## Unified Implementation Plan
+{... same shape as 4-input variant ...}
+
+Save to: .athanor/sessions/{session-id}/plan.md (with the header comment as line 1)
+
+Return your findings as:
+ATHANOR_RESULT
+status: success
+summary: {1-2 sentence summary, note review-skipped tier}
 END_RESULT"
 })
 ```
