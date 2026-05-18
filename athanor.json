@@ -39,7 +39,7 @@
     "reviewer": "opus",
     "learner": "sonnet",
     "cleaner": "haiku",
-    "_doc": "Model assignment per worker role. Effort levels: opus=highest reasoning (planning, critique, execution, review), sonnet=standard (research, analysis, learning), haiku=minimal (cleanup). User installs may swap (e.g., executor: 'sonnet' for cost optimization). Skills read this config in their dispatch templates."
+    "_doc": "DEPRECATED in v0.7.7 — NO skill currently reads this block. The v0.7.6 documentation claimed 'Skills read this config in their dispatch templates' but every skill hardcodes its model: field inline. Schema marks the block deprecated; v0.7.9 will remove it entirely. For customization today, fork the relevant skills/<name>/SKILL.md and edit the inline model: field. (Values kept here historically: planner/critic/executor/reviewer=opus, researcher/analyst/learner=sonnet, cleaner=haiku.)"
   },
   "triggers": {
     "language": "both",
@@ -48,7 +48,7 @@
   "hooks": {
     "profile": "standard",
     "disabled": [],
-    "_doc": "Stop hook profile: 'off' (skip verification gate entirely — for analysis-only or trusted-pipeline sessions), 'lenient' (only invoke on explicit success claims like 'tests pass'), 'standard' (default — material-claim trigger as defined in hooks/hooks.json), 'strict' (invoke on any work-state assertion). disabled[] is a list of hook ids to skip individually (currently only Stop hook ships, but future PostToolUse/PreCompact hooks will respect this list). Honored by hook prompts via ATHANOR_HOOK_PROFILE / ATHANOR_DISABLED_HOOKS environment variables (set by Claude Code from this config)."
+    "_doc": "DEPRECATED in v0.7.7 — NO code reads `profile` or `disabled`. The v0.7.6 documentation claimed honoring via ATHANOR_HOOK_PROFILE / ATHANOR_DISABLED_HOOKS environment variables, but no script or hook references those variables. The only Stop hook in v0.7.7 is the fixed `type: prompt` injection at hooks/hooks.json. To disable today, remove the Stop entry from hooks/hooks.json or remove the file. v0.7.8 introduces a real command-hook gate (per 2026-05-18 spike, docs/STATE.md) which will replace these keys."
   },
   "review": {
     "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
