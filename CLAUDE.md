@@ -53,13 +53,45 @@ All file reading, analysis, code writing, and execution happens in worker agents
 athanor.json  ← project root, NOT inside .athanor/
 ```
 
+## Session Lookup Convention
+
+Skills that need to find "the active session" use these semantics. This is
+the canonical rule; per-skill prose should reference this section rather than
+restating semantics (drift between skills caused the v0.7.7 M4 finding).
+
+1. **Pattern:** Only `.athanor/sessions/<dir>` where `<dir>` matches
+   `^\d{4}-\d{2}-\d{2}-\d{3}$`. Non-matching names (e.g., `lessons/`,
+   `discoveries/`, manually-renamed directories) are ignored.
+2. **Selection:** Sort matching directories lexicographically descending.
+   The first element is `<LATEST>`. This is the active session.
+3. **No "today" semantics.** Day boundaries do NOT affect selection.
+   A session created at 23:45 yesterday remains LATEST at 09:00 today,
+   until a new session is explicitly created.
+4. **Stale-session announcement:** If `<LATEST>` date != today's date,
+   the skill announces:
+   > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh,
+   > create a new session manually or wait for the --new-session flag (v0.8.0).`
+5. **Bash reference implementation** (skills MAY embed inline):
+   ```bash
+   LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+     | sort | tail -1)
+   ```
+6. **Skill responsibilities:**
+   - `/athanor:plan`, `/athanor:discuss`: reuse `<LATEST>` if it has no
+     `work-log.md`; else create a new session.
+   - `/athanor:work`: load `<LATEST>` plus resume guard (work-log.md presence).
+   - `/athanor:analyze`, `/athanor:debug`, `/athanor:review`: reuse `<LATEST>`
+     (read-only or append intent; no new-session creation).
+   - `/athanor:scope-drift`: load `<LATEST>` plus intent-source glob.
+
 ## Defense Mechanisms
 
 ### Status table
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **enforced** — `hooks/hooks.json` Stop prompt fires on every Stop event; model self-classifies and invokes `verification-before-completion` skill on material claims |
+| Completion-Claim Verification (Stop hook) | **advisory (prompt-based)** — `hooks/hooks.json` Stop prompt fires on every Stop event; model self-classifies whether to invoke `verification-before-completion`. Plugin layer cannot force invocation. v0.7.8 upgrades to **enforced (command-based)** — see `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
@@ -82,14 +114,31 @@ this indicates quality degradation. Leader should re-dispatch with explicit "rea
 Note: Claude Code runtime enforces read-before-edit on Claude-based workers automatically;
 this rule still matters for Codex-based dispatches and other non-Claude runtimes.
 
-### Completion-Claim Verification (Stop hook — enforced)
+### Completion-Claim Verification (Stop hook — advisory, prompt-based)
 
-On every `Stop` event, athanor injects a prompt instructing the active model to
-invoke the vendored `verification-before-completion` skill **if the turn contained a material claim (edits/tests/releases/migrations/deployments/verification-output)**; the prompt explicitly skips analysis, planning, opinions, research Q&A, and tool-output summaries. Enforced at plugin layer via `hooks/hooks.json`.
+On every `Stop` event, athanor injects a prompt asking the active model to
+**self-classify** whether its preceding response contained a material claim
+(edits/tests/releases/migrations/deployments/verification-output). If so,
+the prompt asks the model to invoke the vendored
+`verification-before-completion` skill to produce fresh evidence.
 
-- Skill source: `skills/verification-before-completion/SKILL.md` (MIT, vendored)
-- Hook config: `hooks/hooks.json` → Stop event, type `prompt`
-- Scope: fires on every Stop event; the model self-identifies whether its preceding turn contained a **material claim** before invoking the skill. Explicitly skipped categories: analysis, planning, opinions, research Q&A, and tool-output summaries.
+**Limitation:** This is a prompt nudge, not a runtime gate. The model decides
+whether the classification applies. A determined model can rationalize past
+the check ("my claim was just a tool-output summary, not material"). The
+plugin layer cannot force skill invocation in v0.7.7 — Claude Code did not
+expose a hook-can-block-Stop primitive at design time. The 2026-05-18 spike
+confirmed `type: "command"` Stop hooks with exit 2 DO block Stop and feed
+stderr back as continuation context (see `docs/STATE.md` §"Command-hook Stop
+blocking spike (2026-05-18)"). v0.7.8 upgrades this gate to a real command
+hook.
+
+- **Skill source:** `skills/verification-before-completion/SKILL.md` (MIT, vendored)
+- **Hook config:** `hooks/hooks.json` → Stop event, type `prompt`
+- **Scope:** fires on every Stop event; the model self-identifies whether its preceding turn contained a **material claim** before invoking the skill. Explicitly skipped categories: analysis, planning, opinions, research Q&A, and tool-output summaries.
+
+**What it catches:** Honest in-distribution turns where the model would benefit from being reminded to verify. The prompt is well-tuned (see `hooks/hooks.json` for the material-claim whitelist with Korean parity).
+
+**What it does NOT catch:** Adversarial rationalization, novel claim phrasings outside the whitelist, or turns where the model decides the skill invocation is "obviously unnecessary." v0.7.8's command-hook upgrade addresses adversarial rationalization by gating at the runtime layer.
 
 ### Scope Drift Detection (on-demand skill — advisory)
 
