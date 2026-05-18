@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.7.7/schemas/athanor-config.schema.json",
+  "version": "1.0",
+  "_doc": "Deliberately invalid fixture for tests/test_regression_schema_validates_config.py. codex.enabled is a string instead of the boolean required by the schema.",
+  "codex": {
+    "enabled": "yes",
+    "fallback": "self-critic"
+  }
+}
