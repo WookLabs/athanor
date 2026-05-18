@@ -30,7 +30,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL_FILE = REPO_ROOT / "skills/verification-before-completion/SKILL.md"
 
-SENTINEL_LITERAL = "<!-- athanor:verification-emission v=1 -->"
+SENTINEL_LITERAL = "athanor:verification-emission v=2 nonce="
 
 
 def _load():

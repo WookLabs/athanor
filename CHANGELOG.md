@@ -3,6 +3,82 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.9] — 2026-05-18
+
+**Stop hook hardening — closes 2 of 3 P0 architectural findings from PR #16
+ce-code-review (sentinel forgery + parent-dir athanor.json hijack).** Paraphrase
+bypass (P0 #3) deferred to a follow-up PR to keep this release focused. Same
+security-honesty arc as v0.7.7 → v0.7.8: the "enforced (command-based)" label
+gets less asterisks each release as actual bypass paths close.
+
+Plan: `docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md`
+(633 lines, 8 units). This release implements U1, U2, U3, U4, U6, U8; defers
+U5 (paraphrase regex) + full U7 doc rewrite to a v0.7.9.1 follow-up PR.
+
+### Added
+
+- `scripts/hooks/hook_state.py` (new, U1) — per-session state-file helpers
+  (nonce + stop-counter) with atomic writes (tempfile + os.replace),
+  60-second nonce TTL, path-traversal-safe session ID whitelist.
+- `scripts/hooks/sentinel_helper.py` (new, U2) — invoked by the verification
+  skill via Bash to generate a nonce + body SHA-256 hash, write state, and
+  print a v=2 sentinel for the model to emit.
+- `hooks.stopLoopThreshold` config field (U6) — configurable circuit-breaker
+  threshold (integer ≥1, default 3). After N consecutive exit-2 blocks per
+  session, the gate releases (exit 0) to prevent infinite loops when the
+  verification skill misbehaves.
+- 33 new regression tests covering state helpers, v=2 sentinel binding,
+  body-tampering rejection, one-shot deletion, v=1 legacy rejection,
+  missing-state forgery rejection, `$CLAUDE_PROJECT_DIR` env-var honored,
+  parent-dir hijack blocked by `.git` boundary, git-root resolution
+  mechanism.
+
+### Changed (P0 closures)
+
+- **P0 #1 sentinel forgery — CLOSED**: `validate_emission_sentinel` does full
+  v=2 protocol verification (nonce match + TTL + body SHA-256 hash + atomic
+  delete on success). v=1 bare-string sentinels are rejected with a stderr
+  deprecation warning. Forgery cost raised from "emit one string" to "write
+  JSON state with matching SHA-256 + emit matching sentinel".
+- **P0 #2 parent-dir hijack — CLOSED**: `_find_athanor_config` rewritten with
+  priority chain `$CLAUDE_PROJECT_DIR` → git-root → walk-up-stops-at-`.git`.
+  Walk-up never crosses a `.git/` boundary upward. Resolution mechanism
+  surfaced in the profile=off audit breadcrumb.
+- **Circuit breaker (U6)**: per-session counter increments on each exit-2.
+  After `hooks.stopLoopThreshold` (default 3), the gate releases with a
+  stderr warning. Counter resets on successful v=2 validation.
+
+### Verification skill (U2)
+
+`skills/verification-before-completion/SKILL.md` §Emission Sentinel rewritten
+for v=2 protocol. 3-step procedure: (1) compute evidence body, (2) pipe
+through `sentinel_helper.py emit`, (3) emit sentinel + body verbatim. The
+helper writes nonce state; the hook validates body-hash equality on Stop.
+
+### Migration
+
+- v=1 sentinels (v0.7.8 format) are no longer accepted — they were trivially
+  forgeable. Skill responses with v=1 sentinels will fall through to
+  material-claim check, but the verification skill (vendored) is upgraded
+  atomically in the same release so no version-skew scenario exists for
+  default installs.
+- No mandatory config changes. `hooks.stopLoopThreshold` is optional
+  (defaults to 3 if missing).
+
+### Deferred to v0.7.9.1
+
+- **P0 #3 paraphrase bypass (U5)**: regex pattern layer + verb-anchor
+  heuristics + NFKC unicode normalization with curated confusables fold.
+  Plan §U5 specifies the design; deferred to keep this release scope-limited.
+- **Full CLAUDE.md / STATE.md honesty refresh (U7)**: ships with the U5
+  follow-up PR so both updates land together.
+
+### Spike reference
+
+v=2 protocol design rests on the 2026-05-18 spike (docs/STATE.md) that
+verified Claude Code runtime honors `type: command` Stop hooks with `exit 2`.
+No new spike needed for v0.7.9.
+
 ## [0.7.8] — 2026-05-18
 
 **Stop hook command-mode release — the v0.7.7-promised enforcement upgrade.**
