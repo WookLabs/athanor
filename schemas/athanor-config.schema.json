@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.7.7/schemas/athanor-config.schema.json",
+  "title": "Athanor Runtime Configuration",
+  "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "JSON Schema reference URL — release-tag-pinned per CONTRIBUTING.md §Release URL bump."
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration schema version (e.g. \"1.0\"). Not the plugin version."
+    },
+    "_doc": {
+      "type": "string",
+      "description": "Free-form inline documentation for the root config object."
+    },
+    "codex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the Codex CLI cross-model planner is invoked when available."
+        },
+        "fallback": {
+          "type": "string",
+          "enum": ["self-critic", "skip", "fail"],
+          "description": "Strategy when codex CLI is unavailable or disabled by config."
+        }
+      }
+    },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "defaultMode": {
+          "type": "string",
+          "enum": ["solo", "team"],
+          "description": "Default execution mode for /athanor:work."
+        },
+        "ralphLoop": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "_doc": { "type": "string" },
+            "maxRetries": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max ralph-loop iterations per subtask before circuit breaker engages."
+            }
+          }
+        },
+        "circuitBreaker": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "_doc": { "type": "string" },
+            "consecutiveFailures": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Threshold of consecutive subtask failures that trips the breaker."
+            },
+            "action": {
+              "type": "string",
+              "enum": ["ask_user", "continue", "abort"],
+              "description": "Action taken when the circuit breaker trips."
+            }
+          }
+        }
+      }
+    },
+    "team": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "waveSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Max parallel workers per wave in team mode."
+        },
+        "discoveryRelay": {
+          "type": "boolean",
+          "description": "Whether previous wave discoveries are injected into next wave prompts."
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "decayDays": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Working lesson decay window in days."
+        },
+        "promotionThreshold": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Access count required to auto-promote a working lesson to permanent."
+        },
+        "maxAgeDays": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Session retention window in days before the cleaner removes them."
+        }
+      }
+    },
+    "models": {
+      "deprecated": true,
+      "type": "object",
+      "additionalProperties": true,
+      "description": "DEPRECATED — slated for removal in v0.7.9. This block is not currently read by any dispatch site; model assignment is hardcoded in skills/<name>/SKILL.md and agents/*.md. See CHANGELOG v0.7.7 deprecation notice.",
+      "properties": {
+        "_doc": { "type": "string" },
+        "researcher": { "type": "string" },
+        "analyst": { "type": "string" },
+        "planner": { "type": "string" },
+        "critic": { "type": "string" },
+        "executor": { "type": "string" },
+        "reviewer": { "type": "string" },
+        "learner": { "type": "string" },
+        "cleaner": { "type": "string" },
+        "debugger": { "type": "string" },
+        "debugger-tracer": { "type": "string" }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "language": {
+          "type": "string",
+          "enum": ["ko", "en", "both"],
+          "description": "Slash-command trigger language."
+        }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hook configuration. NOTE: `profile` and `disabled` are deprecated and scheduled for deletion in v0.7.8 (the runtime does not currently honor them). Treat them as advisory until then.",
+      "properties": {
+        "_doc": { "type": "string" },
+        "profile": {
+          "deprecated": true,
+          "type": "string",
+          "description": "DEPRECATED (v0.7.8 deletion target) — currently NOT honored at runtime. See plan §4 C2."
+        },
+        "disabled": {
+          "deprecated": true,
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "DEPRECATED (v0.7.8 deletion target) — currently NOT honored at runtime. See plan §4 C2."
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "_doc": { "type": "string" },
+        "lenses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Default lenses dispatched in parallel by /athanor:review."
+        },
+        "minConfidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Confidence-rubric threshold for suppressing low-signal findings during consolidation."
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.7.7/schemas/athanor-config.schema.json",
   "version": "1.0",
-  "_doc": "Athanor runtime configuration. Project root file. Source of truth for memory/codex/work/team/triggers settings referenced from CLAUDE.md and skills/. User installs may override individual fields; missing fields fall back to these defaults.",
+  "_doc": "Athanor runtime configuration template — copied verbatim by /athanor:setup. _doc fields act as inline schema; root athanor.json (dev) and templates/athanor.json (user-install) stay shape-identical. To customize, edit your project root athanor.json after setup creates it.",
   "codex": {
     "enabled": true,
     "fallback": "self-critic",

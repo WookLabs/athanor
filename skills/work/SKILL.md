@@ -23,7 +23,16 @@ This is the ONLY Athanor command that modifies project files (via workers).
 
 ### Step 0: Load Plan & Determine Mode
 
-1. Find the active session in `.athanor/sessions/` (most recent today)
+1. Find the active session in `.athanor/sessions/` using the canonical lookup rule
+   from `CLAUDE.md` §Session Lookup Convention. Bash reference (skills MAY embed inline):
+   ```bash
+   LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+     | sort | tail -1)
+   ```
+   If `<LATEST>` date != today's date, announce:
+   `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
+   (The Step 0.5 resume guard below still runs on `<LATEST>` regardless of date.)
 2. Read plan.md — verify it exists; do NOT yet parse subtasks
    (Step 0.5 will handle splitter/guard logic).
 3. Check for work-log.md existence (needed by Step 0.5 resume guard).

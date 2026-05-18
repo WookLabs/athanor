@@ -40,8 +40,30 @@ Agent({
 - Report: EXISTS or CREATED
 
 ### 2. Config File (athanor.json)
-- Check if `athanor.json` exists in the project root
-- If not, create it with this content:
+- Check if `athanor.json` exists in the project root.
+- **If it exists:** leave it alone (do NOT overwrite user customization). Report: `EXISTS`.
+- **If it does not exist:** copy from `templates/athanor.json` shipped inside the plugin.
+  Template-resolution order (use the first that resolves to a readable file):
+  1. `$CLAUDE_PLUGIN_DIR/templates/athanor.json` when `CLAUDE_PLUGIN_DIR` is set.
+  2. `$(pwd)/templates/athanor.json` (you may already be inside the plugin tree).
+  3. Walk up from `$(pwd)` looking for a directory containing both
+     `.claude-plugin/plugin.json` AND `templates/athanor.json`; use its
+     `templates/athanor.json`.
+  - **If a template path resolves:** use the `Read` tool to load it, then use
+    `Write` to create the project's `athanor.json` with the same bytes. Report: `CREATED`.
+  - **If no template path resolves** (packaging regression — the plugin should
+    always ship `templates/athanor.json`): emit the warning
+    `⚠ template file not found at expected paths — using embedded fallback. Report this as a packaging bug.`
+    then `Write` the embedded fallback JSON below to the project's `athanor.json`.
+    Report: `CREATED_FALLBACK` (and include the warning text in `notes:`).
+
+#### Embedded fallback (used ONLY when the template file is missing)
+This is a packaging-regression safety net. Keep it byte-aligned with
+`templates/athanor.json` whenever the template changes. The primary path is the
+template file; this block exists so that a broken marketplace package does not
+brick `/athanor:setup`.
+
+```json
 {
   "version": "1.0",
   "codex": { "enabled": true, "fallback": "self-critic" },
@@ -59,7 +81,9 @@ Agent({
   },
   "triggers": { "language": "both" }
 }
-- Report: EXISTS or CREATED
+```
+
+- Report: `EXISTS` | `CREATED` | `CREATED_FALLBACK`
 
 ### 3. MCP Access Test (mem-search)
 - Try to use any available memsearch or memory MCP tool
@@ -243,7 +267,7 @@ status: success
 summary: Health check complete
 details:
 session_dir: [EXISTS|CREATED]
-config: [EXISTS|CREATED]
+config: [EXISTS|CREATED|CREATED_FALLBACK]
 memsearch: [AVAILABLE|UNAVAILABLE] [tool_name_if_available]
 lsp: [AVAILABLE|UNAVAILABLE] [tool_name_if_available]
 codex: [AVAILABLE|UNAVAILABLE]
@@ -285,7 +309,7 @@ After receiving the worker's response, parse the results and display:
 Athanor Health Check
 ════════════════════
 Session dir:     ✓ ready          (or ⚡ created)
-Config:          ✓ found          (or ⚡ created from template)
+Config:          ✓ found          (or ⚡ created from template, or ⚠ created from fallback)
 mem-search:      ✓ available      (or ✗ not found)
 LSP (Serena):    ✓ connected      (or ○ not found)
 Codex:           ✓ available      (or ○ not found — optional)
@@ -423,6 +447,16 @@ Triggers: {ko|en|both}
   /athanor:discuss  — 브레인스토밍/의사결정
   /athanor:analyze  — 코드베이스 분석
   /athanor:plan     — 구현 계획 수립
+```
+
+**If the worker reported `config: CREATED_FALLBACK`**, append the following
+warning line under `Config:` before the "다음 단계" block, exactly:
+
+```
+⚠ Config seeded from EMBEDDED FALLBACK (templates/athanor.json not found in
+  the plugin install). This indicates a packaging regression — please file
+  an issue. The fallback shape is older than the latest template; consider
+  re-running /athanor:setup after re-installing the plugin.
 ```
 
 ---

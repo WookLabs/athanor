@@ -52,10 +52,19 @@ and a `score:` 0-10. If absent or malformed, re-dispatch once.
 
 > **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
 
-1. Determine session id (reuse pattern from `skills/analyze/SKILL.md` Step 0):
-   - List existing directories in `.athanor/sessions/` matching today's date
-   - If today's session has `review.md`, create new: `{today}-{max_NNN + 1}`
-   - Otherwise reuse the latest today-session
+1. Find the active session using the canonical lookup rule from
+   `CLAUDE.md` §Session Lookup Convention. Bash reference (skills MAY embed inline):
+   ```bash
+   LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+     | sort | tail -1)
+   ```
+   `/athanor:review` reuses `<LATEST>` as read-only / append intent — it does NOT
+   create a new session even if `review.md` already exists in `<LATEST>` (a new
+   review overwrites the prior `review.md` in the same session).
+   If `<LATEST>` date != today's date, announce:
+   `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
+   If no matching directory exists, create `{today}-001` (where `{today}` is `YYYY-MM-DD`).
 2. Ensure `.athanor/sessions/{session-id}/` exists.
 
 ### Step 1: Scope Detection

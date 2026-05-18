@@ -41,25 +41,71 @@ This defense applies in `lite-plan` and `deep-plan` tiers as well, since they sh
 
 > **Exception:** The Leader MAY create session directories (`.athanor/sessions/`) directly using the Bash tool. This is infrastructure setup, not analytical work.
 
-1. Check for an existing session from today:
-   - List existing directories in `.athanor/sessions/` matching today's date
-   - If one exists, check if `work-log.md` exists inside it
-     - If `work-log.md` exists → previous pipeline completed. Create **new** session: `{today}-{max_NNN + 1}`
-     - If `work-log.md` does not exist → reuse (same pipeline in progress)
-   - If no today session exists, create new: `{today}-{max_NNN + 1}`
-2. Ensure session directory exists
+Use the canonical lookup rule from `CLAUDE.md` §Session Lookup Convention.
+Bash reference (lex-max over `^\d{4}-\d{2}-\d{2}-\d{3}$`):
 
-#### Codex Availability Check
+```bash
+LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
+  | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
+  | sort | tail -1)
+```
 
-> **Exception:** The Leader MAY run Bash commands to check Codex CLI availability.
+1. Resolve `<LATEST>` via the Bash reference above.
+2. Reuse-vs-new decision:
+   - If `<LATEST>` exists AND `.athanor/sessions/<LATEST>/work-log.md` does NOT exist → **reuse** `<LATEST>` (same pipeline in progress).
+   - Otherwise (either no matching session exists, OR `<LATEST>` already has `work-log.md`) → **create new** session named `{today}-{NNN}` where `NNN` is the next sequential 3-digit suffix for today's date (or `001` if no session exists for today).
+3. **Stale-session announcement:** If reusing `<LATEST>` and its date prefix (`YYYY-MM-DD`) does NOT match today's date, announce:
+   `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
+4. Ensure the resolved session directory exists.
 
-1. Check if `codex` CLI is installed:
-   ```bash
-   codex --version 2>/dev/null
-   ```
-2. If the command succeeds (exit code 0), set `codex_available = true`.
-   If it fails (command not found), set `codex_available = false`.
-3. Announce Codex status briefly.
+#### Codex Availability Check (config + CLI matrix)
+
+> **Exception:** The Leader MAY run Bash commands to read `athanor.json` and probe Codex CLI availability.
+
+Resolve TWO state variables — `codex_available` (boolean) AND `review_strategy`
+(one of `codex` / `claude-self-review` / `none`). Both are consumed by the
+dispatch sites in Steps 2, 3, and 4 (see contract block before Step 3 below).
+
+```bash
+# Read config (with graceful jq-absence fallback)
+if command -v jq >/dev/null 2>&1; then
+  CODEX_CONFIG_ENABLED=$(jq -r '.codex.enabled // true' athanor.json 2>/dev/null)
+  CODEX_FALLBACK=$(jq -r '.codex.fallback // "self-critic"' athanor.json 2>/dev/null)
+else
+  # jq not installed — assume defaults from shipped config
+  CODEX_CONFIG_ENABLED=true
+  CODEX_FALLBACK=self-critic
+fi
+
+# Probe CLI
+if codex --version >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
+
+# State machine
+if [ "$CODEX_CONFIG_ENABLED" = "true" ] && [ "$CODEX_CLI" = "true" ]; then
+  codex_available=true
+  review_strategy=codex
+elif [ "$CODEX_CONFIG_ENABLED" = "false" ]; then
+  codex_available=false
+  case "$CODEX_FALLBACK" in
+    self-critic) review_strategy=claude-self-review ;;
+    skip)        review_strategy=none ;;
+    fail)        echo "ERROR: codex.enabled=false but codex.fallback=fail — aborting" >&2; exit 1 ;;
+  esac
+else
+  # CLI absent, config true — same fallback matrix
+  codex_available=false
+  case "$CODEX_FALLBACK" in
+    self-critic) review_strategy=claude-self-review ;;
+    skip)        review_strategy=none ;;
+    fail)        echo "ERROR: codex --version failed and codex.fallback=fail — aborting" >&2; exit 1 ;;
+  esac
+fi
+```
+
+Announce exactly one of the following based on resolved state:
+- `Codex available` (when `codex_available=true`)
+- `Codex disabled by config (review_strategy=<value>)` (when `CODEX_CONFIG_ENABLED=false`)
+- `Codex CLI not installed (review_strategy=<value>)` (when config true but CLI absent)
 
 ### Step 1: Gather Context & Parse Request
 
@@ -120,10 +166,12 @@ Before dispatching planners, the Leader MUST announce its dispatch decision:
 
 ```
 Planner B dispatch: {codex|claude-fallback|none}
-  Reason: codex_available={true|false}, tier={deep|standard|lite}
+  Reason: codex_available={true|false}, review_strategy={codex|claude-self-review|none}, tier={deep|standard|lite}
 ```
 
 This checkpoint makes the branch decision visible in the transcript.
+
+> Planner B selection still branches on `codex_available` alone (Codex CLI present → Codex contrarian; CLI absent → Claude contrarian fallback). `review_strategy` is logged here for traceability and consumed by Step 3 / Step 4 reviewer dispatch.
 
 **Planner A — Standard Planner:**
 
@@ -340,11 +388,40 @@ When `tier == lite`:
 - Copy `plan-a.md` content to `plan.md` (Leader runs: `cp .athanor/sessions/{id}/plan-a.md .athanor/sessions/{id}/plan.md` via Bash)
 - Proceed directly to Step 5 (Present to User)
 
-### Step 3: Dispatch Cross-Reviews (after Step 2 completes)
+<!--
+  review_strategy contract (set in Step 0):
+    - codex              → dispatch Codex reviewer(s) (original behavior)
+    - claude-self-review → dispatch Claude reviewer(s) (no cross-model)
+    - none               → skip Step 3 entirely AND make Step 4 a pass-through
+                           (standard tier emits plan-a.md content as plan.md with
+                            a `<!-- athanor:review-skipped -->` HTML header comment
+                            prepended so downstream /athanor:work can detect it)
+  Tier × review_strategy together determine reviewer count and direction.
+-->
 
-After BOTH planners return, dispatch TWO reviewers **simultaneously**.
+### Step 3: Dispatch Cross-Reviews
 
-Each reviewer reads the OTHER planner's output file.
+The number and direction of reviewers depends on tier (see Tier Dispatch Table)
+AND on the `review_strategy` resolved in Step 0:
+
+- **Deep tier:**
+  - If `review_strategy=codex`: TWO reviewers run in parallel — Reviewer A
+    (Claude) reviews Plan B; Reviewer B (Codex) reviews Plan A.
+  - If `review_strategy=claude-self-review`: TWO reviewers, both Claude —
+    Reviewer A reviews Plan B; Reviewer B reviews Plan A (no cross-model).
+  - If `review_strategy=none`: skip Step 3 entirely; both plans flow to Step 4
+    Critic as-is.
+- **Standard tier:**
+  - If `review_strategy=codex`: ONE reviewer (Codex) reviews Plan A;
+    output `review-of-a.md`. No Plan B exists, so no Reviewer B.
+  - If `review_strategy=claude-self-review`: ONE reviewer (Claude self-review)
+    reviews Plan A; output `review-of-a.md`.
+  - If `review_strategy=none`: skip Step 3.
+- **Lite tier:** Step 3 skipped entirely regardless of `review_strategy`.
+
+The per-tier dispatch blocks below show the exact prompt for each case.
+When two reviewers are dispatched (deep tier), they run **simultaneously** and
+each reviewer reads the OTHER planner's output file.
 
 **Reviewer A — Reviews Plan B:**
 
@@ -402,9 +479,14 @@ END_RESULT"
 Before dispatching Reviewer B, the Leader MUST announce:
 
 ```
-Reviewer B dispatch: {codex|claude-fallback}
-  Reason: codex_available={true|false}, tier={deep|standard}
+Reviewer B dispatch: {codex|claude-fallback|skipped}
+  Reason: codex_available={true|false}, review_strategy={codex|claude-self-review|none}, tier={deep|standard}
 ```
+
+Dispatch matrix:
+- `codex_available=true AND review_strategy=codex` → Codex Reviewer B
+- `review_strategy=claude-self-review` → Claude Reviewer B (fallback prompt below)
+- `review_strategy=none` → skip Reviewer B entirely (do not dispatch)
 
 **Reviewer B — Reviews Plan A:**
 
@@ -515,38 +597,60 @@ END_RESULT"
 })
 ```
 
-#### Standard Tier: Codex Review (or Claude Self-Review)
+#### Standard Tier: Codex Review (or Claude Self-Review, or Skip)
 
-When `tier == standard`:
-- If `codex_available == true`: Dispatch a Codex review worker (same pattern as deep tier Reviewer B but reviewing plan-a.md)
-- If `codex_available == false`: Dispatch a Claude self-review Agent (critical review of plan-a.md)
-- Save to `review-of-a.md`
-- Skip Reviewer B (no plan-b.md exists to review)
+When `tier == standard`, branch on `review_strategy` (resolved in Step 0):
+- `review_strategy == codex` (requires `codex_available == true`): Dispatch a Codex review worker (same pattern as deep tier Reviewer B but reviewing plan-a.md). Save to `review-of-a.md`.
+- `review_strategy == claude-self-review`: Dispatch a Claude self-review Agent (critical review of plan-a.md). Save to `review-of-a.md`.
+- `review_strategy == none`: **Skip Step 3 entirely.** Do not produce `review-of-a.md`. Step 4 Critic also becomes a trivial pass-through (see Step 4 standard-tier block).
+
+In all three branches: skip Reviewer B (no `plan-b.md` exists in standard tier).
 
 #### Lite Tier: Skip
 
 When `tier == lite`: Steps 3 and 4 are skipped. plan-a.md was copied to plan.md in Step 2.
 
-### Step 4: Dispatch Critic (after Step 3 completes)
+### Step 4: Critic Refinement
 
-After BOTH reviewers return, dispatch the Critic to synthesize everything.
+The Critic step consolidates plan + review(s) into final `plan.md`. Behavior
+depends on tier:
+
+- **Deep tier:** Critic reads `plan-a.md`, `plan-b.md`, `review-of-a.md`,
+  `review-of-b.md` and produces `plan.md`. (If `review_strategy=none`,
+  reviews are absent; Critic reads only the two plans.)
+- **Standard tier:** Critic reads `plan-a.md` + `review-of-a.md` and
+  produces `plan.md`. (If `review_strategy=none`, Critic is a trivial
+  pass-through: copies `plan-a.md` to `plan.md` with a prepended
+  `<!-- athanor:review-skipped -->` HTML header comment so downstream
+  `/athanor:work` can detect that review was skipped, and announces the skip.)
+- **Lite tier:** Step 4 skipped; `plan-a.md` is copied directly to `plan.md`
+  per the existing lite-tier flow.
 
 #### Critic Dispatch Gate Checkpoint
 
 Before dispatching the Critic, the Leader MUST announce:
 
 ```
-Critic dispatch: model=opus, inline-prompt mode
+Critic dispatch: model=opus, inline-prompt mode, tier={deep|standard}, review_strategy={codex|claude-self-review|none}
   Expect: inline-prompt behavior, NOT registered athanor-critic agent behavior
 ```
 
 > **COLLISION GUARD**: The Critic MUST use the inline prompt from this skill, NOT the registered `athanor-critic` agent's system prompt. The inline prompt contains specific session file paths (plan-a.md, plan-b.md, review files) that the registered agent does not know about.
 
+> **Pass-through case:** If `tier == standard AND review_strategy == none`, do NOT dispatch the Critic Agent at all. Instead, the Leader uses Bash to prepend the `<!-- athanor:review-skipped -->` header to `plan-a.md` and write the result to `plan.md`, e.g.:
+> ```bash
+> { printf '<!-- athanor:review-skipped -->\n'; cat .athanor/sessions/{id}/plan-a.md; } > .athanor/sessions/{id}/plan.md
+> ```
+> Then announce: "Review skipped per codex.fallback=skip; plan-a.md copied to plan.md with review-skipped header."
+
 #### Deep Tier: 4-Input Synthesis Critic
 
 > The Critic is always Claude (opus), regardless of tier or Codex availability.
 > In deep tier, it receives all 4 inputs (plan-a, plan-b, review-of-a, review-of-b).
+> (When `review_strategy == none` in deep tier, the Critic receives only the 2 plans — adjust the prompt to omit review file references.)
 > In standard tier, it receives 2 inputs (plan-a, review-of-a) for refinement.
+> When `review_strategy == none` in standard tier, the Critic step is replaced
+> by the Bash pass-through above; no Agent is dispatched.
 > In lite tier, this step is skipped entirely.
 
 ```

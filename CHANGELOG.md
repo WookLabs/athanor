@@ -3,6 +3,145 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.7] — 2026-05-18
+
+**Truth-in-documentation release.** Discovered that several documented
+surfaces did not match code; correcting transparently rather than letting
+the gap widen. No new features — every change brings code and docs back
+into agreement. Security-honesty framing: when "enforced" doesn't enforce
+and "config keys" aren't read, the right move is to say so plainly.
+
+Session: `2026-05-18-001` (full audit + adversarial planning + cross-review
+artifacts under `.athanor/sessions/2026-05-18-001/`).
+
+### Why this release
+
+A two-perspective audit (Claude Explore + Codex independent review) of
+the v0.7.6 plugin surface found a cluster of trust-eroding drift:
+
+- `CLAUDE.md` Defense Mechanisms table labeled the Stop hook
+  **enforced** when in fact it is a `type: prompt` injection — the
+  model self-classifies; the plugin layer cannot force invocation.
+- `athanor.json` `_doc` claimed `models` and `hooks.profile`/`disabled`
+  are honored by skills/env-vars — grep confirmed zero readers anywhere.
+- `$schema` URL pointed at `schemas/athanor-config.schema.json`, a path
+  that did not exist in the repository.
+- `/athanor:setup`'s inline config template carried ghost `debugger` /
+  `debugger-tracer` model keys absent from the real `athanor.json` (the
+  v0.7.6 C4 drift class).
+- `skills/plan/SKILL.md` Step 3 prose presumed deep-tier ("After BOTH
+  planners return") even when standard/lite tiers run; misled readers.
+- `skills/work/SKILL.md` looked up "most recent today" while
+  `skills/scope-drift/SKILL.md` used lexicographic max — a plan made
+  at 23:45 was unreachable next morning by `/work`.
+- `skills/plan/SKILL.md` Step 0 ignored `athanor.json codex.enabled`
+  entirely (only probed `codex --version` CLI presence).
+
+### Fixed
+
+- **M1 (docs honesty)**: Stop hook in CLAUDE.md status table relabeled
+  **advisory (prompt-based)**. The §Completion-Claim Verification
+  subsection renamed and rewritten with an explicit **Limitation**
+  paragraph (model self-classifies; plugin layer cannot force
+  invocation). Forward-references v0.7.8 spike result (see Spike below).
+- **M3 (codex.enabled config wired)**: `skills/plan/SKILL.md` Step 0
+  now reads `athanor.json codex.enabled` via `jq` (with graceful
+  jq-absence fallback to shipped defaults), AND-gates with
+  `codex --version` CLI probe, and honors `codex.fallback`
+  (self-critic / skip / fail) via a new `review_strategy` variable
+  threaded through Planner B / Reviewer A / Reviewer B / Critic
+  dispatch sites. `skills/discuss/SKILL.md` gets the same matrix
+  threaded into its Researcher B branch.
+- **M4 (session lookup canonicalized)**: New CLAUDE.md §Session
+  Lookup Convention defines the rule (lexicographic max of
+  `^\d{4}-\d{2}-\d{2}-\d{3}$` dirs, no "today" semantics, with
+  stale-session announcement when LATEST date ≠ today). All 6
+  session-touching skills (work, plan, discuss, analyze, debug,
+  review) updated to reference the convention instead of restating
+  inline.
+- **M5 (plan tier prose corrected)**: `skills/plan/SKILL.md` Step 3
+  and Step 4 intros rewritten tier-aware. Deep / Standard / Lite tier
+  branching explicit; no more generic "After BOTH planners/reviewers
+  return" preamble. Cross-multiplied with `review_strategy` so the
+  prose accurately describes every combination.
+- **C3 (broken $schema URL fixed)**: New
+  `schemas/athanor-config.schema.json` (JSON Schema draft-07) ships
+  with the release. `athanor.json` `$schema` URL re-pinned to the
+  v0.7.7 release tag. The schema covers every key that is actually
+  honored by code, and marks `models` (v0.7.9 deletion target) and
+  `hooks.profile`/`hooks.disabled` (v0.7.8 deletion target) as
+  `"deprecated": true`.
+- **C4 (template extraction)**: New `templates/athanor.json` is the
+  canonical default copied by `/athanor:setup`. The inline JSON block
+  in `skills/setup/SKILL.md` is preserved as an embedded fallback
+  (with a loud `⚠ template file not found` warning when fallback
+  fires — packaging-regression safety). Ghost `debugger` /
+  `debugger-tracer` keys removed from the template; the real
+  `athanor.json` never had them.
+
+### Added
+
+- `schemas/athanor-config.schema.json` — first machine-readable config
+  contract.
+- `templates/athanor.json` — canonical default config copied at
+  `/athanor:setup` time; byte-mirror of root with `_doc` fields preserved.
+- `CLAUDE.md` §"Session Lookup Convention" — single canonical rule
+  with Bash reference implementation.
+- 9 new regression test files (41 tests) pinning every v0.7.7
+  invariant: schema validation, schema URL version pin, template
+  keyset match, no ghost keys, plugin manifest packaging, CLAUDE.md
+  honesty, session lookup convention, plan-skill tier prose, and
+  plan/discuss codex matrix.
+- `tests/fixtures/fixture_athanor_invalid.json` — broken-config fixture
+  for schema-validation negative test.
+- `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)" —
+  empirical evidence that v0.7.8 command-hook design is feasible.
+- `scripts/hooks/stop_verify_claims.py` — no-op stub (v0.7.8 starting
+  point; will be extended in v0.7.8 with real claim-classification +
+  sentinel-detection logic).
+
+### Deprecated
+
+- `athanor.json` `models` block — `_doc` previously claimed skills
+  read this for dispatch model selection; grep confirms no reader.
+  Schema marks the block `"deprecated": true`. **v0.7.9 will remove
+  the block entirely.** Migration: if you depended on the
+  (non-functional) keys, fork the affected `skills/<name>/SKILL.md`
+  and edit the inline `model:` fields.
+- `athanor.json` `hooks.profile` and `hooks.disabled` — `_doc`
+  previously claimed honoring via `ATHANOR_HOOK_PROFILE` /
+  `ATHANOR_DISABLED_HOOKS` env vars; no reader exists.
+  Schema marks both `"deprecated": true`. **v0.7.8 will replace
+  these with real command-hook gating** (spike PASS — see below).
+
+### Spike — Command-hook Stop blocking feasibility (PASS)
+
+Per `.athanor/sessions/2026-05-18-001/plan.md` §SPIKE, this release was
+gated on empirical verification that Claude Code runtime honors
+`type: "command"` Stop hooks with `exit 2` blocking. Spike (2026-05-18)
+PASSED on all four questions: hook executes, exit 0 → normal Stop, exit
+2 → Stop blocked, stderr fed back as `Stop hook feedback: ...`
+continuation context. Full result in `docs/STATE.md`. v0.7.8 will
+upgrade the Stop hook from prompt-based to command-based using this
+verified runtime contract.
+
+### Resolved decisions
+
+User-confirmed during planning (2026-05-18):
+
+1. **Spike timing**: runs before v0.7.7 ships (M1 wording is
+   forward-reference-aware: PASS path).
+2. **CHANGELOG voice**: security-honesty correction (this entry).
+3. **Template `_doc` fields**: kept (root parity; inline schema
+   substitute until v0.8.0).
+4. **Schema URL host**: pinned to release tag (`/v0.7.7/`), not
+   `main` (no transient drift on releases).
+
+### CI
+
+- `.github/workflows/validate-plugin.yml` updated to install
+  `jsonschema` alongside `pytest` for the regression-fixtures step.
+
 ## [0.7.6] — 2026-05-02
 
 5-agent ref deep-dive + Codex cross-validation outcome (session
