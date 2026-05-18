@@ -149,13 +149,18 @@
     "hooks": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Stop hook configuration. As of v0.7.8, profile is honored at runtime by scripts/hooks/stop_verify_claims.py. `disabled[]` was removed in v0.7.8 (orphan in v0.7.7).",
+      "description": "Stop hook configuration. As of v0.7.8, profile is honored at runtime by scripts/hooks/stop_verify_claims.py. As of v0.7.9, stopLoopThreshold caps consecutive-block loops.",
       "properties": {
         "_doc": { "type": "string" },
         "profile": {
           "type": "string",
           "enum": ["off", "standard"],
           "description": "Stop hook gate mode: 'off' disables the gate (script exits 0 silently); 'standard' (default) enables full material-claim detection. Unknown values fall back to standard with a stderr warning at runtime. 'lenient' and 'strict' are not yet supported (deferred per plan §10)."
+        },
+        "stopLoopThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "v0.7.9+: Max consecutive exit-2 blocks per session before the circuit breaker opens and the (N+1)th invocation releases (exit 0). Prevents infinite gate loops when the verification skill misbehaves. Default 3 if missing. Set higher to be more strict, lower to release faster on suspected misconfiguration."
         }
       }
     },
