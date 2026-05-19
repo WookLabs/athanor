@@ -83,7 +83,71 @@ Leader가 user에게 모드 질문을 1회 발화. AskUserQuestion이 가능한 
 
 User 확인 후 Step 2로 진행. (clarify 모드는 dilemma confirm step을 건너뛰고 바로 Step 2-clarify dialog로 진입.)
 
-### Step 2: Dispatch Research Workers (in parallel)
+### Step 2-clarify: Single-Claude Dialog (clarify mode, v0.9.0)
+
+> **Mode marker:** This step ONLY fires when Step 1.3 branched to `mode=clarify` (option [B] or [C]). For `mode=synthesis`, skip to Step 2.
+
+#### Operational shape
+
+Clarify mode is **single-Claude** dialog. The leader itself conducts the conversation — NO parallel workers, NO Codex dispatch, NO Devil's Advocate. Symmetric with `compound-engineering:ce-brainstorm` Phase 1.2-1.3, which is also a single-agent dialog pattern. This shape is intentional: gap-probe dialogues lose coherence when split across parallel workers.
+
+Codex is reserved for synthesis-mode Worker B (existing behavior, preserved). v0.9.0 does not introduce Codex into clarify mode. A future v0.9.x may add an opt-in cross-model variant.
+
+#### Step 2-clarify.1: Internal gap-scan (agent-internal, no user-facing output)
+
+Before asking any questions, the leader silently scans the user's opening prompt for 4 gap lenses (ce-brainstorm Standard tier). See `skills/discuss/references/clarify-gap-probes.md` for the full lens definitions, examples, and probe templates. Lens summary:
+
+- **Evidence gap** — opening asserts want/need but doesn't point to concrete prior action (time/money/workaround). If present, fire one open-ended evidence probe.
+- **Specificity gap** — beneficiary is described at an abstraction the leader can't design for without inventing who they are. If present, fire one specificity probe.
+- **Counterfactual gap** — current workaround (and its cost) is not visible. If present, fire one counterfactual probe.
+- **Attachment gap** — opening attaches to a specific solution shape rather than the value it delivers, and the smallest version hasn't been examined. If present, fire one attachment probe.
+
+Each lens fires AT MOST one open-ended probe. Scope-appropriate gaps may produce 0–4 probes total. A concrete, well-framed opening may earn zero.
+
+#### Step 2-clarify.2: Dialogue protocol
+
+- **One question per turn.** Single question per leader turn, even when sub-questions feel related. Stacking dilutes answers.
+- **AskUserQuestion preferred for narrowing / single-select.** When the answer is a bounded choice the leader can write 3–4 distinct options for, use the blocking question tool (`AskUserQuestion`) with a single-select. If the schema isn't loaded, call `ToolSearch` with `select:AskUserQuestion` first.
+- **Open-ended for introspective / rigor probes.** Use plain open-ended prose when (a) the answer is inherently narrative, (b) presented options would influence the answer (most rigor probes — evidence/specificity/counterfactual/attachment), or (c) you cannot write 3–4 plausibly-distinct options that cover the space.
+- **Never silently skip a question.** If no blocking tool is available in the host, fall back to a numbered list in chat with the hint "Pick a number or describe what you want."
+- **Stop-phrase guard (LEADER side).** The leader's own dialog turns must NOT use the early-stop phrases listed in Step 2.5 below — "계속할까요?" / "이 정도면 멈출까요?" / "Should I continue?" / equivalents. These phrases were originally designed to detect workers giving up; in clarify mode, where the leader itself drives the dialog, emitting them would short-circuit the gap probes and degrade clarify mode into a single-pass restate. The leader keeps progressing through scope-appropriate probes until the integration check and scoping synthesis both pass. Users themselves can still end the session at any turn; the guard applies only to the leader's wording.
+
+#### Step 2-clarify.3: Integration check (pre-exit)
+
+Before exiting the dialog, mentally combine what the user has said and surface any non-obvious consequences the dialogue hasn't probed. If user-stated X plus user-stated Y plus the leader's-default-Z produces a downstream effect the user is unlikely to have tracked through one-question-at-a-time dialogue, fire one open-ended probe NOW (do not punt it to scoping synthesis call-outs). Phase 2.5 call-outs are for residuals, not for consequences the leader could have asked about in the dialogue.
+
+#### Step 2-clarify.4: Scoping synthesis (Phase 2.5 equivalent)
+
+After all active gap probes and the integration check resolve, the leader surfaces a scoping synthesis to the user — the final correction point before requirements.md is written. Format (sections render-conditional; omit empty sections):
+
+```
+Based on our dialogue, here's the scope I'm proposing for the requirements doc:
+
+**What we're building:**
+[1–3 sentences — forward-looking shape, plain words]
+
+**Key trade-offs:** (when real choices were made in dialogue)
+- [explicit choice + brief why]
+
+**What's not in scope:** (when deferred items would surprise a reader)
+- [deferred item]
+
+**Call outs:** (when ≥1 residual fork survives the keep test)
+- [scope-level fork the user can affirm or redirect]
+
+Confirm and I'll write the requirements doc next.
+Or tell me what to change — even something captured earlier is fair game.
+```
+
+Wait for explicit user confirmation. Do NOT auto-write requirements.md until confirmed.
+
+#### Step 2-clarify.5: Write requirements.md (handed to U3)
+
+Once the user confirms the scoping synthesis, the leader writes `.athanor/sessions/{id}/requirements.md` using the vendored ce-brainstorm requirements-capture template. See **Step 3-clarify-finalization** below for the template structure and file output rules.
+
+After requirements.md is saved, proceed to **Step 3-clarify-handoff** (Phase 4 menu).
+
+
 
 Dispatch TWO workers simultaneously using the Agent tool.
 
