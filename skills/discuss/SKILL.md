@@ -1,8 +1,12 @@
 ---
 name: discuss
 description: >
-  의사결정 브레인스토밍. Researcher + Devil's Advocate + Critic 합성.
-  '논의', '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B', '브레인스토밍' 요청 시 사용.
+  의사결정 브레인스토밍 + 의도 명확화 (dual mode). Step 1에서 모드 선택.
+  synthesis 모드 (Researcher + Devil's Advocate + Critic): '논의',
+  '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B', '브레인스토밍'.
+  clarify 모드 (single-Claude gap-probe dialog → requirements.md):
+  '의도 명확화', '요구사항이 헷갈려', '무엇을 만들지 헷갈려',
+  '뭘 해야할지 모르겠어', '명확히 정리해줘'.
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---

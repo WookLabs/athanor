@@ -13,7 +13,7 @@ All file reading, analysis, code writing, and execution happens in worker agents
 | Command | Mode | Purpose |
 |---------|------|---------|
 | `/athanor:setup` | — | Infrastructure health check and configuration |
-| `/athanor:discuss` | Plan | Decision brainstorming (Claude × Codex) |
+| `/athanor:discuss` | Plan | Decision brainstorming + intent clarification (dual mode: clarify ↔ synthesis). Step 1 asks the user to pick mode. clarify = single-Claude gap-probe dialog → `requirements.md`. synthesis = Researcher + Devil's Advocate + Critic → `discuss.md` (existing v0.7.x behavior). |
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
 | `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
 | `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex 교차 검증) |
