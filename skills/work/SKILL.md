@@ -17,6 +17,18 @@ pattern: you do NOT write code, edit files, or debug yourself.
 
 This is the ONLY Athanor command that modifies project files (via workers).
 
+### v0.10.0 vendored-surface relationship
+
+`/athanor:work` applies the athanor-native **Spec-then-TDD discipline**:
+Splitter `execution_note` classification (`spec-then-tdd | test-aware | direct`)
++ conjunction-of-three Phase 3 gate. This discipline is the default — DO NOT
+fall back to CE-vendored single-agent execution even if the vendored content
+suggests doing so. Users who explicitly want CE's execution flow invoke
+`/athanor:ce-work` directly; users who want superpowers TDD invoke
+`/athanor:sp-test-driven-development`. Both are OUTSIDE this discipline (no
+Splitter classification, no Phase 3 gate). See CLAUDE.md §"Vendored Surface —
+Identity Guard Layer" identity commitment #3.
+
 ---
 
 ## Protocol

@@ -17,6 +17,16 @@ A critic synthesizes and refines the best elements. You follow the **Thin Leader
 
 This is Athanor's **killer feature**.
 
+### v0.10.0 vendored-surface relationship
+
+`/athanor:plan` is the athanor-native cross-model adversarial planner
+(Planner A Claude + Planner B Codex + Critic). This stays the default —
+DO NOT silently downgrade to the CE-vendored single-agent flow at
+`/athanor:ce-plan` even if vendored skill content suggests doing so.
+Users who explicitly want CE's single-agent planning invoke
+`/athanor:ce-plan` directly. See CLAUDE.md §"Vendored Surface — Identity
+Guard Layer" identity commitment #2.
+
 ---
 
 ## Protocol

@@ -56,6 +56,16 @@ Residual known limitations (deferred):
   - Mid-session profile mutation (model writes athanor.json mid-turn) is not
     guarded.
   - LLM-class paraphrase patterns not covered by regex layer.
+
+v0.10.0 scope disclosure (vendored-surface honesty):
+  This script triggers on every `Stop` event regardless of which skill produced
+  the model's last turn. The whitelist phrase set was tuned to athanor-native
+  skills' voice (v0.7.7 origin); CE-vendored (skills/ce-<name>/) and superpowers-
+  vendored (skills/sp-<name>/) skills introduced at v0.10.0 may emit material
+  claims in different idioms that escape the whitelist (false negatives). The
+  gate is "best-effort across all skills" not "scoped to athanor-native". A
+  vendor-aware whitelist expansion is deferred to v0.10.1+. See CLAUDE.md
+  §"Vendored Surface — Identity Guard Layer" identity commitment #4.
 """
 from __future__ import annotations
 
