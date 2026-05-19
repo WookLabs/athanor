@@ -4,7 +4,36 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.8.0 (Spec-then-TDD discipline — advisory, planner-classified)
+## Current Phase: SHIPPING — v0.9.0 (`/athanor:discuss` dual-mode — clarify + synthesis)
+
+`/athanor:discuss` 스킬에 clarify (intent 명확화) 모드 흡수 — synthesis
+모드 (현재 동작)는 backwards compat 그대로. Step 1에서 user에게 모드 묻고
+분기. clarify 모드는 single-Claude gap-probe dialog (4 lens: evidence /
+specificity / counterfactual / attachment) + requirements.md 산출.
+`/athanor:plan` Step 1이 requirements.md 자동 inject + Critic Rubric에
+axis (C) R-ID traceback coverage 추가. 메커니즘은 advisory dialog mode /
+planner-classified gap probes — runtime 강제 없음 (Stop hook 같은 enforce
+는 v0.9.x+ 후보 — `/athanor:plan` Critic이 cite-back 미흡 시 flag만 함).
+
+- 10 user-invocable skills + 2 internal vendored skills (`scope-drift`,
+  `verification-before-completion`).
+- 2 vendored references under `skills/discuss/references/` (NEW v0.9.0):
+  `clarify-gap-probes.md` + `requirements-capture.md`.
+- 7 worker agents (unchanged).
+- 1 hook (Stop, command-mode + v=2 nonce + circuit breaker per v0.7.9).
+- v0.9.0 추가: `/athanor:discuss` dual-mode + clarify single-Claude dialog
+  + `requirements.md` artifact + `/athanor:plan` Step 1 auto-load + Critic
+  Rubric axis (C) R-ID traceback.
+- Regression test suite: ≥255 tests passing (203 baseline post-v0.8.0 +
+  ≥48 new across U1-U6).
+- Release gate (`scripts/check_release_ready.py --ci`) green.
+- Active executable contracts (v0.9.0 신규):
+  `discuss-mode-question-contract`, `discuss-synthesis-preservation`,
+  `clarify-dialog-protocol`, `clarify-requirements-template`,
+  `clarify-handoff-menu`, `plan-reads-requirements-md`,
+  `critic-axis-c-r-id-traceback`, `discuss-trigger-keywords-qualified`.
+
+## Previous Phase: v0.8.0 (Spec-then-TDD discipline — advisory, planner-classified)
 
 Planner-classified Spec-then-TDD가 `/athanor:plan` + `/athanor:work`에 통합됨.
 Splitter가 분류 책임 짐. Executor가 분류에 따라 분기 실행. RED 안 가면 자동
