@@ -28,6 +28,7 @@ Documented infrastructure/output exceptions:
 | `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, 리뷰 없음) |
 | `/athanor:work` | Execute | **Spec-then-TDD discipline** (Splitter execution_note + conjunction-of-three Phase 3 gate) — athanor identity #3. To use CE's single-agent execution flow, invoke `/athanor:ce-work` explicitly. |
 | `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
+| `/athanor:lfg` | Execute | **Standalone end-to-end pipeline** (v0.11.0) — wraps the LFG flow through athanor-native commands at identity-bearing steps (Step 1 `/athanor:plan` cross-model + Step 2 `/athanor:work` Spec-then-TDD + Step 3 `/athanor:review` 6-lens) and reuses vendored ce-lfg step shape for the rest. Coexists with `/athanor:ce-lfg` (vendored CE single-agent + autofix flow); user selects by namespace. |
 
 ### Vendored (v0.10.0 absorption — see §Vendored Surface below)
 

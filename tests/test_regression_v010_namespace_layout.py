@@ -113,19 +113,21 @@ def test_vendored_skill_frontmatter_name_matches_directory():
     )
 
 
-def test_marketplace_version_in_0_10_x_series():
-    """MUST: marketplace.json plugin version is in the 0.10.x series.
+def test_marketplace_version_in_0_10_or_0_11_x_series():
+    """MUST: marketplace.json plugin version is in the 0.10.x or 0.11.x series.
 
-    v0.10.1 generalization: pinned to "0.10.0" originally; relaxed to the
-    minor series so v0.10.1+ patch releases don't have to keep editing
-    this test. v0.11.0+ will need an explicit update.
+    v0.10.1 generalization → v0.11.0 extension: pinned to "0.10.0"
+    originally; relaxed to 0.10.x at v0.10.1; extended to 0.10.x or
+    0.11.x at v0.11.0. v0.12.0+ will need another explicit update.
     """
     import json
     mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
     versions = [p.get("version") for p in mp.get("plugins", [])]
-    in_series = [v for v in versions if v and v.startswith("0.10.")]
+    in_series = [v for v in versions
+                 if v and (v.startswith("0.10.") or v.startswith("0.11."))]
     assert in_series, (
-        f"marketplace.json plugin version must be in 0.10.x series; got {versions}"
+        f"marketplace.json plugin version must be in 0.10.x or 0.11.x series; "
+        f"got {versions}"
     )
 
 
@@ -141,6 +143,8 @@ def test_plugin_manifest_version_matches_marketplace():
         f"plugin.json version {pj_version!r} not found in marketplace.json "
         f"plugin versions {mp_versions}"
     )
-    assert pj_version and pj_version.startswith("0.10."), (
-        f"plugin.json version must be in 0.10.x series; got {pj_version!r}"
+    assert pj_version and (
+        pj_version.startswith("0.10.") or pj_version.startswith("0.11.")
+    ), (
+        f"plugin.json version must be in 0.10.x or 0.11.x series; got {pj_version!r}"
     )
