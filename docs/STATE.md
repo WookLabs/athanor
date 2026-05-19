@@ -4,7 +4,53 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.10.3 (Stop hook residual closure — R1+R2+R3)
+## Current Phase: SHIPPING — v0.11.0 (`/athanor:lfg` wrapper — standalone LFG closure)
+
+v0.10.0 흡수 arc의 standalone narrative 마무리. `/athanor:lfg` wrapper
+skill을 신설해서 LFG end-to-end 파이프라인이 athanor-native 명령으로
+identity-bearing step에서 자동 dispatch. vendored `/athanor:ce-lfg` 는
+T2 그대로 보존 — 두 skill 공존, 사용자가 namespace로 선택.
+
+- **U1**: `skills/lfg/SKILL.md` 신설 (depth-1 auto-discovery).
+  - Step 1 → `/athanor:plan` (cross-model adversarial)
+  - Step 2 → `/athanor:work` (Spec-then-TDD)
+  - Step 3 → `/athanor:review` (parallel 6-lens)
+  - Steps 4-8 → vendored ce-lfg shape 그대로 (autofix persist /
+    residual handoff / ce-test-browser / commit-push-PR / CI watch 3
+    fix iterations) + Step 9 `<promise>DONE</promise>`.
+- **U2** + **U3**: voice 회귀 + 10개 신규 regression tests.
+  - frontmatter / 각 step의 athanor 명령 호출 / 모든 8개 step anchor /
+    forbidden-phrase / difference-from-ce-lfg disclosure / T2 (ce-lfg
+    body 무변경) / 공존 보장.
+- **U4**: version bump 0.10.3 → 0.11.0; CHANGELOG; STATE.md; CLAUDE.md
+  Commands table에 `/athanor:lfg` 추가.
+
+honesty arc — origin §R4 그대로 carry. v0.11.0는 vendored `/athanor:ce-lfg`
+를 deprecate하거나 superseded라고 framing하지 않음. positive commitment
+("athanor stands alone")만, negative commitment 안 함.
+
+### v0.11.0 ship surface
+
+- 사용자-호출 skills: **62개** (61 v0.10.x + 1 신규 `/athanor:lfg`).
+- Regression test suite: ≥ **384 passing** (374 baseline post-v0.10.3 +
+  10 new v0.11.0).
+- Release gate (`scripts/check_release_ready.py --ci`) v0.11.0에서 green.
+- Active executable contracts (v0.11.0 신규):
+  `v011-athanor-lfg-skill-exists-depth-1`,
+  `v011-step-1-2-3-invoke-athanor-native`,
+  `v011-vendored-ce-lfg-body-unchanged`,
+  `v011-positive-commitment-only-voice`.
+
+### v0.11.0 알려진 residual (v0.11.1+ 후보)
+
+- A4 `using-superpowers` cross-cutting integration
+- A5 native-vs-vendored deprecation candidates (`/athanor:discuss`
+  synthesis vs `/athanor:ce-brainstorm` 등)
+- LLM-class paraphrase / semantic similarity (sec-003 last carry)
+- Transcript-event introspection (sec-001 잔류)
+- Mid-session profile mutation guard
+
+## Previous Phase: v0.10.3 (Stop hook residual closure — R1+R2+R3)
 
 v0.10.2가 정직하게 deferred로 표시한 세 잔류를 마무리.
 

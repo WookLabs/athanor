@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.10.3",
-  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of compound-engineering 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Stop hook with NFKC + multi-script confusables fold (Cyrillic+Greek+Armenian) + paraphrase regex + conditional/attribution suppression.",
+  "version": "0.11.0",
+  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of compound-engineering 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
   "author": {
     "name": "WookLabs"
   },

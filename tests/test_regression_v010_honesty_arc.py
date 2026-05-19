@@ -117,28 +117,110 @@ def test_changelog_v010_keeps_v090_intact():
 # ---- STATE.md Current Phase + Vendor Manifest ----
 
 
-def test_state_md_current_phase_in_0_10_x_series():
-    """MUST: docs/STATE.md Current Phase mentions a 0.10.x version.
+def test_state_md_current_phase_in_0_10_or_0_11_x_series():
+    """MUST: docs/STATE.md Current Phase mentions a 0.10.x or 0.11.x version.
 
-    v0.10.1 generalization: pinned to "0.10.0" originally; relaxed to the
-    minor series so v0.10.1+ patch releases pass through. v0.11.0+ will
-    need an explicit update.
-
-    Also asserts the previous phase line names the most recent prior
-    v0.10.x release (so the demotion is visible in STATE.md history).
+    v0.10.1 generalization → v0.11.0 extension: pinned to "0.10.0"
+    originally; relaxed to 0.10.x at v0.10.1; extended to 0.10.x or
+    0.11.x at v0.11.0. v0.12.0+ will need another explicit update.
     """
     text = STATE.read_text(encoding="utf-8")
     found_current = False
-    in_0_10_series = False
+    in_series = False
     for line in text.splitlines():
         if line.startswith("## Current Phase"):
             found_current = True
-            # Look for "v0.10.X" or "0.10.X" anywhere on the line
-            if "0.10." in line:
-                in_0_10_series = True
+            if "0.10." in line or "0.11." in line:
+                in_series = True
             break
     assert found_current, "STATE.md must have Current Phase section"
-    assert in_0_10_series, "Current Phase must reference a 0.10.x version"
+    assert in_series, (
+        "Current Phase must reference a 0.10.x or 0.11.x version"
+    )
+
+
+# ---- v0.11.0 honesty arc continuity ----
+
+
+def _extract_v011_section(text: str) -> str:
+    """Return the v0.11.0 CHANGELOG section body (between [0.11.0]
+    heading and the next H2 release heading)."""
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith("## [0.11.0]"):
+            start = i
+            break
+    if start is None:
+        return ""
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].startswith("## [") and not lines[j].startswith("## [0.11.0]"):
+            end = j
+            break
+    return "\n".join(lines[start:end])
+
+
+# v0.11.0 extends FORBIDDEN_PHRASES with LFG-specific deprecation framing
+# that the wrapper release must avoid (origin §R4: positive commitment only).
+V011_FORBIDDEN_PHRASES = FORBIDDEN_PHRASES + [
+    "ce-lfg deprecated",
+    "supersedes ce-lfg",
+    "athanor lfg replaces ce-lfg",
+    "do not use ce-lfg",
+    "do not use compound-engineering",
+]
+
+
+def test_changelog_v011_entry_exists_when_version_is_0_11_x():
+    """MUST: if plugin.json is at 0.11.x, CHANGELOG has a [0.11.x] entry.
+
+    v0.11.0+ honesty arc carries the same Voice + Migration + Deferred
+    discipline as v0.10.x. The test runs only when the project is on a
+    0.11.x version (so v0.10.x patch releases that didn't bump to 0.11
+    don't fail this test).
+    """
+    import json
+    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj_version = pj.get("version") or ""
+    if not pj_version.startswith("0.11."):
+        return  # not on 0.11.x; this test doesn't apply yet
+    section = _extract_v011_section(CHANGELOG.read_text(encoding="utf-8"))
+    assert section, "CHANGELOG.md must have a [0.11.0] entry when plugin.json is at 0.11.x"
+    assert len(section) > 500, (
+        f"CHANGELOG v0.11.0 entry too short ({len(section)} chars) — "
+        f"meaningful entry required"
+    )
+
+
+def test_changelog_v011_no_forbidden_phrases():
+    """MUST (origin §R4 + v0.10.0 carry): v0.11.0 CHANGELOG entry uses
+    positive commitment only — does NOT deprecate ce-lfg or supersede CE."""
+    import json
+    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj_version = pj.get("version") or ""
+    if not pj_version.startswith("0.11."):
+        return
+    section = _extract_v011_section(CHANGELOG.read_text(encoding="utf-8")).lower()
+    hits = [p for p in V011_FORBIDDEN_PHRASES if p in section]
+    assert not hits, (
+        f"CHANGELOG v0.11.0 contains forbidden overclaim phrase(s): {hits}"
+    )
+
+
+def test_state_md_v011_no_forbidden_phrases():
+    """MUST: STATE.md Current Phase + body has no CE-deprecate phrases at
+    v0.11.0."""
+    import json
+    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj_version = pj.get("version") or ""
+    if not pj_version.startswith("0.11."):
+        return
+    text = STATE.read_text(encoding="utf-8").lower()
+    hits = [p for p in V011_FORBIDDEN_PHRASES if p in text]
+    assert not hits, (
+        f"STATE.md contains forbidden overclaim phrase(s) at v0.11.0: {hits}"
+    )
 
 
 def test_state_md_has_vendor_manifest():

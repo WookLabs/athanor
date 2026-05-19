@@ -3,6 +3,96 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.0] — 2026-05-19
+
+**Standalone LFG: `/athanor:lfg` wrapper skill ships.** Closes the v0.10.0
+absorption arc's standalone narrative. The full end-to-end pipeline
+(plan → work → review → autofix persist → residual handoff → browser test
+→ commit-push-PR → CI watch → DONE) now runs through athanor-native
+commands at the identity-bearing steps, with athanor's cross-model
+adversarial planning and Spec-then-TDD discipline as the default.
+Vendored `/athanor:ce-lfg` (from compound-engineering 3.8.3) preserved
+unchanged — both skills coexist; users choose by namespace.
+
+Plan: `docs/plans/2026-05-19-007-feat-v0.11.0-athanor-lfg-wrapper-plan.md`
+Origin: `docs/brainstorms/2026-05-19-003-athanor-standalone-lfg-wrapper-requirements.md`
+
+### Added
+
+- **`/athanor:lfg` wrapper skill** at `skills/lfg/SKILL.md` (depth-1
+  Claude Code auto-discovery):
+  - Step 1 invokes `/athanor:plan` (cross-model adversarial — Planner A
+    Claude + Planner B Codex + Critic when codex available).
+  - Step 2 invokes `/athanor:work` (Splitter `execution_note` +
+    conjunction-of-three Phase 3 gate per v0.8.0 Spec-then-TDD).
+  - Step 3 invokes `/athanor:review` (parallel 6-lens, no autofix —
+    athanor identity choice).
+  - Steps 4-8 reuse vendored ce-lfg's step shape (autofix persist,
+    residual handoff, ce-test-browser, commit-push-PR, CI watch + 3
+    fix iterations).
+  - Step 9 emits `<promise>DONE</promise>` sentinel.
+  - §"Difference from /athanor:ce-lfg" table makes the choice explicit
+    for users — `/athanor:lfg` is athanor-first; `/athanor:ce-lfg` is
+    CE single-agent + autofix-aware.
+- **10 new regression tests** in
+  `tests/test_regression_v011_athanor_lfg_wrapper.py`: file structure +
+  frontmatter validity + identity-bearing steps invoke athanor-native
+  commands + all 8 pipeline anchors present + voice forbidden-phrase
+  check + difference-from-ce-lfg disclosure + T2 commitment (vendored
+  ce-lfg body unchanged) + coexistence regression.
+
+### Changed
+
+- **CLAUDE.md Commands table** — new `/athanor:lfg` row added alongside
+  other athanor-native skills. (Vendored `/athanor:ce-lfg` row already
+  exists from v0.10.0.)
+- **Version bump** across `.claude-plugin/{plugin,marketplace}.json`,
+  `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json` (0.10.3 → 0.11.0).
+- **Version-pin tests** generalized from "0.10.x series" to "0.10.x or
+  0.11.x series" — `tests/test_regression_v010_namespace_layout.py`
+  and `tests/test_regression_v010_honesty_arc.py` updated.
+
+### Voice (what v0.11.0 deliberately does NOT do)
+
+- v0.11.0 does NOT remove or sunset the vendored `/athanor:ce-lfg`
+  skill. Both `/athanor:lfg` and `/athanor:ce-lfg` coexist; users
+  select by namespace based on whether they want athanor-first or
+  CE single-agent + autofix-aware flow.
+- v0.11.0 does NOT introduce supersession or sunset framing in
+  release prose for the vendored CE flow. The v0.10.0 voice
+  discipline ("upstream stays first-class") is preserved verbatim.
+- v0.11.0 does NOT modify vendored `skills/ce-lfg/SKILL.md` body —
+  T2 provenance commitment from v0.10.0 preserved. Regression test
+  asserts body bytes unchanged.
+- v0.11.0 does NOT extend Stop hook coverage further (v0.10.3
+  boundary preserved).
+- v0.11.0 is NOT a "replacement" — it is an **addition**. The user's
+  muscle memory `/athanor:lfg` is what changes; the underlying
+  capability set grows by one skill.
+
+### Migration (from v0.10.3)
+
+- No breaking changes. 374 baseline tests stay green; 10 new tests
+  (384 total passing).
+- Users who invoke `/athanor:lfg` (new) get the athanor-first flow.
+- Users who invoke `/athanor:ce-lfg` (unchanged) continue to get the
+  vendored CE single-agent + autofix flow.
+- Users who invoke `/compound-engineering:lfg` directly (the external
+  CE plugin) continue to work if the CE plugin is installed; v0.11.0
+  does not interfere.
+
+### Deferred (carried forward)
+
+- **v0.11.1+**: A4 superpowers `using-superpowers` cross-cutting
+  integration with athanor-native skills (separate brainstorm).
+- **v0.11.2+**: A5 native-vs-vendored deprecation candidates (e.g.,
+  `/athanor:discuss` synthesis vs `/athanor:ce-brainstorm`). Depends
+  on A4 outcome.
+- **v0.11.x**: LLM-class semantic similarity (sec-003 last carry);
+  transcript-event introspection (sec-001 residual); mid-session
+  profile mutation guard.
+
 ## [0.10.3] — 2026-05-19
 
 **Stop hook residual closure: Greek/Armenian fold + conditional
