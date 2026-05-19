@@ -51,34 +51,44 @@ v0.10.2 paraphrase + NFKC + vendor-aware closure
   regex + NFKC + confusables fold were shipped. v0.10.1 U6 audit found
   they were NEVER implemented and corrected the docstring honestly. v0.10.2
   actually ships the work:
-  - Paraphrase bypass (sec-003) — closed: MATERIAL_CLAIM_PATTERNS list of
-    ~6 verb-anchored regex patterns catches paraphrased state assertions
-    ("CI is green", "all tests are passing", "the build is healthy", KO
-    "테스트가 다 통과", "빌드 성공", etc.). Patterns compile at module
-    load (fail-loud on bad regex). Known residual: conditional /
-    speculative tense ("If tests are green, merge") still catches via
-    over-match — semantic-tense detection is v0.10.3+ candidate.
-  - Cyrillic homoglyph (ADV-006) — closed: _normalize_for_match() applies
-    unicodedata.normalize('NFKC') + 17-char Cyrillic→Latin fold +
-    lowercase before substring/regex match. NFKC also catches fullwidth-
-    character attacks. Greek/Armenian/other-script homoglyphs NOT in
-    v0.10.2 scope (documented residual; expand deliberately).
-  - Vendor-aware whitelist (A2) — closed: MATERIAL_CLAIMS_EN/KO extended
-    with ~14 idioms emitted by vendored CE/superpowers skills (review
-    complete, <promise>DONE</promise>, all checks passing, branch merged,
-    리뷰 완료, etc.).
+  - Paraphrase bypass (sec-003) — closed via MATERIAL_CLAIM_PATTERNS.
+  - Cyrillic homoglyph (ADV-006) — closed via NFKC + 17-char Cyrillic→
+    Latin fold in _normalize_for_match().
+  - Vendor-aware whitelist (A2) — closed via MATERIAL_CLAIMS_EN/KO
+    extensions for CE/superpowers idioms.
 
-Residual known limitations (deferred):
+v0.10.3 residual closure
+(docs/plans/2026-05-19-006-feat-v0.10.3-stop-hook-residual-closure-plan.md):
+  Closes the three accuracy residuals v0.10.2 documented honestly:
+  - R1 (Greek/Armenian homoglyph fold) — closed: _CYRILLIC_TO_LATIN_TABLE
+    renamed to _CONFUSABLES_TO_LATIN_TABLE and extended with Greek
+    (α ε ι ν ο ρ υ + 7 uppercase) + Armenian (ո). Backwards-compat
+    alias on the old name retained for any external importer.
+  - R2 (conditional/speculative tense suppression) — closed:
+    _is_conditional_or_speculative_context() inspects the clause
+    containing a match (between the most recent ., , ; ? ! \n boundary
+    and match_start). If the first token is in {if, once, when, whenever,
+    should, could, would, unless} OR the Korean prefix is 만약/만일,
+    the match is suppressed.
+  - R3 (attribution / quoted-context skip) — closed:
+    _is_attributed_quote_context() does (a) paired-quote check (same-line
+    odd quote count before + matching close after match span); (b) EN
+    attribution-verb window (within 40 chars before match, on same
+    line, scan for said/claimed/wrote/etc.); (c) KO attribution-verb
+    window (within 40 chars AFTER match, on same line, scan for
+    라고-했/라고-적/라고-말 — Korean attribution markers follow the
+    quote).
+
+Residual known limitations (carried forward to v0.11.0+):
   - **LLM-class paraphrase patterns subtler than verb-anchor regex**
     (e.g., "we verified the test suite ran clean" with subtle clause
-    embedding). v0.10.3+ candidate for semantic similarity layer.
-  - **Conditional / speculative-tense false-positives**: regex layer
-    catches "If all tests are green, merge" even though the speaker
-    isn't asserting state. v0.10.3+ candidate.
-  - **Quoted historical references** ("the v0.7.6 docs said 'tests pass'")
-    — attribution detection is v0.10.3+ work.
-  - **Greek / Armenian / other-script homoglyphs** — v0.10.2 fold is
-    Cyrillic-only. Expand the table deliberately, not greedily.
+    embedding). v0.11.0+ candidate for semantic similarity layer.
+  - **Speculative tense WITHOUT prefix marker** ("Probably CI is green").
+    v0.10.3 R2 catches explicit prefix markers only.
+  - **Multi-paragraph quote spans / code-block context** for attribution.
+    v0.10.3 R3 uses a same-line constraint.
+  - **Cherokee, full-width Latin, other-script confusables**. v0.10.3 R1
+    covers Cyrillic + Greek + Armenian only.
   - A model with file-system access can write its own nonce state and emit
     matching sentinel — bypass cost raised but not eliminated. v0.11.0+
     candidate via Claude Code transcript-event introspection.

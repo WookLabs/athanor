@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of CE 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Stop hook with NFKC + Cyrillic-fold + paraphrase-regex layers (v0.10.2 paraphrase-bypass closure).",
-      "version": "0.10.2",
+      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of CE 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Stop hook with NFKC + multi-script confusables fold + paraphrase regex + conditional/attribution suppression (v0.10.3 residual closure).",
+      "version": "0.10.3",
       "source": "./",
       "author": {
         "name": "WookLabs"

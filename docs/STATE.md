@@ -4,7 +4,55 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.10.2 (Stop hook paraphrase + NFKC + cyrillic + vendor-aware closure)
+## Current Phase: SHIPPING — v0.10.3 (Stop hook residual closure — R1+R2+R3)
+
+v0.10.2가 정직하게 deferred로 표시한 세 잔류를 마무리.
+
+- **R1 (Greek/Armenian homoglyph fold)** — `_CYRILLIC_TO_LATIN_TABLE` →
+  `_CONFUSABLES_TO_LATIN_TABLE` 로 rename. Greek 13자 (α ε ι ν ο ρ υ
+  + 7 uppercase) + Armenian ո 추가. "deployed tο production" (Greek ο)
+  같은 attack vector 차단.
+- **R2 (conditional/speculative tense suppression)** —
+  `_is_conditional_or_speculative_context()` 도입. 매칭 위치 직전의
+  clause-boundary로 거슬러 올라가서 그 clause의 first token이
+  `{if, once, when, whenever, should, could, would, unless}` 또는 한국어
+  prefix `만약/만일`이면 매칭 suppress. "If all tests are green, merge" →
+  더 이상 트리거 안 됨.
+- **R3 (attribution / quoted-context skip)** —
+  `_is_attributed_quote_context()` 도입. 매칭이 paired quote (`"..."`/
+  `'...'`/`` `...` ``) 안에 있거나, EN 40-char-before window 안에 said/
+  claimed/wrote/etc.가 있거나, KO 40-char-after window 안에 라고-했/라고-적/
+  라고-말이 있으면 suppress. `the v0.7.6 docs said "tests pass"` → 더
+  이상 트리거 안 됨.
+- **v0.10.2 known-residual tests inverted** per plan §D6 — current-
+  behavior pins are intentional flippers; v0.10.3 closes them and
+  assertions invert.
+
+### v0.10.3 ship surface
+
+- 사용자-호출 skills: 61개 (변동 없음).
+- Regression test suite: ≥ 374 passing (352 baseline post-v0.10.2 + 22
+  new v0.10.3 + 4 inverted pins).
+- Release gate (`scripts/check_release_ready.py --ci`) v0.10.3에서 green.
+- Active executable contracts (v0.10.3 신규):
+  `v0103-greek-armenian-fold`,
+  `v0103-conditional-clause-prefix-suppression`,
+  `v0103-attribution-quote-context-suppression`,
+  `v0103-known-residual-inversion`.
+
+### v0.10.3 알려진 residual (v0.11.0+ 후보)
+
+- LLM-class paraphrase (semantic similarity)
+- Speculative tense without prefix marker ("Probably CI is green")
+- Multi-paragraph quote span; code-block context
+- Cherokee / full-width Latin / 기타 script confusables
+- Sentinel forgery via filesystem nonce state (sec-001)
+- Mid-session profile mutation
+- A3 LFG pipeline reconciliation
+- A4 superpowers cross-cutting integration
+- A5 native-vs-vendored deprecation candidates
+
+## Previous Phase: v0.10.2 (Stop hook paraphrase + NFKC + cyrillic + vendor-aware closure)
 
 v0.7.9 docstring overclaim의 마지막 매듭. v0.7.9에서 "regex 패턴 + NFKC +
 confusables fold ship됨" 이라고 claim했지만 실제로는 안 ship된 것을, v0.10.1
