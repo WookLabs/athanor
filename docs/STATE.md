@@ -4,7 +4,49 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.10.1 (Vendor hygiene + Splitter audit field + B2 honesty closure)
+## Current Phase: SHIPPING — v0.10.2 (Stop hook paraphrase + NFKC + cyrillic + vendor-aware closure)
+
+v0.7.9 docstring overclaim의 마지막 매듭. v0.7.9에서 "regex 패턴 + NFKC +
+confusables fold ship됨" 이라고 claim했지만 실제로는 안 ship된 것을, v0.10.1
+U6 audit가 잡아내고 정직하게 docstring 교정했다. v0.10.2가 *실제로* 그 약속을
+수행한다.
+
+- **U1 (ADV-006 closure)**: `_normalize_for_match()` 도입. NFKC 정규화 +
+  17자 Cyrillic→Latin 융합 + lowercase. "tеsts pass" (Cyrillic 'е') →
+  "tests pass". Fullwidth 공격도 NFKC로 cover.
+- **U2 (sec-003 closure)**: `MATERIAL_CLAIM_PATTERNS` regex 6개 (CI is
+  green / all tests passing / the build is healthy / deploy paraphrase /
+  KO 테스트 통과 / KO 빌드 성공). Verb-anchored — prose 거짓-양성 최소화.
+  Module-load assert로 빈 리스트 silent disable 차단.
+- **U3 (A2 closure)**: vendored CE/superpowers idiom 18개 추가 (review
+  complete, `<promise>DONE</promise>`, all checks passing, branch merged,
+  리뷰 완료 등).
+- **U4**: docstring을 honesty arc 그대로 — "v0.7.9 overclaim →
+  v0.10.1 audit → v0.10.2 ships" 명시. v0.10.0 "vendored-surface 거짓-부정"
+  단락은 vendor-aware whitelist가 active해진 만큼 trimmed.
+
+### v0.10.2 ship surface
+
+- 사용자-호출 skills: 61개 (변동 없음 from v0.10.0+).
+- Regression test suite: ≥ 352 passing (314 baseline post-v0.10.1 + 38
+  new v0.10.2).
+- Release gate (`scripts/check_release_ready.py --ci`) v0.10.2에서 green.
+- Active executable contracts (v0.10.2 신규):
+  `v0102-normalize-for-match-nfkc-cyrillic`,
+  `v0102-material-claim-patterns-regex`,
+  `v0102-vendor-aware-whitelist-extension`,
+  `v0102-known-residual-current-behavior-pin`.
+
+### v0.10.2 알려진 residual (v0.10.3+ 후보)
+
+- LLM-class paraphrase (의미적 유사도 — clause embedding)
+- Conditional / speculative tense ("If tests are green, merge")
+- 인용된 역사적 참조 ("the v0.7.6 docs said 'tests pass'")
+- Greek / Armenian 등 비-Cyrillic homoglyph
+- Transcript-event introspection (sec-001 잔류)
+- Mid-session profile mutation guard
+
+## Previous Phase: v0.10.1 (Vendor hygiene + Splitter audit field + B2 honesty closure)
 
 v0.10.0 후속 작은 릴리스. 정체성 결정 / architectural 변경 없음. 세 개의
 deferred 항목 마무리 + v0.7.9 stop_verify_claims.py docstring overclaim

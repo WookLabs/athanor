@@ -3,6 +3,104 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.2] — 2026-05-19
+
+**Stop hook paraphrase + NFKC + cyrillic + vendor-aware closure (B2 / ADV-006 / A2).**
+v0.7.9 docstring originally claimed `is_material_claim()` shipped regex
+verb-anchor patterns + NFKC unicode normalization + confusables fold.
+v0.10.1 U6 audit caught the overclaim and corrected the docstring honestly.
+v0.10.2 *actually ships* what was originally promised — pure-Python stdlib
+(`re`, `unicodedata`); no new dependencies.
+
+Plan: `docs/plans/2026-05-19-005-feat-v0.10.2-paraphrase-bypass-closure-plan.md`
+
+### Added
+
+- **`_normalize_for_match()` helper** (U1, ADV-006 closure): NFKC Unicode
+  normalization + 17-character Cyrillic→Latin confusables fold + lowercase.
+  Idempotent. Closes cyrillic homoglyph attacks ("tеsts pass" with Cyrillic
+  'е' folds to "tests pass" before substring match) and fullwidth-character
+  attacks ("ｔｅｓｔｓ ｐａｓｓ" → "tests pass" via NFKC). Cyrillic fold
+  table covers `а е о р с у х` (lowercase) and 10 uppercase counterparts.
+- **`MATERIAL_CLAIM_PATTERNS` regex layer** (U2, B2 / sec-003 closure): 6
+  conservative verb-anchored regex patterns. Catches paraphrased state
+  assertions ("CI is green", "all tests are passing", "the build is
+  healthy", "deployed to prod", Korean "테스트가 다 통과", "빌드 성공").
+  Each pattern is verb-anchored to limit false positives on prose
+  discussing tests without asserting state. Compiled at module load
+  (fail-loud on bad regex). Module-load assertion prevents empty list
+  from silently disabling the layer.
+- **Vendor-aware whitelist extension** (U3, A2 closure): 14 English idioms
+  + 4 Korean idioms added to `MATERIAL_CLAIMS_EN`/`MATERIAL_CLAIMS_KO`.
+  Coverage of vendored CE/superpowers skill completion phrases (review
+  complete, `<promise>DONE</promise>`, all checks passing, branch
+  merged, 리뷰 완료, etc.).
+- **38 new regression tests** in
+  `tests/test_regression_v010_2_paraphrase_closure.py`: 9 normalization
+  cases / 9 paraphrase positives / 3 paraphrase negatives / 3
+  known-residual cases (current-behavior pin) / 2 cyrillic + fullwidth
+  end-to-end / 5 vendor-aware positives / 3 v0.7.7 EN+KO regression /
+  1 skip-categories regression / 4 module-load invariants.
+
+### Changed
+
+- **`is_material_claim()` pipeline refactored** to normalize → literal
+  EN whitelist → literal KO whitelist → regex patterns, early return on
+  first match. KO match runs against both raw and normalized text so
+  homoglyph-attacked Korean is also caught.
+- **`scripts/hooks/stop_verify_claims.py` top-level docstring** updated:
+  - New "v0.10.2 paraphrase + NFKC + vendor-aware closure" subsection
+    explicitly framed by the honesty arc — "v0.7.9 originally claimed →
+    v0.10.1 honestly corrected → v0.10.2 actually ships".
+  - "Residual known limitations" section rewritten with v0.10.2 reality:
+    paraphrase + cyrillic items moved out of "deferred" (now shipped);
+    new residuals listed (LLM-class paraphrase, conditional-tense
+    false-positives, quoted historical references, Greek/Armenian/other-
+    script homoglyphs).
+  - v0.10.0 vendored-surface scope paragraph trimmed (vendor-aware
+    whitelist extension is now active; no longer "deferred to v0.10.1+").
+
+### Voice (what v0.10.2 deliberately does NOT claim)
+
+- v0.10.2 does NOT close conditional-tense paraphrase ("If tests are
+  green, merge"). The regex layer catches these because verb anchor
+  matches; documented as known residual with v0.10.3+ closure candidate.
+- v0.10.2 cyrillic fold covers Cyrillic homoglyphs ONLY. Greek `ο`,
+  Armenian `ո`, and other-script confusables remain unfolded. Expand
+  the table deliberately, not greedily.
+- v0.10.2 does NOT add semantic similarity detection (LLM-class
+  paraphrase). Surface-level regex + Unicode normalization only.
+- v0.10.2 does NOT extend the gate to skip attributed historical
+  references ("the v0.7.6 docs said 'tests pass'"). Attribution
+  detection is v0.10.3+ candidate.
+- v0.10.2 does NOT introduce mid-session profile-mutation protection
+  (model writes `athanor.json` mid-turn).
+- Honesty-arc framing matters: v0.10.2 is the closure of an OVERCLAIM in
+  v0.7.9, exposed by v0.10.1 audit. The release narrative is
+  "promised → exposed → delivered", not "ship now and overclaim later".
+
+### Migration (from v0.10.1)
+
+- No breaking changes. Existing test suite (314 tests) stays green; 38
+  new tests added (352 total passing).
+- `is_material_claim()` is more strict than v0.10.1 (catches additional
+  paraphrases + homoglyphs + vendor idioms). Sessions that previously
+  passed Stop without hitting the gate may now trigger it; this is the
+  intended behavior (closes the bypass vectors).
+- If a session legitimately produces output that the v0.10.2 regex
+  layer flags as a false-positive, set `"hooks": {"profile": "off"}`
+  in `athanor.json` for per-project opt-out (unchanged escape hatch).
+
+### Deferred (carried forward to v0.10.3+ / v0.11.0+)
+
+- **v0.10.3**: attribution / speculative-tense detection (conditional
+  paraphrase false-positives, quoted historical references); Greek
+  homoglyph fold expansion if attack surface justifies.
+- **v0.11.0+**: A3 LFG pipeline reconciliation; A4 `using-superpowers`
+  cross-cutting integration; A5 native-vs-vendored deprecation
+  candidates; transcript-event introspection (sec-001 residual);
+  mid-session profile-mutation guard.
+
 ## [0.10.1] — 2026-05-19
 
 **Vendor hygiene + Splitter audit field + B2 honesty closure.** A small
