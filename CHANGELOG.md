@@ -3,6 +3,151 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.0] — 2026-05-19
+
+**`/athanor:discuss` dual-mode expansion — clarify (intent명확화) +
+synthesis (옵션 A/B 합성).** v0.9.0 closes the gap identified during the
+v0.8.0 session: `/athanor:discuss` previously demanded a pre-defined
+A vs B dilemma in Step 1, so users with ambiguous intent had no athanor-
+native path to clarify what they actually wanted. v0.9.0 absorbs an
+intent-clarification mode into the existing skill (no new command),
+modeled after `compound-engineering/ce-brainstorm` Phase 1.2–1.3: at
+Step 1 the leader asks one mode-selection question; in **clarify mode**
+the leader runs a single-Claude gap-probe dialog over the four lenses
+(evidence / specificity / counterfactual / attachment) and writes
+`.athanor/sessions/{id}/requirements.md` using the vendored ce-brainstorm
+requirements-capture template; in **synthesis mode** the existing v0.7.x
+Researcher / Devil's Advocate / Critic flow runs unchanged. `/athanor:plan`
+Step 1 now auto-loads `requirements.md` (when present) and the Critic
+Rubric gains axis (C) R-ID traceback coverage. Mechanism stays **advisory
+dialog mode / planner-classified gap probes** — same honesty arc as
+v0.7.7~v0.8.0.
+
+Plan: `docs/plans/2026-05-19-002-feat-v0.9.0-discuss-clarify-mode-plan.md`
+Origin: `docs/brainstorms/2026-05-19-002-discuss-clarify-mode-requirements.md`
+
+### Added (advisory dialog — single-Claude clarify mode)
+
+- **Step 1 mode dispatch in `/athanor:discuss`** (U1): three-option menu —
+  (A) options A/B already clear → synthesis; (B) clarify intent first →
+  clarify; (C) "먼저 의도를 정리하고 싶다" → default-to-clarify (chain to
+  synthesis via Phase 4 menu later if options emerge). AskUserQuestion
+  preferred, numbered-list fallback. R7 synthesis preservation regression
+  added so existing Researcher / Devil's Advocate / Step 2.5 / Critic /
+  Step 4 / Codex dispatch matrix cannot silently drift.
+- **Step 2-clarify single-Claude dialog protocol** (U2): four-gap internal
+  scan (evidence / specificity / counterfactual / attachment) + one-
+  question-per-turn + AskUserQuestion-for-narrowing + open-ended-for-
+  introspective-probes + integration check + Phase 2.5 scoping synthesis
+  before write. **Leader-side stop-phrase guard** prevents the leader from
+  emitting "계속할까요?" / "Should I continue?" to short-circuit the
+  dialog (Codex review P1 #6 closure).
+- **`skills/discuss/references/clarify-gap-probes.md`** vendored (MIT, T2
+  pattern from ce-brainstorm). Full lens definitions, probe examples,
+  probe-form rules (rigor → open-ended; narrowing → blocking menu),
+  one-question rule, integration check, exit condition.
+- **Step 3-clarify-finalization** writes
+  `.athanor/sessions/{id}/requirements.md` using the vendored
+  requirements-capture template (U3). 11-section structure (Summary /
+  Problem Frame / Actors / Key Flows / Requirements / Acceptance
+  Examples / Success Criteria / Scope Boundaries / Key Decisions /
+  Dependencies / Outstanding Questions) with stable IDs (A-IDs / F-IDs /
+  R-IDs / AE-IDs).
+- **`skills/discuss/references/requirements-capture.md`** vendored (MIT,
+  T2 pattern). Section matrix + ID conventions + frontmatter format +
+  layout rules + finalization checklist.
+- **Step 3-clarify-handoff Phase 4 menu** (U4): 4-option menu after
+  requirements.md is saved — [1] /athanor:plan with auto-inject; [2]
+  synthesis chain via same session **with explicit Option A/B dilemma
+  confirm step** (Codex review P1 #3 closure — existing Step 2 assumes
+  a parsed dilemma); [3] /athanor:analyze auto-invoke; [4] save-and-stop
+  (no auto-dispatch). AskUserQuestion preferred, numbered-list fallback.
+- **`/athanor:plan` Step 1 auto-loads `requirements.md`** (U5) when
+  present in the session, injecting its full body as the "Origin
+  requirements" context block for Planner A. Ordering when all three
+  inputs present: analyze.md → requirements.md → discuss.md. Backwards
+  compat preserved (absent → pre-v0.9.0 behavior).
+- **v0.8.0 Critic Rubric extended to three axes** (U5 + Codex review P1
+  #5 closure): axis (C) R-ID traceback coverage added — gated on
+  requirements.md presence; flags behavior-bearing phases that fail to
+  cite-back origin R-IDs / A-IDs / F-IDs / AE-IDs in Verify MUST/SHOULD
+  bullets. All three Critic Agent prompt blocks (deep 4-input, deep
+  2-input review-skipped, standard 2-input refinement) extended with
+  axis (C) inline so the dispatched Critic actually sees the rubric.
+- **CLAUDE.md Commands table `/athanor:discuss` row updated** (U6) —
+  "Decision brainstorming + intent clarification (dual mode: clarify ↔
+  synthesis)". skill frontmatter description trigger keywords extended
+  with **qualified** clarify-direction phrases (Codex review P1 #4
+  closure): 의도 명확화 / 요구사항이 헷갈려 / 무엇을 만들지 헷갈려 /
+  뭘 해야할지 모르겠어 / 명확히 정리해줘. Bare 헷갈려 explicitly
+  NOT a trigger (would overlap with /athanor:debug).
+- **7 new regression-test files**: discuss mode question + R7 synthesis
+  preservation (11 tests), clarify dialog protocol (11), clarify
+  requirements template (9), clarify handoff menu (7), plan reads
+  requirements.md + Critic axis (C) (7), claude_md_honesty extension
+  (+2), discuss trigger keywords (5). Total ≥48 new + 207 prior = 255
+  passing.
+
+### Changed
+
+- Plan / plugin version: v0.8.0 → v0.9.0 (minor bump — new feature
+  surface in `/athanor:discuss`).
+- JSON Schema `$id` URL release-tag pin: v0.8.0 → v0.9.0.
+- `skills/discuss/SKILL.md` Step 1 reshaped (single-pass dilemma confirm
+  → 4 sub-steps: restate → mode question → branch → synthesis-only
+  dilemma confirm).
+- `skills/plan/SKILL.md` Step 1 expanded with requirements.md input
+  + ordering rules + R-ID cite-back instruction.
+- `skills/plan/SKILL.md` Critic Rubric (v0.8.0) extended to three axes
+  (A, B, C); each Critic Agent prompt block inline-rubric updated to
+  reference axis (C).
+
+### Voice / honesty
+
+- Mechanism is **advisory dialog mode / planner-classified gap probes** —
+  no runtime hook enforces clarify-mode discipline. Stay consistent with
+  v0.7.7~v0.8.0 advisory/enforced labeling arc.
+- "intent-clarification enforced" / "ce-brainstorm equivalent" / "clarify
+  enforced" overclaim phrases intentionally avoided. Regression test
+  asserts absence (`tests/test_regression_claude_md_honesty.py`,
+  `tests/test_regression_discuss_trigger_keywords.py`).
+- Trigger keyword expansion uses **qualified** phrases. Bare "헷갈려"
+  rejected (overlaps with `/athanor:debug` domain).
+- Codex involvement deliberately NOT introduced into clarify mode —
+  single-Claude dialog is the symmetric choice (ce-brainstorm itself is
+  single-agent). Synthesis mode preserves the existing Worker B Codex
+  dispatch.
+- R-ID cite-back is **advisory** in plan-side Critic axis (C). Critic
+  flags missing cite-backs but the plan can still ship with gaps (the
+  Critic comment surfaces the gap to the user; no hard-block).
+
+### Migration
+
+- No user-facing migration required. Existing `/athanor:discuss` callers
+  see the new Step 1 mode question but their synthesis-mode flow is
+  byte-identical to v0.7.x once they select option [A].
+- Existing 5 grandfathered plan docs continue to run cleanly through
+  `/athanor:plan` (requirements.md absent → pre-v0.9.0 behavior).
+- `requirements.md` artifact is per-session; old sessions without it
+  remain valid; new sessions in clarify mode produce it.
+
+### Deferred (post v0.9.0)
+
+- **v0.9.0.1 fast-follow**: optional second-pass Codex review of the
+  clarify-mode prose may surface refinements; if so, ship under a
+  follow-up PR (no implementation-side changes anticipated).
+- **v0.9.1**: Deep-product tier durability gap probe added to clarify
+  mode (currently Standard tier only — 4 lenses). Auto-chain opt-in
+  flag for clarify → synthesis transitions.
+- **v0.9.x**: clarify dialog cross-model option (Codex contrarian
+  variant). Auto-classification heuristic re-examined based on
+  operational mode-distribution data.
+- **v0.9.x**: `/athanor:work` Splitter direct read of `requirements.md`
+  (currently routes via /plan).
+- **v0.10.0+**: Operational data may justify auto-mode-detection
+  heuristic to replace the Step 1 question (current default: always
+  ask).
+
 ## [0.8.0] — 2026-05-19
 
 **Spec-then-TDD discipline integration — advisory, planner-classified.** The

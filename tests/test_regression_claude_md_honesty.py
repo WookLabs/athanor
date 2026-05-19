@@ -257,3 +257,56 @@ def test_no_tdd_enforced_overclaim_in_claude_md():
             f"CLAUDE.md contains overclaim phrase '{phrase}' — v0.8.0 honesty "
             f"arc requires advisory framing for the Spec-then-TDD discipline"
         )
+
+
+# ---- v0.9.0 /athanor:discuss dual-mode honesty ----
+
+
+def _extract_discuss_command_row(content: str) -> str:
+    """Return the Commands-table row mentioning /athanor:discuss."""
+    for line in content.splitlines():
+        if "/athanor:discuss" in line and line.lstrip().startswith("|"):
+            return line
+    return ""
+
+
+def test_discuss_purpose_mentions_dual_mode_or_clarification():
+    """v0.9.0: Commands table row for /athanor:discuss should now indicate
+    dual mode (clarify + synthesis) or intent clarification."""
+    row = _extract_discuss_command_row(_load_claude_md())
+    assert row, "Commands-table row for /athanor:discuss not found"
+    lower = row.lower()
+    dual_signals = [
+        "dual mode",
+        "dual-mode",
+        "intent clarification",
+        "clarify",
+        "clarify mode",
+    ]
+    assert any(s in lower for s in dual_signals), (
+        f"v0.9.0: /athanor:discuss row must indicate dual mode (clarify ↔ "
+        f"synthesis) or intent clarification. Expected one of: {dual_signals}. "
+        f"Got: {row!r}"
+    )
+
+
+def test_no_overclaim_for_discuss_clarify():
+    """v0.9.0 honesty arc: discuss clarify mode must NOT use overclaim
+    phrasing like 'intent-clarification enforced' or 'ce-brainstorm
+    equivalent' which would mis-represent the actual mechanism (advisory
+    dialog + planner-classified gap probes)."""
+    content = _load_claude_md()
+    lower = content.lower()
+    forbidden = [
+        "intent-clarification enforced",
+        "intent clarification enforced",
+        "ce-brainstorm equivalent",
+        "ce brainstorm equivalent",
+        "clarify enforced",
+    ]
+    for phrase in forbidden:
+        assert phrase not in lower, (
+            f"CLAUDE.md contains overclaim phrase '{phrase}' — v0.9.0 honesty "
+            f"arc requires 'advisory dialog mode' framing for /athanor:discuss "
+            f"clarify mode"
+        )

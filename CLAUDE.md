@@ -4,16 +4,21 @@ General-purpose agentic workflow orchestrator plugin for Claude Code.
 
 ## Core Principle
 
-**Thin Leader**: The leader (main session) NEVER does work directly.
-It only parses input, dispatches to clean-context workers, and presents results.
-All file reading, analysis, code writing, and execution happens in worker agents.
+**Thin Leader**: The leader (main session) NEVER does implementation work directly.
+It normally parses input, dispatches to clean-context workers, and presents results.
+All project file reading, analysis, code writing, and execution happens in worker agents.
+
+Documented infrastructure/output exceptions:
+- The leader may create `.athanor/sessions/` directories and session-local files needed to run the workflow.
+- In `/athanor:discuss` clarify mode, after explicit user confirmation, the leader may write `.athanor/sessions/{id}/requirements.md` as a captured dialogue artifact.
+- These exceptions do not permit editing project source files or performing implementation work before `/athanor:work`.
 
 ## Commands
 
 | Command | Mode | Purpose |
 |---------|------|---------|
 | `/athanor:setup` | — | Infrastructure health check and configuration |
-| `/athanor:discuss` | Plan | Decision brainstorming (Claude × Codex) |
+| `/athanor:discuss` | Plan | Decision brainstorming + intent clarification (dual mode: clarify ↔ synthesis). Step 1 asks the user to pick mode. clarify = single-Claude gap-probe dialog → `requirements.md`. synthesis = Researcher + Devil's Advocate + Critic → `discuss.md` (existing v0.7.x behavior). |
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
 | `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
 | `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex 교차 검증) |

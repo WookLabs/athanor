@@ -1,10 +1,14 @@
 ---
 name: discuss
 description: >
-  의사결정 브레인스토밍. Researcher + Devil's Advocate + Critic 합성.
-  '논의', '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B', '브레인스토밍' 요청 시 사용.
+  의사결정 브레인스토밍 + 의도 명확화 (dual mode). Step 1에서 모드 선택.
+  synthesis 모드 (Researcher + Devil's Advocate + Critic): '논의',
+  '이런게 좋을까', '어떻게 할까', '장단점', 'A vs B', '브레인스토밍'.
+  clarify 모드 (single-Claude gap-probe dialog → requirements.md):
+  '의도 명확화', '요구사항이 헷갈려', '무엇을 만들지 헷갈려',
+  '뭘 해야할지 모르겠어', '명확히 정리해줘'.
 user-invocable: true
-allowed-tools: Bash, Read, Write, Glob, Grep, Task
+allowed-tools: Bash, Read, Write, Glob, Grep, Task, AskUserQuestion, ToolSearch, Skill
 ---
 
 # /athanor:discuss — Decision Brainstorming
@@ -40,10 +44,37 @@ Bash reference there. Lex-max selection — no "today" semantics.
    > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually or wait for the --new-session flag (v0.8.0).`
 5. Ensure session directory exists: `.athanor/sessions/{id}/`
 
-### Step 1: Parse Dilemma
+### Step 1: Mode dispatch + dilemma restate (v0.9.0 dual mode)
 
-Extract the decision to be made from the user's input.
-Restate it clearly:
+`/athanor:discuss`는 v0.9.0부터 두 모드를 가진다:
+- **synthesis 모드** — 옵션 A vs B가 이미 명확한 dilemma에서 Researcher / Devil's Advocate / Critic으로 합성 (기존 동작 — Step 2-4)
+- **clarify 모드** — 옵션 자체가 모호한 상태에서 single-Claude dialog로 의도 명확화. 4 gap lens probe → `requirements.md` 산출 (신규 Step 2-clarify)
+
+#### Step 1.1: Restate user input
+
+User 입력을 간단히 restate. 옵션이 명확하든 모호하든 일단 받은 그대로 옮긴다. 이 시점에서 leader는 옵션을 추정/발명하지 않는다.
+
+#### Step 1.2: Mode-selection question (단발성)
+
+Leader가 user에게 모드 질문을 1회 발화. AskUserQuestion이 가능한 환경이면 메뉴 (3 options, single-select), 불가하면 numbered chat list로 fallback. 절대 silently skip 금지.
+
+```
+어떤 모드로 진행할까요?
+
+[A] 옵션 A vs B가 이미 명확합니다 — synthesis mode (Researcher + Devil's Advocate + Critic 합성, 기존 동작)
+[B] 의도부터 명확화하고 싶습니다 — clarify mode (single-Claude gap probe dialog, requirements.md 산출)
+[C] 먼저 의도를 정리하고 싶습니다 — default-to-clarify (clarify로 시작; 옵션이 보이면 Phase 4 메뉴에서 synthesis로 chain 가능)
+```
+
+#### Step 1.3: Branch based on user response
+
+- **[A] synthesis** → 기존 Step 2로 진행 (Step 2 Researcher + Devil's Advocate 병렬 dispatch). 이 분기 발동 시 `mode=synthesis` 마커를 announcement에 포함.
+- **[B] clarify** → 신규 Step 2-clarify로 진행. `mode=clarify` 마커.
+- **[C] default-to-clarify** → 신규 Step 2-clarify로 진행 (`mode=clarify` 마커). 종료 후 Phase 4 메뉴에서 user가 synthesis chain 선택 가능.
+
+#### Step 1.4: Synthesis-mode dilemma confirm (synthesis 모드 전용)
+
+`mode=synthesis` 진입 시 leader가 dilemma를 한 번 더 정리해 user에게 confirm 받는다 (기존 동작):
 
 ```
 📋 Dilemma: {restated question}
@@ -54,9 +85,162 @@ Restate it clearly:
 이 내용으로 브레인스토밍을 시작할까요?
 ```
 
-Wait for user confirmation. If the user corrects, adjust and re-confirm.
+User 확인 후 Step 2로 진행. (clarify 모드는 dilemma confirm step을 건너뛰고 바로 Step 2-clarify dialog로 진입.)
+
+### Step 2-clarify: Single-Claude Dialog (clarify mode, v0.9.0)
+
+> **Mode marker:** This step ONLY fires when Step 1.3 branched to `mode=clarify` (option [B] or [C]). For `mode=synthesis`, skip to Step 2.
+
+#### Operational shape
+
+Clarify mode is **single-Claude** dialog. The leader itself conducts the conversation — NO parallel workers, NO Codex dispatch, NO Devil's Advocate. Symmetric with `compound-engineering:ce-brainstorm` Phase 1.2-1.3, which is also a single-agent dialog pattern. This shape is intentional: gap-probe dialogues lose coherence when split across parallel workers.
+
+Codex is reserved for synthesis-mode Worker B (existing behavior, preserved). v0.9.0 does not introduce Codex into clarify mode. A future v0.9.x may add an opt-in cross-model variant.
+
+#### Step 2-clarify.1: Internal gap-scan (agent-internal, no user-facing output)
+
+Before asking any questions, the leader silently scans the user's opening prompt for 4 gap lenses (ce-brainstorm Standard tier). See `skills/discuss/references/clarify-gap-probes.md` for the full lens definitions, examples, and probe templates. Lens summary:
+
+- **Evidence gap** — opening asserts want/need but doesn't point to concrete prior action (time/money/workaround). If present, fire one open-ended evidence probe.
+- **Specificity gap** — beneficiary is described at an abstraction the leader can't design for without inventing who they are. If present, fire one specificity probe.
+- **Counterfactual gap** — current workaround (and its cost) is not visible. If present, fire one counterfactual probe.
+- **Attachment gap** — opening attaches to a specific solution shape rather than the value it delivers, and the smallest version hasn't been examined. If present, fire one attachment probe.
+
+Each lens fires AT MOST one open-ended probe. Scope-appropriate gaps may produce 0–4 probes total. A concrete, well-framed opening may earn zero.
+
+#### Step 2-clarify.2: Dialogue protocol
+
+- **One question per turn.** Single question per leader turn, even when sub-questions feel related. Stacking dilutes answers.
+- **AskUserQuestion preferred for narrowing / single-select.** When the host exposes the blocking question tool and the skill runtime permits it, use `AskUserQuestion` with a single-select. If the schema isn't loaded but `ToolSearch` is available, call `ToolSearch` with `select:AskUserQuestion` first. If either tool is unavailable or rejected by the runtime, fall back to numbered chat prose; do not pretend the blocking question was sent.
+- **Open-ended for introspective / rigor probes.** Use plain open-ended prose when (a) the answer is inherently narrative, (b) presented options would influence the answer (most rigor probes — evidence/specificity/counterfactual/attachment), or (c) you cannot write 3–4 plausibly-distinct options that cover the space.
+- **Never silently skip a question.** If no blocking tool is available in the host, fall back to a numbered list in chat with the hint "Pick a number or describe what you want."
+- **Stop-phrase guard (LEADER side).** The leader's own dialog turns must NOT use the early-stop phrases listed in Step 2.5 below — "계속할까요?" / "이 정도면 멈출까요?" / "Should I continue?" / equivalents. These phrases were originally designed to detect workers giving up; in clarify mode, where the leader itself drives the dialog, emitting them would short-circuit the gap probes and degrade clarify mode into a single-pass restate. The leader keeps progressing through scope-appropriate probes until the integration check and scoping synthesis both pass. Users themselves can still end the session at any turn; the guard applies only to the leader's wording.
+
+#### Step 2-clarify.3: Integration check (pre-exit)
+
+Before exiting the dialog, mentally combine what the user has said and surface any non-obvious consequences the dialogue hasn't probed. If user-stated X plus user-stated Y plus the leader's-default-Z produces a downstream effect the user is unlikely to have tracked through one-question-at-a-time dialogue, fire one open-ended probe NOW (do not punt it to scoping synthesis call-outs). Phase 2.5 call-outs are for residuals, not for consequences the leader could have asked about in the dialogue.
+
+#### Step 2-clarify.4: Scoping synthesis (Phase 2.5 equivalent)
+
+After all active gap probes and the integration check resolve, the leader surfaces a scoping synthesis to the user — the final correction point before requirements.md is written. Format (sections render-conditional; omit empty sections):
+
+```
+Based on our dialogue, here's the scope I'm proposing for the requirements doc:
+
+**What we're building:**
+[1–3 sentences — forward-looking shape, plain words]
+
+**Key trade-offs:** (when real choices were made in dialogue)
+- [explicit choice + brief why]
+
+**What's not in scope:** (when deferred items would surprise a reader)
+- [deferred item]
+
+**Call outs:** (when ≥1 residual fork survives the keep test)
+- [scope-level fork the user can affirm or redirect]
+
+Confirm and I'll write the requirements doc next.
+Or tell me what to change — even something captured earlier is fair game.
+```
+
+Wait for explicit user confirmation. Do NOT auto-write requirements.md until confirmed.
+
+#### Step 2-clarify.5: Hand-off to finalization
+
+Once the user confirms the scoping synthesis, proceed to **Step 3-clarify-finalization** below to write `.athanor/sessions/{id}/requirements.md`. After the file is written, **Step 3-clarify-handoff** (Phase 4 menu) presents the user with next-step options.
+
+### Step 3-clarify-finalization: Write requirements.md
+
+> **Mode marker:** This step ONLY fires when the clarify dialog (Step 2-clarify) completed and the user confirmed the scoping synthesis. For `mode=synthesis`, skip directly to Step 2 (Dispatch Research Workers).
+
+#### Step 3-clarify-finalization.1: Load the vendored template
+
+Read `skills/discuss/references/requirements-capture.md` for the template structure, section matrix, ID conventions, frontmatter format, layout rules, and finalization checklist. This reference is vendored from `compound-engineering/ce-brainstorm references/requirements-capture.md` (T2 pattern with provenance block, MIT license).
+
+#### Step 3-clarify-finalization.2: Compose the requirements.md content
+
+Frontmatter is YAML with two required fields:
+
+```yaml
+---
+date: YYYY-MM-DD
+topic: <kebab-case-topic>
+---
+```
+
+The body uses 11 sections (render-conditional per the section matrix in the reference — see `skills/discuss/references/requirements-capture.md` §"Section matrix"):
+
+1. **Summary** — 1-3 line forward-looking prose
+2. **Problem Frame** — backward-looking situational context
+3. **Actors** — triggered, A-IDs assigned (`A1`, `A2`, ...)
+4. **Key Flows** — triggered, F-IDs assigned (`F1`, `F2`, ...)
+5. **Requirements** — always required, R-IDs assigned (`R1`, `R2`, ...)
+6. **Acceptance Examples** — required for behavioral-conditional requirements, AE-IDs assigned (`AE1`, `AE2`, ...)
+7. **Success Criteria** — always required
+8. **Scope Boundaries** — always required (single list — Standard tier only in v0.9.0)
+9. **Key Decisions** — when material
+10. **Dependencies / Assumptions** — when material
+11. **Outstanding Questions** — when material (split into Resolve Before Planning / Deferred to Planning)
+
+ID prefixes (A/F/R/AE) are stable across edits — never renumber on reorder or insertion; gaps from deletion are fine.
+
+#### Step 3-clarify-finalization.3: Save the file
+
+Write to `.athanor/sessions/{session-id}/requirements.md` via the Write tool. This is a documented clarify-mode Thin-Leader exception analogous to Step 0 session-directory creation: the leader may write session-local output artifacts (`requirements.md`) after explicit user confirmation, but still must not edit project source files or perform implementation work.
+
+#### Step 3-clarify-finalization.4: Hand off to Phase 4 menu
+
+After the file is saved, proceed to **Step 3-clarify-handoff** below. Do NOT auto-dispatch any follow-on skill — the user picks the next step from the menu.
+
+### Step 3-clarify-handoff: Phase 4 menu (clarify mode)
+
+> **Mode marker:** This step ONLY fires when Step 3-clarify-finalization completed (requirements.md saved). For `mode=synthesis`, skip — synthesis terminates at Step 4 Present Results instead.
+
+#### Step 3-clarify-handoff.1: Present the menu
+
+Use `AskUserQuestion` blocking question tool when available and permitted (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded and ToolSearch is available). If unavailable/rejected, fall back to a numbered list in chat. Single-select, 4 options:
+
+```
+requirements.md 작성 완료. 다음 단계를 선택해주세요.
+
+[1] /athanor:plan으로 진행
+    requirements.md를 input으로 자동 inject. v0.8.0 Spec-then-TDD discipline과
+    결합되어 Planner A가 phase Verify에 R/A/F/AE-IDs를 cite-back 가능.
+
+[2] /athanor:discuss synthesis 모드로 chain
+    같은 session 재사용. clarify dialog 중 옵션 A vs B가 떠올랐을 때.
+    단 재진입 전 Option A/B 명시 confirm step을 거친다 (Codex 리뷰 P1 #3
+    반영 — 기존 Step 2는 parsed dilemma를 가정하므로 명시 단계 필요).
+
+[3] /athanor:analyze
+    코드/시스템 분석. requirements.md가 어떤 코드 surface와 충돌하는지
+    탐색하고 싶을 때.
+
+[4] 일단 멈춤
+    requirements.md 저장하고 종료. 다음 세션에서 /athanor:plan 또는
+    /athanor:discuss 재호출로 이어갈 수 있음. 본 step에서 follow-on
+    skill을 auto-dispatch하지 않는다.
+```
+
+When the blocking-question tool is unavailable or the call errors, fall back to a numbered list in chat with the hint "Pick a number or describe what you want." Never silently skip the question.
+
+#### Step 3-clarify-handoff.2: Dispatch on user selection
+
+- **[1] plan** — invoke the `/athanor:plan` skill via the platform's skill primitive (`Skill` tool in Claude Code) only when that primitive is available and permitted by the runtime, so requirements.md is auto-injected at plan Step 1 (see U5 / plan.md §Step 1.2.5). If the Skill primitive is unavailable or rejected, present the exact next command (`/athanor:plan`) and the requirements path; do not claim the invocation happened.
+- **[2] synthesis chain** — re-enter the same skill (`/athanor:discuss`) in synthesis mode (`mode=synthesis`). Before dispatching the existing Step 2 workers, the leader MUST first run an explicit **Option A/B dilemma confirm step** (Step 1.4 equivalent):
+  - The leader summarizes the options that emerged during clarify dialog: "Option A: {derived from dialog}, Option B: {derived from dialog}. 이 내용으로 synthesis를 시작할까요?"
+  - User confirms / corrects. Only after confirmation does the leader dispatch the existing Step 2 Researcher + Devil's Advocate workers.
+  - Session files are reused — `requirements.md` stays in place; `research-a.md` / `research-b.md` / `discuss.md` are produced by the synthesis flow as if it were a fresh `/athanor:discuss --synthesis` call on the same session.
+- **[3] analyze** — invoke the `/athanor:analyze` skill on the same session when the Skill primitive is available and permitted. If unavailable/rejected, present the exact next command (`/athanor:analyze`) and the requirements path; do not claim the invocation happened.
+- **[4] stop** — emit a brief save-and-stop announcement naming the requirements.md path. Do NOT auto-dispatch any follow-on skill. The user can re-enter manually in a later session.
+
+#### Step 3-clarify-handoff.3: Done
+
+After dispatch (or stop), the clarify-mode pipeline terminates. The session directory contains `requirements.md` (always) plus optionally `discuss.md` / `research-a.md` / `research-b.md` (if synthesis chained) and downstream `analyze.md` / `plan.md` (if those skills ran).
 
 ### Step 2: Dispatch Research Workers (in parallel)
+
+> **Mode marker:** This step ONLY fires when Step 1.3 branched to `mode=synthesis` (option [A]) OR when Step 3-clarify-handoff option [2] (synthesis chain) was selected. For `mode=clarify` reaching its terminal Step 3-clarify-handoff, this step does NOT fire — clarify ends at the handoff menu.
 
 Dispatch TWO workers simultaneously using the Agent tool.
 

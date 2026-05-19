@@ -110,9 +110,13 @@ Announce exactly one of the following based on resolved state:
 ### Step 1: Gather Context & Parse Request
 
 1. Check for previous stage outputs in the session:
-   - `.athanor/sessions/{id}/discuss.md` — brainstorming results
+   - `.athanor/sessions/{id}/discuss.md` — synthesis-mode discussion results (when `/athanor:discuss` ran in synthesis mode)
+   - `.athanor/sessions/{id}/requirements.md` — **NEW (v0.9.0)** — clarify-mode requirements doc (when `/athanor:discuss` ran in clarify mode). Produced by `skills/discuss/SKILL.md` §"Step 3-clarify-finalization" using the vendored ce-brainstorm requirements-capture template. Carries Actors (A-IDs), Key Flows (F-IDs), Requirements (R-IDs), Acceptance Examples (AE-IDs).
    - `.athanor/sessions/{id}/analyze.md` — analysis results
-2. If they exist, read them and include as context for planners
+2. If they exist, read them and include as context for planners.
+   - **When `requirements.md` is present**: inject its full body into Planner A's prompt as the "Origin requirements" context block. Planner A MUST cite-back the origin R-IDs (and A/F/AE-IDs where applicable) in phase `Verify:` MUST/SHOULD bullets. This compounds with v0.8.0 Spec-then-TDD discipline — the MUST/SHOULD Verify bullets become traceable back to user-stated requirements.
+   - **Ordering when multiple present** (analyze.md / requirements.md / discuss.md): inject `analyze.md` (code-grounded) → `requirements.md` (origin intent, R-ID source) → `discuss.md` (option synthesis) as separate context blocks in the Planner A prompt, in that order. The downstream Critic axis (C) R-ID traceback rubric (see Step 4) verifies cite-back coverage.
+   - **Backwards compat**: if `requirements.md` is absent, behavior is identical to pre-v0.9.0 (no R-ID cite-back requirement, no Critic axis (C) enforcement). Existing 5 grandfathered plan docs and any pre-v0.9.0 session run cleanly.
 3. Parse the user's planning request
 4. Announce:
 
@@ -199,8 +203,23 @@ Create an implementation plan for:
 {user's planning request}
 
 ## Context from Previous Stages
-{discuss.md content if exists, otherwise 'No previous discussion'}
-{analyze.md content if exists, otherwise 'No previous analysis'}
+
+Read these files from `.athanor/sessions/{session-id}/` in order (each
+optional — if absent, note it as 'not present this session'). Order
+matters per `/athanor:plan` Step 1 v0.9.0 ordering rule:
+
+1. `analyze.md` (code-grounded analysis, if `/athanor:analyze` ran)
+2. `requirements.md` (NEW v0.9.0 — clarify-mode origin requirements doc
+   with R-IDs / A-IDs / F-IDs / AE-IDs, if `/athanor:discuss` ran in
+   clarify mode)
+3. `discuss.md` (synthesis-mode discussion output, if `/athanor:discuss`
+   ran in synthesis mode)
+
+When `requirements.md` is present, your phase `Verify:` MUST/SHOULD
+bullets MUST cite-back the relevant origin R-IDs / A-IDs / F-IDs /
+AE-IDs in your plan output (Critic Rubric axis (C) will check this).
+Example acceptable cite-back: `MUST exit 2 when material claim detected
+(covers R3, AE1)`.
 
 ### Prior Lessons
 Before starting, check .athanor/lessons/ for files tagged with skill: plan.
@@ -301,7 +320,7 @@ codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \
 
 {user's planning request}
 
-Context: {previous stage context — discuss.md/analyze.md content if available}
+Context: {previous stage context from .athanor/sessions/{session-id}/ — read in order: analyze.md (code-grounded), requirements.md (NEW v0.9.0 — clarify-mode origin requirements with R/A/F/AE-IDs, if present), discuss.md (synthesis-mode output, if present). When requirements.md is present, your phase Verify MUST/SHOULD bullets MUST cite-back origin R-IDs / A-IDs / F-IDs / AE-IDs (Critic Rubric axis (C)).}
 
 Requirements:
 - Find a fundamentally different approach than the obvious one
@@ -663,8 +682,13 @@ depends on tier:
 Every Critic dispatch below — **Deep tier 4-input**, **Deep tier 2-input
 (review-skipped)**, **Standard tier 2-input refinement**, **Standard tier
 self-critic / claude-self-review fallback** — MUST evaluate the input plan
-along the two axes below in addition to existing criteria (clarity,
-completeness, risk treatment).
+along the axes below in addition to existing criteria (clarity, completeness,
+risk treatment).
+
+**v0.9.0 NOTE:** The rubric below is referenced from each Critic Agent({prompt: ...})
+block via the inline injection added in v0.9.0. The injection text now lists three axes
+(A, B, C — axis C added in v0.9.0 for R-ID traceback coverage). See
+`docs/plans/2026-05-19-002-feat-v0.9.0-discuss-clarify-mode-plan.md` §U5.
 
 **(A) Acceptance criteria coverage (`acceptance_criteria coverage`):**
 - For each behavior-bearing phase in `plan-a.md` (or `plan-b.md`), is the
@@ -672,6 +696,19 @@ completeness, risk treatment).
 - Do MUST bullets describe observable outcomes (exit codes, file state, schema
   validation, test count, error references) rather than abstract goals?
 - Is there at least one MUST bullet per behavior phase?
+
+**(C) R-ID traceback coverage (v0.9.0, gated on requirements.md presence):**
+- This axis fires ONLY when `.athanor/sessions/{id}/requirements.md` exists
+  in the same session (clarify-mode upstream artifact from `/athanor:discuss`).
+- For each phase in the plan, verify that the `Verify:` MUST/SHOULD bullets
+  cite-back the relevant origin R-IDs (and A/F/AE-IDs where applicable) from
+  requirements.md. Example acceptable cite-back: `MUST exit 2 when material
+  claim detected (covers R3, AE1)`.
+- Flag phases that introduce behavior obviously tied to a stated requirement
+  but lack any R-ID cite-back — these silently break the trace between
+  user-stated intent and implementation.
+- When requirements.md is absent, axis (C) is skipped (backwards compat —
+  pre-v0.9.0 sessions and grandfathered plans run unchanged).
 
 **(B) Classification appropriateness (`execution_note` predictability):**
 - For each phase, predict the likely `execution_note` value (the
@@ -763,6 +800,12 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 3. review-of-a.md (Review of Plan A)
 4. review-of-b.md (Review of Plan B)
 
+Conditional v0.9.0 input — also read if present:
+5. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md / plan-b.md cite-back the origin IDs.
+
 ## Process
 1. Read all 4 documents
 2. Identify where both plans AGREE — these are high-confidence choices
@@ -812,10 +855,11 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-In addition to the general rules above, apply the two-axis Spec-then-TDD
+In addition to the general rules above, apply the three-axis Spec-then-TDD
 readiness rubric to the synthesized plan (acceptance_criteria coverage +
-execution_note classification appropriateness) — full text in
-`skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD Readiness\".
+execution_note classification appropriateness + R-ID traceback coverage) —
+full text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD
+Readiness\".
 
 Axis (A) — acceptance_criteria coverage: for every behavior-bearing phase
 in the synthesized plan, ensure the Verify field is written as MUST/SHOULD
@@ -827,6 +871,13 @@ value for each phase. Flag over-classification (CHANGELOG-only / _doc-only
 phase forced into MUST/SHOULD) and under-classification (source code
 modification with prose-only Verify). Adjust phase scope or Verify formality
 to match.
+
+Axis (C) — R-ID traceback coverage (v0.9.0; gated on requirements.md presence):
+when `.athanor/sessions/{id}/requirements.md` exists in the same session,
+verify that each phase's MUST/SHOULD Verify bullets cite-back the relevant
+origin R-IDs / A-IDs / F-IDs / AE-IDs. Flag any behavior-bearing phase that
+silently fails to trace back to a stated requirement. When requirements.md
+is absent, axis (C) is skipped (backwards compat).
 
 Save to: .athanor/sessions/{session-id}/plan.md
 
@@ -863,6 +914,12 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 1. plan-a.md (Plan A — standard approach)
 2. plan-b.md (Plan B — contrarian approach)
 
+Conditional v0.9.0 input — also read if present:
+3. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md / plan-b.md cite-back the origin IDs.
+
 ## Process
 1. Read both plans
 2. Identify where they AGREE — these are high-confidence choices
@@ -896,11 +953,15 @@ Begin the output file with this exact line (so /athanor:work detects the skipped
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-Apply the same two-axis Spec-then-TDD readiness rubric as the 4-input
+Apply the same three-axis Spec-then-TDD readiness rubric as the 4-input
 variant: (A) acceptance_criteria coverage — every behavior-bearing phase's
 Verify field must be MUST/SHOULD observable assertions; reformulate prose
 Verify fields where needed. (B) classification appropriateness — predict
 each phase's likely execution_note value and flag over-/under-classification.
+(C) R-ID traceback coverage (v0.9.0; gated on requirements.md presence) —
+when `.athanor/sessions/{id}/requirements.md` exists, verify each phase's
+MUST/SHOULD Verify bullets cite-back the origin R-IDs / A-IDs / F-IDs /
+AE-IDs. Skip axis (C) when requirements.md is absent (backwards compat).
 Full rubric text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
 Spec-then-TDD Readiness\".
 
@@ -937,6 +998,12 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 1. plan-a.md (the original plan)
 2. review-of-a.md (critical review of the plan)
 
+Conditional v0.9.0 input — also read if present:
+3. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md cite-back the origin IDs.
+
 ## Process
 1. Read both documents
 2. For each piece of feedback in the review:
@@ -962,15 +1029,19 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-In addition to the rules above, apply the two-axis Spec-then-TDD readiness
+In addition to the rules above, apply the three-axis Spec-then-TDD readiness
 rubric to the refined plan: (A) acceptance_criteria coverage — every
 behavior-bearing phase's Verify field must be MUST/SHOULD observable
 assertions; reformulate prose Verify fields where needed. (B) classification
 appropriateness — predict each phase's likely execution_note value and flag
 over-classification (CHANGELOG-only / _doc-only phase with MUST/SHOULD)
-and under-classification (source code with prose-only Verify). Full rubric
-text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD
-Readiness\". This rubric applies whether the upstream review came from
+and under-classification (source code with prose-only Verify). (C) R-ID
+traceback coverage (v0.9.0; gated on requirements.md presence) — when
+`.athanor/sessions/{id}/requirements.md` exists, verify each phase's
+MUST/SHOULD Verify bullets cite-back the origin R-IDs / A-IDs / F-IDs /
+AE-IDs. Skip axis (C) when requirements.md is absent (backwards compat).
+Full rubric text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
+Spec-then-TDD Readiness\". This rubric applies whether the upstream review came from
 Codex or from Claude self-review (claude-self-review fallback).
 
 Save to: .athanor/sessions/{session-id}/plan.md
