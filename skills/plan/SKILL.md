@@ -224,7 +224,10 @@ Write a structured implementation plan:
 ### Phase 1: {name}
 - Step 1.1: {action} → files: {paths}
 - Step 1.2: {action} → files: {paths}
-- Verify: {how to verify}
+- Verify (MUST/SHOULD for behavior-bearing phases; prose for non-behavior):
+  - MUST <observable assertion — exit code, file state, schema validation, ...>
+  - MUST <observable assertion>
+  - SHOULD <quality / performance / non-blocking assertion>
 
 ### Phase 2: {name}
 ...
@@ -242,6 +245,24 @@ Write a structured implementation plan:
 - Use Grep/Glob to verify file existence before referencing
 - Each step should be independently verifiable
 - Include verification criteria per phase
+
+## Verify field format guidance (v0.8.0+)
+- **Behavior-bearing phase** (source code modification introducing or changing
+  observable behavior: .py / .js / .ts / .rb / .go / etc. that produces a new
+  contract): write the `Verify:` field as MUST/SHOULD bullets where each MUST
+  describes an observable assertion (exit code, file content, schema validation
+  outcome, test count, error reference). At least one MUST bullet per phase.
+- **Non-behavior phase** (doc-only edits, CHANGELOG bumps, version-string
+  changes, `_doc` inline-schema rewrites, prose-only refactors): a free-form
+  prose `Verify:` field is acceptable; MUST/SHOULD format is not required.
+- The MUST/SHOULD format feeds the v0.8.0 Spec-then-TDD discipline downstream:
+  the `/athanor:work` Task Splitter copies these bullets into per-subtask
+  `acceptance_criteria` fields, and the Executor uses them as red-first
+  criteria. Writing free-form prose Verify in a behavior-bearing phase
+  silently degrades the spec-then-tdd discipline (the Splitter cannot extract
+  acceptance criteria from prose).
+- This guidance is **advisory** — there is no runtime hook enforcing MUST/SHOULD
+  format. The Critic at Step 4 will flag misclassifications during refinement.
 
 Save your plan to: .athanor/sessions/{session-id}/plan-a.md
 
@@ -637,6 +658,65 @@ depends on tier:
 - **Lite tier:** Step 4 skipped; `plan-a.md` is copied directly to `plan.md`
   per the existing lite-tier flow.
 
+#### v0.8.0 Critic Rubric — Spec-then-TDD Readiness (shared by all Critic variants)
+
+Every Critic dispatch below — **Deep tier 4-input**, **Deep tier 2-input
+(review-skipped)**, **Standard tier 2-input refinement**, **Standard tier
+self-critic / claude-self-review fallback** — MUST evaluate the input plan
+along the two axes below in addition to existing criteria (clarity,
+completeness, risk treatment).
+
+**(A) Acceptance criteria coverage (`acceptance_criteria coverage`):**
+- For each behavior-bearing phase in `plan-a.md` (or `plan-b.md`), is the
+  `Verify:` field written as MUST/SHOULD bullets rather than free-form prose?
+- Do MUST bullets describe observable outcomes (exit codes, file state, schema
+  validation, test count, error references) rather than abstract goals?
+- Is there at least one MUST bullet per behavior phase?
+
+**(B) Classification appropriateness (`execution_note` predictability):**
+- For each phase, predict the likely `execution_note` value (the
+  `/athanor:work` Task Splitter will eventually assign one) based on its
+  files and approach:
+  - Phase touches `.py` / `.js` / `.ts` / etc. source code introducing new
+    behavior or contract → expect `spec-then-tdd`. If the `Verify:` field is
+    prose-only or absent, flag as **under-classification** (false-negative
+    risk).
+  - Phase modifies source preserving existing behavior (refactor, narrow bug
+    fix without contract change) → expect `test-aware`.
+  - Phase modifies only `.md` / `_doc` strings / CHANGELOG / version strings
+    → expect `direct`. If MUST/SHOULD bullets are forced onto such a phase
+    (a CHANGELOG-only phase with elaborate MUST/SHOULD), flag as
+    **over-classification** (false-positive risk).
+- Flag any phase where the planner's stated intent contradicts the file-set
+  signal (e.g., "Add new feature X" but the `files:` list only touches
+  CHANGELOG.md or `_doc` strings).
+
+**Corrective behavior when violations are found:**
+- **Reformulate prose Verify fields** into MUST/SHOULD bullets where the
+  phase is behavior-bearing (axis A).
+- Add missing observable assertions to phases that have MUST/SHOULD bullets
+  but lack at least one observable MUST.
+- **Adjust phase scope or Verify formality** where classification is
+  mismatched (axis B) — if a phase is too broad and conflates source-code
+  work with doc-only work, split it; if a `_doc`-only phase has forced
+  MUST/SHOULD, demote the Verify to prose.
+- Flag any phase the Critic cannot reformulate (insufficient detail from
+  planner) — leave it but emit an "UNRESOLVED — classification risk" note
+  in the plan body so the downstream Splitter (which cannot see the
+  Critic's reasoning) is aware of the uncertainty.
+
+This rubric is **advisory** — there is no runtime gate enforcing the
+Critic's evaluation. The Critic's output `plan.md` is what `/athanor:work`
+consumes; missed evaluations degrade the spec-then-tdd discipline silently
+but do not break the pipeline.
+
+The rubric applies identically to **Codex-driven** dispatches (`review_strategy=codex`),
+**Claude self-review fallback** dispatches (`review_strategy=claude-self-review`
+— a.k.a. `codex.fallback=self-critic`), and the **review-skipped** Critic
+pass-through (which is a copy operation, not a true Critic — but its presence
+in this skill is what the `claude-self-review` path also takes when reviews
+exist).
+
 #### Critic Dispatch Gate Checkpoint
 
 Before dispatching the Critic, the Leader MUST announce:
@@ -730,6 +810,24 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 - Be explicit about WHY you chose one approach over another
 - UNRESOLVED conflicts must present both options fairly
 
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+In addition to the general rules above, apply the two-axis Spec-then-TDD
+readiness rubric to the synthesized plan (acceptance_criteria coverage +
+execution_note classification appropriateness) — full text in
+`skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD Readiness\".
+
+Axis (A) — acceptance_criteria coverage: for every behavior-bearing phase
+in the synthesized plan, ensure the Verify field is written as MUST/SHOULD
+observable assertions (not free-form prose). At least one MUST per behavior
+phase. Reformulate prose Verify fields where needed.
+
+Axis (B) — classification appropriateness: predict the likely execution_note
+value for each phase. Flag over-classification (CHANGELOG-only / _doc-only
+phase forced into MUST/SHOULD) and under-classification (source code
+modification with prose-only Verify). Adjust phase scope or Verify formality
+to match.
+
 Save to: .athanor/sessions/{session-id}/plan.md
 
 Return your findings as:
@@ -796,6 +894,16 @@ Begin the output file with this exact line (so /athanor:work detects the skipped
 ## Unified Implementation Plan
 {... same shape as 4-input variant ...}
 
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+Apply the same two-axis Spec-then-TDD readiness rubric as the 4-input
+variant: (A) acceptance_criteria coverage — every behavior-bearing phase's
+Verify field must be MUST/SHOULD observable assertions; reformulate prose
+Verify fields where needed. (B) classification appropriateness — predict
+each phase's likely execution_note value and flag over-/under-classification.
+Full rubric text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
+Spec-then-TDD Readiness\".
+
 Save to: .athanor/sessions/{session-id}/plan.md (with the header comment as line 1)
 
 Return your findings as:
@@ -851,6 +959,19 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 - If you disagree with feedback, state why explicitly
 - Maintain the original plan's structure and specificity
 - This is refinement, not synthesis — one plan in, one plan out
+
+## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
+
+In addition to the rules above, apply the two-axis Spec-then-TDD readiness
+rubric to the refined plan: (A) acceptance_criteria coverage — every
+behavior-bearing phase's Verify field must be MUST/SHOULD observable
+assertions; reformulate prose Verify fields where needed. (B) classification
+appropriateness — predict each phase's likely execution_note value and flag
+over-classification (CHANGELOG-only / _doc-only phase with MUST/SHOULD)
+and under-classification (source code with prose-only Verify). Full rubric
+text in `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD
+Readiness\". This rubric applies whether the upstream review came from
+Codex or from Claude self-review (claude-self-review fallback).
 
 Save to: .athanor/sessions/{session-id}/plan.md
 

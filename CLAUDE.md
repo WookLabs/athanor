@@ -95,6 +95,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
+| Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. 운용 근거: `docs/STATE.md` §Current Phase. |
 
 Detail follows.
 
@@ -182,6 +183,50 @@ Use the `scope-drift` skill on demand to compare current changes against the can
 - Skill source: `skills/scope-drift/SKILL.md` (MIT, vendored from claude-octopus)
 - Trigger: user-invoked ("check scope drift", "scope check", "did I drift", "drifted from plan", "still on track", "off-track", "스코프 드리프트 체크", "스코프 체크", "드리프트 확인", "계획 벗어났나")
 - Self-reference exclusion: `.athanor/sessions/**/*`, `.athanor/lessons/**/*`, `.athanor/discoveries/**/*`
+
+### Spec-then-TDD Discipline (advisory — planner-classified)
+
+Subtask 단위로 Spec-then-TDD를 자동 적용. 메커니즘 분기:
+- **분류** (`execution_note`): `/athanor:work` Task Splitter가 각 subtask를
+  `spec-then-tdd | test-aware | direct` 중 하나로 분류 (heuristic in
+  `skills/work/SKILL.md` Step 0.5 Rules block):
+  - source code modification + 새 동작/계약 → `spec-then-tdd`
+  - source code modification + 기존 동작 보존 (refactor) → `test-aware`
+  - prose-only (`.md`, `_doc`, CHANGELOG) → `direct`
+- **spec-then-tdd**: red-first 5단계 (test write → run RED → implement → run
+  GREEN → next criterion). Worker가 per-criterion `red_evidence` (command,
+  test_node_id, exit_code, output_tail) 보고 + `tests_modified` /
+  `test_paths_touched` / `full_suite_passed` 자가보고. Leader가 evidence
+  shape 검증 후 RED 안 갔으면 `test-aware`로 **pending-downgrade** —
+  Phase 3 게이트 (conjunction of three signals)를 다시 통과해야 success.
+- **test-aware**: 종료 게이트 — 세 조건의 conjunction: (1) `git diff --name-only`
+  결과에 `tests/**` path가 1개 이상 포함 (test_*.py, conftest.py, fixtures/,
+  snapshot 모두 허용), (2) worker가 `full_suite_passed: true`로 자가보고
+  (즉 `pytest tests/`를 실행해 exit 0을 봤다고 주장), (3) `verification:`
+  자유형 prose가 (2)와 일관. 셋 중 하나라도 빠지면 게이트 fail.
+- **direct**: 현재 athanor 동작 그대로 (doc/config-only edits).
+
+**What it catches:** 새 동작 도입하는 subtask에서 "tests are afterthought" 패턴.
+RED 단계 자체를 건너뛰는 worker는 evidence shape 누락으로 잡힘 (다음 단락 참고).
+
+**What it does NOT catch:** Splitter의 오분류 (false-positive: prose-only를
+spec-then-tdd로; false-negative: behavior를 direct로). Worker가 evidence를
+fabricate (실제 RED를 본 적 없으면서 만들어낸 command/exit_code 보고)하면
+잡히지 않음 — leader는 evidence의 *shape*만 검증하며 *진실성*은 검증 불가.
+adversarial forgery 차단 (runtime 강제, transcript-event introspection)은
+v0.8.1+ 후보 (verification-before-completion skill 확장).
+
+**Per-project opt-out:** 본 메커니즘은 advisory이므로 별도 `athanor.json`
+플래그 없음. plan.md를 수동 편집해 `execution_note: direct`로 강제하거나
+`<!-- athanor:subtasks:manual -->` 마커로 Splitter를 우회 가능.
+
+- **Splitter prompt:** `skills/work/SKILL.md` Step 0.5 (Rules per subtask + Output Format)
+- **Dispatch packet:** `skills/work/SKILL.md` Step 2a §"Execution Instructions"
+  (3-branch conditional on execution_note)
+- **Result handler:** `skills/work/SKILL.md` Step 2b §"v0.8.0 Spec-then-TDD result handler"
+- **Critic rubric:** `skills/plan/SKILL.md` Step 4 §"v0.8.0 Critic Rubric"
+- **Honesty arc:** v0.7.7~v0.7.9의 advisory/enforced 라벨 정직성 약속 유지.
+  본 작업은 "advisory (planner-classified)" — runtime 강제 없음 명시.
 
 ### Effort Level
 - Planner and Critic agents: always use highest reasoning effort

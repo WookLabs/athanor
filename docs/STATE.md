@@ -4,14 +4,30 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.7.8 (Stop hook command-mode + re-entry sentinel)
+## Current Phase: SHIPPING — v0.8.0 (Spec-then-TDD discipline — advisory, planner-classified)
 
-- 10 user-invocable skills + 2 internal vendored skills (`scope-drift`, `verification-before-completion` — v0.7.8 added §Emission Sentinel).
+Planner-classified Spec-then-TDD가 `/athanor:plan` + `/athanor:work`에 통합됨.
+Splitter가 분류 책임 짐. Executor가 분류에 따라 분기 실행. RED 안 가면 자동
+`test-aware` 강등. 메커니즘은 advisory — runtime 강제 없음 (verification 스킬
+확장은 v0.8.1+ 후보).
+
+- 10 user-invocable skills + 2 internal vendored skills (`scope-drift`, `verification-before-completion` — v0.7.9 migrated §Emission Sentinel to v=2 nonce-bound).
 - 7 worker agents.
-- 1 hook (Stop, **`type: command` as of v0.7.8** — invokes `scripts/hooks/stop_verify_claims.py` for runtime gating; exit 2 blocks Stop and feeds stderr to the model). v0.7.7 was the final prompt-mode release; v0.7.8 delivers the spike-promised enforcement upgrade.
-- Regression test suite passing on Python 3.x with `jsonschema` dependency. v0.7.7 added 41 tests; v0.7.8 adds 28 more (command-hook contract + script-decision-flow + doc-string contract refinements).
+- 1 hook (Stop, **`type: command` as of v0.7.8, v=2 nonce-bound sentinel + config-resolution priority chain + circuit breaker as of v0.7.9**).
+- v0.8.0 추가: subtask-level `execution_note` (`spec-then-tdd | test-aware | direct`) +
+  `acceptance_criteria` propagation + `red_evidence` shape validation +
+  `tests/**` broader gate + auto-downgrade on `never_red` + Critic axis-B
+  classification rubric.
+- Regression test suite passing on Python 3.x with `jsonschema` dependency. v0.7.7→v0.7.8→v0.7.9→v0.8.0 누적: ≥187 tests (154 baseline + 13 Phase A + 20 Phase B + 5 Phase C).
 - Release gate (`scripts/check_release_ready.py --ci`) green.
-- Active executable contracts: `stop-hook-command-contract` (replaces `stop-hook-liveness` from v0.7.2), `hook-uniqueness`, `manifest-no-hooks-field`, `schema-validates-config`, `schema-url-version-pin`, `session-lookup-convention`, `_doc-honesty` (split into models-deprecated + hooks-working-contract for v0.7.8).
+- Active executable contracts: `stop-hook-command-contract`, `hook-uniqueness`, `manifest-no-hooks-field`, `schema-validates-config`, `schema-url-version-pin`, `session-lookup-convention`, `_doc-honesty`, **v0.8.0 신규 contracts**: `planner-a-verify-must-should-format`, `critic-ac-coverage-and-classification`, `splitter-execution-note-classification`, `work-dispatch-3-branch-on-execution-note`.
+
+## Previous Phase: v0.7.9 (Stop hook hardening — nonce binding + config scoping + circuit breaker)
+
+- v=2 nonce-bound sentinel closed P0 forgery path (v=1 bare-string)
+- Config resolution priority chain (`$CLAUDE_PROJECT_DIR` → git-root → walk-up-stops-at-`.git`) closed P0 parent-directory hijack
+- Circuit breaker (`hooks.stopLoopThreshold`, default 3) prevents Stop-loop runaway
+- 33 new tests added (154 total post-merge of #18)
 
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 

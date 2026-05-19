@@ -3,6 +3,150 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0] — 2026-05-19
+
+**Spec-then-TDD discipline integration — advisory, planner-classified.** The
+v0.8.0 release moves athanor beyond pure agentic orchestration into a
+gentle-discipline regime: `/athanor:plan` Planner A produces Verify fields as
+MUST/SHOULD observable assertions for behavior-bearing phases, the
+`/athanor:work` Task Splitter classifies each generated subtask into
+`spec-then-tdd | test-aware | direct`, and the Executor branches the
+dispatch packet accordingly — red-first 5 steps for spec-then-tdd, broader
+`tests/**` end-gate for test-aware, current Ralph-Loop for direct. Same
+honesty arc as v0.7.7→v0.7.9: this is **advisory** (no runtime Stop-hook
+enforcement of the discipline itself), the framing stays "advisory
+(planner-classified)" throughout, and the limitations are documented in
+plain language.
+
+Plan: `docs/plans/2026-05-19-001-feat-v0.8.0-tdd-sdd-integration-plan.md`
+Origin: `docs/brainstorms/2026-05-19-001-tdd-sdd-integration-requirements.md`
+
+### Added (advisory — planner-classified Spec-then-TDD)
+
+- **`execution_note` field on subtasks** (U2): `/athanor:work` Task Splitter
+  assigns one of `spec-then-tdd | test-aware | direct` per subtask using
+  inline classification heuristics in `skills/work/SKILL.md` Step 0.5 Rules:
+  source-code + new behavior → spec-then-tdd; source-code + behavior
+  preservation → test-aware; prose-only edits (`.md`, `_doc`, CHANGELOG) →
+  direct.
+- **`acceptance_criteria` propagation** (U2): spec-then-tdd subtasks inherit
+  the parent phase's `Verify:` MUST/SHOULD bullets as their
+  acceptance_criteria field. If the parent Verify is prose-only, the Splitter
+  reclassifies the subtask to test-aware with an explanation in the task
+  description.
+- **Red-first 5-step Executor branch** (U3): for `execution_note: spec-then-tdd`,
+  the Executor dispatch prompt walks each acceptance criterion through WRITE
+  → RUN → VERIFY RED → IMPLEMENT → VERIFY GREEN, requiring per-criterion
+  `red_evidence` (command, test_node_id, exit_code, output_tail) in
+  ATHANOR_RESULT.
+- **Broader test-aware gate** (U3): the test-aware end gate accepts any
+  `tests/**` path modification (test_*.py, conftest.py, fixtures/, snapshots,
+  golden files), not just `tests/test_*.py` — chosen after Codex review
+  flagged the narrower pattern as too restrictive.
+- **Auto-downgrade on `never_red`** (U4): the leader validates the worker's
+  `red_evidence` shape and computes `red_status_resolved`. If any criterion
+  has missing/malformed evidence or `exit_code == 0`, the subtask is silently
+  auto-downgraded to `test-aware` completion criteria with a work-log
+  breadcrumb. No user escalation.
+- **Critic two-axis rubric** (U5): `/athanor:plan` Critic (all four variants —
+  deep 4-input, deep 2-input review-skipped, standard 2-input, self-critic
+  fallback) evaluates plans along axis (A) acceptance_criteria coverage AND
+  axis (B) classification appropriateness — flagging both over-classification
+  (CHANGELOG-only phase with MUST/SHOULD) and under-classification (source
+  code with prose-only Verify).
+- **CLAUDE.md Defense Mechanisms row + subsection** (U6): new
+  `Spec-then-TDD Discipline | advisory (planner-classified)` row in the
+  status table and a new `### Spec-then-TDD Discipline (advisory —
+  planner-classified)` subsection with full mechanism description and
+  honesty paragraphs.
+- **6 new regression-test files** (U1+U2+U3+U4+U5+U7 contributions): pin the
+  prompt-level and result-handler contracts across the affected skills.
+  Total test count after main implementation + Codex-review autofix +
+  dual-review (Opus + Codex) autofix: 197 passing (154 baseline + 39 new
+  across U1-U7 + 4 from initial Codex autofix; further dual-review fixes
+  land in the same PR with additional test coverage).
+
+### Changed
+
+- Plan / plugin version: v0.7.9 → v0.8.0 (minor bump — new feature surface).
+- JSON Schema `$id` URL release-tag pin: v0.7.9 → v0.8.0.
+- `skills/plan/SKILL.md` Plan Structure template: `Verify: {how to verify}`
+  → `Verify (MUST/SHOULD for behavior-bearing phases; prose for non-behavior)`
+  with MUST/SHOULD example bullets and behavior-bearing vs non-behavior
+  guidance prose.
+- `skills/work/SKILL.md` Step 0.5 Splitter prompt: Rules block extended with
+  classification heuristics + AC propagation rule; Output Format template
+  shows `execution_note:` and `acceptance_criteria:` fields; Post-split
+  Validation rules 7-8 check execution_note presence + AC for spec-then-tdd.
+- `skills/work/SKILL.md` Step 2a Dispatch Packet: §"Execution Instructions"
+  replaces the prior single Ralph-Loop block with three conditional blocks
+  (Direct, Spec-then-TDD, Test-Aware End Gate) plus the grandfathered fallback
+  to Direct.
+- `skills/work/SKILL.md` Step 2b Process Result: new v0.8.0 result-handler
+  with four phases (red_evidence shape validation, downgrade rule, test-aware
+  gate enforcement, grandfathered breadcrumb) runs before the existing
+  success/failure branching.
+- `skills/plan/SKILL.md` Step 4 Critic Refinement: new shared `#### v0.8.0
+  Critic Rubric — Spec-then-TDD Readiness` subsection invoked by all Critic
+  variants.
+
+### Voice / honesty
+
+- **advisory (planner-classified)** — the mechanism is NOT a Stop-hook gate.
+  v0.7.7~v0.7.9 advisory/enforced labeling discipline maintained: the new
+  Defense Mechanisms row reads "advisory" exactly because the discipline is
+  prompt-only, not runtime-enforced.
+- "TDD enforced" / "Spec-driven required" overclaim phrases are intentionally
+  avoided across CLAUDE.md, CHANGELOG, and skill prompts. A regression test
+  in `tests/test_regression_claude_md_honesty.py` asserts absence.
+- **R6 semantics drift acknowledged**: the brainstorm origin said "work skill
+  detects" non-RED; the actual implementation is "leader validates worker's
+  self-reported red_evidence shape." Adversarial forgery (worker fabricating
+  evidence) is not caught; only the most common honest mistake (worker forgot
+  the RED step entirely → no evidence) is caught.
+- **Planner-time visibility limit acknowledged**: because execution_note is
+  Splitter-generated (work-skill side), `/athanor:plan` output and Critic
+  review do NOT see the final subtask classifications. Mitigations: (1) the
+  Critic predicts classifications from phase file-sets and flags
+  misclassification risk; (2) the user can edit plan.md between Splitter
+  output and `/athanor:work` execution; (3) work-log accumulates the actual
+  classifications for post-hoc analysis.
+- Splitter misclassification (false-positive / false-negative) is a real
+  first-cycle risk. v0.8.x will refine the heuristic based on operational
+  data. v0.8.1+ candidate: verification-before-completion skill extension
+  that checks test-commit existence at Stop-hook gate (advisory → runtime).
+
+### Migration
+
+- Existing `/athanor:plan` users: no command-line change. New plan outputs
+  carry the new fields automatically; old plan docs are grandfathered.
+- 4 grandfathered plans in `docs/plans/` (`2026-04-08-001-*`,
+  `2026-05-18-001-*`, `2026-05-18-002-*`, `2026-05-19-001-*` — this plan
+  itself) have no `execution_note` field. `/athanor:work` falls back to
+  `direct` for any subtask with a missing `execution_note`, logged in
+  ATHANOR_RESULT as `execution_note_source: grandfathered`.
+- Per-project opt-out: no `athanor.json` flag (the discipline is advisory).
+  Users can manually edit plan.md `## Subtasks` block to set
+  `execution_note: direct` on any subtask, or add a
+  `<!-- athanor:subtasks:manual -->` marker to bypass the Splitter entirely.
+
+### Deferred (post v0.8.0)
+
+- **v0.8.0.1 (fast-follow)**: Splitter classification heuristic refinement —
+  add `classification_reason` field per subtask + ambiguous-case fixtures
+  (Codex implementation-review Medium #3). Current 3-bullet heuristic is
+  sufficient for the obvious source / prose / config splits but leaves edge
+  cases (build scripts, infrastructure-as-code, mixed-purpose JSON outside
+  the security-adjacent enumeration) under-specified. The deferred fix
+  surfaces the planner's reasoning so Splitter mistakes are auditable.
+- **v0.8.1+**: verification-before-completion skill extension (Stop-hook
+  validates test-commit existence for spec-then-tdd subtasks at session
+  close). baseline 효과 측정 후 결정.
+- **v0.8.x**: classification heuristic refinement based on operational
+  false-positive / false-negative data.
+- **v0.9.0+**: BDD Given/When/Then format option for acceptance_criteria
+  (currently observable-assertion MUST/SHOULD single format).
+
 ## [0.7.9] — 2026-05-18
 
 **Stop hook hardening — closes 2 of 3 P0 architectural findings from PR #16
