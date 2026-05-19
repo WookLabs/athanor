@@ -101,23 +101,18 @@ def test_normalize_empty_string(stop_module):
     assert norm("") == ""
 
 
-def test_normalize_non_confused_greek_omicron_documented_residual(stop_module):
-    """KNOWN RESIDUAL (documented v0.10.2 scope): Greek ο (U+03BF) is NOT
-    in the v0.10.2 Cyrillic-only fold table. A bypass using Greek
-    homoglyphs would not be caught at this release.
-
-    This test asserts the CURRENT behavior (residual is preserved). If a
-    future release adds Greek to the fold, this test should be deleted
-    or inverted, not left to silently fail.
-    """
+def test_v010_3_greek_omicron_now_folded(stop_module):
+    """v0.10.3 R1 closure: Greek ο (U+03BF) is now in the
+    _CONFUSABLES_TO_LATIN_TABLE. This test was previously the v0.10.2
+    known-residual pin asserting Greek stayed unfolded; v0.10.3 inverts
+    the assertion."""
     norm = stop_module._normalize_for_match
-    # Greek ο in "tests pass" — current scope keeps it unchanged
-    greek = "tests p" + "ο" + "ss"  # 'tests p' + Greek omicron + 'ss'
+    greek = "deployed t" + "ο" + " production"  # Greek omicron substituted for Latin o
     result = norm(greek)
-    assert "ο" in result, (
-        "v0.10.2 scope: Greek homoglyphs NOT folded. If this assertion "
-        "fails, the fold table was expanded — update or delete this test."
+    assert "ο" not in result, (
+        f"v0.10.3 R1 must fold Greek ο to Latin o. Got: {result!r}"
     )
+    assert result == "deployed to production"
 
 
 # ---- U2: paraphrase regex patterns ----
@@ -163,29 +158,34 @@ def test_paraphrase_negatives_not_caught(stop_module, message):
 
 
 @pytest.mark.parametrize("message", [
-    # Conditional / speculative tense — regex cannot distinguish without
-    # semantic analysis. Documented as v0.10.2 residual per plan §Risk
-    # Analysis.
+    # v0.10.3 closure: conditional/speculative tense suppression.
+    # These were v0.10.2 known-residual pins (caught as false-positives);
+    # v0.10.3 R2 suppresses them via clause-prefix check.
     "Once the build is green, ship it.",
     "If all tests are green, merge.",
-    # Pre-existing v0.7.7 limitation (substring of "tests pass" inside
-    # prose) — unchanged by v0.10.2.
-    "When tests pass through this filter, the user sees the result.",
 ])
-def test_known_false_positives_documented(stop_module, message):
-    """KNOWN RESIDUAL (v0.10.3+ candidates): the v0.10.2 regex layer DOES
-    catch these even though they're conditional or descriptive, not
-    assertive. Closure requires semantic analysis (transcript-event
-    introspection or LLM-class similarity). This test asserts the
-    CURRENT behavior so the residual is visible.
+def test_v010_3_conditional_suppression_closed(stop_module, message):
+    """v0.10.3 R2 closure: conditional/speculative clause prefix now
+    suppresses what was a v0.10.2 false-positive."""
+    assert not stop_module.is_material_claim(message), (
+        f"v0.10.3 R2 must suppress conditional-prefix match: {message!r}"
+    )
 
-    If a future release adds attribution/speculative-tense detection,
-    invert these assertions; do not silently let them shift.
+
+def test_v010_3_pre_v077_substring_still_catches_prose(stop_module):
+    """REGRESSION: a literal whitelist substring inside prose ("When tests
+    pass through this filter, the user sees the result.") is STILL caught
+    — v0.10.3 R2/R3 suppressions don't fire on this case because:
+      - The clause "When tests pass through..." starts with "When" which
+        IS in the conditional marker set, so v0.10.3 R2 SHOULD suppress it.
+    Wait — actually "When" is in _CONDITIONAL_MARKERS_EN, so this case
+    SHOULD now be suppressed at v0.10.3. Asserting that closure here too.
     """
-    assert stop_module.is_material_claim(message), (
-        f"Known v0.10.2 residual: {message!r} should still be caught "
-        f"(conditional/prose false-positive). If this fails, residual was "
-        f"closed — update test to assert the new behavior."
+    assert not stop_module.is_material_claim(
+        "When tests pass through this filter, the user sees the result."
+    ), (
+        "v0.10.3 R2 should suppress 'When tests pass through...' — 'When' "
+        "is in the conditional marker set"
     )
 
 

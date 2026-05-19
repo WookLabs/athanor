@@ -3,6 +3,108 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.3] — 2026-05-19
+
+**Stop hook residual closure: Greek/Armenian fold + conditional
+suppression + attribution skip (R1+R2+R3).** Closes the three Stop-hook
+accuracy residuals that v0.10.2 documented honestly rather than hand-wave
+away. All heuristic-based; pure stdlib (`re`, `unicodedata`).
+
+Plan: `docs/plans/2026-05-19-006-feat-v0.10.3-stop-hook-residual-closure-plan.md`
+
+### Added
+
+- **Multi-script confusables fold** (U1, R1 closure): `_CYRILLIC_TO_LATIN_TABLE`
+  renamed `_CONFUSABLES_TO_LATIN_TABLE` (backwards-compat alias retained).
+  Now covers 3 scripts: Cyrillic (17 chars, v0.10.2) + Greek (13 chars:
+  `α ε ι ν ο ρ υ Α Ε Ι Ο Ρ Τ Υ`) + Armenian (`ո`). Greek `ο→o` /
+  `ρ→p` / `α→a` substitutions are the high-frequency attack vectors;
+  Armenian `ո` is the lone clean Latin-`o` homoglyph in that script.
+- **Conditional / speculative tense suppression** (U2, R2 closure): new
+  `_is_conditional_or_speculative_context(text, match_start)` inspects
+  the clause containing the match (from the most recent `.`,`,`,`;`,`?`,
+  `!`,`\n` boundary to `match_start`). If the clause's first token is in
+  `_CONDITIONAL_MARKERS_EN` (`if / once / when / whenever / should /
+  could / would / unless`) or starts with a Korean prefix marker
+  (`만약 / 만일`), the match is suppressed. Closes v0.10.2's
+  `test_known_false_positives_documented` cases — "If all tests are
+  green, merge" / "Once the build is healthy, ship it" no longer trigger
+  the gate. Pre-existing v0.7.7 substring-in-prose case "When tests pass
+  through this filter" is also suppressed as collateral coverage ("When"
+  is a conditional marker).
+- **Attribution / quoted-context skip** (U3, R3 closure): new
+  `_is_attributed_quote_context(text, match_start, match_end)` two-pronged
+  check:
+  - Paired-quote: same-line odd count of any of (`"`, `'`, `` ` ``)
+    before `match_start` AND at least one matching quote after `match_end`
+    → match is inside an unclosed quote → suppressed.
+  - Attribution verb (EN, precedes quote): within 40 chars before
+    `match_start` on the same line, scan for `said / claimed / wrote /
+    noted / commented / mentioned / stated / reported` → suppressed.
+  - Attribution verb (KO, follows quote): within 40 chars AFTER
+    `match_end` on the same line, scan for `라고 했 / 라고 적 / 라고 말`
+    → suppressed (Korean attribution grammar places marker after quote).
+- **22 new regression tests** in
+  `tests/test_regression_v010_3_residual_closure.py`: Greek/Armenian fold
+  positives (5), conditional suppression positives + negatives (6),
+  attribution suppression positives + negatives (6), v0.10.2 regression
+  pins (5).
+
+### Changed
+
+- **`is_material_claim()` refactored** to track match positions for both
+  literal and regex layers and apply `_match_is_suppressed()` (R2+R3
+  combined check) at a single call site per candidate match. Loop
+  semantics: find match → check suppressions → continue scanning the
+  same phrase/pattern if suppressed, return True otherwise.
+- **`_normalize_for_match()` docstring** enumerates all three scripts
+  (Cyrillic v0.10.2 + Greek/Armenian v0.10.3).
+- **v0.10.2 known-residual tests inverted per plan §D6** — these were
+  current-behavior pins with explicit "if these flip, residual closed"
+  comments. v0.10.3 closes them; assertions now flip:
+  - `test_known_false_positives_documented` →
+    `test_v010_3_conditional_suppression_closed` (asserts NOT caught).
+  - `test_normalize_non_confused_greek_omicron_documented_residual` →
+    `test_v010_3_greek_omicron_now_folded` (asserts Greek ο now folds).
+  - New `test_v010_3_pre_v077_substring_still_catches_prose` pins the
+    "When tests pass through..." suppression as a collateral R2 closure.
+
+### Voice (what v0.10.3 deliberately does NOT close)
+
+- v0.10.3 does NOT add semantic similarity (LLM-class paraphrase). The
+  regex layer is verb-anchored; subtler clause embedding ("we verified
+  the test suite ran clean") is still uncaught.
+- v0.10.3 does NOT detect speculative tense WITHOUT prefix marker
+  ("Probably CI is green"). Documented v0.11.0+ candidate.
+- v0.10.3 does NOT cover multi-paragraph quote spans or code-block
+  context for attribution. Same-line constraint preserved.
+- v0.10.3 does NOT extend the confusables table beyond Greek + Armenian.
+  Cherokee, full-width Latin (not handled by NFKC), other scripts
+  remain unfolded.
+- v0.10.3 does NOT close sentinel forgery via filesystem nonce state
+  (sec-001 residual) — transcript-event introspection is v0.11.0+.
+- v0.10.3 does NOT introduce mid-session profile mutation protection.
+
+### Migration (from v0.10.2)
+
+- No breaking changes. 352 baseline tests stay green; 22 new + 4 inverted
+  pins = 374 total passing.
+- `is_material_claim()` is MORE strict in some places (Greek/Armenian
+  bypass vectors closed) and MORE lenient in others (conditional /
+  attributed quotes now suppressed). Sessions previously over-triggering
+  the gate on doc-review or planning prose should see reduced
+  false-positive rate.
+- If a v0.10.3 suppression hides a real claim (false negative), the
+  `profile: "off"` athanor.json escape hatch is unchanged.
+
+### Deferred (carried forward)
+
+- **v0.11.0+**: LLM-class semantic similarity layer; speculative tense
+  without prefix marker; multi-paragraph quote spans; transcript-event
+  introspection (sec-001); mid-session profile mutation guard; A3 LFG
+  pipeline reconciliation; A4 superpowers cross-cutting; A5 deprecation
+  candidates.
+
 ## [0.10.2] — 2026-05-19
 
 **Stop hook paraphrase + NFKC + cyrillic + vendor-aware closure (B2 / ADV-006 / A2).**
