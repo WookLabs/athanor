@@ -15,17 +15,25 @@ Documented infrastructure/output exceptions:
 
 ## Commands
 
+### Athanor-native (10 user-invocable + 2 internal)
+
 | Command | Mode | Purpose |
 |---------|------|---------|
-| `/athanor:setup` | — | Infrastructure health check and configuration |
+| `/athanor:setup` | — | Infrastructure health check and configuration (v0.10.0 includes vendored-surface inventory) |
 | `/athanor:discuss` | Plan | Decision brainstorming + intent clarification (dual mode: clarify ↔ synthesis). Step 1 asks the user to pick mode. clarify = single-Claude gap-probe dialog → `requirements.md`. synthesis = Researcher + Devil's Advocate + Critic → `discuss.md` (existing v0.7.x behavior). |
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
 | `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
 | `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex 교차 검증) |
-| `/athanor:plan` | Plan | Standard planning + Codex review (default) |
+| `/athanor:plan` | Plan | **Cross-model adversarial planning** (Planner A Claude + Planner B Codex + Critic) — athanor identity #2. To use CE's single-agent flow, invoke `/athanor:ce-plan` explicitly. |
 | `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, 리뷰 없음) |
-| `/athanor:work` | Execute | TodoList grinding with ralph-loop |
+| `/athanor:work` | Execute | **Spec-then-TDD discipline** (Splitter execution_note + conjunction-of-three Phase 3 gate) — athanor identity #3. To use CE's single-agent execution flow, invoke `/athanor:ce-work` explicitly. |
 | `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
+
+### Vendored (v0.10.0 absorption — see §Vendored Surface below)
+
+- `/athanor:ce-*` — 37 skills vendored from compound-engineering v3.8.3 (e.g., `/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review`, `/athanor:ce-brainstorm`, `/athanor:ce-test-browser`, `/athanor:ce-lfg`, `/athanor:ce-proof`, `/athanor:ce-strategy`, …).
+- `/athanor:sp-*` — 13 skills vendored from superpowers v5.1.0 (e.g., `/athanor:sp-brainstorming`, `/athanor:sp-test-driven-development`, `/athanor:sp-systematic-debugging`, `/athanor:sp-using-superpowers`, …).
+- Naming policy (D2): athanor-native skills keep the unprefixed `/athanor:<name>` slot; CE/superpowers variants are reachable via the `ce-`/`sp-` prefix.
 
 ## Rules
 
@@ -96,11 +104,11 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via the v0.7.7-derived English + Korean phrase whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=1 -->` so the hook detects its own evidence emission and exits 0 silently (no re-entry loop). `athanor.json` `hooks.profile: "off"` disables the gate per-project. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
+| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via the v0.7.7-derived English + Korean phrase whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=1 -->` so the hook detects its own evidence emission and exits 0 silently (no re-entry loop). `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.0 scope disclosure:** the hook triggers on every Stop regardless of whether the turn was produced by an athanor-native or vendored skill — the whitelist set (tuned to athanor's voice) may produce false negatives on vendored prose that uses different idioms. Vendor-aware whitelist is v0.10.1+ work. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
-| Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. 운용 근거: `docs/STATE.md` §Current Phase. |
+| Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. **v0.10.0 scope:** discipline applies to athanor-native `/athanor:work` only. Vendored `/athanor:ce-work` and `/athanor:sp-test-driven-development` are OUTSIDE — users opt in by explicit invocation; CE/superpowers carry their own execution semantics. 운용 근거: `docs/STATE.md` §Current Phase. |
 
 Detail follows.
 
@@ -232,6 +240,77 @@ v0.8.1+ 후보 (verification-before-completion skill 확장).
 - **Critic rubric:** `skills/plan/SKILL.md` Step 4 §"v0.8.0 Critic Rubric"
 - **Honesty arc:** v0.7.7~v0.7.9의 advisory/enforced 라벨 정직성 약속 유지.
   본 작업은 "advisory (planner-classified)" — runtime 강제 없음 명시.
+
+## Vendored Surface — Identity Guard Layer (v0.10.0)
+
+athanor v0.10.0 absorbed **compound-engineering v3.8.3** (37 skills + 49
+sub-agents) and **superpowers v5.1.0** (13 skills) under the
+`/athanor:ce-*` and `/athanor:sp-*` namespaces. Every vendored file
+carries a T2 provenance block (see
+`skills/ce-plan/SKILL.md` first 14 lines after the YAML frontmatter for the
+canonical shape). NOTICE.md enumerates every vendored skill with MIT
+attribution.
+
+### Identity guard layer (what survives the absorption)
+
+The user's confirmed scope at v0.10.0 was **full merge with athanor identity
+preserved**. The four identity commitments are upheld by *guard prose +
+namespace policy + regression locks*, NOT by mutating vendored content
+(mutation would invalidate T2 provenance — see modifications field per file):
+
+1. **Thin Leader contract.** When a user invokes a vendored skill (e.g.,
+   `/athanor:ce-plan`), the athanor leader does NOT execute the skill's
+   SKILL.md content directly. The leader dispatches a clean-context worker
+   with the vendored content as the worker's prompt, then collects results.
+   Vendored prose that says "the agent does X" is read by the worker as
+   "I (the worker) do X" — the Thin Leader semantics survive even when
+   upstream content was written in agent-direct voice.
+2. **Cross-model adversarial planning stays athanor-native.** `/athanor:plan`
+   continues to dispatch Planner A (Claude) + Planner B (Codex) + Critic
+   per v0.7.x~v0.9.0. Vendored `/athanor:ce-plan` is CE's single-agent flow
+   for users who explicitly want it. No silent downgrade.
+3. **Spec-then-TDD discipline stays athanor-native.** `/athanor:work`
+   continues to apply Splitter `execution_note` classification +
+   conjunction-of-three Phase 3 gate. Vendored `/athanor:ce-work` and
+   `/athanor:sp-test-driven-development` are OUTSIDE this discipline; users
+   opt into them by explicit invocation.
+4. **Stop hook runtime gate scope.** The Stop hook (`scripts/hooks/stop_verify_claims.py`)
+   triggers on every `Stop` event regardless of which skill produced the
+   turn output. The whitelist phrase set (ported from v0.7.7) is tuned to
+   athanor's voice; vendored skills may use idioms outside the whitelist
+   and produce false negatives. Honesty disclosure: vendored skill outputs
+   are NOT specially protected; the gate is best-effort across all skills.
+   A vendor-aware whitelist is v0.10.1+ work.
+
+### Vendor manifest
+
+- Source plugins: `compound-engineering@3.8.3`
+  (https://github.com/EveryInc/compound-engineering-plugin),
+  `superpowers@5.1.0` (https://github.com/obra/superpowers).
+- Vendor pattern: T2 (per `docs/DEPENDENCIES.md` §Tier ordering — T0/T1
+  unavailable for Claude Code plugin-cache content).
+- Layout: flat — `skills/ce-<name>/` and `skills/sp-<name>/` at depth 1
+  under `skills/` so Claude Code skill auto-discovery resolves them.
+  Sub-agents at `agents/vendored/ce/*.agent.md` (agents are not user-
+  invocable commands; nesting acceptable there).
+- Inventory file: `docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan-INVENTORY.md`.
+- Drift check process: see `docs/STATE.md` §"Vendor Manifest" (manual at
+  v0.10.0; scripted drift check deferred to v0.10.1).
+
+### What this absorption does NOT do
+
+- Does NOT extend the Stop hook gate to silently enforce on vendored skill
+  outputs (per scope decision above — vendored prose may bypass the
+  whitelist).
+- Does NOT re-license athanor (athanor stays MIT; CE and superpowers are
+  also MIT — no compatibility work needed).
+- Does NOT translate vendored prose to athanor's bilingual voice (upstream
+  English voice preserved verbatim under T2; only athanor wrappers and
+  sentinels are bilingual).
+- Does NOT deprecate any athanor-native skill in favour of a vendored
+  variant. Deprecations are deferred (see CHANGELOG v0.10.0 §Deferred).
+- Does NOT auto-install upstream plugins as dependencies. athanor stands
+  alone after vendoring.
 
 ### Effort Level
 - Planner and Critic agents: always use highest reasoning effort
