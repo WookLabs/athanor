@@ -8,7 +8,7 @@ description: >
   '의도 명확화', '요구사항이 헷갈려', '무엇을 만들지 헷갈려',
   '뭘 해야할지 모르겠어', '명확히 정리해줘'.
 user-invocable: true
-allowed-tools: Bash, Read, Write, Glob, Grep, Task
+allowed-tools: Bash, Read, Write, Glob, Grep, Task, AskUserQuestion, ToolSearch, Skill
 ---
 
 # /athanor:discuss — Decision Brainstorming
@@ -111,7 +111,7 @@ Each lens fires AT MOST one open-ended probe. Scope-appropriate gaps may produce
 #### Step 2-clarify.2: Dialogue protocol
 
 - **One question per turn.** Single question per leader turn, even when sub-questions feel related. Stacking dilutes answers.
-- **AskUserQuestion preferred for narrowing / single-select.** When the answer is a bounded choice the leader can write 3–4 distinct options for, use the blocking question tool (`AskUserQuestion`) with a single-select. If the schema isn't loaded, call `ToolSearch` with `select:AskUserQuestion` first.
+- **AskUserQuestion preferred for narrowing / single-select.** When the host exposes the blocking question tool and the skill runtime permits it, use `AskUserQuestion` with a single-select. If the schema isn't loaded but `ToolSearch` is available, call `ToolSearch` with `select:AskUserQuestion` first. If either tool is unavailable or rejected by the runtime, fall back to numbered chat prose; do not pretend the blocking question was sent.
 - **Open-ended for introspective / rigor probes.** Use plain open-ended prose when (a) the answer is inherently narrative, (b) presented options would influence the answer (most rigor probes — evidence/specificity/counterfactual/attachment), or (c) you cannot write 3–4 plausibly-distinct options that cover the space.
 - **Never silently skip a question.** If no blocking tool is available in the host, fall back to a numbered list in chat with the hint "Pick a number or describe what you want."
 - **Stop-phrase guard (LEADER side).** The leader's own dialog turns must NOT use the early-stop phrases listed in Step 2.5 below — "계속할까요?" / "이 정도면 멈출까요?" / "Should I continue?" / equivalents. These phrases were originally designed to detect workers giving up; in clarify mode, where the leader itself drives the dialog, emitting them would short-circuit the gap probes and degrade clarify mode into a single-pass restate. The leader keeps progressing through scope-appropriate probes until the integration check and scoping synthesis both pass. Users themselves can still end the session at any turn; the guard applies only to the leader's wording.
@@ -186,7 +186,7 @@ ID prefixes (A/F/R/AE) are stable across edits — never renumber on reorder or 
 
 #### Step 3-clarify-finalization.3: Save the file
 
-Write to `.athanor/sessions/{session-id}/requirements.md` via the Write tool. This is a Leader-exception infrastructure operation analogous to Step 0 session-directory creation (Thin-Leader exception documented in `CLAUDE.md` §Defense Mechanisms — leader may write to session files directly for infrastructure/output).
+Write to `.athanor/sessions/{session-id}/requirements.md` via the Write tool. This is a documented clarify-mode Thin-Leader exception analogous to Step 0 session-directory creation: the leader may write session-local output artifacts (`requirements.md`) after explicit user confirmation, but still must not edit project source files or perform implementation work.
 
 #### Step 3-clarify-finalization.4: Hand off to Phase 4 menu
 
@@ -198,7 +198,7 @@ After the file is saved, proceed to **Step 3-clarify-handoff** below. Do NOT aut
 
 #### Step 3-clarify-handoff.1: Present the menu
 
-Use `AskUserQuestion` blocking question tool when available (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded). Single-select, 4 options:
+Use `AskUserQuestion` blocking question tool when available and permitted (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded and ToolSearch is available). If unavailable/rejected, fall back to a numbered list in chat. Single-select, 4 options:
 
 ```
 requirements.md 작성 완료. 다음 단계를 선택해주세요.
@@ -226,12 +226,12 @@ When the blocking-question tool is unavailable or the call errors, fall back to 
 
 #### Step 3-clarify-handoff.2: Dispatch on user selection
 
-- **[1] plan** — invoke the `/athanor:plan` skill (via the platform's skill primitive — `Skill` tool in Claude Code) so requirements.md is auto-injected at plan Step 1 (see U5 / plan.md §Step 1.2.5). Do not just tell the user to type the command — fire the invocation.
+- **[1] plan** — invoke the `/athanor:plan` skill via the platform's skill primitive (`Skill` tool in Claude Code) only when that primitive is available and permitted by the runtime, so requirements.md is auto-injected at plan Step 1 (see U5 / plan.md §Step 1.2.5). If the Skill primitive is unavailable or rejected, present the exact next command (`/athanor:plan`) and the requirements path; do not claim the invocation happened.
 - **[2] synthesis chain** — re-enter the same skill (`/athanor:discuss`) in synthesis mode (`mode=synthesis`). Before dispatching the existing Step 2 workers, the leader MUST first run an explicit **Option A/B dilemma confirm step** (Step 1.4 equivalent):
   - The leader summarizes the options that emerged during clarify dialog: "Option A: {derived from dialog}, Option B: {derived from dialog}. 이 내용으로 synthesis를 시작할까요?"
   - User confirms / corrects. Only after confirmation does the leader dispatch the existing Step 2 Researcher + Devil's Advocate workers.
   - Session files are reused — `requirements.md` stays in place; `research-a.md` / `research-b.md` / `discuss.md` are produced by the synthesis flow as if it were a fresh `/athanor:discuss --synthesis` call on the same session.
-- **[3] analyze** — invoke the `/athanor:analyze` skill on the same session.
+- **[3] analyze** — invoke the `/athanor:analyze` skill on the same session when the Skill primitive is available and permitted. If unavailable/rejected, present the exact next command (`/athanor:analyze`) and the requirements path; do not claim the invocation happened.
 - **[4] stop** — emit a brief save-and-stop announcement naming the requirements.md path. Do NOT auto-dispatch any follow-on skill. The user can re-enter manually in a later session.
 
 #### Step 3-clarify-handoff.3: Done

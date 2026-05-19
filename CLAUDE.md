@@ -4,9 +4,14 @@ General-purpose agentic workflow orchestrator plugin for Claude Code.
 
 ## Core Principle
 
-**Thin Leader**: The leader (main session) NEVER does work directly.
-It only parses input, dispatches to clean-context workers, and presents results.
-All file reading, analysis, code writing, and execution happens in worker agents.
+**Thin Leader**: The leader (main session) NEVER does implementation work directly.
+It normally parses input, dispatches to clean-context workers, and presents results.
+All project file reading, analysis, code writing, and execution happens in worker agents.
+
+Documented infrastructure/output exceptions:
+- The leader may create `.athanor/sessions/` directories and session-local files needed to run the workflow.
+- In `/athanor:discuss` clarify mode, after explicit user confirmation, the leader may write `.athanor/sessions/{id}/requirements.md` as a captured dialogue artifact.
+- These exceptions do not permit editing project source files or performing implementation work before `/athanor:work`.
 
 ## Commands
 
