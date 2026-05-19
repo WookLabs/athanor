@@ -141,11 +141,52 @@ Or tell me what to change — even something captured earlier is fair game.
 
 Wait for explicit user confirmation. Do NOT auto-write requirements.md until confirmed.
 
-#### Step 2-clarify.5: Write requirements.md (handed to U3)
+#### Step 2-clarify.5: Hand-off to finalization
 
-Once the user confirms the scoping synthesis, the leader writes `.athanor/sessions/{id}/requirements.md` using the vendored ce-brainstorm requirements-capture template. See **Step 3-clarify-finalization** below for the template structure and file output rules.
+Once the user confirms the scoping synthesis, proceed to **Step 3-clarify-finalization** below to write `.athanor/sessions/{id}/requirements.md`. After the file is written, **Step 3-clarify-handoff** (Phase 4 menu) presents the user with next-step options.
 
-After requirements.md is saved, proceed to **Step 3-clarify-handoff** (Phase 4 menu).
+### Step 3-clarify-finalization: Write requirements.md
+
+> **Mode marker:** This step ONLY fires when the clarify dialog (Step 2-clarify) completed and the user confirmed the scoping synthesis. For `mode=synthesis`, skip directly to Step 2 (Dispatch Research Workers).
+
+#### Step 3-clarify-finalization.1: Load the vendored template
+
+Read `skills/discuss/references/requirements-capture.md` for the template structure, section matrix, ID conventions, frontmatter format, layout rules, and finalization checklist. This reference is vendored from `compound-engineering/ce-brainstorm references/requirements-capture.md` (T2 pattern with provenance block, MIT license).
+
+#### Step 3-clarify-finalization.2: Compose the requirements.md content
+
+Frontmatter is YAML with two required fields:
+
+```yaml
+---
+date: YYYY-MM-DD
+topic: <kebab-case-topic>
+---
+```
+
+The body uses 11 sections (render-conditional per the section matrix in the reference — see `skills/discuss/references/requirements-capture.md` §"Section matrix"):
+
+1. **Summary** — 1-3 line forward-looking prose
+2. **Problem Frame** — backward-looking situational context
+3. **Actors** — triggered, A-IDs assigned (`A1`, `A2`, ...)
+4. **Key Flows** — triggered, F-IDs assigned (`F1`, `F2`, ...)
+5. **Requirements** — always required, R-IDs assigned (`R1`, `R2`, ...)
+6. **Acceptance Examples** — required for behavioral-conditional requirements, AE-IDs assigned (`AE1`, `AE2`, ...)
+7. **Success Criteria** — always required
+8. **Scope Boundaries** — always required (single list — Standard tier only in v0.9.0)
+9. **Key Decisions** — when material
+10. **Dependencies / Assumptions** — when material
+11. **Outstanding Questions** — when material (split into Resolve Before Planning / Deferred to Planning)
+
+ID prefixes (A/F/R/AE) are stable across edits — never renumber on reorder or insertion; gaps from deletion are fine.
+
+#### Step 3-clarify-finalization.3: Save the file
+
+Write to `.athanor/sessions/{session-id}/requirements.md` via the Write tool. This is a Leader-exception infrastructure operation analogous to Step 0 session-directory creation (Thin-Leader exception documented in `CLAUDE.md` §Defense Mechanisms — leader may write to session files directly for infrastructure/output).
+
+#### Step 3-clarify-finalization.4: Hand off to Phase 4 menu
+
+After the file is saved, proceed to **Step 3-clarify-handoff** below. Do NOT auto-dispatch any follow-on skill — the user picks the next step from the menu.
 
 
 
