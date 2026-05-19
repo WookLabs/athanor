@@ -198,6 +198,17 @@ in a single write. Do not perform incremental writes.
   the reclassification reason in the subtask's task description. The
   `acceptance_criteria` field is **only** populated for spec-then-tdd subtasks
   (test-aware and direct subtasks must NOT have an `acceptance_criteria` line).
+- **v0.10.1**: Every subtask MUST carry a `classification_reason: <one-line>`
+  field directly below `execution_note`. The reason is a single descriptive
+  sentence explaining which heuristic rule above fired ("source-code mod
+  introducing new behavior" / "tests/** only, doc-shape change" /
+  "security-adjacent JSON edit, no new runtime contract" / etc.). The
+  reason is descriptive not prescriptive — the heuristic itself is
+  unchanged; v0.10.1 only adds the audit field so misclassifications are
+  diagnosable from the work log. Splitter MUST emit the field for every
+  subtask regardless of classification value (spec-then-tdd / test-aware
+  / direct all require a reason). Length contract: one line, ≤ 200 chars,
+  no embedded newlines. Free-form English or Korean prose.
 
 ## Output Format
 Append this section to plan.md (after stripping any old Subtasks block):
@@ -212,6 +223,7 @@ Append this section to plan.md (after stripping any old Subtasks block):
   - verify: {type: command|check|review|none, value: ...}
   - depends_on: []
   - execution_note: {spec-then-tdd|test-aware|direct}  # v0.8.0 — required
+  - classification_reason: {one-line descriptive reason}  # v0.10.1 — required for every subtask
   - acceptance_criteria:                                # v0.8.0 — ONLY when execution_note == spec-then-tdd
     - MUST <observable assertion copied from parent phase Verify>
     - MUST <observable assertion>
@@ -223,6 +235,7 @@ Append this section to plan.md (after stripping any old Subtasks block):
   - verify: {...}
   - depends_on: [1]
   - execution_note: {spec-then-tdd|test-aware|direct}
+  - classification_reason: {one-line descriptive reason}
 
 ...
 
@@ -260,6 +273,9 @@ Splitter 복귀 후 leader는 plan.md를 재로드하고 다음을 검증:
    `spec-then-tdd | test-aware | direct` 셋 중 하나여야 한다.
 8. **v0.8.0**: `execution_note: spec-then-tdd` 인 subtask는 `acceptance_criteria`
    필드를 가지며 최소 1개 MUST bullet이 있어야 한다.
+9. **v0.10.1**: 각 subtask에 `classification_reason` 필드가 존재하며 비어 있지
+   않은가? (분류값과 무관하게 모든 subtask가 가져야 한다 — Splitter audit trail
+   요건). 200 chars 초과 또는 newline 포함 시 검증 실패.
 
 하나라도 실패하면:
 - `plan.md.bak` → `plan.md`로 복원

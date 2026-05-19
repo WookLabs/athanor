@@ -1,0 +1,24 @@
+# v0.10.1 U4 — Splitter ambiguous-case fixture
+# Edge: prose edit, but the prose is a contract document (CLAUDE.md /
+# AGENTS.md / SKILL.md). Heuristic must still route to `direct` because
+# prose-only edits don't introduce runtime behavior — but the reason
+# field should note that this is a CONTRACT prose edit so reviewers can
+# scrutinize wording carefully.
+case_id: case_03_prose_contract_direct
+subtask_brief: |
+  Subtask 3: Update CLAUDE.md §"Defense Mechanisms / Stop-Phrase
+  Detection" subsection to add the Korean phrase "여기까지만 진행할까요"
+  to the advisory stop-phrase whitelist. Also update the same list in
+  skills/work/SKILL.md Step 2.5. No code changes, prose only.
+expected_classification: direct
+expected_reason_keywords:
+  - prose-only
+  - contract
+  - CLAUDE.md
+rationale: |
+  Prose-only edit → direct. But the prose is a contract document
+  (CLAUDE.md + a Step 2.5 contract block in SKILL.md). The reason field
+  should surface "prose-only edit on contract document" so a reviewer
+  knows to scrutinize the exact wording, even though no test is required.
+  This case demonstrates that `direct` is not "low importance" — it's
+  "no runtime behavior" — and the reason carries the residual signal.

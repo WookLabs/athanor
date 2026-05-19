@@ -1,0 +1,24 @@
+# v0.10.1 U4 — Splitter ambiguous-case fixture
+# Edge: pure refactor that touches source code without changing the
+# observable contract. Heuristic should pick test-aware (preserve-behavior
+# branch), not spec-then-tdd.
+case_id: case_02_refactor_test_aware
+subtask_brief: |
+  Subtask 2: Extract the duplicated `_normalize_phrase()` helper from
+  scripts/hooks/stop_verify_claims.py and scripts/hooks/sentinel_helper.py
+  into scripts/hooks/_phrase_utils.py. Update both callers to import from
+  the new module. No behavior change — same input/output for every public
+  function.
+expected_classification: test-aware
+expected_reason_keywords:
+  - refactor
+  - preserving existing behavior
+  - contract
+rationale: |
+  Source-code mod, but no new behavior or contract — it's a structural
+  extraction. Heuristic routes to `test-aware`: ensure existing tests
+  still pass after the refactor. Reason field must clearly say "refactor"
+  or "preserving behavior" so the audit trail records WHY it isn't
+  spec-then-tdd. If the worker later discovers a contract subtly changed
+  during the refactor, the Phase 3 gate's pending-then-gated mechanism
+  (CLAUDE.md §Spec-then-TDD) still catches it.
