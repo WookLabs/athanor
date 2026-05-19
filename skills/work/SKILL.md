@@ -167,6 +167,18 @@ in a single write. Do not perform incremental writes.
     narrow bug fix without contract change) → `execution_note: test-aware`
   - **prose-only modification** (.md / `_doc` strings in config / CHANGELOG /
     README / doc-only edits) → `execution_note: direct`
+  - **security-adjacent configuration changes** (hooks/hooks.json,
+    .claude-plugin/plugin.json `hooks` field, schemas/*.json behavior
+    constraints, anything under hooks/ or scripts/hooks/, athanor.json
+    `hooks` block that the Stop hook reads at runtime) — these are JSON
+    files, not source code, so the "source code" rules above do not apply.
+    Default classification: **`test-aware`** (require regression test
+    accompanying the config edit). If the JSON change introduces a new
+    runtime contract (new hook event, new field consumed by code paths,
+    materially different schema constraint) → **`spec-then-tdd`**. NEVER
+    classify these files as `direct` even when the edit looks small —
+    silent reclassification of security-adjacent files defeats the purpose
+    of the discipline.
 - **v0.8.0**: For `execution_note: spec-then-tdd` subtasks, copy the parent
   phase's `Verify:` MUST/SHOULD bullets into the subtask's
   `acceptance_criteria` field. If the parent phase has free-form prose Verify
@@ -389,6 +401,17 @@ After all criteria processed:
   - `partial_never_red` if some criteria had RED but others were never_red
   - `never_red` if all criteria's first-run exit_code was 0 (i.e. tests
     didn't actually go RED)
+- ALSO report `tests_modified: true` and the list of test artifact paths
+  touched (`test_paths_touched: [...]`) using `git diff --name-only` filtered
+  to `tests/**`. These fields look redundant with `red_evidence` but Phase 2
+  downgrade can route a spec-then-tdd subtask through the Phase 3 test-aware
+  gate, and the gate validates the same fields a true test-aware subtask
+  would emit. Omitting them causes Phase 3 to false-positive fail any
+  downgraded subtask even when tests were written.
+- ALSO report `full_suite_passed: true` ONLY after running `pytest tests/`
+  end-to-end and observing exit code 0. This is the worker's self-report
+  that the broader regression suite stayed green — the leader's Phase 3
+  gate treats `full_suite_passed: false` (or missing) as a gate violation.
 
 The leader will validate that every criterion in your acceptance_criteria
 list has a matching red_evidence entry. Missing or malformed red_evidence
@@ -407,9 +430,11 @@ the end gate enforces test artifact changes:
    artifact pattern than just `test_*.py`).
    If no path under `tests/` has changes, REPORT failure — test-aware
    subtasks require test artifact changes.
-2. Run `pytest tests/` — full suite must pass.
-3. Report `tests_modified: true` and the list of test artifact paths touched
-   in your ATHANOR_RESULT (`test_paths_touched: [...]`).
+2. Run `pytest tests/` end-to-end — full suite must pass with exit code 0.
+3. Report all three fields in your ATHANOR_RESULT:
+   - `tests_modified: true`
+   - `test_paths_touched: [...]` (list of paths from step 1)
+   - `full_suite_passed: true` (only if step 2 actually returned exit code 0)
 
 ### Output Format
 Return your result as:
@@ -434,8 +459,9 @@ red_evidence:                                         # v0.8.0 — only when spe
     exit_code: <int>
     output_tail: \"...\"
 red_status: {red|partial_never_red|never_red}        # v0.8.0 — only when spec-then-tdd
-tests_modified: {true|false}                          # v0.8.0 — only when test-aware
-test_paths_touched: [{paths}]                         # v0.8.0 — only when test-aware
+tests_modified: {true|false}                          # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}, so Phase 2 downgrade can route a spec-then-tdd subtask through the Phase 3 gate without false-positive failure
+test_paths_touched: [{paths}]                         # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}
+full_suite_passed: {true|false}                       # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}; result of `pytest tests/` (full suite) the worker ran as the GREEN step or test-aware gate step. Leader's Phase 3 gate trusts this self-report but combined with test_paths_touched gives a stronger signal than verification line alone
 END_RESULT\"
 })
 ```
@@ -504,23 +530,56 @@ If `red_status_resolved in {"never_red", "partial_never_red"}`:
 
 **Phase 3 — test-aware gate enforcement** (applies when subtask.execution_note == "test-aware" OR Phase 2 downgraded a spec-then-tdd subtask to test-aware):
 
-If `ATHANOR_RESULT.tests_modified == false` OR `test_paths_touched` is empty:
+The gate is a **conjunction** of three signals — all three MUST hold for
+the subtask to pass:
+
+1. `ATHANOR_RESULT.tests_modified == true` AND `test_paths_touched` is
+   non-empty (the worker actually touched `tests/**`).
+2. `ATHANOR_RESULT.full_suite_passed == true` (the worker self-reports that
+   it ran `pytest tests/` and saw exit code 0). Missing field is treated as
+   `false` (defensive default — worker that forgot to run the full suite
+   does not pass the gate).
+3. The `verification:` line in ATHANOR_RESULT (free-form prose set by the
+   existing Ralph-Loop instruction) shows a pass/green signal consistent
+   with full_suite_passed.
+
+If any of the three fails:
 - This is a worker-side gate violation — test-aware (or downgraded
-  spec-then-tdd) subtask completed without any `tests/**` path modifications.
+  spec-then-tdd) subtask completed without proper test discipline.
 - Mark subtask as failed (NOT success), increment `consecutiveFailures`.
-- work-log message: `test-aware gate violation — no tests/** paths modified
-  in git diff (test_paths_touched empty)`. If this subtask was a Phase 2
-  downgrade, the work-log entry is updated from `pending` to `✗ failed
-  [downgraded then gate-rejected]` so the audit trail captures both steps.
-- If the gate passes (test_paths_touched non-empty + pytest green), the
-  subtask is marked complete and the work-log `pending` entry is updated to
-  `✓ {title} [auto-downgraded: spec-then-tdd → test-aware]`.
+- work-log message names the specific gate clause that failed:
+  - `test-aware gate violation: no tests/** paths modified (test_paths_touched empty)`
+  - `test-aware gate violation: full_suite_passed=false or missing (worker did not run pytest tests/)`
+  - `test-aware gate violation: verification line contradicts full_suite_passed`
+- If this subtask was a Phase 2 downgrade, the work-log entry is updated
+  from `pending` to `✗ failed [downgraded then gate-rejected]` so the audit
+  trail captures both steps.
+
+If all three gate clauses pass:
+- Subtask is marked complete and the work-log `pending` entry (if any) is
+  updated to `✓ {title} [auto-downgraded: spec-then-tdd → test-aware]`.
+
+**Honesty note on the gate**: the leader does not independently re-execute
+`pytest tests/` to verify `full_suite_passed`. The signal is worker
+self-report; a worker that fabricates `full_suite_passed: true` can still
+pass. The gate's value is catching the most common honest mistake (worker
+forgot the full-suite run, or wrote tests but they failed) rather than
+adversarial forgery. Runtime hard-enforcement (Stop-hook validating
+test-commit presence in the session diff) is deferred to v0.8.1+ candidates.
 
 **Phase 4 — grandfathered fallback breadcrumb** (only when execution_note absent in plan):
 
 If `ATHANOR_RESULT.execution_note_source == "grandfathered"`:
 - Append `[grandfathered: execution_note field absent in plan; treated as direct]`
-  to the work-log entry for traceability.
+  to the work-log entry for traceability. This applies to BOTH branches:
+  - On success (the "If success" block below), append the breadcrumb to the
+    `✓ {title}` line so the success entry reads
+    `✓ {title} [grandfathered: execution_note field absent in plan; treated as direct]`.
+  - On failure (the "If failure" block below), append the breadcrumb to the
+    failure work-log entry so the failure record also captures the
+    grandfathered status. If the failure path normally writes no work-log
+    entry (current pre-v0.8.0 behavior), write a minimal one anchored on
+    grandfathered status: `## Subtask {id}: ✗ {title} [grandfathered, failed]`.
 
 **If success** (after v0.8.0 phases above resolve to success):
 - `consecutiveFailures = 0`

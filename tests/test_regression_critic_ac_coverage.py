@@ -247,3 +247,41 @@ def test_each_critic_agent_prompt_references_rubric():
             f"v0.8.0 rubric. Expected one of: {rubric_signals}. "
             f"Block first 200 chars: {block[:200]!r}"
         )
+
+
+def test_critic_rubric_consistency_across_prompts():
+    """MUST: all three Critic Agent prompt blocks mention BOTH axis (A)
+    AC coverage AND axis (B) classification appropriateness. Drift between
+    blocks (e.g., one variant missing axis B) would degrade discipline
+    silently. Closes Opus P2-1 gap.
+    """
+    content = _load()
+    blocks = _critic_agent_prompt_blocks(content)
+    assert len(blocks) >= 3
+    for i, block in enumerate(blocks):
+        block_lower = block.lower()
+        # Axis A signals
+        axis_a = [
+            "acceptance_criteria coverage",
+            "acceptance criteria coverage",
+            "must/should observable",
+            "must/should bullets",
+        ]
+        # Axis B signals
+        axis_b = [
+            "classification appropriateness",
+            "execution_note",
+            "over-classification",
+            "under-classification",
+            "predict each phase",
+        ]
+        has_a = any(s in block_lower for s in axis_a)
+        has_b = any(s in block_lower for s in axis_b)
+        assert has_a, (
+            f"Critic Agent prompt block #{i + 1} drift: missing axis (A) "
+            f"AC coverage language. Expected one of: {axis_a}"
+        )
+        assert has_b, (
+            f"Critic Agent prompt block #{i + 1} drift: missing axis (B) "
+            f"classification language. Expected one of: {axis_b}"
+        )

@@ -61,8 +61,10 @@ Origin: `docs/brainstorms/2026-05-19-001-tdd-sdd-integration-requirements.md`
   honesty paragraphs.
 - **6 new regression-test files** (U1+U2+U3+U4+U5+U7 contributions): pin the
   prompt-level and result-handler contracts across the affected skills.
-  Total test count: 154 baseline + 13 Phase A + 20 Phase B + 6 Phase C =
-  193 passing.
+  Total test count after main implementation + Codex-review autofix +
+  dual-review (Opus + Codex) autofix: 197 passing (154 baseline + 39 new
+  across U1-U7 + 4 from initial Codex autofix; further dual-review fixes
+  land in the same PR with additional test coverage).
 
 ### Changed
 
@@ -130,6 +132,13 @@ Origin: `docs/brainstorms/2026-05-19-001-tdd-sdd-integration-requirements.md`
 
 ### Deferred (post v0.8.0)
 
+- **v0.8.0.1 (fast-follow)**: Splitter classification heuristic refinement —
+  add `classification_reason` field per subtask + ambiguous-case fixtures
+  (Codex implementation-review Medium #3). Current 3-bullet heuristic is
+  sufficient for the obvious source / prose / config splits but leaves edge
+  cases (build scripts, infrastructure-as-code, mixed-purpose JSON outside
+  the security-adjacent enumeration) under-specified. The deferred fix
+  surfaces the planner's reasoning so Splitter mistakes are auditable.
 - **v0.8.1+**: verification-before-completion skill extension (Stop-hook
   validates test-commit existence for spec-then-tdd subtasks at session
   close). baseline 효과 측정 후 결정.

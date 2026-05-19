@@ -95,7 +95,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
-| Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` path 수정 확인) / 그대로 분기. RED 안 가는 경우 자동 `test-aware`로 강등. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail)으로 가장 흔한 실수(RED 건너뛰기) 일부 잡지만 adversarial forgery는 못 잡음. 운용 근거: `docs/STATE.md` §Current Phase. |
+| Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. 운용 근거: `docs/STATE.md` §Current Phase. |
 
 Detail follows.
 
@@ -195,11 +195,15 @@ Subtask 단위로 Spec-then-TDD를 자동 적용. 메커니즘 분기:
   - prose-only (`.md`, `_doc`, CHANGELOG) → `direct`
 - **spec-then-tdd**: red-first 5단계 (test write → run RED → implement → run
   GREEN → next criterion). Worker가 per-criterion `red_evidence` (command,
-  test_node_id, exit_code, output_tail) 보고. Leader가 evidence shape 검증 후
-  RED 안 갔으면 자동 `test-aware`로 강등.
-- **test-aware**: 종료 게이트 — `git diff --name-only` 결과에 `tests/**`
-  path가 1개 이상 포함 (test_*.py, conftest.py, fixtures/, snapshot 모두
-  허용) + pytest 통과.
+  test_node_id, exit_code, output_tail) 보고 + `tests_modified` /
+  `test_paths_touched` / `full_suite_passed` 자가보고. Leader가 evidence
+  shape 검증 후 RED 안 갔으면 `test-aware`로 **pending-downgrade** —
+  Phase 3 게이트 (conjunction of three signals)를 다시 통과해야 success.
+- **test-aware**: 종료 게이트 — 세 조건의 conjunction: (1) `git diff --name-only`
+  결과에 `tests/**` path가 1개 이상 포함 (test_*.py, conftest.py, fixtures/,
+  snapshot 모두 허용), (2) worker가 `full_suite_passed: true`로 자가보고
+  (즉 `pytest tests/`를 실행해 exit 0을 봤다고 주장), (3) `verification:`
+  자유형 prose가 (2)와 일관. 셋 중 하나라도 빠지면 게이트 fail.
 - **direct**: 현재 athanor 동작 그대로 (doc/config-only edits).
 
 **What it catches:** 새 동작 도입하는 subtask에서 "tests are afterthought" 패턴.

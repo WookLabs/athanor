@@ -344,7 +344,10 @@ def test_grandfathered_legacy_plan_docs_are_present():
 def test_grandfathered_legacy_plans_have_no_execution_note():
     """MUST: the legacy plan docs MUST NOT have execution_note fields (they
     pre-date v0.8.0). The fallback-to-direct prose in skills/work/SKILL.md
-    is what handles them."""
+    is what handles them. (List expanded post dual-review to include the
+    v0.8.0 plan itself — the brainstorm/plan documents for this release are
+    themselves grandfathered since they were authored BEFORE the splitter
+    knew to add execution_note fields.)"""
     from pathlib import Path
 
     repo_root = Path(__file__).resolve().parent.parent
@@ -352,15 +355,171 @@ def test_grandfathered_legacy_plans_have_no_execution_note():
         "docs/plans/2026-04-08-001-feat-phase1-foundation-setup-plan.md",
         "docs/plans/2026-05-18-001-feat-v0.7.8-stop-hook-command-mode-plan.md",
         "docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan.md",
+        # Note: 2026-05-19-001-feat-v0.8.0-*.md is the CURRENT plan and DOES
+        # contain `execution_note:` strings (as documentation of the field
+        # being introduced). It is NOT grandfathered in the dispatch sense —
+        # it's the plan that defines the field. Skip it from this check.
     ]
     for path in grandfathered:
         content = (repo_root / path).read_text(encoding="utf-8")
-        # The v0.8.0 execution_note FIELD (as a YAML/markdown key) must not
-        # appear in legacy plan docs. We check for the field-as-key pattern
-        # specifically ("execution_note:") rather than the bare word, so that
-        # incidental discussion of the term elsewhere doesn't false-positive.
         assert "execution_note:" not in content, (
             f"Legacy plan doc '{path}' contains 'execution_note:' field which "
             f"pre-dates v0.8.0. Either the doc was modified or the "
             f"grandfathered assumption is wrong."
         )
+
+
+def test_dispatch_explicitly_lists_grandfathered_fallback_path():
+    """MUST: the dispatch packet builder prose must explicitly describe the
+    fallback path for legacy plans (execution_note absent → direct branch +
+    execution_note_source: grandfathered breadcrumb)."""
+    body = _load()
+    # The grandfathered path must be named explicitly enough that a future
+    # refactor cannot silently drop it.
+    body_lower = body.lower()
+    # Must mention execution_note_source enum tag
+    assert "execution_note_source" in body, (
+        "Dispatch prose must reference the execution_note_source field tag "
+        "for grandfathered breadcrumb propagation"
+    )
+    # Must explicitly mention 'grandfathered' as a value
+    assert "grandfathered" in body_lower
+    # Must explicitly mention 'absent' or 'missing' for the trigger condition
+    trigger_signals = ["field is absent", "field absent", "absent in plan", "missing"]
+    assert any(s in body_lower for s in trigger_signals), (
+        f"Fallback trigger condition must be named explicitly. "
+        f"Expected one of: {trigger_signals}"
+    )
+
+
+# --- Post dual-review P0 fixes: spec-then-tdd workers MUST emit tests_modified,
+# --- test_paths_touched, full_suite_passed so Phase 2 downgrade can route
+# --- through Phase 3 without false-positive failure ---
+
+
+def test_spec_then_tdd_branch_emits_test_aware_gate_fields():
+    """MUST: spec-then-tdd worker output schema includes tests_modified,
+    test_paths_touched, and full_suite_passed — without these, Phase 2
+    downgrade to test-aware always fails the Phase 3 gate (Opus review P0).
+    """
+    body = _load()
+    # Find the Executor ATHANOR_RESULT schema block. Multiple ATHANOR_RESULT
+    # blocks exist (Splitter, Executor, Learner, Cleaner). Anchor on
+    # `red_evidence:` which appears ONLY in the Executor result schema (not
+    # Splitter output template, not Learner/Cleaner).
+    re_idx = body.find("red_evidence:")
+    assert re_idx >= 0, (
+        "Executor result schema block (anchored by 'red_evidence:') not found"
+    )
+    schema_start = body.rfind("ATHANOR_RESULT", 0, re_idx)
+    schema_end = body.find("END_RESULT", re_idx)
+    assert schema_start >= 0 and schema_end > re_idx
+    schema_block = body[schema_start:schema_end]
+    # Must mention all three fields with explicit applicability beyond
+    # test-aware
+    for field in ["tests_modified", "test_paths_touched", "full_suite_passed"]:
+        assert field in schema_block, (
+            f"Executor output schema must include '{field}' field"
+        )
+    schema_lower = schema_block.lower()
+    # Must signal that these fields apply to spec-then-tdd as well, not just
+    # test-aware
+    apply_signals = [
+        "always emit when execution_note in {spec-then-tdd, test-aware}",
+        "always emit",
+        "phase 2 downgrade can route",
+        "without false-positive",
+    ]
+    assert any(s in schema_lower for s in apply_signals), (
+        f"Executor output schema must signal that these fields are emitted "
+        f"by both spec-then-tdd and test-aware workers. "
+        f"Expected one of: {apply_signals}"
+    )
+
+
+def test_phase_3_gate_is_conjunction_of_three_signals():
+    """MUST: Phase 3 gate enforcement requires (tests/** path touched) AND
+    (full_suite_passed self-report true) AND (verification line consistent).
+    Closes the Codex P1 'gate doesn't validate pytest actually passed' gap."""
+    body = _load()
+    body_lower = body.lower()
+    # Must reference 'conjunction' or 'all three'
+    conjunction_signals = [
+        "conjunction of three",
+        "all three must hold",
+        "all three signals",
+        "three clauses",
+    ]
+    assert any(s in body_lower for s in conjunction_signals), (
+        f"Phase 3 gate must be described as a conjunction of multiple signals "
+        f"(not just tests/** path check). Expected one of: {conjunction_signals}"
+    )
+    # Must mention full_suite_passed signal specifically
+    assert "full_suite_passed" in body, (
+        "Phase 3 gate must check full_suite_passed signal explicitly"
+    )
+
+
+# --- P1-2 semantic regression canary — minimal sanity check that the
+# --- handler's gate condition is not inverted ---
+
+
+def test_phase_3_failure_condition_is_explicit_not_inverted():
+    """MUST: Phase 3 failure clauses MUST trigger on negative conditions
+    (tests_modified == false / empty test_paths_touched / full_suite_passed
+    == false), NOT on the positive form. A naïve refactor that inverts the
+    polarity would break the gate; this canary asserts the failure side
+    explicitly names the negative form.
+    """
+    body = _load()
+    # Negative-form keywords expected near the gate violation prose
+    negative_signals = [
+        "tests_modified == false",
+        "test_paths_touched is empty",
+        "test_paths_touched empty",
+        "full_suite_passed=false",
+        "full_suite_passed == false",
+        "full_suite_passed: false",
+    ]
+    matches = [s for s in negative_signals if s in body or s in body.lower()]
+    assert len(matches) >= 2, (
+        f"Phase 3 violation prose must explicitly name at least 2 negative "
+        f"forms (gate triggers on failure, not on success). Found: {matches}. "
+        f"Expected at least 2 of: {negative_signals}"
+    )
+
+
+# --- P2-3 security-adjacent JSON heuristic ---
+
+
+def test_splitter_heuristic_names_security_adjacent_json():
+    """MUST: Splitter classification prose names security-adjacent JSON
+    config files (hooks/hooks.json, schemas/, athanor.json hooks block)
+    explicitly and warns against silently classifying them as direct.
+    Closes Opus P2-3 gap."""
+    body = _load()
+    body_lower = body.lower()
+    # Must name at least one of the security-adjacent file patterns
+    file_signals = [
+        "hooks/hooks.json",
+        ".claude-plugin/plugin.json",
+        "scripts/hooks/",
+        "schemas/*.json",
+        "schemas/",
+        "athanor.json `hooks`",
+    ]
+    matches = [s for s in file_signals if s in body or s in body_lower]
+    assert len(matches) >= 2, (
+        f"Splitter prose must name security-adjacent JSON files explicitly. "
+        f"Found: {matches}. Expected at least 2 of: {file_signals}"
+    )
+    # Must warn against direct classification for these
+    warn_signals = [
+        "never classify these files as `direct`",
+        "never classify these files as direct",
+        "silent reclassification of security-adjacent",
+    ]
+    assert any(s in body for s in warn_signals) or any(s in body_lower for s in warn_signals), (
+        f"Splitter prose must explicitly warn against classifying these as "
+        f"direct. Expected one of: {warn_signals}"
+    )
