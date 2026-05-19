@@ -255,13 +255,19 @@ MATERIAL_CLAIMS_KO.extend([
 
 
 # v0.10.2 — Cyrillic→Latin confusables fold (ADV-006 closure).
-# Conservative set: 17 Cyrillic characters that are visually indistinguishable
-# from Latin equivalents at common font sizes. Greek/Armenian/other-script
-# homoglyphs are NOT in the v0.10.2 scope (documented as known residual in
-# test_regression_v010_2_paraphrase_closure.py — expand deliberately, not
-# greedily).
-_CYRILLIC_TO_LATIN_TABLE = str.maketrans({
-    # lowercase
+# v0.10.3 — extended with Greek + Armenian look-alikes (R1 closure).
+# Renamed _CYRILLIC_TO_LATIN_TABLE → _CONFUSABLES_TO_LATIN_TABLE since the
+# table now covers multiple scripts. Old name kept as alias for any external
+# importer that may exist.
+# Conservative set: each entry is a character that is visually
+# indistinguishable from a Latin equivalent at common font sizes.
+# Greek/Armenian additions tuned by attack-vector relevance — `ο/α/ε/υ/ν/ρ`
+# (Greek lowercase) and `ո` (Armenian small `o`) are the high-frequency
+# substitution targets for whitelist phrases.
+# Other-script confusables (Cherokee, full-width Latin not handled by
+# NFKC, etc.) NOT in v0.10.3 scope — expand deliberately.
+_CONFUSABLES_TO_LATIN_TABLE = str.maketrans({
+    # ---- Cyrillic lowercase (v0.10.2) ----
     "а": "a",  # U+0430
     "е": "e",  # U+0435
     "о": "o",  # U+043E
@@ -269,7 +275,7 @@ _CYRILLIC_TO_LATIN_TABLE = str.maketrans({
     "с": "c",  # U+0441
     "у": "y",  # U+0443
     "х": "x",  # U+0445
-    # uppercase
+    # ---- Cyrillic uppercase (v0.10.2) ----
     "А": "A",  # U+0410
     "В": "B",  # U+0412
     "Е": "E",  # U+0415
@@ -281,16 +287,39 @@ _CYRILLIC_TO_LATIN_TABLE = str.maketrans({
     "С": "C",  # U+0421
     "Т": "T",  # U+0422
     "Х": "X",  # U+0425
+    # ---- Greek lowercase (v0.10.3) ----
+    "α": "a",  # U+03B1
+    "ε": "e",  # U+03B5
+    "ι": "i",  # U+03B9
+    "ν": "v",  # U+03BD — Greek nu looks like Latin v
+    "ο": "o",  # U+03BF
+    "ρ": "p",  # U+03C1 — Greek rho looks like Latin p
+    "υ": "u",  # U+03C5
+    # ---- Greek uppercase (v0.10.3) ----
+    "Α": "A",  # U+0391
+    "Ε": "E",  # U+0395
+    "Ι": "I",  # U+0399
+    "Ο": "O",  # U+039F
+    "Ρ": "P",  # U+03A1
+    "Τ": "T",  # U+03A4
+    "Υ": "Y",  # U+03A5
+    # ---- Armenian (v0.10.3) ----
+    "ո": "o",  # U+0578 Armenian small letter vo
 })
+# Backwards-compat alias for any external code that imported the old name
+# before v0.10.3. Internal call sites use _CONFUSABLES_TO_LATIN_TABLE.
+_CYRILLIC_TO_LATIN_TABLE = _CONFUSABLES_TO_LATIN_TABLE
 
 
 def _normalize_for_match(text: str) -> str:
     """Normalize a message before material-claim detection.
 
-    Layers (v0.10.2):
+    Layers:
       1. Unicode NFKC normalization (collapses fullwidth, ligatures,
          compatibility-decomposition characters).
-      2. Cyrillic→Latin confusables fold (conservative 17-character set).
+      2. Multi-script confusables fold:
+         - v0.10.2: Cyrillic→Latin (17 characters).
+         - v0.10.3: + Greek (~13 characters) + Armenian (1 character).
       3. Lowercase (matches EN whitelist case-insensitivity; KO is unaffected).
 
     Idempotent: norm(norm(x)) == norm(x).
@@ -300,8 +329,127 @@ def _normalize_for_match(text: str) -> str:
     if not text:
         return ""
     nfkc = unicodedata.normalize("NFKC", text)
-    folded = nfkc.translate(_CYRILLIC_TO_LATIN_TABLE)
+    folded = nfkc.translate(_CONFUSABLES_TO_LATIN_TABLE)
     return folded.lower()
+
+
+# v0.10.3 — Conditional / speculative tense markers (R2 closure).
+# When a material-claim phrase matches, we check whether the clause
+# containing the match starts with a marker from these sets. If yes,
+# the match is suppressed (false-positive reduction).
+_CLAUSE_BOUNDARY_CHARS = set(".,;:?!\n")
+_CONDITIONAL_MARKERS_EN = frozenset({
+    "if", "once", "when", "whenever", "should", "could", "would", "unless",
+})
+# Korean markers are prefix-based (we check stripped-clause startswith).
+# Suffix markers (`...면`, `...한다면`) require morphological analysis to
+# detect reliably; v0.10.3 covers only the explicit-prefix common case.
+_CONDITIONAL_MARKERS_KO = ("만약", "만일")
+
+
+def _clause_start_for(text: str, match_start: int) -> int:
+    """Find the index of the first non-whitespace character of the clause
+    containing position `match_start`. The clause starts immediately after
+    the most recent clause-boundary char (or at index 0).
+    """
+    i = match_start - 1
+    while i >= 0:
+        if text[i] in _CLAUSE_BOUNDARY_CHARS:
+            i += 1
+            break
+        i -= 1
+    if i < 0:
+        i = 0
+    # Skip leading whitespace inside the clause
+    while i < match_start and text[i].isspace():
+        i += 1
+    return i
+
+
+def _is_conditional_or_speculative_context(text: str, match_start: int) -> bool:
+    """Return True if the clause containing `match_start` opens with a
+    conditional or speculative marker (English or Korean).
+
+    Detection is intentionally conservative — only explicit-prefix markers.
+    Speculative-tense expressed without prefix marker
+    (e.g., "Probably CI is green") is NOT caught; documented v0.10.4+ candidate.
+    """
+    clause_start = _clause_start_for(text, match_start)
+    clause = text[clause_start:match_start]
+    # Empty clause prefix (match at start of clause): no marker by definition.
+    if not clause.strip():
+        return False
+    # Check Korean prefix first (raw text, no lowercasing needed for Korean)
+    stripped = clause.lstrip()
+    for marker in _CONDITIONAL_MARKERS_KO:
+        if stripped.startswith(marker):
+            return True
+    # Check English: first whitespace-separated token, lowercased
+    first_token = stripped.split(None, 1)[0].lower() if stripped else ""
+    # Strip trailing punctuation from the token (e.g., "if,")
+    first_token = first_token.rstrip(".,;:?!")
+    if first_token in _CONDITIONAL_MARKERS_EN:
+        return True
+    return False
+
+
+# v0.10.3 — Attribution markers (R3 closure).
+# When a match is inside paired quotes or shortly after an attribution
+# verb, suppress it (the match is a historical reference, not a current
+# state assertion).
+_QUOTE_CHARS = ('"', "'", "`")
+_ATTRIBUTION_VERBS_EN = (
+    "said", "claimed", "wrote", "noted", "commented", "mentioned",
+    "stated", "reported", "said:",
+)
+_ATTRIBUTION_VERBS_KO = ("라고 했", "라고 적", "라고 말")
+_ATTRIBUTION_WINDOW = 40  # chars before match_start to scan
+
+
+def _is_attributed_quote_context(text: str, match_start: int,
+                                 match_end: int) -> bool:
+    """Return True if the match falls inside paired quotes OR within
+    `_ATTRIBUTION_WINDOW` chars after an attribution verb.
+
+    Heuristic — fails open on ambiguity (returns False). Multi-paragraph
+    quote spans and code-block context NOT covered (v0.10.4+ candidate).
+    """
+    # 1. Paired-quote check: for each quote char, find the most recent
+    #    occurrence before match_start. If it's on the same line as the
+    #    match and there's another occurrence of the same char between
+    #    match_end and the next newline, the match is inside the quote.
+    line_start = text.rfind("\n", 0, match_start) + 1  # 0 if no newline
+    line_end = text.find("\n", match_end)
+    if line_end < 0:
+        line_end = len(text)
+    line_segment_before = text[line_start:match_start]
+    line_segment_after = text[match_end:line_end]
+    for qch in _QUOTE_CHARS:
+        count_before = line_segment_before.count(qch)
+        # An odd number of quotes before the match (on the same line) means
+        # we're inside an unclosed quote opened earlier on this line.
+        if count_before % 2 == 1 and qch in line_segment_after:
+            return True
+
+    # 2. Attribution-verb check (English): English markers PRECEDE the
+    #    quoted content (`he said tests pass`). Scan the window before
+    #    match_start, clipped to current line.
+    window_start = max(line_start, match_start - _ATTRIBUTION_WINDOW)
+    window_before_en = text[window_start:match_start].lower()
+    for verb in _ATTRIBUTION_VERBS_EN:
+        if verb in window_before_en:
+            return True
+
+    # 3. Attribution-verb check (Korean): Korean markers FOLLOW the quoted
+    #    content (`테스트 통과 라고 했어요`). Scan the window after match_end,
+    #    clipped to current line.
+    window_end = min(line_end, match_end + _ATTRIBUTION_WINDOW)
+    raw_window_after = text[match_end:window_end]
+    for verb in _ATTRIBUTION_VERBS_KO:
+        if verb in raw_window_after:
+            return True
+
+    return False
 
 
 # v0.10.2 — paraphrase regex patterns (B2 / sec-003 closure).
@@ -528,44 +676,87 @@ def validate_emission_sentinel(message: str) -> bool:
     return True
 
 
+def _match_is_suppressed(message: str, normalized: str,
+                         match_start_norm: int, match_end_norm: int) -> bool:
+    """Apply v0.10.3 context suppressions to a candidate match.
+
+    Context checks run against the ORIGINAL message (case + non-folded text
+    preserved) so attribution verbs and conditional markers retain their
+    natural form. The position is mapped from the normalized text to the
+    raw text by length-preservation: NFKC + str.translate + .lower() all
+    preserve string length character-by-character (translate is 1-char→
+    1-char; lower is 1-char→1-char for the letters in our matching set).
+
+    Returns True if the match should be suppressed (i.e., the match is
+    inside a conditional clause or an attributed quote).
+    """
+    if _is_conditional_or_speculative_context(message, match_start_norm):
+        return True
+    if _is_attributed_quote_context(message, match_start_norm, match_end_norm):
+        return True
+    return False
+
+
 def is_material_claim(message: str) -> bool:
     """Detect any whitelisted material-claim phrase in the message body.
 
-    v0.10.2 detection pipeline (closure of B2 / sec-003 / ADV-006 / A2):
-      1. Normalize via `_normalize_for_match()` — NFKC + Cyrillic→Latin
-         confusables fold + lowercase. Closes homoglyph and fullwidth
-         attacks; makes EN whitelist matching case-insensitive uniformly.
+    Detection pipeline:
+      1. Normalize via `_normalize_for_match()` — NFKC + multi-script
+         confusables fold (Cyrillic/Greek/Armenian → Latin) + lowercase.
+         Closes homoglyph and fullwidth attacks.
       2. Substring match against `MATERIAL_CLAIMS_EN` (normalized).
       3. Substring match against `MATERIAL_CLAIMS_KO` (raw `message` —
-         Korean is case-irrelevant; we still check against `normalized`
-         too so homoglyph-attacked Korean phrases get caught).
+         Korean is case-irrelevant; also checks `normalized` for
+         homoglyph-attacked Korean).
       4. Regex search against `MATERIAL_CLAIM_PATTERNS` (verb-anchored
          paraphrases of state assertions; runs on normalized text).
 
-    Returns True on the first match.
+    v0.10.3 — every candidate match runs through context suppressions
+    (`_match_is_suppressed()`):
+      - Conditional / speculative clause prefix (`if`, `once`, `should`,
+        `만약`, etc.) → match suppressed.
+      - Attributed quoted context (paired quotes OR within 40 chars after
+        `said`/`claimed`/`라고 했` etc.) → match suppressed.
 
-    Known residuals (v0.10.3+ candidates):
+    Returns True on the first non-suppressed match.
+
+    Known residuals (v0.11.0+ candidates):
       - LLM-class paraphrase patterns subtler than the regex layer catches.
-      - Quoted historical references (`the v0.7.6 docs said "tests pass"`)
-        — attribution detection is its own pass.
-      - Greek/Armenian/other-script homoglyphs (v0.10.2 scope is
-        Cyrillic-only fold).
-      - Speculative-tense paraphrases ("I'll check if CI is green") —
-        regex cannot distinguish without semantic analysis.
+      - Speculative tense without prefix marker ("Probably CI is green").
+      - Multi-paragraph quote spans / code-block context.
+      - Cherokee, full-width Latin, other-script confusables.
+      - Sentinel forgery via filesystem nonce state (sec-001 residual).
+      - Mid-session profile mutation.
     """
     if not message:
         return False
     normalized = _normalize_for_match(message)
+    # Literal EN whitelist (normalized substring)
     for phrase in MATERIAL_CLAIMS_EN:
-        if phrase in normalized:
+        pos = normalized.find(phrase)
+        if pos >= 0:
+            if _match_is_suppressed(message, normalized, pos, pos + len(phrase)):
+                continue
             return True
+    # Literal KO whitelist (raw or normalized — Korean rarely benefits from
+    # confusables fold but it's cheap to check both)
     for phrase in MATERIAL_CLAIMS_KO:
-        # KO unchanged from v0.7.7: raw match. Also check normalized
-        # for homoglyph-attacked Korean (rare but covered).
-        if phrase in message or phrase in normalized:
+        pos_raw = message.find(phrase)
+        if pos_raw >= 0:
+            if _match_is_suppressed(message, normalized, pos_raw, pos_raw + len(phrase)):
+                continue
             return True
+        pos_norm = normalized.find(phrase)
+        if pos_norm >= 0:
+            if _match_is_suppressed(message, normalized, pos_norm, pos_norm + len(phrase)):
+                continue
+            return True
+    # Regex layer (paraphrase patterns)
     for pattern in MATERIAL_CLAIM_PATTERNS:
-        if pattern.search(normalized):
+        m = pattern.search(normalized)
+        if m:
+            if _match_is_suppressed(message, normalized, m.start(), m.end()):
+                continue
             return True
     return False
 
