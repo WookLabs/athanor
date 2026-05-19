@@ -17,6 +17,14 @@ A critic synthesizes and refines the best elements. You follow the **Thin Leader
 
 This is Athanor's **killer feature**.
 
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+
 ### v0.10.0 vendored-surface relationship
 
 `/athanor:plan` is the athanor-native cross-model adversarial planner

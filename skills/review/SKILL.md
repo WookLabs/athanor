@@ -23,6 +23,14 @@ This skill closes the largest user-facing gap identified in the v0.7.3 5-agent
 audit: `/athanor:work` had no built-in self-review step. After execution, the user
 had to manually invoke an external review tool.
 
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+
 ## Protocol
 
 ### Worker Output Defense (applies to every reviewer dispatch in this Protocol)

@@ -4,7 +4,55 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.0 (`/athanor:lfg` wrapper — standalone LFG closure)
+## Current Phase: SHIPPING — v0.11.1 (`using-superpowers` boundary clarification)
+
+v0.10.0에서 흡수된 `superpowers:using-superpowers`가 SessionStart에 자동
+로드되어 "ABSOLUTELY MUST invoke before response" 톤을 강제한다. v0.11.1은
+그 톤이 athanor-native 9개 Thin Leader skill (analyze, debug, deep-plan,
+discuss, lite-plan, plan, review, setup, work) 호출 context에서는
+**advisory**라는 boundary를 문서화한다. runtime gate 추가 없음, vendored
+content 편집 없음 (T2 lock). 산문 + lock-in test 중심의 작은 release.
+
+- **U1**: brainstorm + plan 영구 트랙 (docs/brainstorms/ + docs/plans/).
+- **U2**: `CLAUDE.md §Defense Mechanisms` 표에 row + 직후 상세 단락 추가.
+  라벨: `advisory (preamble-declared)`. carve-out 명시 (scope-drift +
+  verification-before-completion는 unprefixed slot이나 Thin Leader 패턴
+  아닌 vendored-content이라 제외).
+- **U3**: 9개 native Thin Leader SKILL.md 각각에
+  `### v0.11.1 using-superpowers boundary` subsection (canonical 단락,
+  모든 파일 동일) 추가.
+- **U4**: 9개 신규 regression test (`tests/test_regression_v011_1_*`).
+  - CLAUDE.md row presence + 4 signal phrase + advisory label
+  - 9 skill preamble heading exactness + 7 canonical signal coverage
+  - carve-out enforcement (excluded 2 skill must NOT carry preamble)
+  - vendored sp-using-superpowers presence pin
+  - CLAUDE.md + CHANGELOG forbidden-phrase guard (positive-commitment-only)
+- **U5**: version bump 0.11.0 → 0.11.1; CHANGELOG; STATE.md.
+
+honesty arc — runtime gate 추가가 없으므로 "enforced"로 격상하지 않는다.
+boundary는 **advisory (preamble-declared)**로 라벨 고정. forbidden-phrase
+test가 supersession/deprecate framing을 잠금.
+
+### v0.11.1 ship surface
+
+- 사용자-호출 skills: **62개** (변동 없음).
+- Regression test suite: **396 passing** (387 baseline + 9 신규 v0.11.1).
+- Active executable contracts (v0.11.1 신규):
+  `v011-1-claude-md-boundary-row-and-signals`,
+  `v011-1-native-thin-leader-skills-canonical-preamble`,
+  `v011-1-carve-out-no-preamble-in-vendored-content-skills`,
+  `v011-1-positive-commitment-only-voice`.
+
+### v0.11.1 알려진 residual (v0.12.x+ 후보)
+
+- A5 native-vs-vendored deprecation candidates (e.g.,
+  `/athanor:discuss` synthesis vs `/athanor:ce-brainstorm`)
+- LLM-class paraphrase / semantic similarity (sec-003 last carry)
+- Transcript-event introspection (sec-001 잔류)
+- Mid-session profile mutation guard
+- CE 37 skill cross-cutting decisions (별도 brainstorm)
+
+## Previous Phase: v0.11.0 (`/athanor:lfg` wrapper — standalone LFG closure)
 
 v0.10.0 흡수 arc의 standalone narrative 마무리. `/athanor:lfg` wrapper
 skill을 신설해서 LFG end-to-end 파이프라인이 athanor-native 명령으로
@@ -50,7 +98,7 @@ honesty arc — origin §R4 그대로 carry. v0.11.0는 vendored `/athanor:ce-lf
 - Transcript-event introspection (sec-001 잔류)
 - Mid-session profile mutation guard
 
-## Previous Phase: v0.10.3 (Stop hook residual closure — R1+R2+R3)
+## Previous-Previous Phase: v0.10.3 (Stop hook residual closure — R1+R2+R3)
 
 v0.10.2가 정직하게 deferred로 표시한 세 잔류를 마무리.
 

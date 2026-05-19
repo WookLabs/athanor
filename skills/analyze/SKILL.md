@@ -17,6 +17,14 @@ pattern: you do NOT read files, trace code, or analyze anything yourself.
 
 **Speed is the priority.** Analysis should complete in under 2 minutes.
 
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+
 ---
 
 ## Protocol

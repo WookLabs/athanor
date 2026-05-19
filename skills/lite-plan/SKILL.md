@@ -17,3 +17,11 @@ Lite tier dispatches:
 - Step 2: Planner A (Claude) only → plan-a.md copied to plan.md
 - Steps 3-4: Skipped
 - Step 5: User confirmation (Task Splitter runs later at /athanor:work Step 0.5)
+
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.

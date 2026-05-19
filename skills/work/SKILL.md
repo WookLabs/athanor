@@ -17,6 +17,14 @@ pattern: you do NOT write code, edit files, or debug yourself.
 
 This is the ONLY Athanor command that modifies project files (via workers).
 
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+
 ### v0.10.0 vendored-surface relationship
 
 `/athanor:work` applies the athanor-native **Spec-then-TDD discipline**:
