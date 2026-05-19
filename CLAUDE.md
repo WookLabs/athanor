@@ -104,7 +104,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via the v0.7.7-derived English + Korean phrase whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=1 -->` so the hook detects its own evidence emission and exits 0 silently (no re-entry loop). `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.0 scope disclosure:** the hook triggers on every Stop regardless of whether the turn was produced by an athanor-native or vendored skill — the whitelist set (tuned to athanor's voice) may produce false negatives on vendored prose that uses different idioms. Vendor-aware whitelist is v0.10.1+ work. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
+| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via the v0.7.7-derived English + Korean phrase whitelist + (v0.10.2) NFKC unicode normalization + 17-char Cyrillic→Latin confusables fold + 6 verb-anchored paraphrase regex patterns, and exits 2 to block Stop with stderr fed back to the model as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=2 nonce=... -->` so the hook detects its own evidence emission and exits 0 silently (no re-entry loop). `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.2 scope:** paraphrase ("CI is green"), cyrillic homoglyph ("tеsts pass" with Cyrillic 'е'), fullwidth ("ｔｅｓｔｓ ｐａｓｓ"), and vendored CE/superpowers idioms ("review complete", `<promise>DONE</promise>`) all detected. Known residual (v0.10.3+): conditional/speculative tense, attributed historical quotes, Greek/Armenian homoglyphs. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
@@ -276,11 +276,16 @@ namespace policy + regression locks*, NOT by mutating vendored content
    opt into them by explicit invocation.
 4. **Stop hook runtime gate scope.** The Stop hook (`scripts/hooks/stop_verify_claims.py`)
    triggers on every `Stop` event regardless of which skill produced the
-   turn output. The whitelist phrase set (ported from v0.7.7) is tuned to
-   athanor's voice; vendored skills may use idioms outside the whitelist
-   and produce false negatives. Honesty disclosure: vendored skill outputs
-   are NOT specially protected; the gate is best-effort across all skills.
-   A vendor-aware whitelist is v0.10.1+ work.
+   turn output. **v0.10.2 update:** the vendor-aware whitelist extension
+   (A2 closure) added 18 idioms emitted by vendored CE/superpowers skills
+   (`review complete`, `<promise>DONE</promise>`, `all checks passing`,
+   `branch merged`, `리뷰 완료`, etc.) plus a paraphrase-regex layer (CI
+   is green / build is healthy / 테스트가 다 통과 / etc.) and a Cyrillic
+   homoglyph fold (NFKC + 17-char Latin↔Cyrillic table). Coverage of
+   vendored skill outputs is now substantively improved over the v0.7.7
+   athanor-native voice baseline. Honesty residuals (v0.10.3+):
+   conditional / speculative tense, attributed historical quotes,
+   non-Cyrillic homoglyphs.
 
 ### Vendor manifest
 

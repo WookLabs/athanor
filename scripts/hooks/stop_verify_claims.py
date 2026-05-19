@@ -45,34 +45,52 @@ v0.7.9 hardening (docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan
     session are counted; after hooks.stopLoopThreshold (default 3), the gate
     releases (exit 0) with a stderr warning to prevent infinite loops.
 
+v0.10.2 paraphrase + NFKC + vendor-aware closure
+(docs/plans/2026-05-19-005-feat-v0.10.2-paraphrase-bypass-closure-plan.md):
+  Honesty-arc framing: the v0.7.9 docstring originally claimed paraphrase
+  regex + NFKC + confusables fold were shipped. v0.10.1 U6 audit found
+  they were NEVER implemented and corrected the docstring honestly. v0.10.2
+  actually ships the work:
+  - Paraphrase bypass (sec-003) — closed: MATERIAL_CLAIM_PATTERNS list of
+    ~6 verb-anchored regex patterns catches paraphrased state assertions
+    ("CI is green", "all tests are passing", "the build is healthy", KO
+    "테스트가 다 통과", "빌드 성공", etc.). Patterns compile at module
+    load (fail-loud on bad regex). Known residual: conditional /
+    speculative tense ("If tests are green, merge") still catches via
+    over-match — semantic-tense detection is v0.10.3+ candidate.
+  - Cyrillic homoglyph (ADV-006) — closed: _normalize_for_match() applies
+    unicodedata.normalize('NFKC') + 17-char Cyrillic→Latin fold +
+    lowercase before substring/regex match. NFKC also catches fullwidth-
+    character attacks. Greek/Armenian/other-script homoglyphs NOT in
+    v0.10.2 scope (documented residual; expand deliberately).
+  - Vendor-aware whitelist (A2) — closed: MATERIAL_CLAIMS_EN/KO extended
+    with ~14 idioms emitted by vendored CE/superpowers skills (review
+    complete, <promise>DONE</promise>, all checks passing, branch merged,
+    리뷰 완료, etc.).
+
 Residual known limitations (deferred):
-  - **Paraphrase bypass (sec-003) — STILL DEFERRED to v0.10.2+.** The
-    is_material_claim() function is still pure literal substring matching
-    against the v0.7.7 English + Korean whitelist (see function's own
-    docstring "Known limitation"). The earlier v0.7.9 plan called for regex
-    verb-anchor patterns + unicodedata.normalize('NFKC') + confusables fold,
-    but those were NOT implemented in the v0.7.9 ship and were carried
-    forward silently. v0.10.1 U6 re-verification (2026-05-19) confirmed
-    this gap and corrected this docstring. v0.10.2 candidate for actual
-    closure.
-  - **Cyrillic homoglyph (ADV-006) — STILL DEFERRED.** Closure depends on
-    the same unicodedata normalization step above. Same v0.10.2 candidate.
+  - **LLM-class paraphrase patterns subtler than verb-anchor regex**
+    (e.g., "we verified the test suite ran clean" with subtle clause
+    embedding). v0.10.3+ candidate for semantic similarity layer.
+  - **Conditional / speculative-tense false-positives**: regex layer
+    catches "If all tests are green, merge" even though the speaker
+    isn't asserting state. v0.10.3+ candidate.
+  - **Quoted historical references** ("the v0.7.6 docs said 'tests pass'")
+    — attribution detection is v0.10.3+ work.
+  - **Greek / Armenian / other-script homoglyphs** — v0.10.2 fold is
+    Cyrillic-only. Expand the table deliberately, not greedily.
   - A model with file-system access can write its own nonce state and emit
-    matching sentinel — bypass cost raised but not eliminated. v0.10.2+
+    matching sentinel — bypass cost raised but not eliminated. v0.11.0+
     candidate via Claude Code transcript-event introspection.
   - Mid-session profile mutation (model writes athanor.json mid-turn) is not
     guarded.
-  - LLM-class paraphrase patterns not covered by any layer (paraphrase
-    layer itself absent — see sec-003 above).
 
-v0.10.0 scope disclosure (vendored-surface honesty):
-  This script triggers on every `Stop` event regardless of which skill produced
-  the model's last turn. The whitelist phrase set was tuned to athanor-native
-  skills' voice (v0.7.7 origin); CE-vendored (skills/ce-<name>/) and superpowers-
-  vendored (skills/sp-<name>/) skills introduced at v0.10.0 may emit material
-  claims in different idioms that escape the whitelist (false negatives). The
-  gate is "best-effort across all skills" not "scoped to athanor-native". A
-  vendor-aware whitelist expansion is deferred to v0.10.1+. See CLAUDE.md
+v0.10.0 scope (vendored-surface coverage):
+  This script triggers on every `Stop` event regardless of which skill
+  produced the model's last turn. The v0.10.2 vendor-aware whitelist
+  extension (A2 closure) raises coverage on vendored CE/superpowers skill
+  idioms. The gate remains "best-effort across all skills" — coverage is
+  whitelist + regex + normalization based, not semantic. See CLAUDE.md
   §"Vendored Surface — Identity Guard Layer" identity commitment #4.
 """
 from __future__ import annotations
