@@ -1,0 +1,21 @@
+# v0.10.1 U4 — Splitter ambiguous-case fixture
+# Edge: subtask description mixes a typo-grade direct shape with a
+# new-behavior shape. Heuristic should pick spec-then-tdd because the
+# behavior introduction dominates.
+case_id: case_01_spec_vs_direct
+subtask_brief: |
+  Subtask 5: Add a new error path to scripts/hooks/stop_verify_claims.py
+  when athanor.json hooks.profile is set to "lenient" (currently undefined
+  fallback to "standard"). Also fix the typo "occurence" → "occurrence" in
+  the docstring on line 312.
+expected_classification: spec-then-tdd
+expected_reason_keywords:
+  - source-code
+  - new behavior
+  - error path
+rationale: |
+  The typo fix alone would route to `direct`, but the new "lenient" error
+  path is a new runtime contract on a security-adjacent file
+  (`scripts/hooks/*`). New behavior dominates the classification per the
+  SKILL.md Step 0.5 heuristics. Reason field must surface the new-behavior
+  trigger, not the typo (audit trail).

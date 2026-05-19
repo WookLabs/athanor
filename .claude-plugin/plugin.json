@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.10.0",
-  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. v0.10.0 absorbs compound-engineering 3.8.3 (37 skills + 49 sub-agents) and superpowers 5.1.0 (13 skills) under athanor namespace (vendored superset; athanor identity commitments preserved).",
+  "version": "0.10.1",
+  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of compound-engineering 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). v0.10.1 adds vendor-drift script, corrected v0.9.0 reference provenance, Splitter classification_reason audit field, and B2 honesty-arc closure.",
   "author": {
     "name": "WookLabs"
   },

@@ -113,20 +113,34 @@ def test_vendored_skill_frontmatter_name_matches_directory():
     )
 
 
-def test_marketplace_version_at_v010():
-    """MUST: marketplace.json plugin version is 0.10.0."""
+def test_marketplace_version_in_0_10_x_series():
+    """MUST: marketplace.json plugin version is in the 0.10.x series.
+
+    v0.10.1 generalization: pinned to "0.10.0" originally; relaxed to the
+    minor series so v0.10.1+ patch releases don't have to keep editing
+    this test. v0.11.0+ will need an explicit update.
+    """
     import json
     mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
     versions = [p.get("version") for p in mp.get("plugins", [])]
-    assert "0.10.0" in versions, (
-        f"marketplace.json plugin version must be 0.10.0; got {versions}"
+    in_series = [v for v in versions if v and v.startswith("0.10.")]
+    assert in_series, (
+        f"marketplace.json plugin version must be in 0.10.x series; got {versions}"
     )
 
 
-def test_plugin_manifest_version_at_v010():
-    """MUST: plugin.json version is 0.10.0."""
+def test_plugin_manifest_version_matches_marketplace():
+    """MUST: plugin.json version matches marketplace.json version (single
+    source-of-truth across the two manifests)."""
     import json
     pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
-    assert pj.get("version") == "0.10.0", (
-        f"plugin.json version must be 0.10.0; got {pj.get('version')}"
+    mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    pj_version = pj.get("version")
+    mp_versions = [p.get("version") for p in mp.get("plugins", [])]
+    assert pj_version in mp_versions, (
+        f"plugin.json version {pj_version!r} not found in marketplace.json "
+        f"plugin versions {mp_versions}"
+    )
+    assert pj_version and pj_version.startswith("0.10."), (
+        f"plugin.json version must be in 0.10.x series; got {pj_version!r}"
     )

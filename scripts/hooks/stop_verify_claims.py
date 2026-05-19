@@ -41,21 +41,29 @@ v0.7.9 hardening (docs/plans/2026-05-18-002-feat-v0.7.9-stop-hook-hardening-plan
     from "emit one string" to "write JSON with matching hash + emit sentinel".
   - Parent-dir hijack (sec-002): config resolution priority is $CLAUDE_PROJECT_DIR
     → git-root → walk-up-stops-at-.git. Never crosses .git/ boundary upward.
-  - Paraphrase bypass (sec-003): is_material_claim now layers regex pattern
-    matching (verb-anchor) + unicode normalization (NFKC + confusables fold)
-    on top of the v0.7.8 literal substring whitelist.
-  - Cyrillic homoglyph (ADV-006): closed by the unicode normalization step.
   - Sentinel-loop circuit breaker (rel-001): consecutive exit-2 blocks per
     session are counted; after hooks.stopLoopThreshold (default 3), the gate
     releases (exit 0) with a stderr warning to prevent infinite loops.
 
 Residual known limitations (deferred):
+  - **Paraphrase bypass (sec-003) — STILL DEFERRED to v0.10.2+.** The
+    is_material_claim() function is still pure literal substring matching
+    against the v0.7.7 English + Korean whitelist (see function's own
+    docstring "Known limitation"). The earlier v0.7.9 plan called for regex
+    verb-anchor patterns + unicodedata.normalize('NFKC') + confusables fold,
+    but those were NOT implemented in the v0.7.9 ship and were carried
+    forward silently. v0.10.1 U6 re-verification (2026-05-19) confirmed
+    this gap and corrected this docstring. v0.10.2 candidate for actual
+    closure.
+  - **Cyrillic homoglyph (ADV-006) — STILL DEFERRED.** Closure depends on
+    the same unicodedata normalization step above. Same v0.10.2 candidate.
   - A model with file-system access can write its own nonce state and emit
-    matching sentinel — bypass cost raised but not eliminated. v0.8.0+ via
-    Claude Code transcript-event introspection.
+    matching sentinel — bypass cost raised but not eliminated. v0.10.2+
+    candidate via Claude Code transcript-event introspection.
   - Mid-session profile mutation (model writes athanor.json mid-turn) is not
     guarded.
-  - LLM-class paraphrase patterns not covered by regex layer.
+  - LLM-class paraphrase patterns not covered by any layer (paraphrase
+    layer itself absent — see sec-003 above).
 
 v0.10.0 scope disclosure (vendored-surface honesty):
   This script triggers on every `Stop` event regardless of which skill produced
