@@ -82,6 +82,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -204,12 +205,127 @@ MATERIAL_CLAIMS_KO = [
     "버전 업데이트",
 ]
 
+# v0.10.2 — vendor-aware whitelist additions (A2 closure).
+# Idioms emitted by vendored CE/superpowers skills (skills/ce-*/, skills/sp-*/)
+# that are not in the v0.7.7-derived athanor-native voice. Conservative
+# additions — each phrase must ASSERT a state, not describe a capability.
+MATERIAL_CLAIMS_EN.extend([
+    # CE skill completion idioms
+    "review complete",
+    "review completed",
+    "implementation complete",
+    "implementation done",
+    "task complete",
+    "all done",
+    # LFG-style autopilot signal
+    "<promise>done</promise>",
+    # PR/CI status assertions
+    "ci passed",
+    "checks passed",
+    "all checks passing",
+    "all checks passed",
+    "branch merged",
+    "pr opened",
+    "pr created",
+])
+MATERIAL_CLAIMS_KO.extend([
+    "리뷰 완료",
+    "PR 생성 완료",
+    "체크 통과",
+    "모든 작업 완료",
+])
+
+
+# v0.10.2 — Cyrillic→Latin confusables fold (ADV-006 closure).
+# Conservative set: 17 Cyrillic characters that are visually indistinguishable
+# from Latin equivalents at common font sizes. Greek/Armenian/other-script
+# homoglyphs are NOT in the v0.10.2 scope (documented as known residual in
+# test_regression_v010_2_paraphrase_closure.py — expand deliberately, not
+# greedily).
+_CYRILLIC_TO_LATIN_TABLE = str.maketrans({
+    # lowercase
+    "а": "a",  # U+0430
+    "е": "e",  # U+0435
+    "о": "o",  # U+043E
+    "р": "p",  # U+0440
+    "с": "c",  # U+0441
+    "у": "y",  # U+0443
+    "х": "x",  # U+0445
+    # uppercase
+    "А": "A",  # U+0410
+    "В": "B",  # U+0412
+    "Е": "E",  # U+0415
+    "К": "K",  # U+041A
+    "М": "M",  # U+041C
+    "Н": "H",  # U+041D
+    "О": "O",  # U+041E
+    "Р": "P",  # U+0420
+    "С": "C",  # U+0421
+    "Т": "T",  # U+0422
+    "Х": "X",  # U+0425
+})
+
+
+def _normalize_for_match(text: str) -> str:
+    """Normalize a message before material-claim detection.
+
+    Layers (v0.10.2):
+      1. Unicode NFKC normalization (collapses fullwidth, ligatures,
+         compatibility-decomposition characters).
+      2. Cyrillic→Latin confusables fold (conservative 17-character set).
+      3. Lowercase (matches EN whitelist case-insensitivity; KO is unaffected).
+
+    Idempotent: norm(norm(x)) == norm(x).
+
+    Returns the normalized text. Empty input returns empty string.
+    """
+    if not text:
+        return ""
+    nfkc = unicodedata.normalize("NFKC", text)
+    folded = nfkc.translate(_CYRILLIC_TO_LATIN_TABLE)
+    return folded.lower()
+
+
+# v0.10.2 — paraphrase regex patterns (B2 / sec-003 closure).
+# Each pattern is verb-anchored to limit false positives. Conservative —
+# fewer patterns is better than more. Module-load assertion below catches
+# accidental emptying.
+def _compile_patterns(patterns: list[str]) -> list[re.Pattern[str]]:
+    compiled = []
+    for pat in patterns:
+        try:
+            compiled.append(re.compile(pat, re.IGNORECASE))
+        except re.error as exc:
+            raise AssertionError(
+                f"v0.10.2 paraphrase pattern failed to compile: {pat!r} — {exc}"
+            ) from exc
+    return compiled
+
+
+_PATTERN_SOURCE: list[str] = [
+    # CI-state assertions: "CI is green", "CI is now passing", "CI is healthy"
+    r"\bci\s+(?:is\s+)(?:now\s+|currently\s+)?(?:green|passing|healthy)\b",
+    # All-tests-state assertions
+    r"\ball\s+(?:the\s+)?tests\s+(?:are\s+|were\s+)(?:now\s+|currently\s+)?(?:green|passing|clean)\b",
+    # Build-state assertions
+    r"\bthe\s+build\s+(?:is\s+|was\s+)(?:now\s+|currently\s+)?(?:green|healthy|clean|passing)\b",
+    # Deploy assertions (paraphrase of "deployment succeeded")
+    r"\bdeployed\s+(?:it\s+)?(?:to|onto)\s+(?:prod|production|main|staging)\b",
+    # KO verb-anchored paraphrase: "테스트가 모두 통과", "테스트 다 통과"
+    r"테스트(?:가|는)?\s*(?:다|모두|전부)?\s*통과(?:했|함|됨)",
+    # KO build success paraphrase
+    r"빌드(?:가|는)?\s*(?:다|모두)?\s*성공(?:했|함|됨)",
+]
+MATERIAL_CLAIM_PATTERNS: list[re.Pattern[str]] = _compile_patterns(_PATTERN_SOURCE)
+
+
 # Module-load invariant: whitelists must be non-empty. An empty list would
 # silently disable the gate (every Stop event would pass is_material_claim ->
 # False). Surfaced loudly at script import so a regression cannot land
 # unnoticed.
 assert MATERIAL_CLAIMS_EN, "MATERIAL_CLAIMS_EN must not be empty — empty whitelist silently disables gate"
 assert MATERIAL_CLAIMS_KO, "MATERIAL_CLAIMS_KO must not be empty — empty whitelist silently disables gate"
+assert MATERIAL_CLAIM_PATTERNS, "MATERIAL_CLAIM_PATTERNS must not be empty — empty list silently disables v0.10.2 paraphrase layer"
 
 ATHANOR_CONFIG_NAME = "athanor.json"
 SUPPORTED_PROFILES = {"off", "standard"}
@@ -397,21 +513,41 @@ def validate_emission_sentinel(message: str) -> bool:
 def is_material_claim(message: str) -> bool:
     """Detect any whitelisted material-claim phrase in the message body.
 
-    Whitelist is the v0.7.7 prompt's combined English + Korean trigger set.
-    Matching is case-insensitive for English; Korean is literal.
+    v0.10.2 detection pipeline (closure of B2 / sec-003 / ADV-006 / A2):
+      1. Normalize via `_normalize_for_match()` — NFKC + Cyrillic→Latin
+         confusables fold + lowercase. Closes homoglyph and fullwidth
+         attacks; makes EN whitelist matching case-insensitive uniformly.
+      2. Substring match against `MATERIAL_CLAIMS_EN` (normalized).
+      3. Substring match against `MATERIAL_CLAIMS_KO` (raw `message` —
+         Korean is case-irrelevant; we still check against `normalized`
+         too so homoglyph-attacked Korean phrases get caught).
+      4. Regex search against `MATERIAL_CLAIM_PATTERNS` (verb-anchored
+         paraphrases of state assertions; runs on normalized text).
 
-    Known limitation: literal substring matching can be evaded by paraphrasing
-    ("CI is green", "verified the test suite"). Regex/semantic detection is
-    v0.7.9+ work — see PR review residuals.
+    Returns True on the first match.
+
+    Known residuals (v0.10.3+ candidates):
+      - LLM-class paraphrase patterns subtler than the regex layer catches.
+      - Quoted historical references (`the v0.7.6 docs said "tests pass"`)
+        — attribution detection is its own pass.
+      - Greek/Armenian/other-script homoglyphs (v0.10.2 scope is
+        Cyrillic-only fold).
+      - Speculative-tense paraphrases ("I'll check if CI is green") —
+        regex cannot distinguish without semantic analysis.
     """
     if not message:
         return False
-    lowered = message.lower()
+    normalized = _normalize_for_match(message)
     for phrase in MATERIAL_CLAIMS_EN:
-        if phrase in lowered:
+        if phrase in normalized:
             return True
     for phrase in MATERIAL_CLAIMS_KO:
-        if phrase in message:
+        # KO unchanged from v0.7.7: raw match. Also check normalized
+        # for homoglyph-attacked Korean (rare but covered).
+        if phrase in message or phrase in normalized:
+            return True
+    for pattern in MATERIAL_CLAIM_PATTERNS:
+        if pattern.search(normalized):
             return True
     return False
 
