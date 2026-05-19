@@ -76,14 +76,18 @@ def test_provenance_documents_v010_1_correction():
 def test_provenance_files_body_not_dropped():
     """MUST: U2 was a provenance-only edit; the body content (gap-probe
     lens definitions / requirements-capture template) must not have been
-    accidentally truncated."""
-    gap_probes_text = (REPO_ROOT / "skills" / "discuss" / "references" / "clarify-gap-probes.md").read_text()
-    # Body sanity checks: the 4 lens names must still appear
+    accidentally truncated.
+
+    Windows CI note: explicit encoding='utf-8' is required because both
+    files contain non-ASCII characters (§ from upstream prose) that would
+    fail under cp1252 default on Windows.
+    """
+    gap_probes_text = (REPO_ROOT / "skills" / "discuss" / "references" / "clarify-gap-probes.md").read_text(encoding="utf-8")
     for lens in ["Evidence gap", "Specificity gap", "Counterfactual gap", "Attachment gap"]:
         assert lens in gap_probes_text, (
             f"clarify-gap-probes.md body missing '{lens}'"
         )
-    req_capture_text = (REPO_ROOT / "skills" / "discuss" / "references" / "requirements-capture.md").read_text()
+    req_capture_text = (REPO_ROOT / "skills" / "discuss" / "references" / "requirements-capture.md").read_text(encoding="utf-8")
     for section_name in ["Summary", "Problem Frame", "Acceptance Examples", "Success Criteria"]:
         assert section_name in req_capture_text, (
             f"requirements-capture.md body missing '{section_name}'"
