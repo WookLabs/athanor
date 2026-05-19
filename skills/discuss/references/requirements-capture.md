@@ -1,6 +1,11 @@
 <!-- Provenance:
   upstream: compound-engineering/ce-brainstorm references/requirements-capture.md
-  source-commit: vendored at athanor v0.9.0 release time
+  source-commit: compound-engineering@3.8.2 skills/ce-brainstorm/references/requirements-capture.md
+                 (vendored at athanor v0.9.0 release time; verified still present
+                 at compound-engineering@3.8.3 during v0.10.0 absorption).
+                 SHA pin not available from plugin-cache distribution; version-tag
+                 fallback per CLAUDE.md §"Vendored Surface" drift policy
+                 (v0.10.1 correction).
   license: MIT (Copyright (c) 2025 Every Inc / compound-engineering authors)
   modifications:
     - Vendored verbatim with athanor-specific adaptations:
