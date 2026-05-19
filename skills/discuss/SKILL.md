@@ -40,10 +40,37 @@ Bash reference there. Lex-max selection — no "today" semantics.
    > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually or wait for the --new-session flag (v0.8.0).`
 5. Ensure session directory exists: `.athanor/sessions/{id}/`
 
-### Step 1: Parse Dilemma
+### Step 1: Mode dispatch + dilemma restate (v0.9.0 dual mode)
 
-Extract the decision to be made from the user's input.
-Restate it clearly:
+`/athanor:discuss`는 v0.9.0부터 두 모드를 가진다:
+- **synthesis 모드** — 옵션 A vs B가 이미 명확한 dilemma에서 Researcher / Devil's Advocate / Critic으로 합성 (기존 동작 — Step 2-4)
+- **clarify 모드** — 옵션 자체가 모호한 상태에서 single-Claude dialog로 의도 명확화. 4 gap lens probe → `requirements.md` 산출 (신규 Step 2-clarify)
+
+#### Step 1.1: Restate user input
+
+User 입력을 간단히 restate. 옵션이 명확하든 모호하든 일단 받은 그대로 옮긴다. 이 시점에서 leader는 옵션을 추정/발명하지 않는다.
+
+#### Step 1.2: Mode-selection question (단발성)
+
+Leader가 user에게 모드 질문을 1회 발화. AskUserQuestion이 가능한 환경이면 메뉴 (3 options, single-select), 불가하면 numbered chat list로 fallback. 절대 silently skip 금지.
+
+```
+어떤 모드로 진행할까요?
+
+[A] 옵션 A vs B가 이미 명확합니다 — synthesis mode (Researcher + Devil's Advocate + Critic 합성, 기존 동작)
+[B] 의도부터 명확화하고 싶습니다 — clarify mode (single-Claude gap probe dialog, requirements.md 산출)
+[C] 먼저 의도를 정리하고 싶습니다 — default-to-clarify (clarify로 시작; 옵션이 보이면 Phase 4 메뉴에서 synthesis로 chain 가능)
+```
+
+#### Step 1.3: Branch based on user response
+
+- **[A] synthesis** → 기존 Step 2로 진행 (Step 2 Researcher + Devil's Advocate 병렬 dispatch). 이 분기 발동 시 `mode=synthesis` 마커를 announcement에 포함.
+- **[B] clarify** → 신규 Step 2-clarify로 진행. `mode=clarify` 마커.
+- **[C] default-to-clarify** → 신규 Step 2-clarify로 진행 (`mode=clarify` 마커). 종료 후 Phase 4 메뉴에서 user가 synthesis chain 선택 가능.
+
+#### Step 1.4: Synthesis-mode dilemma confirm (synthesis 모드 전용)
+
+`mode=synthesis` 진입 시 leader가 dilemma를 한 번 더 정리해 user에게 confirm 받는다 (기존 동작):
 
 ```
 📋 Dilemma: {restated question}
@@ -54,7 +81,7 @@ Restate it clearly:
 이 내용으로 브레인스토밍을 시작할까요?
 ```
 
-Wait for user confirmation. If the user corrects, adjust and re-confirm.
+User 확인 후 Step 2로 진행. (clarify 모드는 dilemma confirm step을 건너뛰고 바로 Step 2-clarify dialog로 진입.)
 
 ### Step 2: Dispatch Research Workers (in parallel)
 
