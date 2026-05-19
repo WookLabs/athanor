@@ -203,8 +203,23 @@ Create an implementation plan for:
 {user's planning request}
 
 ## Context from Previous Stages
-{discuss.md content if exists, otherwise 'No previous discussion'}
-{analyze.md content if exists, otherwise 'No previous analysis'}
+
+Read these files from `.athanor/sessions/{session-id}/` in order (each
+optional — if absent, note it as 'not present this session'). Order
+matters per `/athanor:plan` Step 1 v0.9.0 ordering rule:
+
+1. `analyze.md` (code-grounded analysis, if `/athanor:analyze` ran)
+2. `requirements.md` (NEW v0.9.0 — clarify-mode origin requirements doc
+   with R-IDs / A-IDs / F-IDs / AE-IDs, if `/athanor:discuss` ran in
+   clarify mode)
+3. `discuss.md` (synthesis-mode discussion output, if `/athanor:discuss`
+   ran in synthesis mode)
+
+When `requirements.md` is present, your phase `Verify:` MUST/SHOULD
+bullets MUST cite-back the relevant origin R-IDs / A-IDs / F-IDs /
+AE-IDs in your plan output (Critic Rubric axis (C) will check this).
+Example acceptable cite-back: `MUST exit 2 when material claim detected
+(covers R3, AE1)`.
 
 ### Prior Lessons
 Before starting, check .athanor/lessons/ for files tagged with skill: plan.
@@ -305,7 +320,7 @@ codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \
 
 {user's planning request}
 
-Context: {previous stage context — discuss.md/analyze.md content if available}
+Context: {previous stage context from .athanor/sessions/{session-id}/ — read in order: analyze.md (code-grounded), requirements.md (NEW v0.9.0 — clarify-mode origin requirements with R/A/F/AE-IDs, if present), discuss.md (synthesis-mode output, if present). When requirements.md is present, your phase Verify MUST/SHOULD bullets MUST cite-back origin R-IDs / A-IDs / F-IDs / AE-IDs (Critic Rubric axis (C)).}
 
 Requirements:
 - Find a fundamentally different approach than the obvious one
@@ -785,6 +800,12 @@ Read these 4 files from .athanor/sessions/{session-id}/:
 3. review-of-a.md (Review of Plan A)
 4. review-of-b.md (Review of Plan B)
 
+Conditional v0.9.0 input — also read if present:
+5. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md / plan-b.md cite-back the origin IDs.
+
 ## Process
 1. Read all 4 documents
 2. Identify where both plans AGREE — these are high-confidence choices
@@ -893,6 +914,12 @@ Read these 2 files from .athanor/sessions/{session-id}/:
 1. plan-a.md (Plan A — standard approach)
 2. plan-b.md (Plan B — contrarian approach)
 
+Conditional v0.9.0 input — also read if present:
+3. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md / plan-b.md cite-back the origin IDs.
+
 ## Process
 1. Read both plans
 2. Identify where they AGREE — these are high-confidence choices
@@ -970,6 +997,12 @@ Improve this implementation plan by incorporating review feedback.
 Read these 2 files from .athanor/sessions/{session-id}/:
 1. plan-a.md (the original plan)
 2. review-of-a.md (critical review of the plan)
+
+Conditional v0.9.0 input — also read if present:
+3. requirements.md (clarify-mode origin requirements doc with R-IDs /
+   A-IDs / F-IDs / AE-IDs). When present, axis (C) R-ID traceback
+   coverage fires — verify each phase's MUST/SHOULD Verify bullets in
+   plan-a.md cite-back the origin IDs.
 
 ## Process
 1. Read both documents

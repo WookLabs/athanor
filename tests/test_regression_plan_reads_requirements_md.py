@@ -154,6 +154,84 @@ def test_critic_rubric_includes_r_id_cite_back_axis():
     )
 
 
+def test_planner_a_prompt_template_lists_requirements_md():
+    """MUST (Codex implementation review P1 #1): Planner A's actual Agent
+    prompt template — not just Step 1 prose — must include requirements.md
+    in its 'Context from Previous Stages' file list. Without this, the
+    dispatched Planner A worker never reads requirements.md."""
+    body = _load()
+    # Find the Planner A prompt — anchor on "Athanor Planner A" inside an
+    # Agent({...}) block.
+    pa_idx = body.find("Athanor Planner A")
+    assert pa_idx >= 0, "Planner A prompt block not found"
+    # The Context section follows shortly after. Search forward from pa_idx.
+    window = body[pa_idx : pa_idx + 4000]
+    assert "requirements.md" in window, (
+        "Planner A prompt template must reference requirements.md in its "
+        "Context section (not just in Step 1 prose). Without this, the "
+        "dispatched worker never sees the requirements doc."
+    )
+
+
+def test_codex_planner_b_prompt_lists_requirements_md():
+    """MUST (Codex implementation review P1 #1): Codex Planner B's
+    dispatched prompt must also mention requirements.md so the contrarian
+    plan also traces back to origin requirements."""
+    body = _load()
+    # Find the Codex Planner B prompt — anchor on the Codex exec command
+    codex_idx = body.find("codex exec --full-auto --ephemeral")
+    assert codex_idx >= 0, "Codex Planner B dispatch not found"
+    window = body[codex_idx : codex_idx + 3000]
+    assert "requirements.md" in window, (
+        "Codex Planner B prompt must reference requirements.md in its "
+        "Context. Without this, contrarian plans skip the origin trace."
+    )
+
+
+def test_all_three_critic_agent_prompts_read_requirements_md():
+    """MUST (Codex implementation review P1 #2): all 3 Critic Agent prompts
+    must list requirements.md as a conditional input file. Without this,
+    Critic axis (C) rubric cannot evaluate cite-back coverage because the
+    Critic never reads requirements.md."""
+    body = _load()
+    # Find all 3 Critic Agent prompt blocks via existing parser logic
+    lines = body.splitlines()
+    blocks = []
+    section_active = False
+    in_code_fence = False
+    current_block = []
+    for line in lines:
+        if line.startswith("#### ") and "Critic" in line:
+            section_active = True
+            continue
+        if section_active and not in_code_fence and line.startswith("```"):
+            in_code_fence = True
+            current_block = []
+            continue
+        if section_active and in_code_fence and line.startswith("```"):
+            block_text = "\n".join(current_block)
+            if "Agent(" in block_text and "prompt:" in block_text:
+                blocks.append(block_text)
+            in_code_fence = False
+            current_block = []
+            continue
+        if section_active and in_code_fence:
+            current_block.append(line)
+        if section_active and not in_code_fence and line.startswith("#### "):
+            section_active = "Critic" in line
+
+    assert len(blocks) >= 3, (
+        f"Expected at least 3 Critic Agent prompt blocks; found {len(blocks)}"
+    )
+    for i, block in enumerate(blocks):
+        assert "requirements.md" in block, (
+            f"Critic Agent prompt block #{i + 1} must list requirements.md "
+            f"as conditional input so axis (C) rubric can actually evaluate "
+            f"R-ID cite-back coverage. Without this, the rubric exists but "
+            f"the Critic can't apply it."
+        )
+
+
 def test_all_three_critic_agent_prompts_include_axis_c():
     """MUST (Codex P1 #5): all 3 Critic Agent prompt blocks (deep 4-input,
     deep 2-input review-skipped, standard 2-input) reference axis (C) so

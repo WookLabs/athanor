@@ -138,3 +138,29 @@ def test_no_overclaim_in_description():
             f"frontmatter contains overclaim phrase '{phrase}' — v0.9.0 "
             f"honesty arc requires advisory framing"
         )
+
+
+def test_qualified_phrase_explicitness_keeps_debug_overlap_low():
+    """MUST (Codex impl review P2): qualified clarify triggers like
+    '명확히 정리해줘' must not be broad enough to over-trigger from a
+    debug-flavored prompt like '에러 로그 명확히 정리해줘'. Negative
+    assertion: frontmatter must NOT contain the bare phrase '명확히 정리'
+    without a clarify-domain qualifier in front."""
+    import re
+
+    fm = _extract_frontmatter(_load_skill())
+    # Find all single-quoted trigger phrases in the description
+    quoted_triggers = re.findall(r"'([^']+)'", fm)
+    # Any trigger containing '명확히 정리' should also include a clarify-
+    # domain qualifier — '의도' or '요구사항' or '무엇' or '뭘' or '명확히' alone
+    # would be too broad. We accept '명확히 정리해줘' as borderline because
+    # it's still in clarify-direction wording, but explicitly forbid pure
+    # ambiguous formulations like just '정리해줘' (which could match debug
+    # logs, code formatting, etc.).
+    forbidden_bare = ["정리해줘", "정리해", "정리해주세요"]
+    bare_matches = [t for t in quoted_triggers if t.strip() in forbidden_bare]
+    assert not bare_matches, (
+        f"Bare '정리해줘' / '정리해' triggers are too broad and could "
+        f"over-trigger on debug-flavored prompts like '에러 로그 정리해줘'. "
+        f"Use qualified phrases instead. Found: {bare_matches}"
+    )

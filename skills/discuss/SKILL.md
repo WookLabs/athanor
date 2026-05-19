@@ -238,7 +238,9 @@ When the blocking-question tool is unavailable or the call errors, fall back to 
 
 After dispatch (or stop), the clarify-mode pipeline terminates. The session directory contains `requirements.md` (always) plus optionally `discuss.md` / `research-a.md` / `research-b.md` (if synthesis chained) and downstream `analyze.md` / `plan.md` (if those skills ran).
 
+### Step 2: Dispatch Research Workers (in parallel)
 
+> **Mode marker:** This step ONLY fires when Step 1.3 branched to `mode=synthesis` (option [A]) OR when Step 3-clarify-handoff option [2] (synthesis chain) was selected. For `mode=clarify` reaching its terminal Step 3-clarify-handoff, this step does NOT fire — clarify ends at the handoff menu.
 
 Dispatch TWO workers simultaneously using the Agent tool.
 
