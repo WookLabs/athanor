@@ -148,9 +148,22 @@ def test_subsection_cites_spike_evidence():
 
 
 def _extract_spec_then_tdd_row(content: str) -> str:
-    """Return the v0.8.0 Defense Mechanisms row mentioning Spec-then-TDD."""
-    for line in content.splitlines():
-        if "Spec-then-TDD" in line and line.lstrip().startswith("|"):
+    """Return the v0.8.0 Defense Mechanisms row mentioning Spec-then-TDD.
+
+    v0.10.0: scope search to the Defense Mechanisms section so the
+    Commands-table `/athanor:work` row (which also mentions Spec-then-TDD
+    discipline as an identity callout starting at v0.10.0) is not picked
+    up by mistake.
+    """
+    lines = content.splitlines()
+    in_defense = False
+    for line in lines:
+        if line.startswith("## Defense Mechanisms"):
+            in_defense = True
+            continue
+        if in_defense and line.startswith("## ") and not line.startswith("## Defense"):
+            break
+        if in_defense and "Spec-then-TDD" in line and line.lstrip().startswith("|"):
             return line
     return ""
 

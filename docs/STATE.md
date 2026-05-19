@@ -4,7 +4,67 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.9.0 (`/athanor:discuss` dual-mode — clarify + synthesis)
+## Current Phase: SHIPPING — v0.10.0 (Absorb CE 3.8.3 + superpowers 5.1.0 — vendored superset, identity-preserving)
+
+athanor가 compound-engineering 3.8.3 (37 skills + 49 sub-agents) +
+superpowers 5.1.0 (13 skills) 을 vendor superset 으로 흡수. 사용자가
+"full merge with athanor identity preserved" 로 scope 확정 (2026-05-19
+대화). 네 가지 정체성 commitment 가 흡수물 위에 보존됨 — guard prose +
+namespace policy + regression locks 로 보장:
+
+1. **Thin Leader contract** — 흡수된 SKILL.md 가 "the agent does X" 라고
+   해도 athanor leader 는 worker 에 dispatch 만 함. CLAUDE.md §Vendored
+   Surface 명시.
+2. **Cross-model adversarial planning** — `/athanor:plan` 은 Planner A
+   (Claude) + Planner B (Codex) + Critic 디스패치 유지. CE 단일-agent flow
+   는 `/athanor:ce-plan` 으로만 도달.
+3. **Spec-then-TDD discipline** — `/athanor:work` 가 Splitter execution_note +
+   conjunction-of-three Phase 3 gate 유지. `/athanor:ce-work` 와
+   `/athanor:sp-test-driven-development` 는 outside.
+4. **Stop hook runtime gate** — `scripts/hooks/stop_verify_claims.py` 가
+   모든 Stop 에 동일하게 발화. v0.7.7 voice-tuned whitelist 는 vendored
+   prose 에서 false-negative 가능 — vendor-aware whitelist 는 v0.10.1+
+   work.
+
+### v0.10.0 ship surface
+
+- **사용자-호출 skills**: 10 native + 1 already-vendored (`verification-
+  before-completion`) + 37 CE-vendored + 13 superpowers-vendored = **61 total**.
+- **Sub-agents**: 기존 athanor agents + 49 CE-vendored at `agents/vendored/ce/`.
+- **267 files** vendored (skills + references + sub-agent definitions
+  + assets). 모두 T2 provenance block (`upstream / source-commit /
+  upstream-url / license / modifications / t0-t1-disproof`) 포함.
+- 1 hook (Stop, command-mode + v=2 nonce-bound + circuit breaker per
+  v0.7.9; v0.10.0 에서 docstring 만 vendored-surface 스코프 명시 업데이트).
+- Regression test suite: ~255 baseline (post-v0.9.0) + ~25 new (M6)
+  ≥ 280 passing on Python 3.x.
+- Release gate (`scripts/check_release_ready.py --ci`) 통과.
+- Active executable contracts (v0.10.0 신규):
+  `v010-thin-leader-guard`, `v010-cross-model-default`,
+  `v010-tdd-native-default`, `v010-stop-hook-scope`,
+  `v010-vendor-provenance`, `v010-namespace-collisions`,
+  `v010-honesty-arc`, `v010-changelog-voice`.
+
+### Vendor Manifest (v0.10.0)
+
+| Source | Plugin@version | Skills | Sub-agents | Vendored on | License |
+|---|---|---|---|---|---|
+| compound-engineering | 3.8.3 | 37 (at `skills/ce-*/`) | 49 (at `agents/vendored/ce/`) | 2026-05-19 | MIT (Every Inc / Kieran Klaassen) |
+| superpowers | 5.1.0 | 13 (at `skills/sp-*/`) | — | 2026-05-19 | MIT (Jesse Vincent) |
+| superpowers | 5.0.7 → 5.1.0 | `verification-before-completion` (kept at original path from v0.7.8; NOT re-vendored at v0.10.0) | — | 2026-04-24 (original) | MIT |
+| claude-octopus | (SHA-pinned) | `scope-drift` (kept at original path from earlier vendor) | — | (pre-v0.10.0) | MIT (nyldn) |
+
+**Full inventory**: `docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan-INVENTORY.md`
+
+### Drift check process (v0.10.0 — manual; scripted in v0.10.1)
+
+When CE or superpowers releases a new version, manually diff each
+`skills/ce-<name>/` against `~/.claude/plugins/cache/.../skills/<name>/`
+(or `<no-ce-prefix>/`) and record drift findings in the next minor
+release CHANGELOG entry. Automated drift detection (`scripts/check_vendor_drift.py`)
+is v0.10.1 work.
+
+## Previous Phase: v0.9.0 (`/athanor:discuss` dual-mode — clarify + synthesis)
 
 `/athanor:discuss` 스킬에 clarify (intent 명확화) 모드 흡수 — synthesis
 모드 (현재 동작)는 backwards compat 그대로. Step 1에서 user에게 모드 묻고

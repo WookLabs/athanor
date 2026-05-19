@@ -3,6 +3,153 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.0] — 2026-05-19
+
+**Vendored absorption of compound-engineering 3.8.3 + superpowers 5.1.0
+under athanor namespace.** v0.10.0 brings the user-confirmed "full merge
+with athanor identity preserved" scope to ground. 37 CE skills + 49 CE
+sub-agents + 13 superpowers skills land at `skills/ce-<name>/`,
+`agents/vendored/ce/*.agent.md`, and `skills/sp-<name>/` respectively
+(flat skill layout chosen so Claude Code's depth-1 SKILL.md auto-discovery
+resolves them). Every vendored markdown file carries a T2 provenance block
+inserted after the YAML frontmatter, recording upstream version,
+source-commit reference, license, and any modifications (the only allowed
+modification is renaming the YAML `name:` field to match the namespace-
+prefixed directory, recorded per-file). Body content is byte-identical to
+upstream.
+
+Plan: `docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan.md`
+Inventory: `docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan-INVENTORY.md`
+
+### Added (vendored superset)
+
+- **37 CE skills** at `skills/ce-<name>/` exposed as `/athanor:ce-<name>`
+  commands. Includes the full CE 3.8.3 catalog: ce-brainstorm, ce-plan,
+  ce-work, ce-code-review (with 18 reviewer personas reachable via the
+  vendored sub-agents below), ce-debug, ce-doc-review, ce-lfg (renamed
+  from upstream `lfg`), ce-test-browser, ce-test-xcode, ce-strategy,
+  ce-ideate, ce-compound, ce-proof (HITL), ce-sessions, ce-worktree,
+  ce-commit, ce-commit-push-pr, ce-resolve-pr-feedback,
+  ce-frontend-design, ce-figma-design-sync, ce-demo-reel,
+  ce-gemini-imagegen, ce-pulse, ce-product-pulse, ce-setup,
+  ce-release-notes, ce-report-bug, ce-update, ce-simplify-code,
+  ce-optimize, ce-polish-beta, ce-clean-gone-branches, ce-slack-research,
+  ce-riffrec-feedback-analysis, ce-dhh-rails-style,
+  ce-agent-native-architecture, ce-agent-native-audit, ce-compound-refresh,
+  ce-work-beta.
+- **49 CE sub-agents** at `agents/vendored/ce/*.agent.md` (not user-
+  invocable as commands; dispatched by the vendored skills above).
+- **13 superpowers skills** at `skills/sp-<name>/` exposed as
+  `/athanor:sp-<name>` commands. Includes sp-brainstorming, sp-writing-
+  plans, sp-writing-skills, sp-executing-plans, sp-systematic-debugging,
+  sp-test-driven-development, sp-subagent-driven-development, sp-dispatching-
+  parallel-agents, sp-using-git-worktrees, sp-using-superpowers,
+  sp-finishing-a-development-branch, sp-requesting-code-review,
+  sp-receiving-code-review. (Superpowers' `verification-before-completion`
+  intentionally NOT re-vendored — already at `skills/verification-before-
+  completion/` from v0.7.8.)
+- **CLAUDE.md §"Vendored Surface — Identity Guard Layer"** enumerating
+  the four athanor identity commitments preserved under absorption:
+  Thin Leader contract / cross-model adversarial planning /
+  Spec-then-TDD discipline / Stop hook runtime gate scope.
+- **NOTICE.md** expanded with full MIT attribution for CE (Kieran
+  Klaassen / Every Inc) and superpowers (Jesse Vincent), enumerating
+  every vendored file.
+- **`scripts/oneshot/v010_vendor.py`** — reusable vendor script committed
+  in-tree so future drift refreshes can re-run it (deviation from plan
+  U2 note that originally suggested gitignoring it; documentation value
+  outweighs scratch-script convention).
+
+### Changed (athanor-native, preserved with vendored-surface awareness)
+
+- **CLAUDE.md Commands table** split into Athanor-native + Vendored
+  subsections. `/athanor:plan` and `/athanor:work` rows annotated with
+  the identity commitment each preserves (cross-model adversarial;
+  Spec-then-TDD).
+- **CLAUDE.md Defense Mechanisms** Stop-hook row extended with v0.10.0
+  scope disclosure (gate triggers on every Stop; whitelist may false-
+  negative on vendored prose voice; vendor-aware whitelist deferred to
+  v0.10.1+). Spec-then-TDD row extended with scope clarification that
+  vendored `/athanor:ce-work` and `/athanor:sp-test-driven-development`
+  are OUTSIDE the discipline.
+- **skills/plan/SKILL.md** Identity section gains v0.10.0 vendored-
+  surface relationship note: `/athanor:plan` stays the cross-model dual-
+  planner default. DO NOT silently downgrade to `/athanor:ce-plan`.
+- **skills/work/SKILL.md** Identity section gains v0.10.0 vendored-
+  surface relationship note: `/athanor:work` stays the Spec-then-TDD
+  flow. `/athanor:ce-work` and `/athanor:sp-test-driven-development`
+  are OUTSIDE.
+- **scripts/hooks/stop_verify_claims.py** docstring extended with
+  v0.10.0 vendored-surface honesty note (gate scope unchanged at
+  runtime; whitelist coverage tuned to athanor voice).
+- **Version bumps** across `.claude-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json`, schema `$id` URL pinned to
+  `v0.10.0` tag (in `schemas/athanor-config.schema.json`, `athanor.json`,
+  `templates/athanor.json`).
+- **plugin description + keywords** expanded with `vendored-ce` and
+  `vendored-superpowers` keywords.
+
+### Voice (what v0.10.0 deliberately does NOT claim)
+
+- NOT a feature-parity claim. v0.10.0 vendors upstream content with
+  provenance; it does not promise that every vendored skill is fully
+  validated under athanor's runtime semantics (Thin Leader, Stop hook
+  gate, etc.). Users invoking vendored skills are running
+  surface-discovered upstream content via athanor's worker dispatch.
+- NOT a Stop-hook scope extension. The runtime gate stays athanor-voice-
+  tuned at v0.10.0; vendored skill outputs may bypass the whitelist
+  through prose-voice differences. Vendor-aware whitelist is v0.10.1+
+  work.
+- NOT a re-license or upstream substitute. athanor stays MIT; CE and
+  superpowers stay MIT under their copyright holders. T2 vendoring
+  preserves all upstream license text in NOTICE.md.
+- NOT an upstream deprecation. Users may still install CE and
+  superpowers as separate plugins; athanor v0.10.0 just doesn't require
+  them to be installed.
+- NOT a synonym for "athanor supersedes CE". The two plugins have
+  different identities. athanor v0.10.0 absorbs CE's skill surface;
+  CE's release cadence, sub-agent evolution, and design direction remain
+  with Every Inc.
+
+### Migration (from v0.9.0)
+
+- No breaking changes to athanor-native skills. Existing `/athanor:plan`,
+  `/athanor:work`, `/athanor:discuss`, etc. behave identically to v0.9.0.
+- New `/athanor:ce-*` and `/athanor:sp-*` commands become reachable
+  automatically after plugin reload.
+- If you have custom hooks or scripts that grep `skills/<n>/SKILL.md`,
+  they now match ~50 additional entries at depth 1. Filter by directory
+  prefix (`ce-`, `sp-`) if you only want athanor-native skills.
+- Schema URL pin moved from `v0.9.0` to `v0.10.0`. Existing athanor.json
+  files in user projects continue to validate against the v0.9.0 schema
+  until they're regenerated; the schema is backwards-compatible at this
+  release.
+
+### Deferred (explicitly NOT in v0.10.0)
+
+- **v0.10.1 vendor-drift check** — `scripts/check_vendor_drift.py` to
+  diff vendored content against upstream plugin caches; manual diff
+  process documented in `docs/STATE.md` §Vendor Manifest until then.
+- **v0.10.1+ vendor-aware Stop-hook whitelist** — expand phrase set to
+  cover vendored skill output idioms.
+- **v0.10.2 LFG pipeline reconciliation** — both athanor LFG (implicit;
+  user-chained) and vendored `/athanor:ce-lfg` (CE's end-to-end pipeline)
+  now exist. A unified flow is its own brainstorm.
+- **v0.10.3 superpowers `using-superpowers` cross-cutting integration**
+   — vendoring the SKILL.md verbatim is the v0.10.0 deliverable; running
+  superpowers' "skill-invocation BEFORE any response" rule across
+  athanor-native skills is its own scope (would impact every skill).
+- **v0.11.0+ deprecation candidates** — `/athanor:discuss` synthesis
+  mode partially overlaps with `/athanor:ce-brainstorm` (athanor v0.9.0
+  already absorbed clarify-mode equivalent); deprecating one in favour
+  of the other is its own scope.
+
+### Regression test surface
+
+- 10 new regression test files (M6) pin identity guards, provenance
+  invariants, namespace policy, and honesty arc voice. Total test count
+  ~255 baseline + ~25 new ≥ 280 passing on Python 3.x with `jsonschema`.
+
 ## [0.9.0] — 2026-05-19
 
 **`/athanor:discuss` dual-mode expansion — clarify (intent명확화) +

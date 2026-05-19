@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch",
-      "version": "0.9.0",
+      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. v0.10.0 absorbs CE 3.8.3 + superpowers 5.1.0 under athanor namespace (vendored superset; athanor identity commitments preserved).",
+      "version": "0.10.0",
       "source": "./",
       "author": {
         "name": "WookLabs"

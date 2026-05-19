@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.9.0/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.10.0/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
