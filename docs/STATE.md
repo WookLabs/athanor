@@ -4,7 +4,48 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.10.0 (Absorb CE 3.8.3 + superpowers 5.1.0 — vendored superset, identity-preserving)
+## Current Phase: SHIPPING — v0.10.1 (Vendor hygiene + Splitter audit field + B2 honesty closure)
+
+v0.10.0 후속 작은 릴리스. 정체성 결정 / architectural 변경 없음. 세 개의
+deferred 항목 마무리 + v0.7.9 stop_verify_claims.py docstring overclaim
+정직성 교정.
+
+- **U1**: `scripts/check_vendor_drift.py` — vendor 트리 drift 단일 명령
+  체크. CE upstream은 `ce-` 접두사 유지, superpowers는 `sp-` 추가 (rename
+  매핑 포함, `ce-lfg`는 upstream `lfg`로 다시 매핑). exit 0 = no drift /
+  1 = drift / 2 = upstream cache 부재. 머지된 v0.10.0 트리 대상 50/50
+  unchanged 확인.
+- **U2**: v0.9.0 시점 vendored references 2개 파일의 `source-commit`
+  placeholder ("vendored at athanor v0.9.0 release time") → 정확한
+  `compound-engineering@3.8.2 <upstream-path>` pin + v0.10.0 verification
+  note. SHA pin은 plugin-cache distribution에서 도달 불가 — version-tag
+  fallback per CLAUDE.md §Vendored Surface drift policy.
+- **U3 + U4**: `/athanor:work` Splitter 출력 schema에
+  `classification_reason: <one-line>` 필드 추가. 분류값과 무관하게 모든
+  subtask가 갖는다 (acceptance_criteria는 spec-then-tdd-only인 것과 다름).
+  3개 ambiguous-case fixture (case_01 spec-vs-direct, case_02 refactor
+  test-aware, case_03 prose-contract direct). 길이 계약: ≤ 200 chars,
+  no newline. Heuristic 자체는 v0.8.0 그대로 — 필드는 audit trail 용도.
+- **U6**: B2 (v0.7.9.1 paraphrase bypass closure) 상태 재검증.
+  `is_material_claim()` 함수가 literal substring matching만 하고 paraphrase
+  regex / NFKC / confusables fold가 구현 안 됨에도, top-level docstring이
+  v0.7.9에서 이미 ship한 것처럼 명시 — **honesty-arc 위반**. v0.10.1에서
+  docstring 교정 (runtime 변경 없음). 실제 B2 작업은 v0.10.2로 carry.
+
+### v0.10.1 ship surface
+
+- 사용자-호출 skills: 61개 (10 native + 1 already-vendored verification +
+  37 ce-* + 13 sp-*). v0.10.0 그대로.
+- Regression test suite: ≥ 314 passing (296 baseline post-v0.10.0 + 18
+  new across U1/U2/U3/U4).
+- Release gate (`scripts/check_release_ready.py --ci`) v0.10.1에서 green.
+- Active executable contracts (v0.10.1 신규):
+  `v0101-vendor-drift-script-exit-codes`,
+  `v0101-vendor-provenance-sha-pin`,
+  `v0101-splitter-classification-reason-field`,
+  `v0101-stop-hook-docstring-honesty`.
+
+## Previous Phase: v0.10.0 (Absorb CE 3.8.3 + superpowers 5.1.0 — vendored superset, identity-preserving)
 
 athanor가 compound-engineering 3.8.3 (37 skills + 49 sub-agents) +
 superpowers 5.1.0 (13 skills) 을 vendor superset 으로 흡수. 사용자가

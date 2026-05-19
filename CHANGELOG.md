@@ -3,6 +3,108 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.1] — 2026-05-19
+
+**Vendor hygiene + Splitter audit field + B2 honesty closure.** A small
+follow-up to v0.10.0 that ties up three deferred items (A1 vendor-drift
+script, B3 v0.9.0 reference provenance correction, B1 Splitter
+`classification_reason`) and surfaces an overclaim that v0.7.9 had left
+in `stop_verify_claims.py` docstring (U6 honesty-arc closure). No
+identity decisions; no architectural shifts.
+
+Plan: `docs/plans/2026-05-19-004-feat-v0.10.1-vendor-hygiene-plan.md`
+
+### Added
+
+- **`scripts/check_vendor_drift.py`** (U1): single-command drift check
+  across all `skills/ce-*/` and `skills/sp-*/` directories against their
+  upstream plugin caches. Stdlib only. Strips provenance block + normalizes
+  frontmatter `name:` rewrite + collapses blank-line runs before
+  comparing. Modes: default verbose / `--ci` summary-only / `--skill NAME`
+  filter / `--cache-root PATH` override. Exit codes 0/1/2 for
+  no-drift/drift/unreachable. Verified: against the merged v0.10.0
+  vendored tree, all 50 vendored skills match upstream (`total=50
+  unchanged=50 drifted=0 unreachable=0`).
+- **`tests/fixtures/splitter_cases/`** (U4): 3 ambiguous-case fixture
+  YAMLs documenting Splitter heuristic edges — spec-then-tdd vs direct
+  (case_01); refactor → test-aware (case_02); contract-prose → direct
+  (case_03). Each fixture carries case_id / subtask_brief /
+  expected_classification / expected_reason_keywords / rationale.
+- **Splitter output schema `classification_reason` field** (U3, B1 closure):
+  every subtask emitted by `/athanor:work` Step 0.5 Splitter must now
+  include a one-line `classification_reason` audit field, regardless of
+  `execution_note` value. The heuristic itself is unchanged — v0.10.1
+  only adds the audit field so misclassifications are diagnosable from
+  the work log. Length contract: ≤ 200 chars, no embedded newlines.
+- 3 new regression test files (18 new assertions):
+  - `test_regression_v010_1_vendor_drift_script.py` (5 tests)
+  - `test_regression_v010_1_vendor_provenance_sha.py` (4 tests)
+  - `test_regression_splitter_classification_reason.py` (9 tests)
+
+### Changed
+
+- **`scripts/hooks/stop_verify_claims.py` docstring v0.7.9 hardening
+  subsection** (U6, B2 honesty closure): rewrote the docstring to remove
+  the v0.7.9-attributed paraphrase regex / NFKC unicode / cyrillic
+  homoglyph items that NEVER landed in the v0.7.9 release. The actual
+  function (`is_material_claim()`) is still pure literal substring
+  matching — its own internal docstring openly says so, but the
+  top-level docstring incorrectly claimed those mitigations were shipped.
+  v0.10.1 corrects the overclaim and re-files paraphrase/cyrillic items
+  under "Residual known limitations (deferred)" with v0.10.2 candidate
+  annotation. No runtime change — pure honesty-arc correction.
+- **`skills/discuss/references/clarify-gap-probes.md`** and
+  **`skills/discuss/references/requirements-capture.md`** (U2, B3
+  closure): provenance block `source-commit` line replaced the v0.9.0
+  placeholder (`"vendored at athanor v0.9.0 release time"`) with a
+  proper `compound-engineering@3.8.2 <upstream-relative-path>` pin +
+  v0.10.0 verification note. SHA pin not available from plugin-cache
+  distribution; version-tag fallback per CLAUDE.md §"Vendored Surface"
+  drift policy. Body content unchanged (regression test pins body
+  intact).
+- **`skills/work/SKILL.md`** Step 0.5 Splitter prompt + Output Format +
+  Post-split Validation extended for the new `classification_reason`
+  field. Validation step #9 added.
+- **Test generalization** (`test_regression_v010_namespace_layout.py`):
+  hard-coded "0.10.0" version assertions replaced with `0.10.x` series
+  check + plugin.json↔marketplace.json version-agreement check. v0.11.0+
+  will need an explicit update; v0.10.x patch releases pass through.
+
+### Voice (what v0.10.1 deliberately does NOT claim)
+
+- B2 paraphrase bypass closure is **STILL DEFERRED**. v0.10.1 did NOT
+  ship paraphrase regex, NFKC normalization, or cyrillic homoglyph
+  protection. It only corrected the docstring overclaim. Actual closure
+  is a v0.10.2 candidate.
+- ADV-006 cyrillic homoglyph closure is also **STILL DEFERRED**.
+- Vendor-drift script does NOT auto-fix drift. It reports; the operator
+  decides whether to re-vendor.
+- `classification_reason` is descriptive (records why Splitter chose a
+  classification) not prescriptive (does not change the heuristic).
+  Misclassifications are still possible; the field makes them
+  diagnosable.
+
+### Migration (from v0.10.0)
+
+- Plan documents authored against v0.10.0 are unaffected. New Splitter
+  output emits one extra line per subtask (`classification_reason: ...`);
+  existing parsers that ignore unknown lines are forward-compatible.
+- The Stop hook continues to behave exactly as in v0.7.9~v0.10.0. v0.10.1
+  changed only the docstring, not the runtime.
+- Existing `athanor.json` files in user projects continue to validate
+  against the v0.10.0 schema. The schema URL pin moved to v0.10.1; the
+  schema itself is unchanged.
+
+### Deferred (carried forward)
+
+- **v0.10.2**: vendor-aware Stop hook whitelist (A2); paraphrase bypass
+  closure (B2 — paraphrase regex + NFKC + confusables fold); cyrillic
+  homoglyph (ADV-006); transcript-event introspection for sentinel
+  forgery (sec-001 residual).
+- **v0.11.0+**: A3 LFG pipeline reconciliation; A4 `using-superpowers`
+  cross-cutting integration; A5 native-vs-vendored deprecation
+  candidates.
+
 ## [0.10.0] — 2026-05-19
 
 **Vendored absorption of compound-engineering 3.8.3 + superpowers 5.1.0
