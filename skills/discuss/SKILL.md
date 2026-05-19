@@ -188,6 +188,52 @@ Write to `.athanor/sessions/{session-id}/requirements.md` via the Write tool. Th
 
 After the file is saved, proceed to **Step 3-clarify-handoff** below. Do NOT auto-dispatch any follow-on skill — the user picks the next step from the menu.
 
+### Step 3-clarify-handoff: Phase 4 menu (clarify mode)
+
+> **Mode marker:** This step ONLY fires when Step 3-clarify-finalization completed (requirements.md saved). For `mode=synthesis`, skip — synthesis terminates at Step 4 Present Results instead.
+
+#### Step 3-clarify-handoff.1: Present the menu
+
+Use `AskUserQuestion` blocking question tool when available (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded). Single-select, 4 options:
+
+```
+requirements.md 작성 완료. 다음 단계를 선택해주세요.
+
+[1] /athanor:plan으로 진행
+    requirements.md를 input으로 자동 inject. v0.8.0 Spec-then-TDD discipline과
+    결합되어 Planner A가 phase Verify에 R/A/F/AE-IDs를 cite-back 가능.
+
+[2] /athanor:discuss synthesis 모드로 chain
+    같은 session 재사용. clarify dialog 중 옵션 A vs B가 떠올랐을 때.
+    단 재진입 전 Option A/B 명시 confirm step을 거친다 (Codex 리뷰 P1 #3
+    반영 — 기존 Step 2는 parsed dilemma를 가정하므로 명시 단계 필요).
+
+[3] /athanor:analyze
+    코드/시스템 분석. requirements.md가 어떤 코드 surface와 충돌하는지
+    탐색하고 싶을 때.
+
+[4] 일단 멈춤
+    requirements.md 저장하고 종료. 다음 세션에서 /athanor:plan 또는
+    /athanor:discuss 재호출로 이어갈 수 있음. 본 step에서 follow-on
+    skill을 auto-dispatch하지 않는다.
+```
+
+When the blocking-question tool is unavailable or the call errors, fall back to a numbered list in chat with the hint "Pick a number or describe what you want." Never silently skip the question.
+
+#### Step 3-clarify-handoff.2: Dispatch on user selection
+
+- **[1] plan** — invoke the `/athanor:plan` skill (via the platform's skill primitive — `Skill` tool in Claude Code) so requirements.md is auto-injected at plan Step 1 (see U5 / plan.md §Step 1.2.5). Do not just tell the user to type the command — fire the invocation.
+- **[2] synthesis chain** — re-enter the same skill (`/athanor:discuss`) in synthesis mode (`mode=synthesis`). Before dispatching the existing Step 2 workers, the leader MUST first run an explicit **Option A/B dilemma confirm step** (Step 1.4 equivalent):
+  - The leader summarizes the options that emerged during clarify dialog: "Option A: {derived from dialog}, Option B: {derived from dialog}. 이 내용으로 synthesis를 시작할까요?"
+  - User confirms / corrects. Only after confirmation does the leader dispatch the existing Step 2 Researcher + Devil's Advocate workers.
+  - Session files are reused — `requirements.md` stays in place; `research-a.md` / `research-b.md` / `discuss.md` are produced by the synthesis flow as if it were a fresh `/athanor:discuss --synthesis` call on the same session.
+- **[3] analyze** — invoke the `/athanor:analyze` skill on the same session.
+- **[4] stop** — emit a brief save-and-stop announcement naming the requirements.md path. Do NOT auto-dispatch any follow-on skill. The user can re-enter manually in a later session.
+
+#### Step 3-clarify-handoff.3: Done
+
+After dispatch (or stop), the clarify-mode pipeline terminates. The session directory contains `requirements.md` (always) plus optionally `discuss.md` / `research-a.md` / `research-b.md` (if synthesis chained) and downstream `analyze.md` / `plan.md` (if those skills ran).
+
 
 
 Dispatch TWO workers simultaneously using the Agent tool.
