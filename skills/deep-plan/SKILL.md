@@ -18,3 +18,11 @@ Deep tier dispatches:
 - Step 3: Cross-reviews (Claude reviews B + Codex reviews A)
 - Step 4: 4-input Synthesis Critic
 - Step 5: User confirmation (Task Splitter runs later at /athanor:work Step 0.5)
+
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.

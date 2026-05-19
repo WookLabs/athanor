@@ -3,6 +3,80 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.1] — 2026-05-20
+
+**`using-superpowers` boundary clarification (advisory, preamble-declared).**
+v0.10.0에서 흡수된 `superpowers:using-superpowers` skill은 SessionStart에
+auto-load 되어 "ABSOLUTELY MUST invoke before response" 톤을 강제한다.
+v0.11.1은 그 톤이 athanor-native 9개 Thin Leader skill (analyze, debug,
+deep-plan, discuss, lite-plan, plan, review, setup, work) 호출 context에서
+**advisory**라는 경계를 문서화한다 — runtime gate 추가 없음, vendored
+content 편집 없음. 산문 + lock-in test 중심 작은 release.
+
+Plan: `docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md`
+Origin: `docs/brainstorms/2026-05-20-001-athanor-using-superpowers-boundary-requirements.md`
+
+### Added
+
+- **CLAUDE.md §Defense Mechanisms** new row + detail —
+  `using-superpowers boundary (v0.11.1)`. 라벨: `advisory
+  (preamble-declared)`. 4 signal phrase (using-superpowers / SessionStart /
+  advisory / leader dispatch) 포함. carve-out 명시: scope-drift +
+  verification-before-completion는 unprefixed slot이나 Thin Leader 패턴
+  아닌 vendored-content이라 제외.
+- **9 native Thin Leader SKILL.md** 각각에 `### v0.11.1 using-superpowers
+  boundary` subsection 추가. 동일 canonical 단락 — "Athanor's Thin Leader
+  + planner-classified discipline applies in this skill context.
+  `superpowers:using-superpowers` is loaded at SessionStart and its 'MUST
+  invoke before response' pressure is **advisory here** — discovery in
+  athanor-native skills resolves through leader dispatch, not pre-response
+  invocation check. See CLAUDE.md §Defense Mechanisms."
+- **9 new regression tests** in
+  `tests/test_regression_v011_1_using_superpowers_boundary.py`:
+  CLAUDE.md row presence + 4 signal phrase + advisory label + 9 skill
+  preamble heading exactness + 7 canonical signal phrase coverage +
+  carve-out enforcement (scope-drift / verification-before-completion
+  must NOT carry preamble) + vendored sp-using-superpowers presence +
+  CLAUDE.md / CHANGELOG forbidden phrase guard.
+
+### Changed
+
+- **Version bump** across `.claude-plugin/{plugin,marketplace}.json`,
+  `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json` (0.11.0 → 0.11.1).
+- **STATE.md** Current Phase: v0.11.1.
+
+### Voice (what v0.11.1 deliberately does NOT do)
+
+- v0.11.1 does NOT remove, sunset, or hide the vendored
+  `sp-using-superpowers` skill. The skill stays loaded at SessionStart;
+  its discipline remains in force when sp-* / ce-* / explicitly-superpowers
+  context applies.
+- v0.11.1 does NOT add a runtime gate enforcing the boundary. Honesty
+  arc requires not labelling a mechanism `enforced` without a Stop hook
+  or equivalent code-level gate. The boundary stays explicitly
+  `advisory (preamble-declared)`.
+- v0.11.1 does NOT modify the vendored `skills/sp-using-superpowers/
+  SKILL.md` body (T2 provenance lock; drift script enforces).
+- v0.11.1 does NOT carry sunset framing or supersession claims of any
+  kind toward `superpowers:using-superpowers`. Forbidden-phrase tests
+  lock this for both CLAUDE.md and CHANGELOG.
+
+### Migration
+
+- None required. Existing project `athanor.json` keeps working unchanged
+  — no new config keys.
+
+### Deferred (carried forward — separate brainstorm/release)
+
+- **A5** — `sp-*` 13 skill deprecation candidates (v0.12.x+).
+- **sec-001** — transcript-event introspection.
+- **sec-003** — LLM-class semantic similarity for `stop_verify_claims.py`.
+- Mid-session `hooks.profile` mutation guard.
+- CE 37 skill cross-cutting decisions (separate brainstorm).
+
+---
+
 ## [0.11.0] — 2026-05-19
 
 **Standalone LFG: `/athanor:lfg` wrapper skill ships.** Closes the v0.10.0
