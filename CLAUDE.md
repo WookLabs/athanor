@@ -105,7 +105,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via: v0.7.7 English + Korean phrase whitelist; v0.10.2 NFKC unicode normalization + Cyrillic confusables fold + 6 verb-anchored paraphrase regex patterns; v0.10.2 vendor-aware whitelist extension (CE/superpowers idioms); v0.10.3 Greek+Armenian confusables fold extension; v0.10.3 conditional/speculative clause-prefix suppression; v0.10.3 attribution / paired-quote / attributed-verb suppression. Exits 2 to block Stop with stderr fed back as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=2 nonce=... -->` so the hook detects its own evidence emission and exits 0 silently. `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.3 coverage:** paraphrase ("CI is green"), Cyrillic/Greek/Armenian homoglyph, fullwidth, vendored CE/superpowers idioms — all detected. Conditional/speculative tense ("If all tests are green, merge") and attributed historical quotes (`the v0.7.6 docs said "tests pass"`) — both suppressed. Known residual (v0.11.0+): LLM-class semantic similarity; speculative tense without prefix marker; multi-paragraph quote spans; Cherokee/full-width-Latin confusables. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
+| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via: v0.7.7 English + Korean phrase whitelist; v0.10.2 NFKC unicode normalization + Cyrillic confusables fold + 6 verb-anchored paraphrase regex patterns; v0.10.2 vendor-aware whitelist extension (CE/superpowers idioms); v0.10.3 Greek+Armenian confusables fold extension; v0.10.3 conditional/speculative clause-prefix suppression; v0.10.3 attribution / paired-quote / attributed-verb suppression. Exits 2 to block Stop with stderr fed back as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=2 nonce=... -->` so the hook detects its own evidence emission and exits 0 silently. `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.3 coverage:** paraphrase ("CI is green"), Cyrillic/Greek/Armenian homoglyph, fullwidth, vendored CE/superpowers idioms — all detected. Conditional/speculative tense ("If all tests are green, merge") and attributed historical quotes (`the v0.7.6 docs said "tests pass"`) — both suppressed. Known residual (v0.11.0+): LLM-class semantic similarity; speculative tense without prefix marker; multi-paragraph quote spans; Cherokee/full-width-Latin confusables. v0.11.3 audit: see §"Completion-Claim Verification" detail section below for the v0.7.8 → v0.11.2 input-layer fail-open history. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
@@ -168,6 +168,39 @@ that's the brittleness trade-off documented in the skill.
 to disable the gate. The script exits 0 unconditionally; no claim detection
 runs. `"standard"` (default) is the only other supported value;
 `lenient` / `strict` are deferred to a future release.
+
+#### Stop hook v0.11.3 input-layer fix (post-mortem)
+
+For 5 release cycles (v0.7.8 → v0.11.2), the script's stdin parser assumed
+the Stop event payload contained `last_assistant_message: <string>`. Claude
+Code actually sends `transcript_path: <jsonl-path>` and the message lives
+inside that file. Every Stop event silently fail-opened (`exit 0` with stderr
+`"last_assistant_message missing or non-string"`). The 35+ existing tests in
+`tests/test_regression_stop_hook_script.py` used the same incorrect assumed
+payload shape, so they passed while production fail-opened.
+
+v0.11.3 introduces `_read_last_assistant_message()` and `_content_to_text()`
+in `scripts/hooks/stop_verify_claims.py`. The new parser accepts BOTH the
+legacy shape (preserves the 35+ existing tests as a backwards-compat lock)
+AND the real Claude Code shape (`transcript_path` → JSONL → reverse-scan
+to the first main-session `entry.type == "assistant"` with `isSidechain
+!= true` → join `text` blocks from `message.content`). Sub-agent assistant
+turns are skipped so only the main-session model response gates. The
+`stop_hook_active` flag is pass-through; re-entry semantics remain governed
+by the existing `hook_state` circuit breaker per v0.7.9 design.
+
+The detection logic shipped in v0.7.9 (nonce sentinel), v0.10.2 (paraphrase
+regex + NFKC + Cyrillic fold + vendor-aware whitelist), and v0.10.3 (Greek/
+Armenian fold + conditional-tense suppression + attribution skip) is
+code-correct and unchanged; it was simply unreachable in production until
+v0.11.3 fixed the input layer. The `**enforced (command-based)**` label
+in the status table above is now honest.
+
+`tests/test_regression_v011_3_stop_hook_input_layer.py` adds 25 mandatory +
+1 xfail-tolerant tests against the real Claude Code payload shape. The
+2026-05-18 dry-run spike documented in `docs/STATE.md` confirmed `exit 2`
+behavior but did not validate the stdin parsing path (it tested the gate
+by manually piping JSON, which masked the production gap).
 
 - **Skill source:** `skills/verification-before-completion/SKILL.md` (MIT, vendored)
 - **Hook config:** `hooks/hooks.json` → Stop event, type `command` → `scripts/hooks/stop_verify_claims.py`
