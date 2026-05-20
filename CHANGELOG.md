@@ -3,6 +3,119 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.3] — 2026-05-21
+
+**Stop hook input-layer fix — honesty arc restoration.** v0.7.8 (script
+introduction) through v0.11.2 — the runtime Stop hook documented as
+`**enforced (command-based)**` silently fail-opened on every Stop event
+because its stdin parser assumed a payload shape Claude Code never sent.
+The script expected `{"last_assistant_message": "<string>"}` on stdin and
+treated any other shape as empty input. Claude Code actually sends
+`{"session_id", "transcript_path", "stop_hook_active", "hook_event_name"}`
+— the assistant turn lives at the tail of the JSONL file referenced by
+`transcript_path`, not on stdin. v0.11.3 fixes the input layer; the
+detection logic shipped over v0.7.9 / v0.10.2 / v0.10.3 is unchanged but
+now actually runs in production. Self-violation acknowledged and
+corrected.
+
+Plan: `docs/plans/2026-05-21-001-feat-v0.11.3-stop-hook-input-layer-fix-plan.md`
+
+### Fixed
+
+- **`scripts/hooks/stop_verify_claims.py`** — stdin parser now reads the
+  real Claude Code Stop event shape. New helpers
+  `_read_last_assistant_message()` + `_content_to_text()` accept BOTH the
+  legacy `last_assistant_message: <string>` shape (preserved for tests
+  and any direct caller) and the real transcript-path shape (production).
+  Transcript resolution walks the JSONL referenced by `transcript_path`,
+  selects the most-recent entry whose `entry.type == "assistant"` with
+  `isSidechain != true` (so only the main-session model's turn gates;
+  sub-agent assistant turns are filtered out), and joins the
+  `text`-typed content blocks. Tool-use-only turns produce empty text and
+  exit 0 cleanly. Partial-JSONL race tolerance is preserved — malformed
+  trailing lines are skipped without aborting parse.
+
+### Added
+
+- **`tests/test_regression_v011_3_stop_hook_input_layer.py`** — 25
+  mandatory tests + 1 xfail-tolerant test locking the real-Claude-Code-
+  shape behavior. Coverage spans: tool_use-only turn (exit 0), mixed
+  text + tool_use turn (exit 2 on text claim), partial-JSONL race
+  tolerance, sentinel-in-transcript validation, sub-agent
+  (`isSidechain: true`) skipping, `stop_hook_active: true` pass-through
+  (no special-case short-circuit), stale-counter post-upgrade scenario,
+  and the full
+  `{session_id, transcript_path, stop_hook_active, hook_event_name}`
+  payload contract. The existing 35+ tests in
+  `tests/test_regression_stop_hook_script.py` are retained as a
+  backwards-compat lock on the legacy `last_assistant_message` shape.
+
+### Changed
+
+- **`CLAUDE.md`** §"Defense Mechanisms" status-table row — a one-sentence
+  v0.11.3 audit pointer added; the `**enforced (command-based)**` label
+  stays in place. The label is now honest as of v0.11.3.
+- **`CLAUDE.md`** §"Completion-Claim Verification (Stop hook — enforced,
+  command-based)" detail section — new §"Stop hook v0.11.3 input-layer
+  fix (post-mortem)" subsection documenting the assumed-vs-actual
+  payload shape divergence and the corrective rewrite of the stdin
+  parser.
+- **`scripts/hooks/stop_verify_claims.py`** docstring — a new v0.11.3
+  input-layer fix (post-mortem) section inserted in chronological order
+  between the v0.10.3 entry and the Residual known limitations block.
+- **`docs/STATE.md`** — Current Phase v0.11.3; v0.11.2 promoted to
+  Previous Phase.
+- **Version bump** 0.11.2 → 0.11.3 across `.claude-plugin/plugin.json`
+  and `.claude-plugin/marketplace.json` (`"version"` field). URL pins
+  (`"$schema"` / `"$id"` strings containing `v0.11.x`) bumped v0.11.2
+  → v0.11.3 in `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json`.
+
+### Voice (what v0.11.3 deliberately does NOT do)
+
+- v0.11.3 does NOT remove or change the v0.7.9 / v0.10.2 / v0.10.3
+  detection logic. Those layers were code-correct; they were unreachable,
+  not broken. The fix is at the stdin parser, not at the claim-matcher.
+- v0.11.3 does NOT supersede any prior release. v0.7.8 through v0.11.2
+  documentation remains in `CHANGELOG.md` and `docs/plans/`; the v0.11.3
+  audit note clarifies, it does not erase.
+- v0.11.3 does NOT change the `**enforced (command-based)**` label. The
+  label is now honest as of v0.11.3.
+- v0.11.3 does NOT modify `hooks/hooks.json`. Hook registration was
+  correct; only the script's stdin parsing was wrong.
+- v0.11.3 does NOT modify `scripts/hooks/hook_state.py` or
+  `scripts/hooks/sentinel_helper.py`. The circuit breaker and v=2 nonce
+  protocol continue unchanged.
+- v0.11.3 does NOT special-case `stop_hook_active` to short-circuit the
+  gate. The flag is pass-through; re-entry semantics remain governed by
+  the existing `hook_state` circuit breaker per v0.7.9 design.
+- v0.11.3 does NOT rephrase or expand `FORBIDDEN_PHRASES`,
+  `V011_FORBIDDEN_PHRASES`, or `V011_1_BOUNDARY_FORBIDDEN_PHRASES`.
+  Voice constraints from v0.10.0 / v0.11.0 / v0.11.1 carry forward
+  verbatim.
+
+### Self-violation acknowledgment (honesty arc)
+
+For 5 release cycles (v0.7.8 → v0.11.2), athanor labeled its own Stop
+hook `**enforced (command-based)**` while production fail-opened on
+every Stop event. The 35+ existing tests in
+`tests/test_regression_stop_hook_script.py` used the same incorrect
+assumed payload shape, so they passed while production was dead.
+v0.11.3 adds 25 mandatory + 1 xfail-tolerant tests against the real
+Claude Code payload shape and retains the legacy tests as a
+backwards-compat lock. The mistake originated in v0.7.8 when the script
+was authored before the actual Stop event payload had been observed
+end-to-end. This release is a correction, not a quiet patch — the
+v0.11.3 entry, the CLAUDE.md post-mortem subsection, and the script
+docstring all carry the acknowledgment.
+
+### Migration
+
+- No user action required. Projects with `"hooks": {"profile": "off"}`
+  continue to opt out. Projects with `"hooks": {"profile": "standard"}`
+  (default) now get the gate they were already paying for in `CLAUDE.md`
+  documentation.
+
 ## [0.11.2] — 2026-05-20
 
 **Hygiene cut — scope clarification.** athanor stands alone (v0.11.0

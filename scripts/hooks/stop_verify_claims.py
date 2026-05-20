@@ -79,6 +79,41 @@ v0.10.3 residual closure
     라고-했/라고-적/라고-말 — Korean attribution markers follow the
     quote).
 
+v0.11.3 input-layer fix (post-mortem)
+(docs/plans/2026-05-20-002 originated; .athanor/sessions/2026-05-21-001/plan.md):
+  v0.7.8 → v0.11.2 (5 release cycles): the script's stdin parser called
+  `payload.get("last_assistant_message")` and treated `None` as fail-open.
+  Claude Code actually sends `{"session_id": "...", "transcript_path":
+  "<jsonl>", "stop_hook_active": false, "hook_event_name": "Stop"}`; the
+  message body lives inside the transcript JSONL, not in the payload as a
+  string. Every Stop event silently fail-opened with stderr "last_assistant_
+  message missing or non-string"; the gate was non-functional from v0.7.8
+  through v0.11.2 inclusive. The 35+ existing tests in
+  test_regression_stop_hook_script.py used the same incorrect assumed shape
+  and so passed while production was dead.
+
+  v0.11.3 introduces _content_to_text(content) and
+  _read_last_assistant_message(payload). The new parser accepts BOTH shapes:
+  legacy-first early return on payload["last_assistant_message"] (preserves
+  the 35+ existing tests as backwards-compat lock); otherwise read
+  payload["transcript_path"] as JSONL, iterate lines in reverse with
+  per-line JSONDecodeError tolerance (partial-final-line race), filter on
+  `entry.get("isSidechain") is not True` (sub-agent turn skip), match first
+  `entry["type"] == "assistant"` AND `entry["message"]["role"] ==
+  "assistant"`, extract `entry["message"]["content"]`, run through
+  _content_to_text (handles string OR list of text/tool_use/thinking
+  typed blocks, drops tool_use and thinking, concatenates text). The
+  `stop_hook_active` flag is pass-through; re-entry semantics remain
+  governed by the existing hook_state circuit breaker (read_stop_counter /
+  write_stop_counter / reset_stop_counter, NOT increment — earlier docs
+  used a convenience name not present in the actual API).
+
+  The detection layers shipped in v0.7.9 (nonce sentinel) / v0.10.2
+  (paraphrase + NFKC + Cyrillic + vendor-aware) / v0.10.3 (Greek/Armenian
+  + conditional + attribution) are unchanged and now reachable.
+  tests/test_regression_v011_3_stop_hook_input_layer.py adds 25 mandatory
+  + 1 xfail-tolerant tests against the real Claude Code payload shape.
+
 Residual known limitations (carried forward to v0.11.0+):
   - **LLM-class paraphrase patterns subtler than verb-anchor regex**
     (e.g., "we verified the test suite ran clean" with subtle clause
@@ -530,6 +565,129 @@ def _read_stdin_payload() -> dict | None:
         return None
 
 
+# v0.11.3 input-layer fix — see also script docstring "v0.11.3 input-layer fix
+# (post-mortem)" section (added in Subtask 3).
+#
+# The v0.7.8 implementation read `payload.get("last_assistant_message")` from
+# the Stop event payload. That field is not part of the actual Claude Code
+# Stop hook payload shape (CC provides `transcript_path` — a JSONL file
+# containing the conversation history). As a result the v0.7.8 gate
+# fail-opened on every real Stop event from v0.7.8 through v0.10.3
+# inclusive — a multi-version self-violation of the honesty arc, since the
+# scripts/docstrings claimed the gate was enforced. v0.11.3 acknowledges
+# and corrects this by parsing the transcript.
+#
+# Design notes for the helpers below:
+#   - LEGACY-FIRST early return (decision D7): if the payload literally
+#     contains `last_assistant_message` as a string, return it. This
+#     preserves all 35+ existing tests in test_regression_stop_hook_script.py
+#     as backwards-compatibility locks.
+#   - Reverse-scan JSONL, line by line, with json.JSONDecodeError tolerance
+#     (partial-line race tolerance — Claude Code is mid-write when the
+#     hook fires).
+#   - Sub-agent filter (decision D2): skip entries with `isSidechain == True`.
+#     Sub-agent assistant turns must NOT count as the model's "last
+#     response" — they're transient worker output, not the main session's
+#     completion claim.
+#   - `stop_hook_active` flag (decision D3): pass-through. Do NOT branch on
+#     it in the parser. Re-entry semantics are governed by the existing
+#     `hook_state.read_stop_counter` / `write_stop_counter` /
+#     `reset_stop_counter` circuit breaker per v0.7.9 design — branching on
+#     the flag here would double-count and short-circuit the breaker.
+#   - Memory-cap / line-cap optimization (e.g., chunked tail-read for
+#     multi-MB transcripts) is deferred to v0.11.4. Current implementation
+#     reads the full file; acceptable for typical session sizes.
+
+
+def _content_to_text(content) -> str:
+    """Normalize Claude Code message-content into a plain text string.
+
+    `content` is either:
+      - a plain string (legacy / older content shape) → return verbatim.
+      - a list of typed blocks. Recognized types: `text` (concatenated),
+        `tool_use` (skipped), `thinking` (skipped). Unknown types are
+        skipped silently.
+
+    Returns "" for empty / non-list / non-string input.
+    """
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    parts: list[str] = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "text":
+            text = block.get("text", "")
+            if isinstance(text, str):
+                parts.append(text)
+        # tool_use, thinking, and unknown types are skipped silently.
+    return "".join(parts)
+
+
+def _read_last_assistant_message(payload: dict) -> str | None:
+    """Extract the model's last main-session assistant message text from a
+    Claude Code Stop event payload.
+
+    Decision order (v0.11.3, decisions D2/D3/D7):
+      1. LEGACY-FIRST: if `payload["last_assistant_message"]` is a string,
+         return it. Preserves backwards-compatibility with synthetic test
+         payloads using the v0.7.8 docstring shape (D7).
+      2. Real CC path: open `payload["transcript_path"]` as JSONL.
+         Reverse-scan the lines. For each line:
+           - Skip blank lines and lines that fail `json.loads` (partial-line
+             race tolerance — Claude Code may be mid-write).
+           - Match: `entry["type"] == "assistant"` AND
+             `entry["message"]["role"] == "assistant"` AND
+             `entry.get("isSidechain") != True` (D2 sub-agent filter).
+           - Extract `entry["message"]["content"]` via `_content_to_text`.
+           - Return the first non-empty match.
+      3. Fallthrough → return None. Caller's main() emits the existing
+         fail-open stderr.
+
+    `stop_hook_active` is intentionally not inspected here (D3 pass-through).
+    """
+    # 1. Legacy path.
+    legacy = payload.get("last_assistant_message")
+    if isinstance(legacy, str):
+        return legacy
+    # 2. Real CC path.
+    transcript_path = payload.get("transcript_path")
+    if not isinstance(transcript_path, str) or not transcript_path:
+        return None
+    try:
+        with open(transcript_path, encoding="utf-8") as f:
+            lines = f.readlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    for line in reversed(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            entry = json.loads(stripped)
+        except json.JSONDecodeError:
+            # Partial-line race — tolerate and continue scanning.
+            continue
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("type") != "assistant":
+            continue
+        if entry.get("isSidechain") is True:
+            continue
+        message = entry.get("message")
+        if not isinstance(message, dict):
+            continue
+        if message.get("role") != "assistant":
+            continue
+        text = _content_to_text(message.get("content"))
+        if text:
+            return text
+        # Empty-text assistant entry — continue scanning for a non-empty one.
+    return None
+
+
 def _find_athanor_config() -> tuple[Path | None, str]:
     """Locate athanor.json via priority chain (v0.7.9):
 
@@ -815,14 +973,20 @@ def main() -> int:
         )
         return 0
 
-    last_msg = payload.get("last_assistant_message")
+    # v0.11.3 input-layer fix: previously this read `last_assistant_message`
+    # directly from the payload, which is NOT a field Claude Code actually
+    # provides (real CC payload only includes `transcript_path`). The helper
+    # below handles both shapes — legacy string (backwards-compat with the
+    # 35+ existing test payloads) and real CC transcript path.
+    last_msg = _read_last_assistant_message(payload)
     if not isinstance(last_msg, str):
-        # Payload shape variation — Claude Code may pass message-parts arrays,
-        # nulls, or omit the field entirely depending on version. Fail-open
-        # but with an audit signal so silent payload-drift is detectable.
+        # No recoverable last assistant message — fail-open with an audit
+        # signal so silent payload-drift is detectable.
         _stderr(
-            f"last_assistant_message missing or non-string "
-            f"(got {type(last_msg).__name__}); passing (fail-open)"
+            "could not extract last assistant message from payload "
+            "(neither legacy `last_assistant_message` string nor a readable "
+            "`transcript_path` with a main-session assistant entry); "
+            "passing (fail-open)"
         )
         return 0
     if not last_msg.strip():

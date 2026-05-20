@@ -4,7 +4,64 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.2 (hygiene cut — scope clarification)
+## Current Phase: SHIPPING — v0.11.3 (Stop hook input-layer fix — honesty arc restoration)
+
+5 release cycles (v0.7.8 → v0.11.2) 동안 Stop hook의 `**enforced (command-based)**`
+라벨이 산문상 정직했지만 production 입력 파싱 경로가 실제 Claude Code 페이로드
+모양을 처리하지 못해 매 Stop 이벤트가 silently fail-open 상태였다. v0.11.3은
+입력 계층 격차를 닫아 v0.7.9 / v0.10.2 / v0.10.3에서 출하된 탐지 코드가 비로소
+production에서 실제로 실행되도록 한다. 정체성 약속 (Thin Leader / cross-model
+plan / Spec-then-TDD / Stop hook scope) 변경 없음. self-violation acknowledged
+and corrected.
+
+- **U1**: `scripts/hooks/stop_verify_claims.py`에 `_content_to_text()` +
+  `_read_last_assistant_message()` 헬퍼 추가. legacy-first early return
+  (`payload["last_assistant_message"]` 즉시 반환 — 기존 35+ 테스트 backwards-
+  compat lock 보존) + `transcript_path` JSONL reverse-scan + `isSidechain
+  != true` 필터 (sub-agent turn skip) + `stop_hook_active` pass-through.
+  v0.7.9 hook_state circuit breaker 재진입 의미 변경 없음.
+- **U2**: `tests/test_regression_v011_3_stop_hook_input_layer.py` 신설.
+  실제 Claude Code 페이로드 모양 (transcript_path → JSONL → main-session
+  assistant entry) 기준 25 mandatory + 1 xfail-tolerant test. 기존
+  `test_regression_stop_hook_script.py` 35+ 테스트는 그대로 통과 (legacy
+  shape 처리가 보존되므로).
+- **U3**: honesty arc 산문 3건 — CLAUDE.md status 행에 v0.11.3 input-layer
+  audit 포인터 1문장 append + `### Completion-Claim Verification` 상세
+  단락에 §"Stop hook v0.11.3 input-layer fix (post-mortem)" 삽입;
+  `scripts/hooks/stop_verify_claims.py` docstring에 chronological order
+  로 v0.11.3 post-mortem 블록 삽입 (v0.10.3 다음, Residual 블록 앞);
+  STATE.md Current Phase v0.11.2 → v0.11.3 promotion.
+- **U4**: CHANGELOG v0.11.3 entry + 5-file version bump (2 plugin-version
+  manifest 파일 + 3 URL pin 파일 v0.11.2 → v0.11.3).
+
+honesty arc summary: "For 5 release cycles (v0.7.8 → v0.11.2) the Stop hook
+was labeled enforced while silently fail-opening in production. v0.11.3
+closes the input-layer gap; the detection logic shipped over v0.7.9 /
+v0.10.2 / v0.10.3 is unchanged and now actually runs. Self-violation
+acknowledged and corrected." — positive-commitment 언어 유지, supersession
+framing 없음 (forbidden phrase list 통과).
+
+### v0.11.3 ship surface
+
+- 사용자-호출 skills: **58개** (변동 없음).
+- Regression test suite: **421+ passing** (396 baseline + 25 신규
+  v0.11.3 input-layer; 기존 35+ legacy-shape 테스트는 그대로 통과).
+- Active executable contracts (v0.11.3 신규):
+  `v011-3-stop-hook-input-layer-real-claude-code-shape`,
+  `v011-3-legacy-shape-backwards-compat-lock`,
+  `v011-3-sub-agent-isSidechain-filter`,
+  `v011-3-honesty-arc-prose-emission`.
+
+### v0.11.3 알려진 residual (v0.12.x+ 후보)
+
+- 입력 계층은 닫혔지만 탐지 계층의 v0.10.3 residual (LLM-class semantic
+  similarity / 접두어 없는 speculative tense / multi-paragraph 인용 /
+  Cherokee · full-width Latin homoglyph)은 carry-forward.
+- adversarial sentinel forgery는 file-system 접근 가능한 모델에 한해
+  여전히 잔류 (v0.7.9 raised cost, not eliminated).
+- Mid-session profile mutation guard 미구현.
+
+## Previous Phase: v0.11.2 (hygiene cut — scope clarification)
 
 Cross-model cutting-preparation deep analysis (session `2026-05-20-002`
 — Researcher A Claude + Devil's Advocate Codex + Critic synthesis)에서

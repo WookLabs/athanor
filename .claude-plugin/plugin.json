@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.11.2",
-  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of compound-engineering 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 (13 sp-*) under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. v0.11.2 closes the v0.7.7 `models` deprecation arc and removes CE-plugin-lifecycle tooling from the vendored set. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
+  "version": "0.11.3",
+  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of compound-engineering 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 (13 sp-*) under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. v0.11.3 fixes the Stop hook input-layer parser so the runtime gate documented since v0.7.8 actually runs in production (the v0.7.9 / v0.10.2 / v0.10.3 detection logic is unchanged; only the stdin reader is corrected). Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
   "author": {
     "name": "WookLabs"
   },
