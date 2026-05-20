@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.11.1/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.11.2/schemas/athanor-config.schema.json",
   "version": "1.0",
   "_doc": "Athanor runtime configuration template — copied verbatim by /athanor:setup. _doc fields act as inline schema; root athanor.json (dev) and templates/athanor.json (user-install) stay shape-identical. To customize, edit your project root athanor.json after setup creates it.",
   "codex": {
@@ -29,17 +29,6 @@
     "promotionThreshold": 5,
     "maxAgeDays": 30,
     "_doc": "Lessons lifecycle in .athanor/lessons/. Working lessons decay after decayDays unless they reach promotionThreshold reads (then auto-promoted to permanent). Sessions older than maxAgeDays are cleaned by the cleaner agent (permanent lessons preserved)."
-  },
-  "models": {
-    "researcher": "sonnet",
-    "analyst": "sonnet",
-    "planner": "opus",
-    "critic": "opus",
-    "executor": "opus",
-    "reviewer": "opus",
-    "learner": "sonnet",
-    "cleaner": "haiku",
-    "_doc": "DEPRECATED in v0.7.7 — NO skill currently reads this block. The v0.7.6 documentation claimed 'Skills read this config in their dispatch templates' but every skill hardcodes its model: field inline. Schema marks the block deprecated; v0.7.9 will remove it entirely. For customization today, fork the relevant skills/<name>/SKILL.md and edit the inline model: field. (Values kept here historically: planner/critic/executor/reviewer=opus, researcher/analyst/learner=sonnet, cleaner=haiku.)"
   },
   "triggers": {
     "language": "both",

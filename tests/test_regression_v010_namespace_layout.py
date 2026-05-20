@@ -50,13 +50,18 @@ def _extract_frontmatter_name(skill_md: Path) -> str:
 
 
 def test_vendor_skill_count_meets_expectation():
-    """MUST: vendored skill directories count matches plan §M3+M4 (≥37 CE
-    + ≥13 sp = ≥50). Catches a regression where the script silently
-    skipped a batch."""
+    """MUST: vendored skill directories count matches the post-cut expectation.
+
+    v0.10.0 vendored 37 ce-* + 13 sp-* skills. v0.11.2 hygiene cut removed
+    4 CE-plugin-lifecycle skills (`ce-update`, `ce-report-bug`,
+    `ce-release-notes`, `ce-setup`) — see docs/plans/2026-05-20-002-feat-v0.11.2-hygiene-plan.md.
+    Post-cut expectation: ≥33 ce-*, ≥13 sp-*. Future cuts will lower the
+    floor further; raise it back only when a release adds skills.
+    """
     dirs = _list_skill_dirs()
     ce = [d for d in dirs if d.name.startswith("ce-")]
     sp = [d for d in dirs if d.name.startswith("sp-")]
-    assert len(ce) >= 37, f"Expected at least 37 ce-* skills; found {len(ce)}"
+    assert len(ce) >= 33, f"Expected at least 33 ce-* skills; found {len(ce)}"
     assert len(sp) >= 13, f"Expected at least 13 sp-* skills; found {len(sp)}"
 
 

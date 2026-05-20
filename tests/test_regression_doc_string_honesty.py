@@ -7,10 +7,11 @@ hook prompts via ATHANOR_HOOK_PROFILE..." for hooks). v0.7.7 corrected
 those strings (PR #10 dual review caught the residual lies). v0.7.8
 extends the contract per-key:
 
-- `models._doc` REMAINS deprecated until v0.7.9 (the block is not read
-  by any dispatch site). The v0.7.7 honesty contract still applies:
-  lead with "DEPRECATED in v0.7.7", be substantive, forward-reference
-  the removal version.
+- `models._doc` — REMOVED in v0.11.2 (per docs/plans/2026-05-20-002-feat-
+  v0.11.2-hygiene-plan.md). The v0.7.7 deprecation declared the block
+  unread; v0.7.8 honesty audit confirmed; v0.11.2 finally cuts it. Tests
+  below invert per v0.10.3 §D6 pattern: current-behavior pins flip to
+  "block must NOT exist" once the close arrives.
 - `hooks._doc` is NO LONGER deprecated in v0.7.8 (the new command-hook
   gate at scripts/hooks/stop_verify_claims.py reads `hooks.profile`).
   The string must describe the WORKING contract: mention the script,
@@ -88,19 +89,32 @@ def _check_working_contract_doc(label, doc_string, must_mention):
         )
 
 
-# --- models block: still deprecated in v0.7.8, removal target v0.7.9 ------
+# --- models block: REMOVED in v0.11.2 (inverted pins per v0.10.3 §D6) -----
 
 
-def test_athanor_json_models_doc_is_honest():
+def test_athanor_json_models_block_removed_in_v011_2():
+    """v0.11.2 closure of the v0.7.7 deprecation arc — the block declared
+    unread at v0.7.7 + v0.7.8 + v0.10.x is finally removed at v0.11.2.
+
+    Inversion pattern per v0.10.3 §D6: the v0.7.x~v0.10.3 tests pinned
+    'doc lead must say DEPRECATED'; v0.11.2 flips the assertion to
+    'block must NOT exist'. Closes
+    docs/plans/2026-05-20-002-feat-v0.11.2-hygiene-plan.md."""
     cfg = _load_json(REPO_ROOT / "athanor.json")
-    _check_deprecation_doc("athanor.json models._doc", cfg.get("models", {}).get("_doc", ""))
+    assert "models" not in cfg, (
+        "athanor.json: `models` block must be absent after v0.11.2 closure. "
+        "If you intend to re-introduce model configuration, wire a real "
+        "consumer first (see CHANGELOG v0.7.7 history for the 4-minor-cycle "
+        "deprecation arc before re-adding)."
+    )
 
 
-def test_template_models_doc_is_honest():
+def test_template_models_block_removed_in_v011_2():
+    """templates/athanor.json mirror of the v0.11.2 closure."""
     cfg = _load_json(REPO_ROOT / "templates/athanor.json")
-    _check_deprecation_doc(
-        "templates/athanor.json models._doc",
-        cfg.get("models", {}).get("_doc", ""),
+    assert "models" not in cfg, (
+        "templates/athanor.json: `models` block must be absent after v0.11.2 "
+        "closure (mirror of athanor.json invariant)."
     )
 
 
