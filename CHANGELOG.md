@@ -3,6 +3,114 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.2] — 2026-05-20
+
+**Hygiene cut — scope clarification.** athanor stands alone (v0.11.0
+commitment), so tooling that manages the compound-engineering plugin
+itself belongs to CE, not athanor's vendored surface. v0.11.2 removes
+four CE-plugin-lifecycle skills + finally cuts a config block that
+self-declared as "DEPRECATED in v0.7.7, slated for removal in v0.7.9"
+yet kept shipping through v0.11.1.
+
+Analysis source: cross-model cutting-preparation deep analysis
+(`.athanor/sessions/2026-05-20-002/discuss.md` — Researcher A Claude
++ Devil's Advocate Codex + Critic synthesis). v0.11.2 cuts are the
+**high-agreement intersection** — items both voices judged safe. Larger
+mid-cuts and architectural vendor-prune defer to v0.12.0 / v0.13.0.
+
+Plan: `docs/plans/2026-05-20-002-feat-v0.11.2-hygiene-plan.md`
+
+### Removed
+
+- **`models` config block** from `athanor.json`, `templates/athanor.json`,
+  and `schemas/athanor-config.schema.json`. The block was declared
+  unread at v0.7.7 (no skill or agent dispatches via this config) and
+  marked for v0.7.9 removal in its own `_doc`. v0.11.2 closes that
+  4-minor-overdue deprecation arc. Model assignment continues to live
+  inline in each `skills/<name>/SKILL.md` and `agents/*.md` file (the
+  actual runtime contract since v0.6.x).
+- **4 CE-plugin-lifecycle vendored skills:**
+  - `skills/ce-update/` — manages `compound-engineering` plugin updates
+  - `skills/ce-report-bug/` — reports bugs to the CE repository
+  - `skills/ce-release-notes/` — summarizes CE plugin releases
+  - `skills/ce-setup/` — configures CE environment (overlaps athanor's
+    own `/athanor:setup` at 562 lines)
+
+  Each carried `disable-model-invocation: true` upstream (already hidden
+  from auto-trigger). Their domain is CE-plugin maintenance; athanor's
+  domain is workflow orchestration.
+
+### Changed
+
+- **`tests/test_regression_v010_namespace_layout.py`** —
+  `test_vendor_skill_count_meets_expectation` count assertion relaxed
+  from `>= 37` to `>= 33` for ce-* (post-cut floor). Docstring updated
+  to note v0.11.2 closure. Future cuts will lower further; raise back
+  only when a release adds skills.
+- **`tests/test_regression_doc_string_honesty.py`** — inverted the
+  `models._doc` pins per the v0.10.3 §D6 pattern. The v0.7.x~v0.10.x
+  tests pinned "doc must lead with 'DEPRECATED in v0.7.7'"; v0.11.2
+  flips to "block must NOT exist." Same closure-locking shape used
+  for v0.10.3 Greek/conditional/attribution residual closure.
+- **`NOTICE.md`** — vendored CE skill list trimmed by 4 entries plus
+  an explanatory paragraph documenting the v0.11.2 scope-clarification
+  intent.
+- **Version bump** across `.claude-plugin/{plugin,marketplace}.json`,
+  `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json` (0.11.1 → 0.11.2).
+- **`docs/STATE.md`** — Current Phase v0.11.2 with full cut accounting
+  and v0.12.0+ deferred list.
+
+### Voice (what v0.11.2 deliberately does NOT do)
+
+- v0.11.2 does NOT remove or rewrite `docs/plans/2026-05-19-003-*` (the
+  v0.10.0 absorption plan that originally enumerated the cut skills).
+  Plan archives are immutable release evidence — Devil's Advocate's
+  defense holds.
+- v0.11.2 does NOT modify `scripts/check_vendor_drift.py`. The script
+  walks `skills/ce-*/` dynamically; after the cut it iterates 33
+  instead of 37. No maintained allow-missing list — "every present
+  ce-*/sp-* skill matches upstream" remains the governing invariant.
+- v0.11.2 does NOT touch `ce-lfg`, `sp-using-superpowers`, beta
+  variants, domain-specialized CE skills, `deep-plan`/`lite-plan`, or
+  any honesty-arc test (`v010_2_paraphrase_closure`,
+  `v010_3_residual_closure`, etc.). Those defer to v0.12.0 / v0.13.0
+  per cross-model analysis.
+- v0.11.2 does NOT frame cuts as supersession or replacement of
+  compound-engineering. The framing is **scope clarification**:
+  CE-plugin lifecycle tools belong to the CE plugin; athanor is an
+  orchestrator.
+
+### Migration
+
+- Projects that hand-edited `athanor.json` to override the `models`
+  block (none expected — the block was unread) should remove the
+  override. The block was inert prior to removal.
+- Users who invoked `/athanor:ce-update`, `/athanor:ce-report-bug`,
+  `/athanor:ce-release-notes`, or `/athanor:ce-setup` should invoke
+  the corresponding `/compound-engineering:` namespace command
+  directly if they have the CE plugin installed. The skills were
+  CE-plugin maintenance tooling, not athanor capability.
+
+### Deferred (carried forward — v0.12.0+)
+
+- **v0.12.0 mid-cut:** domain-specialized CE skills (`ce-dhh-rails-style`,
+  `ce-gemini-imagegen`, `ce-test-xcode`, `ce-riffrec-feedback-analysis`,
+  `ce-product-pulse`, `ce-slack-research`, `ce-frontend-design`); beta
+  variants (`ce-work-beta`, `ce-polish-beta`); orphan sub-agent sweep;
+  honesty-test helper extraction; `docs/plans/` archive directory.
+- **v0.13.0 big cut:** drift-script invariant redefinition (`"approved
+  subset, athanor-relevance justified"`); CE narrow to ~13-15 skills;
+  sp-* narrow to 4; CLAUDE.md advisory-section consolidation. Requires
+  prior CHANGELOG voice-framing decision so cuts honor v0.11.0 / v0.11.1
+  positive-commitment gates.
+- **A5** native-vs-vendored deprecation candidates.
+- **sec-001** transcript-event introspection.
+- **sec-003** LLM-class semantic similarity for stop_verify_claims.py.
+- Mid-session `hooks.profile` mutation guard.
+
+---
+
 ## [0.11.1] — 2026-05-20
 
 **`using-superpowers` boundary clarification (advisory, preamble-declared).**

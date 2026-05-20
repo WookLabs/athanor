@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored superset of CE 3.8.3 + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.1 documents the using-superpowers boundary as advisory (preamble-declared) in 9 native Thin Leader skills. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
-      "version": "0.11.1",
+      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of CE 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.2 closes the v0.7.7 models deprecation arc and removes CE-plugin-lifecycle tooling from the vendored set. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
+      "version": "0.11.2",
       "source": "./",
       "author": {
         "name": "WookLabs"

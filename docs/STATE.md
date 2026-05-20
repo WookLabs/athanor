@@ -4,7 +4,63 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.1 (`using-superpowers` boundary clarification)
+## Current Phase: SHIPPING — v0.11.2 (hygiene cut — scope clarification)
+
+Cross-model cutting-preparation deep analysis (session `2026-05-20-002`
+— Researcher A Claude + Devil's Advocate Codex + Critic synthesis)에서
+도출된 **high-agreement 교집합**만 즉시 cut. 큰 prune은 v0.12.0+ deferred.
+
+- **U1**: `models` config block 제거 (`athanor.json`,
+  `templates/athanor.json`, `schemas/athanor-config.schema.json`).
+  v0.7.7에서 자기 deprecation 선언 → 4 minor 늦게 v0.11.2에서 closure.
+- **U2**: CE-plugin lifecycle 4종 skill 제거 (`ce-update`,
+  `ce-report-bug`, `ce-release-notes`, `ce-setup`). compound-engineering
+  플러그인 자체 라이프사이클 도구 — athanor (orchestrator) 정체성 무관.
+- **U3**: `NOTICE.md` vendored CE list 4건 제거 + v0.11.2 explanatory note.
+- **U4**: test 회귀 처리 — `test_regression_v010_namespace_layout.py`의
+  ce-* count assertion 37 → 33; `test_regression_doc_string_honesty.py`의
+  models._doc pin을 inversion 패턴 (v0.10.3 §D6 답습) — "doc must lead
+  DEPRECATED" → "block must NOT exist". v0.7.7~v0.11.2 honesty arc 종결.
+- **U5**: plan + CHANGELOG + STATE + version bump (0.11.1 → 0.11.2).
+
+honesty arc — supersession framing 없음. 정체성 cut framing =
+"scope-clarification" (athanor stands alone, so CE-plugin lifecycle
+belongs to CE). Devil's Advocate가 명시적으로 defend한 항목 (ce-lfg,
+sp-using-superpowers, deep-plan/lite-plan, honesty-arc tests,
+docs/plans, drift script) 모두 손대지 않음. drift script 변경 없음
+(walk 동적 — 자연스럽게 33개만 iterate).
+
+### v0.11.2 ship surface
+
+- 사용자-호출 skills: **58개** (v0.11.1의 62에서 −4).
+- Regression test suite: **396 passing** (변동 없음; v0.11.2는 신규
+  test 없이 inversion 패턴으로 closure lock).
+- Active cuts:
+  - `models` config block: 3 manifest/schema files.
+  - 4 ce-* skill directories.
+
+### v0.12.0 mid-cut (deferred from v0.11.2)
+
+- 도메인 특화 CE 7종 (`ce-dhh-rails-style`, `ce-gemini-imagegen`,
+  `ce-test-xcode`, `ce-riffrec-feedback-analysis`, `ce-product-pulse`,
+  `ce-slack-research`, `ce-frontend-design`)
+- Beta variant 2종 (`ce-work-beta`, `ce-polish-beta`)
+- Orphan sub-agent sweep (호스트 skill cut 이후)
+- 호네스티 테스트 helper 추출 (~150줄 dedup)
+- `docs/plans/` archive 이동
+
+### v0.13.0 big cut (architectural, deferred)
+
+- Drift script invariant 재정의 (`"approved subset, athanor-relevance
+  justified"`)
+- CE narrow to ~13-15 identity-leaning skills
+- sp-* narrow to 4
+- CLAUDE.md advisory-only section consolidation
+
+요구: CHANGELOG voice-framing 사전 결정 — v0.11.0 / v0.11.1
+positive-commitment gate 안에서 architectural cut을 표현 가능한지.
+
+## Previous Phase: v0.11.1 (`using-superpowers` boundary clarification)
 
 v0.10.0에서 흡수된 `superpowers:using-superpowers`가 SessionStart에 자동
 로드되어 "ABSOLUTELY MUST invoke before response" 톤을 강제한다. v0.11.1은

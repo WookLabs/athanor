@@ -42,21 +42,23 @@ is byte-identical to upstream.
 - `skills/ce-polish-beta/`
 - `skills/ce-product-pulse/`
 - `skills/ce-proof/`
-- `skills/ce-release-notes/`
-- `skills/ce-report-bug/`
 - `skills/ce-resolve-pr-feedback/`
 - `skills/ce-riffrec-feedback-analysis/`
 - `skills/ce-sessions/`
-- `skills/ce-setup/`
 - `skills/ce-simplify-code/`
 - `skills/ce-slack-research/`
 - `skills/ce-strategy/`
 - `skills/ce-test-browser/`
 - `skills/ce-test-xcode/`
-- `skills/ce-update/`
 - `skills/ce-work/`
 - `skills/ce-work-beta/`
 - `skills/ce-worktree/`
+
+v0.11.2에서 CE-plugin lifecycle 4종 (`ce-update`, `ce-report-bug`,
+`ce-release-notes`, `ce-setup`) 을 vendored 집합에서 제거. 이 4종은
+compound-engineering 플러그인 자체의 라이프사이클을 관리하는 도구라
+athanor (orchestrator) 의 정체성과 무관. 자세한 의도는
+`docs/plans/2026-05-20-002-feat-v0.11.2-hygiene-plan.md`.
 
 ### Vendored sub-agents
 
