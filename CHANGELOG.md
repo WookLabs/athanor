@@ -3,6 +3,188 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.7] — 2026-05-22
+
+**Doc-drift scanner extension + Residual reclassification + minimal B1
+inclusion — companion-fix arc 5th layer.** v0.11.5 shipped CLAUDE.md
+drift-class invariants but the scanner was scoped only to Markdown
+narrative; Python docstrings (notably `scripts/hooks/stop_verify_claims.py`)
+and `docs/STATE.md` carried the same prose-vs-code drift pattern outside
+the v0.11.5 net. v0.11.7 extends the scanner to Python docstrings via
+`ast.get_docstring` + per-file extractors, audits `docs/STATE.md` and the
+hook docstring for stale version pins, closes B2 (`stop_verify_claims.py:145`
+"v0.11.0+" stale) and B5 (`CLAUDE.md:229` "v0.8.0+ work" stale), and
+applies the v0.11.6 reclassification pattern to a documented broken
+promise (B6: `CLAUDE.md:87` carry phrasing). Per Codex Reviewer push,
+v0.11.7 also includes a minimal B1 detection layer — mid-session profile
+mutation now produces a stderr warning without altering exit semantics —
+so the 8-cycle "documented but not guarded" honesty residual gets a first
+layer of closure now rather than deferring to v0.11.8+ architectural work.
+
+### Honesty arc
+
+The bugs were carried for 6 to 11+ release cycles each in a generic
+"Residual known limitations" block in `scripts/hooks/stop_verify_claims.py`
+and in `CLAUDE.md` §Known residuals — same anti-pattern v0.11.6 surfaced
+("documented bug masked as enhancement candidate"). v0.11.7 reclassifies
+each carried item with explicit Severity / Target / Acceptance labels —
+no more anonymous "candidate" carry slots. B1 specifically: the docstring
+said "not guarded" for 8+ cycles; v0.11.7 ships minimal detection (one
+layer of closure) rather than another release of pure documentation.
+
+### Companion-fix arc — 5 layers closed
+
+| Layer | Release | Bug |
+|---|---|---|
+| Runtime stdin parser shape | v0.11.3 | script wrong |
+| Hook command path resolution | v0.11.4 | path wrong |
+| CLAUDE.md doc drift class | v0.11.5 | Markdown untestable claims |
+| Sentinel body-hash binding | v0.11.6 | trailing-whitespace round-trip mismatch |
+| **Scanner extension + Residual reclassification + B1 minimal** | **v0.11.7** | **Python docstrings + STATE.md outside scanner; documented bugs carried as anonymous "candidates"; profile mutation undetected** |
+
+Shared meta-cause continues: documentation surfaces grow drift faster
+than tests cover them; "Residual known limitations" was a hold-everything
+bin where the v0.11.6 reclassification pattern needed to apply more
+broadly. v0.11.7 trims the bin by labeling each entry with shippable
+intent.
+
+### Fixed
+
+- **B2** — `scripts/hooks/stop_verify_claims.py:145` carried the stale
+  pin "Known residual (v0.11.0+)" 11+ release cycles after the matching
+  detection layers shipped through v0.10.2 / v0.10.3 / v0.11.3. Pin
+  refreshed to reference current Residual table semantics; carry text
+  removed in favour of the explicit Severity / Target / Acceptance
+  Residual block below.
+- **B5** — `CLAUDE.md:229` carried "v0.8.0+ work" phrasing on
+  sentence-level attributed-history detection. That label has been stale
+  since v0.10.3's attribution-context suppression shipped. Phrasing
+  refreshed to the v0.11.7 reclassified label.
+- **B6** — `CLAUDE.md:87` carried a "v0.11.0+ candidate" phrasing on a
+  documented broken promise (LLM-class semantic similarity in detection
+  whitelist). Reclassified with explicit "promised in v0.8.0 release
+  notes but never implemented" honesty wording, matching the v0.11.6
+  reclassification pattern. The work itself remains deferred but the
+  classification drift is closed.
+
+### Added
+
+- **Phase 1 doc-drift scanner extension** — per-file extractors for
+  Python docstrings via `ast.get_docstring` covering `scripts/hooks/*.py`
+  + `docs/STATE.md` Markdown body. The v0.11.5 2-layer scanner pattern
+  (narrow current-state matcher + claim-verb broad scan +
+  `HISTORICAL_MARKERS` left-context filter) preserved verbatim; only the
+  input set widens.
+- **`tests/test_regression_v011_7_import_path_invariants.py`** — Subtask 4
+  ships 6 tests locking the `scripts/hooks/__init__.py` import path
+  invariant from v0.11.5. The package marker existence test +
+  `from scripts.hooks import stop_verify_claims, sentinel_helper, hook_state`
+  importability + module-attribute pins prevent silent regression.
+- **`tests/test_regression_v011_7_profile_mutation_detection.py`** —
+  Subtask 6 ships 5 tests covering the minimal B1 detection layer:
+  initial snapshot taken on first invocation, second invocation
+  observing a changed `hooks.profile` value emits a stderr warning, exit
+  code preserved (detection-only contract), snapshot expiry matches
+  hook_state TTL semantics, and prose voice safety on the warning text.
+- **`scripts/hooks/hook_state.py`** gains `read_profile_snapshot()` +
+  `write_profile_snapshot()` helpers — first-invocation cache + diff
+  surface for the minimal B1 detection. Helpers are scoped narrowly so
+  v0.11.8+ architectural enforcement can replace them without
+  cross-cutting refactor.
+
+### Changed
+
+- **Subtask 5 xfail marker cleanup** — `strict=False` xfail markers on
+  `tests/test_regression_v011_5_claude_md_invariants.py` tests 1.1 / 1.2 /
+  1.3 removed. The tests have XPASSed since v0.11.5 corrective fixes
+  landed; silent XPASS is now loud PASS. Carried by v0.11.5 Voice
+  section as "optional polish carried to v0.11.6"; v0.11.7 closes it.
+- **Subtask 5 `_clean_hook_state` autouse fixture** added to
+  `tests/test_regression_v011_6_sentinel_body_normalization.py`. The
+  v0.11.6 sentinel tests previously leaked `hook_state.json` artifacts
+  across test runs in some local configs; the autouse fixture isolates
+  each test in a fresh state directory. Fragility patch — no behavior
+  change.
+- **Subtask 5 B3 minimal "ce-setup is not available" honest message** —
+  the 4 vendored skill references to `/ce-setup` (dangling since v0.11.2
+  scope-clarification cut) now show a one-line honest message
+  ("`/ce-setup` is not available in athanor; see `/athanor:setup` for
+  the athanor-native equivalent") via the v0.11.7 T2 modifications field
+  on `ce-test-browser`, `ce-frontend-design`, and the `ce-demo-reel` ×
+  2 occurrences. Full T2 navigation (clickable reference repair across
+  the vendored corpus) deferred to v0.11.8+.
+- **`docs/STATE.md` prose drift** at lines 19 and 478 — stale version
+  pin references cleaned per Phase 1 scanner output. Historical context
+  markers preserved.
+- **`README.md` line 19** — drift residual from the v0.11.5 A2 closure
+  cleaned by Phase 1 scanner.
+- **Version bump** 0.11.6 → 0.11.7 across `.claude-plugin/plugin.json`
+  and `.claude-plugin/marketplace.json` (`"version"` field +
+  `"description"` refresh). URL pins (`"$schema"` / `"$id"` strings
+  containing `v0.11.x`) bumped v0.11.6 → v0.11.7 in `athanor.json`,
+  `templates/athanor.json`, `schemas/athanor-config.schema.json`.
+
+### Voice (what v0.11.7 deliberately does NOT do)
+
+- v0.11.7 does NOT block the Stop hook gate on mid-session profile
+  mutation. B1 ships as detection-only — a stderr warning is emitted
+  on observed mutation, exit code is preserved. Full architectural
+  enforcement (snapshot / cache / lock + legitimate cross-session edit
+  handling) is v0.11.8+ work and named as such, not carried as an
+  anonymous candidate.
+- v0.11.7 does NOT lower forgery cost. The v0.11.6 sentinel
+  body-hash binding (v=2 nonce-bound contract) is unchanged; B1 adds a
+  separate detection layer above the existing protocol.
+- v0.11.7 does NOT touch detection layers — v0.7.7 whitelist +
+  v0.10.2 paraphrase regex + NFKC + Cyrillic + vendor-aware + v0.10.3
+  Greek / Armenian + conditional + attribution suppression are all
+  unchanged and reachable post-v0.11.3 / v0.11.4 / v0.11.5 / v0.11.6 /
+  v0.11.7.
+- v0.11.7 does NOT supersede v0.11.3 / v0.11.4 / v0.11.5 / v0.11.6.
+  The companion-fix arc continues to 5 layers; each release closes one
+  layer and exposes the next.
+
+### Self-violation acknowledgment
+
+The v0.11.6 reclassification pattern ("documented bug masked as
+enhancement candidate" is a honesty-arc violation) applies more broadly
+than the single Residual entry v0.11.6 fixed. 4 documented bugs that
+have been carrying as anonymous "candidate" items for 6 to 11+ release
+cycles — B1 (profile mutation), B2 (stale version pin), B5 (stale
+"v0.8.0+ work" label), B6 (broken-promise wording) — now have explicit
+Severity / Target / Acceptance labels in the v0.11.7 Residual block. B1
+in particular: the docstring said "not guarded" for 8+ release cycles
+while no detection layer existed; v0.11.7 ships minimal detection as a
+first layer of closure rather than another pure-documentation release.
+
+### Migration
+
+- No user action required. Users pick up via
+  `/plugin marketplace update athanor` on next refresh. The B1
+  detection layer surfaces a stderr warning when `athanor.json`
+  `hooks.profile` changes between invocations within a single session;
+  no exit-code or gate-semantics change. Existing snapshots from
+  pre-v0.11.7 sessions self-expire via the hook_state TTL.
+
+### Deferred (v0.11.8+)
+
+- **B1 full architectural treatment** — snapshot / cache / lock +
+  legitimate cross-session edit handling. v0.11.7 ships minimal
+  detection only.
+- **B3 full T2 navigation pattern** — clickable reference repair across
+  the vendored corpus. v0.11.7 ships only the minimal honest message
+  on the 4 known dangling references.
+- **B4 `_content_to_text` no-separator empirical investigation** — the
+  v0.11.3 helper joins text blocks without a separator; the behavior is
+  documented but no empirical attacker / fuzzer test exists.
+- **LOW-7 tag gap v0.7.7 → v0.11.1 backfill** (release archaeology).
+- **LOW-8 detection coverage via `transcript_path`** (35+ legacy tests
+  parameterization).
+- **Bolder**: CLAUDE.md generate-from-manifests (Codex Reviewer
+  suggestion from v0.11.5 / v0.11.6 sessions).
+
+---
+
 ## [0.11.6] — 2026-05-21
 
 **Sentinel body-hash binding fix — companion to v0.11.3/4/5 arc.**

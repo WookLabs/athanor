@@ -252,3 +252,50 @@ def reset_stop_counter(
 ) -> None:
     """Reset counter to 0. Fires after successful sentinel validation."""
     write_stop_counter(session_id, 0, project_root)
+
+
+# --- Profile-snapshot state (v0.11.7 B1 minimal closure) ------------------
+#
+# Detects mid-session mutation of `hooks.profile` in athanor.json: on the
+# first Stop event of a session, the Stop-hook script snapshots a SHA-256
+# of the profile value and persists it here; on every subsequent Stop in
+# the same session, the script compares the current value against the
+# stored snapshot. On mismatch, a stderr warning fires.
+#
+# Scope (v0.11.7): detection only. The warning does NOT block the gate,
+# does NOT override the off-profile bypass, and does NOT auto-revert. Full
+# architectural mitigation (file-lock vs. cached-checksum-key vs. opt-in
+# cross-session edit block) is deferred to v0.11.8+. Per-session isolation
+# is provided by the underlying `get_state_dir(session_id, ...)` layout
+# (state files live under `.athanor/sessions/<id>/.hook-state/`), so two
+# separate sessions get independent snapshots.
+
+
+def read_profile_snapshot(
+    session_id: str, project_root: Path | None = None
+) -> dict | None:
+    """Read the profile-snapshot state for `session_id` or None if absent."""
+    state_dir = get_state_dir(session_id, project_root)
+    if state_dir is None:
+        return None
+    return _read_json_safe(state_dir / "profile-snapshot.json")
+
+
+def write_profile_snapshot(
+    session_id: str,
+    profile_hash: str,
+    project_root: Path | None = None,
+) -> bool:
+    """Write the profile-snapshot state for `session_id`.
+
+    `profile_hash` is a SHA-256 hex digest of the canonical-JSON
+    serialization of the `hooks.profile` value (or the full `hooks` block —
+    caller decides). Returns True if write succeeded.
+    """
+    state_dir = get_state_dir(session_id, project_root)
+    if state_dir is None:
+        return False
+    return _atomic_write_json(
+        state_dir / "profile-snapshot.json",
+        {"profile_hash": profile_hash, "timestamp": int(time.time())},
+    )

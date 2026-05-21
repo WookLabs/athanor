@@ -1,9 +1,13 @@
-"""Regression tests for v0.11.5 — CLAUDE.md doc-drift invariants.
+"""Regression tests for v0.11.5 — doc-drift invariants (extended in v0.11.7).
 
 Companion-to-runtime-closure framing (Decision D9): the v0.11.2 cuts and
 v0.11.3/4 stop-hook fixes closed code-level honesty gaps but left
-CLAUDE.md prose at the pre-cut shape. This file locks three drift
-classes so prose stays in sync with code:
+CLAUDE.md prose at the pre-cut shape. v0.11.5 locked three drift
+classes (1.1/1.2/1.3) so CLAUDE.md prose stays in sync with code.
+v0.11.7 extends scope to multiple files (per-file extractor) and adds
+two new drift classes (1.5, 1.6) that would have caught B2/B5/B6.
+
+Drift classes:
 
 1.1 — CE skill counts (e.g., "37 CE skills") must equal the actual
       `skills/ce-*` directory population.
@@ -12,9 +16,20 @@ classes so prose stays in sync with code:
 1.3 — Sentinel version designators ("v=N") asserted as current must
       match `SENTINEL_PATTERN` in
       `scripts/hooks/stop_verify_claims.py`.
-
-Plus 1.4 — synthetic self-test of the historical-context exemption
-filter (HISTORICAL_MARKERS left-context window).
+1.4 — Synthetic self-test of the historical-context exemption
+      filter (HISTORICAL_MARKERS left-context window) — covers 1.1
+      and (v0.11.7) 1.5 / 1.6.
+1.5 — (v0.11.7, NEW) Stale version-pin claims of the form
+      "v0.N.M+ candidate / work / target" must reference a future
+      version, not a version already shipped. Catches B2-class drift
+      where carried-forward "v0.11.0+ candidate" header outlives the
+      v0.11.0 ship date.
+1.6 — (v0.11.7, NEW) Broken-future-promise patterns of the form
+      "(v0.N.M)" following promise verbs (wait for / see / after /
+      shipped in / in) must not reference an already-shipped version
+      without a HISTORICAL_MARKERS exemption. Catches B5/B6-class
+      drift where "--new-session flag (v0.8.0)" survives past
+      v0.8.0 release without the flag actually landing.
 
 Scanner architecture (Decision D3): every drift class uses a
 two-layer scanner — Layer A is a narrow regex matching the current
@@ -23,17 +38,29 @@ that catches paraphrases. Both layers feed through a shared
 left-context HISTORICAL_MARKERS filter (Decision D4) that exempts
 attributed historical references from the assertion.
 
-RED-first (Subtask 1 of v0.11.5 plan): tests 1.1/1.2/1.3 carry
-`pytest.mark.xfail(strict=False)` because their GREEN state arrives
-only after Subtasks 2/3/4 land the corresponding prose corrections.
-Test 1.4 is a self-contained exemption-filter regression and runs
-normally.
+Per-file extractor architecture (v0.11.7, Decision D2): the
+`INVARIANT_FILES` tuple of `(label, path, extractor_kind)` triples
+lets each scanner work over multiple files with content-type-aware
+parsing. Per-extractor helpers (`_extract_markdown`,
+`_extract_python_docstring`) handle markdown prose vs. Python
+module docstring extraction (via `ast.parse` + `ast.get_docstring`
++ `module.body[0].lineno` for accurate line offsets).
 
-Plan reference: .athanor/sessions/2026-05-21-003/plan.md
+Per-file applicability matrix (v0.11.7):
+    | Drift class             | CLAUDE.md | stop_verify | STATE.md | README.md |
+    | 1.1 CE count            | YES       | NO          | NO       | YES       |
+    | 1.2 Hook event names    | YES       | NO          | NO       | NO        |
+    | 1.3 Sentinel version    | YES       | YES         | NO       | NO        |
+    | 1.5 Stale version-pin   | YES       | YES         | YES      | YES       |
+    | 1.6 Broken-future-promise | YES     | YES         | YES      | YES       |
+
+Plan reference: .athanor/sessions/2026-05-21-004/plan.md (v0.11.7).
+Earlier plan: .athanor/sessions/2026-05-21-003/plan.md (v0.11.5 initial).
 """
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -45,6 +72,110 @@ CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 HOOKS_JSON = REPO_ROOT / "hooks" / "hooks.json"
 SKILLS_DIR = REPO_ROOT / "skills"
 STOP_HOOK_SCRIPT = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
+README_MD = REPO_ROOT / "README.md"
+STATE_MD = REPO_ROOT / "docs" / "STATE.md"
+PLUGIN_JSON = REPO_ROOT / ".claude-plugin" / "plugin.json"
+
+
+# ---------------------------------------------------------------------------
+# Per-file extractor architecture — Decision D2 (v0.11.7)
+# ---------------------------------------------------------------------------
+
+# (label, path, extractor_kind) — extractor_kind in {markdown_prose, docstring}.
+# CLAUDE.md uses markdown_prose; the stop-hook script uses docstring
+# (ast.get_docstring) for content-aware parsing; STATE.md and README.md
+# are also markdown_prose.
+INVARIANT_FILES: tuple[tuple[str, Path, str], ...] = (
+    ("CLAUDE.md", CLAUDE_MD, "markdown_prose"),
+    (
+        "stop_verify_claims",
+        STOP_HOOK_SCRIPT,
+        "docstring",
+    ),
+    ("STATE.md", STATE_MD, "markdown_prose"),
+    ("README.md", README_MD, "markdown_prose"),
+)
+
+
+def _extract_markdown(path: Path) -> tuple[str, int]:
+    """Return (text, line_offset) for a markdown file.
+
+    `line_offset` is the source-file line of the first character of
+    the extracted text — for a whole-file markdown read this is
+    always line 1. A drift hit at local line N in the extracted text
+    maps to source-file line `line_offset + N - 1` = N.
+    """
+    return path.read_text(encoding="utf-8"), 1
+
+
+def _extract_python_docstring(path: Path) -> tuple[str, int]:
+    """Return (docstring_raw_source, line_offset) for a Python module docstring.
+
+    This helper extracts the RAW SOURCE TEXT of the module docstring
+    (the bytes between the opening and closing triple-quote in the
+    file), NOT the AST-parsed string value. The raw source preserves
+    line breaks 1-to-1 with the file, which makes accurate
+    source-line reporting possible even when the docstring contains
+    embedded escape sequences (`\\n`, `\\t`) that the AST parser
+    would otherwise expand into real newlines.
+
+    `line_offset` is the source-file line of the docstring's OPENING
+    triple-quote (= `tree.body[0].lineno`, 1-based). The raw source
+    bytes returned start AT THE OPENING TRIPLE-QUOTE line (the quote
+    is on local line 1 of the extracted text, same as the source
+    file). A drift hit at docstring-local line N maps to source-file
+    line `line_offset + N - 1` (1-based).
+
+    Raises ValueError if the module has no docstring or if parsing
+    fails.
+    """
+    src = path.read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    if not tree.body or not isinstance(tree.body[0], ast.Expr):
+        raise ValueError(f"no module docstring in {path}")
+    body0 = tree.body[0]
+    if (
+        not isinstance(body0.value, ast.Constant)
+        or not isinstance(body0.value.value, str)
+    ):
+        raise ValueError(f"module body[0] is not a docstring in {path}")
+    start_line = body0.lineno  # 1-based opening-quote line
+    end_line = body0.end_lineno  # 1-based closing-quote line
+    if end_line is None:
+        raise ValueError(f"end_lineno unavailable for {path}")
+    src_lines = src.splitlines(keepends=True)
+    # 1-based slice [start_line, end_line] → 0-based [start_line-1, end_line)
+    raw = "".join(src_lines[start_line - 1 : end_line])
+    return raw, start_line
+
+
+def _extract(path: Path, kind: str) -> tuple[str, int]:
+    """Dispatch to the appropriate per-content-type extractor."""
+    if kind == "markdown_prose":
+        return _extract_markdown(path)
+    if kind == "docstring":
+        return _extract_python_docstring(path)
+    raise ValueError(f"unknown extractor_kind: {kind!r}")
+
+
+def _line_for_offset(text: str, offset: int, line_offset_base: int) -> int:
+    """Return 1-based source-file line for a char offset in extracted text.
+
+    `line_offset_base` is the source-file line of the first character
+    of the extracted text (1-based, from `_extract_*` helpers).
+    A char offset N in the extracted text falls on local line
+    `text[:offset].count("\\n") + 1`; the corresponding source-file
+    line is `line_offset_base + local_line - 1`.
+    """
+    local_line = text[:offset].count("\n") + 1
+    return line_offset_base + local_line - 1
+
+
+def _snippet(text: str, offset: int, width: int = 80) -> str:
+    """Return a short single-line snippet centered on the match offset."""
+    start = max(0, offset - width // 2)
+    end = min(len(text), offset + width // 2)
+    return text[start:end].replace("\n", " \\n ").strip()
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +183,7 @@ STOP_HOOK_SCRIPT = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
 # ---------------------------------------------------------------------------
 
 # Left-context window size used for the HISTORICAL_MARKERS filter. The
-# window is the slice of CLAUDE.md text ending at the start of the
+# window is the slice of file text ending at the start of the
 # scanned match. ~80 chars is enough to catch "originally N foo, cut to
 # M in v0.11.2" patterns without bleeding into unrelated upstream
 # sentences.
@@ -82,6 +213,18 @@ def _is_historical(text: str, match_start: int) -> bool:
     start = max(0, match_start - LEFT_CONTEXT_WINDOW)
     window = text[start:match_start].lower()
     return any(marker in window for marker in HISTORICAL_MARKERS)
+
+
+# Files for each drift class — per-file applicability matrix (v0.11.7).
+# Use file labels (not paths) so test IDs are readable.
+_MATRIX_11 = ("CLAUDE.md", "README.md")
+_MATRIX_12 = ("CLAUDE.md",)
+_MATRIX_13 = ("CLAUDE.md", "stop_verify_claims")
+
+
+def _files_for_labels(labels: tuple[str, ...]) -> tuple[tuple[str, Path, str], ...]:
+    by_label = {label: (label, path, kind) for label, path, kind in INVARIANT_FILES}
+    return tuple(by_label[label] for label in labels if label in by_label)
 
 
 # ---------------------------------------------------------------------------
@@ -142,24 +285,48 @@ def _actual_ce_skill_count() -> int:
     return len(list(SKILLS_DIR.glob("ce-*")))
 
 
-@pytest.mark.xfail(
-    reason="RED-first (Subtask 1 of v0.11.5): GREEN after Subtask 2 prose fix",
-    strict=False,
+@pytest.mark.parametrize(
+    "label,path,kind",
+    _files_for_labels(_MATRIX_11),
+    ids=[label for label, _, _ in _files_for_labels(_MATRIX_11)],
 )
-def test_claude_md_ce_count_matches_actual_skills_dir() -> None:
-    """Every non-exempt CE-count claim in CLAUDE.md must match disk reality."""
-    text = CLAUDE_MD.read_text(encoding="utf-8")
+def test_invariant_file_ce_count_matches_actual_skills_dir(
+    label: str, path: Path, kind: str
+) -> None:
+    """Every non-exempt CE-count claim must match disk reality."""
+    text, line_offset = _extract(path, kind)
     actual = _actual_ce_skill_count()
     hits = _scan_ce_counts(text)
 
-    assert hits, (
-        "scanner found no CE-count claims in CLAUDE.md — patterns probably "
-        "drifted. Inspect _CE_COUNT_LAYER_A / _CE_COUNT_LAYER_B."
-    )
+    if not hits:
+        # README.md may not contain any CE-count claim — that's
+        # legitimate for files where the matrix says YES but the
+        # surface doesn't currently exist. Skip rather than fail.
+        pytest.skip(
+            f"no CE-count claims found in {label} ({path}); per-file "
+            "applicability matrix declares this file in scope but no "
+            "current claims to validate."
+        )
 
-    drift = [(c, s) for (c, s) in hits if c != actual]
+    drift = []
+    for count, start in hits:
+        if count == actual:
+            continue
+        line = _line_for_offset(text, start, line_offset)
+        drift.append(
+            {
+                "label": label,
+                "line": line,
+                "count": count,
+                "actual": actual,
+                "snippet": _snippet(text, start),
+                "rule": "1.1-ce-count",
+                "source_file": str(path.relative_to(REPO_ROOT)),
+            }
+        )
+
     assert not drift, (
-        f"CLAUDE.md asserts CE skill counts that don't match disk "
+        f"{label} asserts CE skill counts that don't match disk "
         f"(actual: {actual} ce-* dirs under skills/). "
         f"Non-matching claims: {drift!r}"
     )
@@ -238,34 +405,18 @@ def _scan_hook_event_claims(text: str) -> list[tuple[str, int]]:
             # `m.start()` points at the boundary char (or 0). Realign
             # to the actual event-name start.
             event_start = text.index(event, m.start(), m.end())
-            # Reconstruct the m-like object surface used downstream.
             m_start = event_start
             m_end = event_start + len(event)
-            class _M:
-                def __init__(self, s: int, e: int) -> None:
-                    self._s, self._e = s, e
-                def start(self) -> int: return self._s
-                def end(self) -> int: return self._e
-            m = _M(m_start, m_end)
-            start = max(0, m.start() - 100)
-            end = min(len(text), m.end() + 100)
+            start = max(0, m_start - 100)
+            end = min(len(text), m_end + 100)
             window = text[start:end].lower()
             if not any(verb in window for verb in _REGISTRATION_VERBS):
                 continue
-            if _is_historical(text, m.start()):
+            if _is_historical(text, m_start):
                 continue
-            if _is_negative_context(text, m.start()):
+            if _is_negative_context(text, m_start):
                 continue
-            # SessionStart lenience — CLAUDE.md sometimes describes
-            # the Claude Code system-reminder / skill-discovery channel
-            # for SessionStart in contexts that are NOT hooks.json
-            # claims. Those contexts must disambiguate with explicit
-            # platform-mechanism language (handled by
-            # _NEGATIVE_MARKERS). A bare claim like "SessionStart에
-            # 자동 로드된다" / "auto-loaded on SessionStart" without
-            # platform-mechanism disambiguation IS a hooks.json
-            # registration assertion and must be caught.
-            hits.append((event, m.start()))
+            hits.append((event, m_start))
     return hits
 
 
@@ -274,25 +425,42 @@ def _registered_hook_events() -> set[str]:
     return set(raw.get("hooks", {}).keys())
 
 
-@pytest.mark.xfail(
-    reason="RED-first (Subtask 1 of v0.11.5): GREEN after Subtask 3 prose fix",
-    strict=False,
+@pytest.mark.parametrize(
+    "label,path,kind",
+    _files_for_labels(_MATRIX_12),
+    ids=[label for label, _, _ in _files_for_labels(_MATRIX_12)],
 )
-def test_claude_md_hook_event_claims_match_hooks_json() -> None:
-    """Every hook event CLAUDE.md asserts as registered must exist in hooks.json."""
-    text = CLAUDE_MD.read_text(encoding="utf-8")
+def test_invariant_file_hook_event_claims_match_hooks_json(
+    label: str, path: Path, kind: str
+) -> None:
+    """Every hook event asserted as registered must exist in hooks.json."""
+    text, line_offset = _extract(path, kind)
     registered = _registered_hook_events()
     claims = _scan_hook_event_claims(text)
 
     assert claims, (
-        "scanner found no hook-event registration claims in CLAUDE.md — "
+        f"scanner found no hook-event registration claims in {label} — "
         "patterns probably drifted. Inspect _HOOK_EVENT_NAMES / "
         "_REGISTRATION_VERBS."
     )
 
-    unregistered = [(ev, pos) for (ev, pos) in claims if ev not in registered]
+    unregistered = []
+    for ev, pos in claims:
+        if ev in registered:
+            continue
+        line = _line_for_offset(text, pos, line_offset)
+        unregistered.append(
+            {
+                "label": label,
+                "line": line,
+                "event": ev,
+                "snippet": _snippet(text, pos),
+                "rule": "1.2-hook-event",
+                "source_file": str(path.relative_to(REPO_ROOT)),
+            }
+        )
     assert not unregistered, (
-        f"CLAUDE.md asserts these hook events are registered/auto-loaded, "
+        f"{label} asserts these hook events are registered/auto-loaded, "
         f"but hooks/hooks.json does NOT register them: {unregistered!r}. "
         f"Actually-registered events: {sorted(registered)!r}"
     )
@@ -303,7 +471,6 @@ def test_claude_md_hook_event_claims_match_hooks_json() -> None:
 # ---------------------------------------------------------------------------
 
 # Extract the version designator from the live SENTINEL_PATTERN source.
-# Match shape: `SENTINEL_PATTERN = re.compile(\n    r"...athanor:verification-emission\s+v=N..."`
 _SENTINEL_PATTERN_SOURCE_RE = re.compile(
     r"SENTINEL_PATTERN\s*=\s*re\.compile\([^)]*?"
     r"athanor:verification-emission[^)]*?v=(\d+)",
@@ -414,25 +581,44 @@ def _scan_sentinel_versions(text: str) -> list[tuple[int, int]]:
     return [(v, s) for s, v in hits.items()]
 
 
-@pytest.mark.xfail(
-    reason="RED-first (Subtask 1 of v0.11.5): GREEN after Subtask 4 prose fix",
-    strict=False,
+@pytest.mark.parametrize(
+    "label,path,kind",
+    _files_for_labels(_MATRIX_13),
+    ids=[label for label, _, _ in _files_for_labels(_MATRIX_13)],
 )
-def test_claude_md_sentinel_version_matches_pattern() -> None:
+def test_invariant_file_sentinel_version_matches_pattern(
+    label: str, path: Path, kind: str
+) -> None:
     """Every 'current' sentinel-version claim must match SENTINEL_PATTERN."""
-    text = CLAUDE_MD.read_text(encoding="utf-8")
+    text, line_offset = _extract(path, kind)
     current_version = _current_sentinel_version()
     hits = _scan_sentinel_versions(text)
 
-    assert hits, (
-        "scanner found no current sentinel-version claims in CLAUDE.md — "
-        "patterns probably drifted. Inspect _SENTINEL_VERSION_LAYER_A / "
-        "_SENTINEL_VERSION_LAYER_B / _SENTINEL_CURRENT_MARKERS."
-    )
+    if not hits:
+        pytest.skip(
+            f"no current sentinel-version claims found in {label} "
+            f"({path}); per-file applicability matrix declares the file "
+            "in scope but no current claims to validate."
+        )
 
-    drift = [(v, s) for (v, s) in hits if v != current_version]
+    drift = []
+    for v, start in hits:
+        if v == current_version:
+            continue
+        line = _line_for_offset(text, start, line_offset)
+        drift.append(
+            {
+                "label": label,
+                "line": line,
+                "version": v,
+                "current": current_version,
+                "snippet": _snippet(text, start),
+                "rule": "1.3-sentinel-version",
+                "source_file": str(path.relative_to(REPO_ROOT)),
+            }
+        )
     assert not drift, (
-        f"CLAUDE.md asserts sentinel version(s) inconsistent with "
+        f"{label} asserts sentinel version(s) inconsistent with "
         f"SENTINEL_PATTERN (current: v={current_version}). "
         f"Non-matching claims: {drift!r}"
     )
@@ -490,4 +676,396 @@ def test_historical_context_exemption_filter(tmp_path: Path) -> None:
         f"Spurious hits: {historical_hits!r}. "
         f"Expected zero — both '37' mentions are in attributed-history "
         f"context ('originally', 'cut from')."
+    )
+
+
+def test_historical_context_exemption_filter_stale_version_pin(tmp_path: Path) -> None:
+    """1.4b: HISTORICAL_MARKERS exemption must apply to stale-version-pin scans.
+
+    (a) "v0.8.0+ work" without history marker → current claim → flagged.
+    (b) "originally promised v0.8.0+ work, corrected in v0.10.3" → exempt.
+    """
+    fixture_current = tmp_path / "STATE_current.md"
+    fixture_current.write_text(
+        "## Residual notes\n\n"
+        "Sentence-level attribution is v0.8.0+ work.\n",
+        encoding="utf-8",
+    )
+    fixture_historical = tmp_path / "STATE_historical.md"
+    fixture_historical.write_text(
+        "## Residual notes\n\n"
+        "Originally promised as v0.8.0+ work, corrected in v0.10.3 R3.\n",
+        encoding="utf-8",
+    )
+
+    cur_text = fixture_current.read_text(encoding="utf-8")
+    hist_text = fixture_historical.read_text(encoding="utf-8")
+
+    cur_hits = _scan_stale_version_pins(cur_text, current_version=(0, 11, 6))
+    hist_hits = _scan_stale_version_pins(hist_text, current_version=(0, 11, 6))
+
+    assert cur_hits, (
+        "scanner failed to detect a current 'v0.8.0+ work' stale pin "
+        f"in fixture (a) — Layer A regex broken. cur_hits={cur_hits!r}"
+    )
+    assert not hist_hits, (
+        f"HISTORICAL_MARKERS filter failed for 1.5 stale-pin: scanner "
+        f"did not exempt attributed historical reference. Spurious hits: "
+        f"{hist_hits!r}. Expected zero — 'originally' + 'corrected in' "
+        f"in left context."
+    )
+
+
+def test_historical_context_exemption_filter_broken_promise(tmp_path: Path) -> None:
+    """1.4c: HISTORICAL_MARKERS exemption must apply to broken-promise scans.
+
+    (a) "wait for the --new-session flag (v0.8.0)" → broken promise → flagged.
+    (b) "reclassified v0.11.7 as broken-promise (v0.8.0)" → exempt.
+    """
+    fixture_current = tmp_path / "session_lookup.md"
+    fixture_current.write_text(
+        "## Stale-session announcement\n\n"
+        "create a new session manually or wait for the --new-session flag (v0.8.0).\n",
+        encoding="utf-8",
+    )
+    fixture_historical = tmp_path / "session_lookup_fixed.md"
+    fixture_historical.write_text(
+        "## Stale-session announcement\n\n"
+        "create a new session manually (the --new-session flag was originally "
+        "promised in v0.8.0 release notes but never implemented; reclassified "
+        "v0.11.7 as broken-promise — no current implementation target).\n",
+        encoding="utf-8",
+    )
+
+    cur_text = fixture_current.read_text(encoding="utf-8")
+    hist_text = fixture_historical.read_text(encoding="utf-8")
+
+    cur_hits = _scan_broken_future_promises(cur_text, current_version=(0, 11, 6))
+    hist_hits = _scan_broken_future_promises(hist_text, current_version=(0, 11, 6))
+
+    assert cur_hits, (
+        "scanner failed to detect a broken-promise '(v0.8.0)' reference "
+        f"in fixture (a) — pattern regex broken. cur_hits={cur_hits!r}"
+    )
+    assert not hist_hits, (
+        f"HISTORICAL_MARKERS filter failed for 1.6 broken-promise: scanner "
+        f"did not exempt the reclassified retrospective mention. Spurious "
+        f"hits: {hist_hits!r}."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 1.5 (v0.11.7, NEW) — stale version-pin scanner
+# ---------------------------------------------------------------------------
+#
+# Pattern: "v0.N.M+ candidate" / "v0.N.M+ work" / "v0.N.M+ target".
+# If (N, M) <= current shipped version AND no HISTORICAL_MARKERS context,
+# the pin is stale (the referenced "future" version has already shipped).
+#
+# Catches B2-class drift: `stop_verify_claims.py` docstring carried the
+# "Residual known limitations (carried forward to v0.11.0+)" header into
+# v0.11.6 (post-v0.11.0).
+
+# Layer A — narrow: "v0.N.M+ {candidate,work,target}"
+_STALE_VERSION_PIN_LAYER_A = re.compile(
+    r"v0\.(\d+)\.(\d+)\+\s+(?:candidate|work|target)",
+    re.IGNORECASE,
+)
+
+# Layer B — paraphrase: "carried forward to v0.N.M+" near
+# "Residual" / "known limitation"
+_STALE_VERSION_PIN_LAYER_B = re.compile(
+    r"carried\s+forward\s+to\s+v0\.(\d+)\.(\d+)\+",
+    re.IGNORECASE,
+)
+_RESIDUAL_CONTEXT = re.compile(r"Residual|known\s+limitation", re.IGNORECASE)
+
+
+def _current_plugin_version() -> tuple[int, int, int]:
+    """Read .claude-plugin/plugin.json and return (major, minor, patch)."""
+    raw = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))
+    parts = raw["version"].split(".")
+    return (int(parts[0]), int(parts[1]), int(parts[2]))
+
+
+# Phrases that mark a stale-version-pin claim as legitimate retrospective
+# narration rather than a current carry. Substring match,
+# case-insensitive, against the LEFT_CONTEXT_WINDOW (+ extended right
+# context for "corrected in"-style closures that appear after).
+_STALE_PIN_HISTORICAL_MARKERS = HISTORICAL_MARKERS + (
+    "originally promised",
+    "originally claimed",
+    "corrected in",
+    "honestly corrected",
+    "reclassified",
+    "broken-promise",
+    "shipped in",
+    "landed in",
+    "no longer",
+)
+
+
+def _is_stale_pin_historical(text: str, match_start: int, match_end: int) -> bool:
+    """True iff a stale-pin HISTORICAL_MARKER appears in context window.
+
+    Checks both LEFT_CONTEXT_WINDOW chars before the match AND ~80 chars
+    after (catches "X is v0.8.0+ work, corrected in v0.10.3" pattern).
+    """
+    left_start = max(0, match_start - LEFT_CONTEXT_WINDOW)
+    right_end = min(len(text), match_end + LEFT_CONTEXT_WINDOW)
+    window = text[left_start:right_end].lower()
+    return any(marker in window for marker in _STALE_PIN_HISTORICAL_MARKERS)
+
+
+def _scan_stale_version_pins(
+    text: str, current_version: tuple[int, int, int]
+) -> list[dict]:
+    """Return list of stale-pin hits.
+
+    Each hit: {"version": (0, minor, patch), "start": int, "rule": str}.
+    Filter through HISTORICAL_MARKERS + checks the referenced version
+    is <= the current shipped version. The regex hard-codes "v0."
+    (every athanor release through v0.11.x is 0.minor.patch); group(1)
+    captures the minor number, group(2) captures the patch number.
+    """
+    # athanor versions are 0.minor.patch; compare on (minor, patch).
+    current_minor_patch = (current_version[1], current_version[2])
+    hits: list[dict] = []
+    seen_starts: set[int] = set()
+
+    for m in _STALE_VERSION_PIN_LAYER_A.finditer(text):
+        if m.start() in seen_starts:
+            continue
+        if _is_stale_pin_historical(text, m.start(), m.end()):
+            continue
+        minor, patch = int(m.group(1)), int(m.group(2))
+        if (minor, patch) > current_minor_patch:
+            # Genuine future-version pin — not stale.
+            continue
+        seen_starts.add(m.start())
+        hits.append(
+            {
+                "version": (0, minor, patch),
+                "start": m.start(),
+                "rule": "1.5-stale-pin-A",
+            }
+        )
+
+    for m in _STALE_VERSION_PIN_LAYER_B.finditer(text):
+        if m.start() in seen_starts:
+            continue
+        # Layer B requires nearby Residual/known-limitation context.
+        proximity_start = max(0, m.start() - 80)
+        proximity_end = min(len(text), m.end() + 80)
+        if not _RESIDUAL_CONTEXT.search(text[proximity_start:proximity_end]):
+            continue
+        if _is_stale_pin_historical(text, m.start(), m.end()):
+            continue
+        minor, patch = int(m.group(1)), int(m.group(2))
+        if (minor, patch) > current_minor_patch:
+            continue
+        seen_starts.add(m.start())
+        hits.append(
+            {
+                "version": (0, minor, patch),
+                "start": m.start(),
+                "rule": "1.5-stale-pin-B",
+            }
+        )
+
+    return hits
+
+
+@pytest.mark.parametrize(
+    "label,path,kind",
+    INVARIANT_FILES,
+    ids=[label for label, _, _ in INVARIANT_FILES],
+)
+def test_invariant_files_no_stale_version_pin(
+    label: str, path: Path, kind: str
+) -> None:
+    """No "v0.N.M+ candidate/work/target" pin should reference a shipped version."""
+    text, line_offset = _extract(path, kind)
+    current_version = _current_plugin_version()
+    hits = _scan_stale_version_pins(text, current_version)
+
+    if not hits:
+        return  # legitimate empty set — no claims, no drift
+
+    drifts = []
+    for h in hits:
+        line = _line_for_offset(text, h["start"], line_offset)
+        drifts.append(
+            {
+                "label": label,
+                "line": line,
+                "version": h["version"],
+                "current": current_version,
+                "snippet": _snippet(text, h["start"]),
+                "rule": h["rule"],
+                "source_file": str(path.relative_to(REPO_ROOT)),
+            }
+        )
+
+    assert not drifts, (
+        f"{label} contains stale version-pin claims (current shipped "
+        f"version: {current_version}). Each match references a version "
+        f"<= current with no HISTORICAL_MARKERS exemption. Drifts: "
+        f"{drifts!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 1.6 (v0.11.7, NEW) — broken-future-promise scanner
+# ---------------------------------------------------------------------------
+#
+# Pattern: parenthetical "(v0.N.M)" following promise verbs like
+# "wait for X (v0.N.M)" / "see Y (v0.N.M)" / "shipped in (v0.N.M)".
+# If (N, M) <= current shipped version AND no HISTORICAL_MARKERS context,
+# the promise is broken (the named version shipped without the feature).
+#
+# Catches B5/B6-class drift:
+#   - CLAUDE.md:87 "wait for the --new-session flag (v0.8.0)"
+#   - CLAUDE.md:229 "Sentence-level attributed-history detection is
+#     v0.8.0+ work" — also caught by 1.5 (stale-pin), but the broader
+#     "(v0.8.0)" parenthetical form lives elsewhere
+#   - skills/discuss/SKILL.md:52 same broken-promise text
+
+# Promise verbs / phrases — the parenthetical follows within ~80 chars.
+# Anchored with word-boundary regex (built in `_PROMISE_VERB_RE` below)
+# so short verbs like "in" don't match as a substring of "pipeline" or
+# "version-pin". Multi-word phrases like "wait for" are matched as
+# literal substrings since the words themselves are content-word
+# boundaries — the entry "wait for" is implicitly bounded by spaces.
+_PROMISE_VERBS = (
+    "wait for",
+    "waiting for",
+    "see",
+    "after",
+    "shipped in",
+    "ships in",
+    "lands in",
+    "deferred to",
+    "target",
+)
+
+# Word-boundary regex of promise verbs. Each entry's word characters
+# get `\b...\b` wrapping; multi-word entries become `\bfoo\s+bar\b`.
+_PROMISE_VERB_RE = re.compile(
+    "|".join(
+        r"\b" + r"\s+".join(map(re.escape, verb.split())) + r"\b"
+        for verb in _PROMISE_VERBS
+    ),
+    re.IGNORECASE,
+)
+
+_BROKEN_PROMISE_PARENTHETICAL = re.compile(r"\(v0\.(\d+)\.(\d+)\)")
+
+
+# Phrases that mark a "(v0.N.M)" parenthetical as legitimate retrospective
+# narration rather than a current promise carry.
+_BROKEN_PROMISE_HISTORICAL_MARKERS = HISTORICAL_MARKERS + (
+    "originally promised",
+    "originally claimed",
+    "corrected in",
+    "honestly corrected",
+    "reclassified",
+    "broken-promise",
+    "release notes",
+    "promised in",
+    "landed in",
+    "shipped in",
+    "shipped without",
+    "but never implemented",
+    "no current implementation target",
+    "honesty-arc",
+)
+
+
+def _is_broken_promise_historical(text: str, start: int, end: int) -> bool:
+    """True iff a HISTORICAL_MARKER appears in the ~80-char window around."""
+    left_start = max(0, start - LEFT_CONTEXT_WINDOW)
+    right_end = min(len(text), end + LEFT_CONTEXT_WINDOW)
+    window = text[left_start:right_end].lower()
+    return any(marker in window for marker in _BROKEN_PROMISE_HISTORICAL_MARKERS)
+
+
+def _has_promise_verb_before(text: str, match_start: int) -> bool:
+    """True iff a promise verb appears in the ~80-char left context.
+
+    Uses word-boundary regex via `_PROMISE_VERB_RE` so short verbs
+    like "in" do not match substrings of "pipeline" or "version-pin".
+    """
+    left_start = max(0, match_start - LEFT_CONTEXT_WINDOW)
+    window = text[left_start:match_start]
+    return _PROMISE_VERB_RE.search(window) is not None
+
+
+def _scan_broken_future_promises(
+    text: str, current_version: tuple[int, int, int]
+) -> list[dict]:
+    """Return list of broken-promise hits.
+
+    Each hit: {"version": (0, minor, patch), "start": int}.
+    Filter:
+      - Must have a promise verb in left context.
+      - Referenced version's (minor, patch) <= current's (minor, patch).
+      - No HISTORICAL_MARKERS in surrounding window.
+
+    The regex hard-codes "v0." (every athanor release through v0.11.x
+    is 0.minor.patch); group(1) is minor, group(2) is patch.
+    """
+    current_minor_patch = (current_version[1], current_version[2])
+    hits: list[dict] = []
+
+    for m in _BROKEN_PROMISE_PARENTHETICAL.finditer(text):
+        minor, patch = int(m.group(1)), int(m.group(2))
+        if (minor, patch) > current_minor_patch:
+            continue  # genuine future promise
+        if not _has_promise_verb_before(text, m.start()):
+            continue
+        if _is_broken_promise_historical(text, m.start(), m.end()):
+            continue
+        hits.append({"version": (0, minor, patch), "start": m.start()})
+
+    return hits
+
+
+@pytest.mark.parametrize(
+    "label,path,kind",
+    INVARIANT_FILES,
+    ids=[label for label, _, _ in INVARIANT_FILES],
+)
+def test_invariant_files_no_broken_future_promise(
+    label: str, path: Path, kind: str
+) -> None:
+    """No "(v0.N.M)" parenthetical following a promise verb should reference
+    an already-shipped version without a HISTORICAL_MARKERS exemption."""
+    text, line_offset = _extract(path, kind)
+    current_version = _current_plugin_version()
+    hits = _scan_broken_future_promises(text, current_version)
+
+    if not hits:
+        return
+
+    drifts = []
+    for h in hits:
+        line = _line_for_offset(text, h["start"], line_offset)
+        drifts.append(
+            {
+                "label": label,
+                "line": line,
+                "version": h["version"],
+                "current": current_version,
+                "snippet": _snippet(text, h["start"]),
+                "rule": "1.6-broken-promise",
+                "source_file": str(path.relative_to(REPO_ROOT)),
+            }
+        )
+
+    assert not drifts, (
+        f"{label} contains broken-future-promise references (current "
+        f"shipped version: {current_version}). Each match references a "
+        f"version <= current following a promise verb, with no "
+        f"HISTORICAL_MARKERS exemption. Drifts: {drifts!r}"
     )

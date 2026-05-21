@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -55,6 +56,23 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SENTINEL_HELPER = REPO_ROOT / "scripts" / "hooks" / "sentinel_helper.py"
 STOP_VERIFY_CLAIMS = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
+HOOK_STATE_DIR = REPO_ROOT / ".athanor" / "sessions" / "active" / ".hook-state"
+
+
+@pytest.fixture(autouse=True)
+def _clean_hook_state():
+    """Clean REPO_ROOT .athanor/sessions/active/.hook-state/ before+after each test.
+
+    v0.11.6 tests use cwd=tmp_path for all sentinel emits, so REPO_ROOT
+    state should not be polluted — but this autouse fixture preempts
+    fragility if any future test forgets `cwd=` and silently writes into
+    REPO_ROOT. Pattern mirrors tests/test_regression_v011_3_stop_hook_input_layer.py.
+    """
+    if HOOK_STATE_DIR.exists():
+        shutil.rmtree(HOOK_STATE_DIR, ignore_errors=True)
+    yield
+    if HOOK_STATE_DIR.exists():
+        shutil.rmtree(HOOK_STATE_DIR, ignore_errors=True)
 
 
 def _emit_sentinel(body: str, cwd: Path) -> tuple[int, str, str]:
