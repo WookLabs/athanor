@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.11.5",
-  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of compound-engineering 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 (13 sp-*) under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. v0.11.5 closes the documentation drift class as the companion to v0.11.3's input-layer fix and v0.11.4's deployment-path fix — CLAUDE.md / README.md prose corrected (CE count 37 → 33, SessionStart hook fiction, v=1 → v=2 sentinel doc lag) and drift-class regression test infrastructure shipped (`tests/test_regression_v011_5_claude_md_invariants.py`) so prose drift becomes a testable invariant. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
+  "version": "0.11.6",
+  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of compound-engineering 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 (13 sp-*) under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. v0.11.6 closes the v=2 sentinel hash-binding round-trip — 4th layer of the v0.11.3/4/5 companion-fix arc (script + path + doc drift + sentinel binding). Body now normalized via .strip() on both helper-emit and script-validate so heredoc trailing-newline differences no longer cause hash mismatch. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
   "author": {
     "name": "WookLabs"
   },

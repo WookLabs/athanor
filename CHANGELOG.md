@@ -3,6 +3,128 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.6] — 2026-05-21
+
+**Sentinel body-hash binding fix — companion to v0.11.3/4/5 arc.**
+The 4th and (for now) last layer of the latent-bug arc — v=2 sentinel
+protocol's hash-binding round-trip was broken since v0.7.9 introduction.
+`scripts/hooks/sentinel_helper.py emit` hashes the body it reads from
+stdin (typically with a trailing `\n` from heredoc input);
+`scripts/hooks/stop_verify_claims.py validate_emission_sentinel()`
+extracts the body from the model's response in transcript JSONL and
+hashes that. Claude Code transcript capture **strips trailing whitespace**
+on response storage — so helper hashes N+1 bytes while script hashes N
+bytes for the same logical body. Empirically diagnosed in this release
+session: piped body 1744 bytes vs transcript-captured body 1743 bytes,
+exact 1-byte trailing-newline diff. The mismatch caused the
+verification skill to ALWAYS body-hash-mismatch in the
+v0.11.3-introduced production path, despite documented v=2 nonce-bound
+forgery protection.
+
+### Honesty arc
+
+The bug was documented as `Residual known limitation` since v0.7.9 and
+carried forward through v0.11.5 as "v0.11.0+ candidate". That
+classification itself was an honesty-arc violation — a documented bug
+that doesn't behave per its documented contract is a *bug*, not an
+*enhancement candidate*. v0.11.6 closes both the technical bug and the
+classification drift.
+
+### Companion-fix arc — 4 layers closed
+
+| Layer | Release | Bug |
+|---|---|---|
+| Runtime stdin parser shape | v0.11.3 | script wrong |
+| Hook command path resolution | v0.11.4 | path wrong |
+| CLAUDE.md doc drift class | v0.11.5 | doc untestable claims |
+| **Sentinel body-hash binding** | **v0.11.6** | **trailing-whitespace round-trip mismatch** |
+
+Shared meta-cause: source-repo-only manual testing hid bugs at each
+layer simultaneously. v0.11.6 also exposes the meta-bug — that
+"documented known limitation" can be a category that hides honest
+bugs from accountability. Future "documented but unfixed" entries
+should be either reclassified as bugs or have explicit fix-priority
+labels.
+
+### Fixed
+
+- `scripts/hooks/sentinel_helper.py emit()` — body normalized via
+  `.strip()` before SHA-256 hashing (1-line change at line 64). Helper
+  now hashes trailing/leading-whitespace-stripped body so heredoc
+  trailing newlines no longer cause mismatch.
+- `scripts/hooks/stop_verify_claims.py validate_emission_sentinel()` —
+  `body_canonical = body_after.strip()` replaces the old
+  `body_after.lstrip("\n")` (line 861). Symmetric with helper change.
+  Content-forgery rejection still works (verified by
+  test_content_difference_still_rejected).
+
+### Added
+
+- `tests/test_regression_v011_6_sentinel_body_normalization.py` — 5
+  tests: RED-first repro of the v0.7.9-introduced bug
+  (trailing-newline + leading-newline mismatch), byte-identical
+  baseline preservation, content-forgery rejection (security boundary),
+  helper-script normalization consistency unit test. All 5 PASS
+  after the v0.11.6 fix.
+
+### Changed
+
+- 5-file version bump 0.11.5 → 0.11.6
+  (`.claude-plugin/{plugin,marketplace}.json` version + 3 URL pins in
+  `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json`).
+- `docs/STATE.md` Current Phase → v0.11.6.
+
+### Voice (what v0.11.6 deliberately does NOT do)
+
+- Does NOT change SENTINEL_PATTERN regex shape or nonce protocol.
+  v=2 nonce-bound contract is unchanged; only the body canonicalization
+  step is normalized for whitespace tolerance.
+- Does NOT lower forgery cost. Content differences in the body still
+  produce hash mismatch and the gate fires as designed. Whitespace was
+  never a security boundary — the v=2 design's forgery-cost argument
+  is about content hash, not whitespace preservation.
+- Does NOT touch detection layers (v0.7.7 whitelist + v0.10.2
+  paraphrase regex + NFKC + Cyrillic + vendor-aware + v0.10.3 Greek/
+  Armenian + conditional + attribution suppression). All unchanged
+  and now finally exercise reliably through the v=2 sentinel gate.
+- Does NOT supersede v0.11.3/4/5. The 4-layer companion-fix arc is
+  complete with this release.
+
+### Self-violation acknowledgment
+
+For 11+ release cycles (v0.7.9 → v0.11.5), `Residual known
+limitations` block in `scripts/hooks/stop_verify_claims.py` docstring
+listed sentinel-binding brittleness as a "v0.11.0+ candidate". That
+phrasing carried the honesty-arc violation: a documented bug masked
+as enhancement-pending. v0.11.6 fixes both the bug and the
+classification drift. Future hook-affecting releases should run
+sentinel round-trip tests in a real session before claiming the
+binding works.
+
+### Migration
+
+- No user action required. Users with athanor installed pick up the
+  fix on next `/plugin marketplace update athanor`. The fix is
+  backwards-compatible: existing nonce.json state from pre-v0.11.6
+  sessions with mismatched hashes will simply expire via the
+  60-second TTL or get overwritten on next sentinel emit.
+
+### Deferred (v0.11.7+)
+
+- LOW-7 tag gap v0.7.7 → v0.11.1 backfill (release archaeology)
+- LOW-8 detection coverage via transcript_path (35+ legacy tests
+  parameterization)
+- MEDIUM-4 dangling `/ce-setup` references in 3 vendored skills
+  (T2 navigation)
+- Bolder: CLAUDE.md generate-from-manifests (Codex Reviewer
+  suggestion from v0.11.5 session)
+- Audit `Residual known limitations` block for other
+  documented-but-unfixed entries (apply v0.11.6 reclassification
+  pattern: bug vs enhancement, honest fix-priority labels)
+
+---
+
 ## [0.11.5] — 2026-05-21
 
 **Documentation honesty hardening — companion to v0.11.3+v0.11.4 runtime

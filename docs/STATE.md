@@ -4,7 +4,69 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.4 (Stop hook plugin-root path fix — deployment-path closure)
+## Current Phase: SHIPPING — v0.11.6 (Sentinel body-hash binding fix — companion-fix arc 4th layer)
+
+v=2 sentinel protocol (도입 v0.7.9)의 hash-binding round-trip이 처음부터
+broken이었음. `sentinel_helper.py emit`은 stdin 받은 body를 그대로 hash
+하지만 (typically heredoc trailing `\n` 포함, e.g. 1744 bytes), Claude
+Code transcript는 모델 응답에서 trailing whitespace를 strip해서 저장
+(1743 bytes). `stop_verify_claims.py validate_emission_sentinel()`이
+transcript에서 추출한 body를 hash → exact 1-byte 차이로 mismatch →
+sentinel always rejected → verification skill 호출이 production에서
+실제로 작동한 적 없음.
+
+11+ release cycle (v0.7.9 → v0.11.5) 동안 `Residual known limitations`
+docstring에 "v0.11.0+ candidate"로 carry. 그 분류 자체가 honesty-arc
+위반 — documented bug를 "enhancement candidate"로 mask. v0.11.6은
+기술 버그 + 분류 drift 둘 다 closure.
+
+### Companion-fix arc 4 layers
+
+| Layer | Release | Bug |
+|---|---|---|
+| 1. Runtime stdin parser shape | v0.11.3 | script wrong (last_assistant_message vs transcript_path) |
+| 2. Hook command path resolution | v0.11.4 | path wrong (relative vs ${CLAUDE_PLUGIN_ROOT}) |
+| 3. CLAUDE.md doc drift class | v0.11.5 | doc untestable claims |
+| **4. Sentinel body-hash binding** | **v0.11.6** | **trailing-whitespace round-trip mismatch** |
+
+Shared meta-cause: source-repo-only manual testing이 각 layer를 동시에
+가려둠. v0.11.6은 추가로 meta-bug도 노출 — "documented known limitation"
+이라는 분류가 honest bug를 책임에서 가릴 수 있다는 점.
+
+### v0.11.6 fix
+
+- `scripts/hooks/sentinel_helper.py emit()` (line 64): `body.encode(...)`
+  → `body.strip().encode(...)`. 1-line.
+- `scripts/hooks/stop_verify_claims.py validate_emission_sentinel()`
+  (line 861): `body_canonical = body_after.lstrip("\n")` →
+  `body_canonical = body_after.strip()`. Symmetric normalization.
+- 5 신규 regression test in
+  `tests/test_regression_v011_6_sentinel_body_normalization.py`:
+  RED-first repro (trailing + leading newline mismatch) +
+  byte-identical baseline + content-forgery rejection (security boundary
+  preserved) + helper-script normalization consistency unit test.
+  All 5 PASS after fix.
+
+### v0.11.6 ship surface
+
+- Tests: **428 passed + 4 xpassed** (423 v0.11.5 baseline + 5 new
+  v0.11.6 sentinel normalization tests).
+- Voice safety: 28 forbidden-phrase patterns → 0 hits.
+- Active executable contracts (v0.11.6 new):
+  `v011-6-sentinel-body-normalization-round-trip`,
+  `v011-6-content-forgery-still-rejected`.
+
+### v0.11.7+ deferred
+
+- LOW-7 tag gap v0.7.7 → v0.11.1 backfill (release archaeology)
+- LOW-8 detection coverage via transcript_path (35+ legacy tests
+  parameterization)
+- MEDIUM-4 dangling `/ce-setup` references (T2 navigation)
+- Bolder: CLAUDE.md generate-from-manifests architecture
+- Audit `Residual known limitations` block for other documented-but-
+  unfixed entries (apply v0.11.6 reclassification pattern)
+
+## Previous Phase: v0.11.4 (Stop hook plugin-root path fix — deployment-path closure)
 
 v0.11.3 input-layer fix delivered the correct script behavior but the
 script was only REACHABLE inside athanor's own source repo. `hooks/

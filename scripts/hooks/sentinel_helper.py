@@ -61,7 +61,15 @@ def emit() -> int:
         _stderr(f"could not read stdin: {e}")
         return 1
     nonce = secrets.token_hex(16)  # 32 hex chars
-    body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    # v0.11.6: normalize body (strip leading/trailing whitespace) before hashing
+    # so the round-trip pipe→helper→emit vs model→transcript→re-extract is
+    # tolerant of trailing-newline differences. Heredoc input typically has
+    # a trailing \n; Claude Code transcripts strip trailing whitespace on
+    # response capture. The script's validate_emission_sentinel() applies
+    # the same .strip() before hashing so both sides agree on the canonical
+    # form. Content forgery still raises hash mismatch — whitespace is not
+    # a security boundary. Companion-fix to v0.11.3/4/5 runtime+doc arc.
+    body_hash = hashlib.sha256(body.strip().encode("utf-8")).hexdigest()
     if not hook_state.write_nonce_state(ACTIVE_SESSION, nonce, body_hash):
         _stderr("could not write nonce state — sentinel will fail validation")
         return 1
