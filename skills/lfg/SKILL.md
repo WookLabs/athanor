@@ -28,6 +28,14 @@ user says "진행해", "ship this", "release this", "/athanor:lfg" — i.e.,
 hands-off execution of a software task where the user provides a feature
 description or names an in-progress branch.
 
+### v0.11.1 using-superpowers boundary
+
+Athanor's Thin Leader + planner-classified discipline applies in this
+skill context. `superpowers:using-superpowers` is loaded at SessionStart
+and its "MUST invoke before response" pressure is **advisory here** —
+discovery in athanor-native skills resolves through leader dispatch,
+not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+
 ## When NOT to invoke
 
 - For casual conversation or exploratory questions — use `/athanor:discuss`

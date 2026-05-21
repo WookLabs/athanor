@@ -2,7 +2,7 @@
 
 The boundary is documented in two places:
 1. `CLAUDE.md §Defense Mechanisms` — status table row + detail paragraph.
-2. 9 athanor-native Thin Leader SKILL.md preambles — same canonical text.
+2. 10 athanor-native Thin Leader SKILL.md preambles — same canonical text.
 
 Carve-out (intentional, per plan §Scope):
 - `scope-drift` and `verification-before-completion` occupy unprefixed
@@ -26,12 +26,13 @@ CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 VENDORED_SP_USING_SUPERPOWERS = SKILLS_DIR / "sp-using-superpowers" / "SKILL.md"
 
-# 9 native Thin Leader skills — R2 scope.
+# 10 native Thin Leader skills — R2 scope.
 NATIVE_THIN_LEADER_SKILLS = (
     "analyze",
     "debug",
     "deep-plan",
     "discuss",
+    "lfg",
     "lite-plan",
     "plan",
     "review",
@@ -102,11 +103,11 @@ def test_claude_md_boundary_uses_advisory_label():
     )
 
 
-# ---- 9 native Thin Leader SKILL.md preambles ----
+# ---- 10 native Thin Leader SKILL.md preambles ----
 
 
 def test_each_native_thin_leader_skill_has_canonical_preamble_heading():
-    """MUST (R2): each of the 9 native Thin Leader skills carries the
+    """MUST (R2): each of the 10 native Thin Leader skills carries the
     `### v0.11.1 using-superpowers boundary` heading exactly once."""
     failures: list[str] = []
     for skill_name in NATIVE_THIN_LEADER_SKILLS:

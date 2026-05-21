@@ -32,7 +32,7 @@ Documented infrastructure/output exceptions:
 
 ### Vendored (v0.10.0 absorption — see §Vendored Surface below)
 
-- `/athanor:ce-*` — 37 skills vendored from compound-engineering v3.8.3 (e.g., `/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review`, `/athanor:ce-brainstorm`, `/athanor:ce-test-browser`, `/athanor:ce-lfg`, `/athanor:ce-proof`, `/athanor:ce-strategy`, …).
+- `/athanor:ce-*` — 33 skills vendored from compound-engineering v3.8.3 (e.g., `/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review`, `/athanor:ce-brainstorm`, `/athanor:ce-test-browser`, `/athanor:ce-lfg`, `/athanor:ce-proof`, `/athanor:ce-strategy`, …).
 - `/athanor:sp-*` — 13 skills vendored from superpowers v5.1.0 (e.g., `/athanor:sp-brainstorming`, `/athanor:sp-test-driven-development`, `/athanor:sp-systematic-debugging`, `/athanor:sp-using-superpowers`, …).
 - Naming policy (D2): athanor-native skills keep the unprefixed `/athanor:<name>` slot; CE/superpowers variants are reachable via the `ce-`/`sp-` prefix.
 
@@ -110,7 +110,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
 | Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. **v0.10.0 scope:** discipline applies to athanor-native `/athanor:work` only. Vendored `/athanor:ce-work` and `/athanor:sp-test-driven-development` are OUTSIDE — users opt in by explicit invocation; CE/superpowers carry their own execution semantics. 운용 근거: `docs/STATE.md` §Current Phase. |
-| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 SessionStart에 자동 로드된다. 그 skill의 "ABSOLUTELY MUST invoke before response" / "1% chance → MUST use it" 톤은 athanor-native **9 Thin Leader skill** (analyze, debug, deep-plan, discuss, lite-plan, plan, review, setup, work) 호출 context에서는 **advisory**다. 이 영역에서는 discovery가 leader dispatch로 해소된다 (Thin Leader pattern + planner-classified discipline) — pre-response invocation check은 native context에서 advisory 안내일 뿐 강제 아님. 본 boundary는 9 skill 각각의 §Identity 직후 `### v0.11.1 using-superpowers boundary` subsection에 동일 문구로 인라인 선언됨; 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. **scope (intentional carve-outs):** (a) `scope-drift` 와 `verification-before-completion`는 unprefixed slot을 차지하나 Thin Leader 패턴이 아닌 vendored-content skill — 자체 body voice 유지 (T2 modification 최소화); (b) sp-* 13 skill은 superpowers 출신이라 자연 정합 (carve-out 불필요); (c) ce-* 37 skill은 별도 voice (boundary 무관). vendored `skills/sp-using-superpowers/SKILL.md` body는 T2 lock — 편집 금지 (drift script로 enforced). runtime gate 추가 없음 — "advisory" 라벨 honesty 회귀 잠금. |
+| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 매 세션 시작 시 Claude Code platform이 제공하는 SessionStart system reminder channel (additional-context)로 로드된다 — 이것은 athanor의 hooks.json 등록 결과가 아니다 (athanor `hooks/hooks.json`은 Stop event만 등록; SessionStart는 platform mechanism이 skill body를 system reminder channel을 통해 자동 포함시키는 Claude Code platform 동작이며, athanor가 register하는 hook event가 아님). 그 skill의 "ABSOLUTELY MUST invoke before response" / "1% chance → MUST use it" 톤은 athanor-native **10 Thin Leader skill** (analyze, debug, deep-plan, discuss, lfg, lite-plan, plan, review, setup, work) 호출 context에서는 **advisory**다. 이 영역에서는 discovery가 leader dispatch로 해소된다 (Thin Leader pattern + planner-classified discipline) — pre-response invocation check은 native context에서 advisory 안내일 뿐 강제 아님. 본 boundary는 10 skill 각각의 §Identity 직후 `### v0.11.1 using-superpowers boundary` subsection에 동일 문구로 인라인 선언됨; 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. **scope (intentional carve-outs):** (a) `scope-drift` 와 `verification-before-completion`는 unprefixed slot을 차지하나 Thin Leader 패턴이 아닌 vendored-content skill — 자체 body voice 유지 (T2 modification 최소화); (b) sp-* 13 skill은 superpowers 출신이라 자연 정합 (carve-out 불필요); (c) ce-* 33 skill은 별도 voice (boundary 무관). vendored `skills/sp-using-superpowers/SKILL.md` body는 T2 lock — 편집 금지 (drift script로 enforced). runtime gate 추가 없음 — "advisory" 라벨 honesty 회귀 잠금. |
 
 Detail follows.
 
@@ -141,9 +141,9 @@ JSON on stdin. The script:
 2. Reads `hooks.profile` from `athanor.json`. If `"off"`, exits 0 silently
    — the user has opted out of the runtime gate.
 3. Checks whether the response begins with the emission sentinel
-   `<!-- athanor:verification-emission v=1 -->` (anchored at the first
-   non-whitespace line). If yes, exits 0 silently to prevent re-entry on
-   the verification skill's own output.
+   `<!-- athanor:verification-emission v=2 nonce=<32-hex> -->` (anchored at
+   the first non-whitespace line). If yes, exits 0 silently to prevent
+   re-entry on the verification skill's own output.
 4. Greps the response body for material-claim phrases (English + Korean,
    whitelist ported verbatim from the v0.7.7 prompt). On no match, exits 0.
 5. On match, exits 2 with stderr directing the model to invoke the
@@ -158,9 +158,10 @@ feedback). Full result in `docs/STATE.md` §"Command-hook Stop blocking
 spike (2026-05-18)".
 
 **Re-entry prevention:** the `verification-before-completion` skill is now
-contractually required to prefix every response with the v=1 sentinel
-(see `skills/verification-before-completion/SKILL.md` §"Emission Sentinel").
-The hook script matches the sentinel anchored at response-start (line 1,
+contractually required to prefix every response with the v=2 nonce-bound
+sentinel (`<!-- athanor:verification-emission v=2 nonce=<32-hex> -->`; see
+`skills/verification-before-completion/SKILL.md` §"Emission Sentinel"). The
+hook script matches the sentinel anchored at response-start (line 1,
 optional leading whitespace). Sentinels on line 2 or later do NOT count —
 that's the brittleness trade-off documented in the skill.
 
@@ -316,7 +317,7 @@ v0.8.1+ 후보 (verification-before-completion skill 확장).
 
 ## Vendored Surface — Identity Guard Layer (v0.10.0)
 
-athanor v0.10.0 absorbed **compound-engineering v3.8.3** (37 skills + 49
+athanor v0.10.0 absorbed **compound-engineering v3.8.3** (33 skills + 49
 sub-agents) and **superpowers v5.1.0** (13 skills) under the
 `/athanor:ce-*` and `/athanor:sp-*` namespaces. Every vendored file
 carries a T2 provenance block (see
