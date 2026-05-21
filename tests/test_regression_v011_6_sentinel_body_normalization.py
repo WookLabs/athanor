@@ -69,6 +69,7 @@ def _emit_sentinel(body: str, cwd: Path) -> tuple[int, str, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",  # Windows: script may write em-dash via cp1252 default
         cwd=cwd,
     )
     return result.returncode, result.stdout.strip(), result.stderr
@@ -82,6 +83,8 @@ def _run_stop_hook(payload: dict, cwd: Path) -> tuple[int, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",  # Windows: script's stderr "—" em-dash may emit
+        # via cp1252 default; replace lossy-decodes so stderr remains a str.
         cwd=cwd,
     )
     return result.returncode, result.stderr
