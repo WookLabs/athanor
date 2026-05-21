@@ -118,6 +118,50 @@ def test_no_prompt_type_stop_hook_remains():
             )
 
 
+def test_stop_hook_command_uses_plugin_root_or_absolute_path():
+    """v0.11.4 lock: Stop hook command MUST reference the script via
+    ${CLAUDE_PLUGIN_ROOT} env var OR an absolute path — NOT a bare
+    relative path which CC resolves relative to project cwd. The bare
+    relative path made the hook silently broken in every project except
+    athanor's source repo (v0.7.8 → v0.11.3 latent bug). Closes the
+    deployment-path arc with v0.11.3's input-layer fix."""
+    import json
+    hooks_path = REPO_ROOT / "hooks" / "hooks.json"
+    config = json.loads(hooks_path.read_text(encoding="utf-8"))
+    stop_hooks = config.get("hooks", {}).get("Stop", [])
+    assert stop_hooks, "Stop hook registration must exist"
+
+    found_paths = []
+    for entry in stop_hooks:
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            # Strip leading quote (cmd may be JSON-quoted in shape:
+            # `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/..."`). The path
+            # arg follows `python3 ` — extract it for the absolute-path
+            # heuristic. Reviewer revision 1: lstrip leading quote so
+            # `cmd.startswith("/")` doesn't fail on `"...` quoted form.
+            if "${CLAUDE_PLUGIN_ROOT}" in cmd:
+                found_paths.append(("plugin_root", cmd))
+                continue
+            # Extract path arg after `python3 ` and strip leading quote
+            parts = cmd.split(None, 1)  # split on first whitespace
+            if len(parts) < 2:
+                continue
+            path_arg = parts[1].lstrip("\"'")
+            if path_arg.startswith("/"):
+                found_paths.append(("absolute", cmd))
+                continue
+            assert False, (
+                f"Stop hook command must use ${{CLAUDE_PLUGIN_ROOT}} or "
+                f"absolute path; got bare relative: {cmd!r}. v0.11.4 "
+                f"locked this invariant — see "
+                f"docs/plans/2026-05-21-002 or "
+                f".athanor/sessions/2026-05-21-002/plan.md Phase 1."
+            )
+
+    assert found_paths, "Stop hook must have at least one command entry"
+
+
 def test_legacy_prompt_fixture_no_longer_matches_command_contract():
     """The legacy prompt fixture (tests/fixtures/fixture_wrong_stop_prompt.json)
     documents what a broken v0.7.x prompt-mode hooks.json used to look like.

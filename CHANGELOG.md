@@ -3,6 +3,102 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.4] — 2026-05-21
+
+**Stop hook plugin-root deployment fix — companion to v0.11.3 input-layer
+fix.** v0.7.8 → v0.11.3 the hook command in `hooks/hooks.json` used a
+bare relative path (`python3 scripts/hooks/stop_verify_claims.py`) which
+Claude Code resolves relative to the user's PROJECT cwd, not the plugin
+install dir. The script was therefore reachable only inside athanor's
+own source repo; in every other project CC treated the hook as missing
+(non-blocking exit). v0.11.4 switches to `${CLAUDE_PLUGIN_ROOT}` env var
+expansion — the industry pattern used by superpowers, claude-mem, and
+openai-codex plugin hooks. v0.11.3's input-layer fix and v0.11.4's
+deployment-path fix are companion-fixes of one latent bug arc: script
+wrong (closed v0.11.3) + path wrong (closed v0.11.4).
+
+### Fixed
+
+- **`hooks/hooks.json`** — Stop hook command changed from
+  `python3 scripts/hooks/stop_verify_claims.py` to
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"`.
+  The `${CLAUDE_PLUGIN_ROOT}` env var is set by Claude Code for plugin
+  hooks and expands to the plugin install directory regardless of the
+  project cwd.
+
+### Added
+
+- **`tests/test_regression_stop_command_hook.py::test_stop_hook_command_uses_plugin_root_or_absolute_path`**
+  — new regression test locking the invariant. Asserts the Stop hook
+  command contains `${CLAUDE_PLUGIN_ROOT}` OR (after stripping leading
+  quote) starts with `/` (absolute path). Bare relative paths fail the
+  test. Reviewer revision 1: the `cmd.lstrip("\"'")` strip step is
+  explicit because the JSON-quoted command starts with `"` — a naive
+  `cmd.startswith("/")` check would break.
+
+### Changed
+
+- **`CLAUDE.md`** §"Defense Mechanisms" status-table row — v0.11.4
+  plugin-root audit pointer appended.
+- **`CLAUDE.md`** §"Completion-Claim Verification (Stop hook — enforced,
+  command-based)" detail subsection — new §"Stop hook v0.11.4 plugin-root
+  deployment fix (post-mortem)" subsection chronologically after the
+  v0.11.3 post-mortem. The v0.11.3 post-mortem block is retroactively
+  annotated with a "scope: source-repo only until v0.11.4 plugin-root
+  fix" footnote.
+- **`CLAUDE.md`** Hook config reference line updated to mention
+  `${CLAUDE_PLUGIN_ROOT}`.
+- **`scripts/hooks/stop_verify_claims.py`** docstring — new v0.11.4
+  plugin-root deployment fix post-mortem section in chronological order
+  between the v0.11.3 post-mortem and the Residual known limitations
+  block. The v0.11.3 post-mortem block is retroactively annotated with
+  the source-repo-only scope footnote.
+- **`docs/STATE.md`** — Current Phase shifted v0.11.3 → v0.11.4; v0.11.3
+  promoted to Previous Phase.
+- **Version bump** 0.11.3 → 0.11.4 across `.claude-plugin/plugin.json`
+  and `.claude-plugin/marketplace.json` (`"version"` field). URL pins
+  (`"$schema"` / `"$id"` strings containing `v0.11.x`) bumped v0.11.3
+  → v0.11.4 in `athanor.json`, `templates/athanor.json`,
+  `schemas/athanor-config.schema.json`.
+
+### Voice (what v0.11.4 deliberately does NOT do)
+
+- v0.11.4 does NOT supersede or retract v0.11.3. v0.11.3's input-layer
+  fix remains correct and necessary; v0.11.4 is the companion
+  deployment-path fix. The v0.11.3 post-mortem is retroactively
+  annotated (scope footnote added), NOT replaced.
+- v0.11.4 does NOT change `scripts/hooks/stop_verify_claims.py` code
+  logic — only adds a new docstring section. The `hooks/hooks.json`
+  edit and the new regression test are the only behavior changes.
+- v0.11.4 does NOT modify `scripts/hooks/hook_state.py` or
+  `scripts/hooks/sentinel_helper.py`. Circuit breaker + v=2 nonce
+  protocol continue unchanged.
+- v0.11.4 does NOT touch the detection layers (whitelist / paraphrase
+  regex / NFKC / cyrillic-greek-armenian fold / conditional-attribution
+  suppression). Those are v0.7.9 / v0.10.2 / v0.10.3 work, code-correct
+  and now reachable.
+- v0.11.4 does NOT add a new hook event (still Stop only). The existing
+  CLAUDE.md claim about "SessionStart auto-load" of using-superpowers is
+  a separate issue carried in v0.11.5 deferred (analyze.md HIGH-2).
+
+### Self-violation acknowledgment (honesty arc)
+
+For 6 release cycles (v0.7.8 → v0.11.3), the Stop hook documented as
+`**enforced (command-based)**` was reachable only inside athanor's own
+source repo because of a bare relative path in `hooks/hooks.json`.
+v0.11.3 fixed the script behavior but not the deployment path; v0.11.4
+closes the second half. The shared meta-cause for the v0.11.3 + v0.11.4
+bug arc: manual testing happened only inside athanor's source repo,
+where both the wrong stdin shape AND the wrong path resolution happened
+to be invisible. Future hook-affecting releases must run a smoke test
+in a different project before claiming the hook is reachable.
+
+### Migration
+
+- No user action required. Users already running athanor will pick up
+  the fix on next `/plugin marketplace update athanor` — the new
+  hooks.json command uses an env var that CC sets automatically.
+
 ## [0.11.3] — 2026-05-21
 
 **Stop hook input-layer fix — honesty arc restoration.** v0.7.8 (script

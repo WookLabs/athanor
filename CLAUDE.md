@@ -105,7 +105,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 
 | Mechanism | Enforcement |
 |---|---|
-| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via: v0.7.7 English + Korean phrase whitelist; v0.10.2 NFKC unicode normalization + Cyrillic confusables fold + 6 verb-anchored paraphrase regex patterns; v0.10.2 vendor-aware whitelist extension (CE/superpowers idioms); v0.10.3 Greek+Armenian confusables fold extension; v0.10.3 conditional/speculative clause-prefix suppression; v0.10.3 attribution / paired-quote / attributed-verb suppression. Exits 2 to block Stop with stderr fed back as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=2 nonce=... -->` so the hook detects its own evidence emission and exits 0 silently. `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.3 coverage:** paraphrase ("CI is green"), Cyrillic/Greek/Armenian homoglyph, fullwidth, vendored CE/superpowers idioms — all detected. Conditional/speculative tense ("If all tests are green, merge") and attributed historical quotes (`the v0.7.6 docs said "tests pass"`) — both suppressed. Known residual (v0.11.0+): LLM-class semantic similarity; speculative tense without prefix marker; multi-paragraph quote spans; Cherokee/full-width-Latin confusables. v0.11.3 audit: see §"Completion-Claim Verification" detail section below for the v0.7.8 → v0.11.2 input-layer fail-open history. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
+| Completion-Claim Verification (Stop hook) | **enforced (command-based)** — `hooks/hooks.json` registers a `type: command` Stop hook invoking `scripts/hooks/stop_verify_claims.py`. The script reads the Stop event payload, detects material claims via: v0.7.7 English + Korean phrase whitelist; v0.10.2 NFKC unicode normalization + Cyrillic confusables fold + 6 verb-anchored paraphrase regex patterns; v0.10.2 vendor-aware whitelist extension (CE/superpowers idioms); v0.10.3 Greek+Armenian confusables fold extension; v0.10.3 conditional/speculative clause-prefix suppression; v0.10.3 attribution / paired-quote / attributed-verb suppression. Exits 2 to block Stop with stderr fed back as continuation context. The verification skill prefixes its output with `<!-- athanor:verification-emission v=2 nonce=... -->` so the hook detects its own evidence emission and exits 0 silently. `athanor.json` `hooks.profile: "off"` disables the gate per-project. **v0.10.3 coverage:** paraphrase ("CI is green"), Cyrillic/Greek/Armenian homoglyph, fullwidth, vendored CE/superpowers idioms — all detected. Conditional/speculative tense ("If all tests are green, merge") and attributed historical quotes (`the v0.7.6 docs said "tests pass"`) — both suppressed. Known residual (v0.11.0+): LLM-class semantic similarity; speculative tense without prefix marker; multi-paragraph quote spans; Cherokee/full-width-Latin confusables. v0.11.3 audit: see §"Completion-Claim Verification" detail section below for the v0.7.8 → v0.11.2 input-layer fail-open history. v0.11.4 plugin-root deployment fix: command now uses `${CLAUDE_PLUGIN_ROOT}` so the script reaches users in every project, not just athanor's source repo — see §"Completion-Claim Verification" detail section below for the v0.7.8 → v0.11.3 source-repo-only history. Spike evidence: `docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)". |
 | Stop-Phrase Detection | **advisory** — Leader-side prose guidance; spread across `skills/{work,discuss,analyze,debug,plan}/SKILL.md` Step 2.5 "Worker Output Defense"; not enforced by a code-level grep gate |
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
@@ -202,8 +202,12 @@ in the status table above is now honest.
 behavior but did not validate the stdin parsing path (it tested the gate
 by manually piping JSON, which masked the production gap).
 
+Scope note (added v0.11.4): the v0.11.3 fix above was reachable only in
+athanor's source repo until v0.11.4's `${CLAUDE_PLUGIN_ROOT}` path fix —
+see §"Stop hook v0.11.4 plugin-root deployment fix (post-mortem)" below.
+
 - **Skill source:** `skills/verification-before-completion/SKILL.md` (MIT, vendored)
-- **Hook config:** `hooks/hooks.json` → Stop event, type `command` → `scripts/hooks/stop_verify_claims.py`
+- **Hook config:** `hooks/hooks.json` → Stop event, type `command` → `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"` (plugin-root expansion since v0.11.4; bare relative path in v0.7.8 → v0.11.3 was the deployment-path bug)
 - **Detection scope:** material claims (edits applied / files
   created-removed-renamed / tests passing-failing / lint-typecheck clean /
   builds succeeding / bug fixed / requirements met / releases shipped /
@@ -223,6 +227,40 @@ deliberately, not greedily), or quoted historical references that contain
 trigger phrases (e.g., "the v0.7.6 docs claimed 'tests pass'"). Sentence-
 level attributed-history detection is v0.8.0+ work. Users encountering
 false positives can set `profile: "off"` as the escape hatch.
+
+#### Stop hook v0.11.4 plugin-root deployment fix (post-mortem)
+
+The v0.11.3 input-layer fix was correct in code but only reachable when
+Claude Code resolved the hook command relative to athanor's own source
+repo. The hook command in `hooks/hooks.json` was registered with a
+bare relative path (`python3 scripts/hooks/stop_verify_claims.py`)
+which CC resolves relative to the user's PROJECT cwd, not the plugin
+install dir. For any user with athanor installed user-scope but
+working in another project, CC would fail to find the script and exit
+2 with stderr `python3: can't open file '<project>/scripts/hooks/
+stop_verify_claims.py'`. CC treats that stderr pattern as
+"hook script missing" — non-blocking — so the gate was silently
+absent in every project except athanor's source repo from v0.7.8
+through v0.11.3 inclusive.
+
+v0.11.4 closes the deployment-path arc. `hooks/hooks.json` now uses
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"`
+— the env var `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code for plugin
+hooks and expands to the plugin install path. This matches the
+industry pattern used by `superpowers`, `claude-mem`, and `openai-codex`
+plugin hook registrations. The v0.11.3 input-layer fix and the v0.11.4
+deployment-path fix are companion-fixes of the same latent bug arc —
+script wrong (closed v0.11.3) + path wrong (closed v0.11.4). The
+shared meta-cause: manual testing only inside athanor's source repo
+hid both bugs simultaneously.
+
+`tests/test_regression_stop_command_hook.py::test_stop_hook_command_uses_plugin_root_or_absolute_path`
+locks the invariant — bare relative paths in the Stop hook command
+string will fail this test post-v0.11.4.
+
+The detection layers shipped in v0.7.9 / v0.10.2 / v0.10.3 + v0.11.3
+input-layer fix are unchanged and now actually reach every project
+where athanor is installed.
 
 ### Scope Drift Detection (on-demand skill — advisory)
 

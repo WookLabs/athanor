@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of CE 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.3 fixes the Stop hook input-layer parser so the runtime gate documented since v0.7.8 actually runs in production (the v0.7.9 / v0.10.2 / v0.10.3 detection logic is unchanged; only the stdin reader is corrected). Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
-      "version": "0.11.3",
+      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of CE 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.4 closes the deployment-path arc with v0.11.3's input-layer fix — Stop hook reachable in every project via `${CLAUDE_PLUGIN_ROOT}` expansion in `hooks/hooks.json` (companion-fix; v0.11.3 corrected the stdin parser, v0.11.4 corrects the hook command path). Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
+      "version": "0.11.4",
       "source": "./",
       "author": {
         "name": "WookLabs"

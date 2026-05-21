@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/hooks/stop_verify_claims.py"
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\""
           }
         ]
       }
