@@ -4,7 +4,59 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.3 (Stop hook input-layer fix — honesty arc restoration)
+## Current Phase: SHIPPING — v0.11.4 (Stop hook plugin-root path fix — deployment-path closure)
+
+v0.11.3 input-layer fix delivered the correct script behavior but the
+script was only REACHABLE inside athanor's own source repo. `hooks/
+hooks.json` registered the Stop hook command with a bare relative path
+(`python3 scripts/hooks/stop_verify_claims.py`) which Claude Code
+resolves relative to the user's PROJECT cwd — not the plugin install
+dir. From v0.7.8 (script introduction) through v0.11.3 (input-layer
+fix), every project EXCEPT athanor's source repo silently lost the
+gate (CC treats the "file not found" exit as "hook missing" /
+non-blocking). v0.11.4 closes the deployment-path arc by switching to
+`${CLAUDE_PLUGIN_ROOT}` env var expansion — the industry pattern used
+by superpowers, claude-mem, openai-codex plugin hooks.
+
+- **U1**: `hooks/hooks.json` command updated from bare relative path
+  to `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"`.
+  `tests/test_regression_stop_command_hook.py` extended with new test
+  `test_stop_hook_command_uses_plugin_root_or_absolute_path` locking
+  the invariant (Reviewer revision 1: strip leading quote before
+  absolute-path heuristic via `cmd.lstrip("\"'")`).
+- **U2**: CLAUDE.md status-table cell pointer + new §"Stop hook v0.11.4
+  plugin-root deployment fix (post-mortem)" subsection chronologically
+  after v0.11.3 post-mortem; retroactively annotated v0.11.3 post-mortem
+  block with "scope: source-repo only until v0.11.4 plugin-root fix"
+  footnote in both CLAUDE.md and `scripts/hooks/stop_verify_claims.py`
+  docstring; CLAUDE.md line ~206 Hook config reference updated to
+  mention `${CLAUDE_PLUGIN_ROOT}`.
+- **U3**: docs/STATE.md Current Phase shift.
+- **U4**: CHANGELOG v0.11.4 entry + 5-file version bump 0.11.3 → 0.11.4
+  (2 plugin/marketplace version fields + 3 URL pins v0.11.3 → v0.11.4).
+
+honesty arc — v0.11.3 + v0.11.4 are **companion-fixes of one latent
+bug arc**: script wrong (closed v0.11.3) + path wrong (closed v0.11.4).
+Shared meta-cause — manual testing only inside athanor's source repo
+hid both bugs simultaneously. No supersession framing; the v0.11.3
+post-mortem is retroactively annotated, not retracted.
+
+### v0.11.4 ship surface
+
+- Tests: **422 passed + 1 xpassed** (421 v0.11.3 baseline + 1 new
+  Subtask 1 regression test).
+- Active executable contracts (v0.11.4 new):
+  `v011-4-stop-hook-command-uses-plugin-root-or-absolute-path`.
+
+### v0.11.4 deferred (carry forward — v0.11.5+)
+
+- 8 analyze.md bugs from session 2026-05-21-001 (CLAUDE.md "37" stale,
+  SessionStart fiction, v=1 doc lag, dangling /ce-setup, lfg ghost,
+  scripts/hooks/__init__.py, tag gap, detection coverage). Plan
+  preserved at `.athanor/sessions/2026-05-21-002/plan-a-v011_5-carry.md`.
+- A5 / sec-001 / sec-003 / profile-mutation guard — carry from earlier.
+
+## Previous Phase: v0.11.3 (Stop hook input-layer fix — honesty arc restoration)
 
 5 release cycles (v0.7.8 → v0.11.2) 동안 Stop hook의 `**enforced (command-based)**`
 라벨이 산문상 정직했지만 production 입력 파싱 경로가 실제 Claude Code 페이로드

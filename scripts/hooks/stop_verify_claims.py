@@ -114,6 +114,34 @@ v0.11.3 input-layer fix (post-mortem)
   tests/test_regression_v011_3_stop_hook_input_layer.py adds 25 mandatory
   + 1 xfail-tolerant tests against the real Claude Code payload shape.
 
+  Scope note (added v0.11.4): the v0.11.3 fix above was reachable only in
+  athanor's source repo until v0.11.4's ${CLAUDE_PLUGIN_ROOT} path fix.
+
+v0.11.4 plugin-root deployment fix (post-mortem)
+(.athanor/sessions/2026-05-21-002/plan.md):
+  The v0.11.3 input-layer fix made the script find the message via
+  transcript_path correctly — but only when CC resolved the hook
+  command relative to athanor's source repo. `hooks/hooks.json`
+  registered the command as `python3 scripts/hooks/stop_verify_claims.py`
+  — a bare relative path. CC resolves hook commands relative to the
+  user's PROJECT cwd, not the plugin install dir. For any user with
+  athanor installed user-scope but working in another project, CC
+  exited 2 with "python3: can't open file" and treated the hook as
+  missing (non-blocking). Result: from v0.7.8 (script introduction)
+  through v0.11.3 (input-layer fix), the gate was silently absent in
+  every project except athanor's own source repo.
+
+  v0.11.4 closes the deployment-path gap. hooks/hooks.json now uses
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"`
+  — the env var is set by Claude Code for plugin hooks and expands
+  to the plugin install path. Industry pattern: superpowers,
+  claude-mem, openai-codex all use ${CLAUDE_PLUGIN_ROOT}. v0.11.3
+  + v0.11.4 are companion-fixes of one latent bug — script wrong +
+  path wrong — surfaced in pieces by source-repo-only manual testing.
+
+  tests/test_regression_stop_command_hook.py::test_stop_hook_command_uses_plugin_root_or_absolute_path
+  locks the invariant.
+
 Residual known limitations (carried forward to v0.11.0+):
   - **LLM-class paraphrase patterns subtler than verb-anchor regex**
     (e.g., "we verified the test suite ran clean" with subtle clause
