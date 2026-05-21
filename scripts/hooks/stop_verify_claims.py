@@ -24,7 +24,9 @@ Decision flow:
      so users see no surprise expansion of the trigger surface between
      v0.7.7 (advisory prompt) and v0.7.8 (enforced command). Quoted
      historical references ("the v0.7.6 docs said 'tests pass'") may
-     false-positive; sentence-level attribution detection is v0.8.0+ work.
+     false-positive; v0.10.3 R3 shipped same-line attribution detection,
+     and multi-paragraph quote spans are deferred to v0.11.8+ (see
+     Residual table item 3 below).
   5. If a material claim is detected, exit 2 with a stderr message directing
      the model to invoke `verification-before-completion`.
 
@@ -142,21 +144,38 @@ v0.11.4 plugin-root deployment fix (post-mortem)
   tests/test_regression_stop_command_hook.py::test_stop_hook_command_uses_plugin_root_or_absolute_path
   locks the invariant.
 
-Residual known limitations (carried forward to v0.11.0+):
-  - **LLM-class paraphrase patterns subtler than verb-anchor regex**
-    (e.g., "we verified the test suite ran clean" with subtle clause
-    embedding). v0.11.0+ candidate for semantic similarity layer.
-  - **Speculative tense WITHOUT prefix marker** ("Probably CI is green").
-    v0.10.3 R2 catches explicit prefix markers only.
-  - **Multi-paragraph quote spans / code-block context** for attribution.
-    v0.10.3 R3 uses a same-line constraint.
-  - **Cherokee, full-width Latin, other-script confusables**. v0.10.3 R1
-    covers Cyrillic + Greek + Armenian only.
-  - A model with file-system access can write its own nonce state and emit
-    matching sentinel — bypass cost raised but not eliminated. v0.11.0+
-    candidate via Claude Code transcript-event introspection.
-  - Mid-session profile mutation (model writes athanor.json mid-turn) is not
-    guarded.
+Residual known limitations (reclassified v0.11.7 — see table below for
+severity / fix-plan target / acceptance criterion per entry):
+
+  | # | Item | Label | Severity | Fix-plan target | Acceptance criterion |
+  |---|------|-------|----------|-----------------|----------------------|
+  | 1 | LLM-class paraphrase patterns subtler than verb-anchor regex
+      (e.g., "we verified the test suite ran clean" with subtle clause
+      embedding) | enhancement | MEDIUM | deferred to v0.12.x+ |
+      semantic-similarity layer detects 80%+ of human-verified paraphrase
+      variants |
+  | 2 | Speculative tense WITHOUT prefix marker ("Probably CI is green").
+      v0.10.3 R2 catches explicit prefix markers only | BUG | LOW |
+      deferred to v0.11.8+ | _is_conditional_or_speculative_context
+      recognizes "Probably X is Y" / "It appears that X" patterns |
+  | 3 | Multi-paragraph quote spans / code-block context for attribution.
+      v0.10.3 R3 shipped same-line constraint | BUG | LOW | deferred to
+      v0.11.8+ | _is_attributed_quote_context spans across paragraph
+      boundaries (relaxes same-line constraint) |
+  | 4 | Cherokee, full-width Latin, other-script confusables. v0.10.3 R1
+      shipped Cyrillic + Greek + Armenian only | BUG | LOW | deferred to
+      v0.12.x+ | _CONFUSABLES_TO_LATIN_TABLE extends to Cherokee + full-
+      width Latin + >=1 additional script |
+  | 5 | A model with file-system access can write its own nonce state and
+      emit matching sentinel — bypass cost raised but not eliminated |
+      enhancement | MEDIUM | deferred to v0.12.x+ | transcript-event
+      introspection (Claude Code SDK feature) replaces filesystem-state-
+      based binding |
+  | 6 | Mid-session profile mutation (model writes athanor.json mid-turn)
+      is not guarded | BUG | MEDIUM-HIGH | minimal detection landed in
+      v0.11.7 (Subtask 6); full architectural treatment deferred to
+      v0.11.8+ | snapshot-hash on first Stop; mid-session hash change
+      raises explicit mutation warning |
 
 v0.10.0 scope (vendored-surface coverage):
   This script triggers on every `Stop` event regardless of which skill
@@ -988,6 +1007,49 @@ def _read_stop_loop_threshold() -> int:
     return threshold
 
 
+def _check_profile_mutation(profile: str) -> None:
+    """v0.11.7 B1 minimal closure — detect mid-session hooks.profile mutation.
+
+    On first Stop event within a session, snapshot SHA-256 of the profile
+    value (canonical JSON serialization). On subsequent Stop events, compare
+    current value against snapshot; emit explicit stderr warning on mismatch.
+
+    DETECTION ONLY — does NOT block the gate, does NOT override the off-
+    profile bypass, does NOT auto-revert. Full architectural treatment
+    (file-lock vs. cached-checksum-key vs. opt-in cross-session edit block)
+    is deferred to v0.11.8+.
+
+    Called before the off-profile early return so that a mutation flipping
+    profile from "standard" to "off" still surfaces the warning. The opt-out
+    remains in effect (the warning is informational); honesty: profile=off
+    remains opt-out from the gate, the warning is a separate signal.
+    """
+    # Canonical serialization so whitespace-only edits to athanor.json don't
+    # false-trigger. We hash only the profile value (string) — full hooks-
+    # block hashing is deferred to v0.11.8+ when the architectural treatment
+    # lands.
+    canonical = json.dumps(profile, sort_keys=True, separators=(",", ":"))
+    current_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    snapshot = hook_state.read_profile_snapshot(ACTIVE_SESSION)
+    if snapshot is None:
+        # First Stop within the session — write snapshot and return silent.
+        hook_state.write_profile_snapshot(ACTIVE_SESSION, current_hash)
+        return
+    stored_hash = snapshot.get("profile_hash")
+    if not isinstance(stored_hash, str) or stored_hash != current_hash:
+        # Mid-session mutation detected — emit warning. Do NOT update the
+        # snapshot: future Stop events in this session keep comparing
+        # against the original, so the warning continues firing until the
+        # session ends. (Cross-session edits get a fresh snapshot.)
+        _stderr(
+            "mid-session hooks.profile mutation detected (sha256 diff between "
+            "first-Stop snapshot and current athanor.json value). Possible "
+            "bypass attempt. Start a new session to reset the snapshot. "
+            "(detection only — exit code is not affected; full mitigation "
+            "deferred to v0.11.8+.)"
+        )
+
+
 def main() -> int:
     payload = _read_stdin_payload()
     if payload is None:
@@ -995,6 +1057,9 @@ def main() -> int:
         return 0
 
     profile, config_path, mechanism = _read_profile()
+    # v0.11.7 B1 minimal closure — detection only, fires BEFORE the off-profile
+    # early return so mutations flipping standard→off still surface the warning.
+    _check_profile_mutation(profile)
     if profile == "off":
         # Audit breadcrumb — makes ancestor-hijack visible. The user (or a
         # future auditor) can see WHICH athanor.json disabled the gate AND

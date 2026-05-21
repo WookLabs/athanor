@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of CE 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.6 closes the v=2 sentinel hash-binding round-trip — 4th layer of the v0.11.3/4/5 companion-fix arc (script + path + doc drift + sentinel binding). Body now normalized via .strip() on both helper-emit and script-validate so heredoc trailing-newline differences no longer cause hash mismatch. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression.",
-      "version": "0.11.6",
+      "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of CE 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 under athanor namespace (athanor identity commitments preserved). Standalone /athanor:lfg runs the pipeline through athanor-native commands. v0.11.7 extends the doc-drift scanner (v0.11.5) to Python docstrings + docs/STATE.md via ast.get_docstring per-file extractors, applies the v0.11.6 reclassification pattern to documented Residual entries, and ships a minimal B1 profile-mutation detection layer — 5th layer of the v0.11.3/4/5/6 companion-fix arc. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression, sentinel body normalized via .strip() (v0.11.6), and detection-only stderr warning on mid-session profile mutation (v0.11.7).",
+      "version": "0.11.7",
       "source": "./",
       "author": {
         "name": "WookLabs"

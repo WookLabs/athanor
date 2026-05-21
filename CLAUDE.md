@@ -84,7 +84,9 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 4. **Stale-session announcement:** If `<LATEST>` date != today's date,
    the skill announces:
    > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh,
-   > create a new session manually or wait for the --new-session flag (v0.8.0).`
+   > create a new session manually` (the `--new-session` flag was originally
+   promised in v0.8.0 release notes but never implemented; reclassified
+   v0.11.7 as broken-promise — no current implementation target).
 5. **Bash reference implementation** (skills MAY embed inline):
    ```bash
    LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
@@ -226,8 +228,11 @@ a runtime exit-2 gate.
 (false negative — the whitelist mirrors v0.7.7's well-tuned set; expand
 deliberately, not greedily), or quoted historical references that contain
 trigger phrases (e.g., "the v0.7.6 docs claimed 'tests pass'"). Sentence-
-level attributed-history detection is v0.8.0+ work. Users encountering
-false positives can set `profile: "off"` as the escape hatch.
+level attributed-history detection was originally promised as v0.8.0+ work
+but shipped in v0.10.3 R3 (attribution / paired-quote / attributed-verb
+suppression in `stop_verify_claims.py`); residual semantic-similarity and
+multi-paragraph quote-span detection is deferred to v0.11.8+. Users
+encountering false positives can set `profile: "off"` as the escape hatch.
 
 #### Stop hook v0.11.4 plugin-root deployment fix (post-mortem)
 

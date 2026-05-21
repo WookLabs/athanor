@@ -8,7 +8,11 @@ description: 'Build web interfaces with genuine design quality, not AI slop. Use
   source-commit: vendored at athanor v0.10.0 release time from ce@3.8.3
   upstream-url: https://github.com/EveryInc/compound-engineering-plugin
   license: MIT (Copyright (c) 2025 Kieran Klaassen / Every Inc)
-  modifications: none — verbatim copy under T2 vendoring pattern; provenance block inserted after frontmatter only
+  modifications:
+    - athanor v0.11.7: appended an honest annotation to the "/ce-setup" reference
+      (~line 247 in the Tool Preference Cascade) noting that `/ce-setup` was
+      removed in athanor v0.11.2. Original upstream prose preserved verbatim;
+      only an italicized aside was added in parentheses after the reference.
   t0-t1-disproof:
     Why not T0/T1? ce is shipped as a Claude Code plugin (T3 marketplace
     listing). T0 (install companion) is unavailable for per-skill reference files.
@@ -244,7 +248,7 @@ Use the first available option:
 
 1. **Existing project browser tooling** -- if Playwright, Puppeteer, Cypress, or similar is already in the project's dependencies, use it. Do not introduce new dependencies just for verification.
 2. **Browser MCP tools** -- if browser automation tools (e.g., claude-in-chrome) are available in the agent's environment, use them.
-3. **agent-browser CLI** -- if nothing else is available and `agent-browser` is installed, use it. If not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies." Then skip to the next option.
+3. **agent-browser CLI** -- if nothing else is available and `agent-browser` is installed, use it. If not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies *(note: `/ce-setup` was removed in athanor v0.11.2; install dependencies manually via the upstream `compound-engineering:ce-setup` namespace command if you have the CE plugin, or follow the project README's manual install steps)*." Then skip to the next option.
 4. **Mental review** -- if no browser access is possible (headless CI, no permissions to install), apply the litmus checks as a self-review and note that visual verification was skipped.
 
 ### What to Assess

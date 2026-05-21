@@ -3,7 +3,11 @@
   source-commit: vendored at athanor v0.10.0 release time from ce@3.8.3
   upstream-url: https://github.com/EveryInc/compound-engineering-plugin
   license: MIT (Copyright (c) 2025 Kieran Klaassen / Every Inc)
-  modifications: none — verbatim copy under T2 vendoring pattern; provenance block inserted after frontmatter only
+  modifications:
+    - athanor v0.11.7: appended an honest annotation to the "/ce-setup" reference
+      (~line 23) noting that `/ce-setup` was removed in athanor v0.11.2.
+      Original upstream prose preserved verbatim; only an italicized aside
+      was added in parentheses after the reference.
   t0-t1-disproof:
     Why not T0/T1? ce is shipped as a Claude Code plugin (T3 marketplace
     listing). T0 (install companion) is unavailable for per-skill reference files.
@@ -20,7 +24,7 @@ Capture 3-5 browser screenshots at key UI states and stitch into an animated GIF
 **Label:** "Demo"
 **Required tools:** agent-browser, ffmpeg
 
-If `agent-browser` is not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies." Then fall back to a lower tier (static screenshots or skip).
+If `agent-browser` is not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies *(note: `/ce-setup` was removed in athanor v0.11.2; install dependencies manually via the upstream `compound-engineering:ce-setup` namespace command if you have the CE plugin, or follow the project README's manual install steps)*." Then fall back to a lower tier (static screenshots or skip).
 
 ## Step 1: Connect to the Application
 

@@ -16,7 +16,7 @@
 
 - Does NOT silently downgrade `/athanor:plan` to CE's single-agent flow (cross-model adversarial dual-planner stays the default).
 - Does NOT silently downgrade `/athanor:work` to CE's execution flow (athanor-native Spec-then-TDD stays the default).
-- Does NOT extend the Stop hook gate to specially protect vendored skill outputs (the gate stays athanor-voice-tuned at v0.10.0; vendor-aware whitelist is v0.10.1+ work).
+- Does NOT extend the Stop hook gate to specially protect vendored skill outputs (the gate stays athanor-voice-tuned at v0.10.0; the vendor-aware whitelist was originally scoped as v0.10.1+ work and shipped in v0.10.2 — A2 closure: 18 CE/superpowers idioms + paraphrase regex + Cyrillic homoglyph fold).
 - Does NOT re-license athanor (athanor stays MIT; CE and superpowers stay MIT under their copyright holders).
 - Does NOT require CE or superpowers to be separately installed (athanor stands alone after vendoring).
 

@@ -4,7 +4,71 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.6 (Sentinel body-hash binding fix — companion-fix arc 4th layer)
+## Current Phase: SHIPPING — v0.11.7 (Doc-drift scanner extension + Residual reclassification + minimal B1 — companion-fix arc 5th layer)
+
+v0.11.5는 CLAUDE.md drift-class 회귀 infrastructure를 ship했지만 scanner
+가 Markdown narrative에만 적용. Python docstring (특히
+`scripts/hooks/stop_verify_claims.py`) + `docs/STATE.md`은 같은 prose-vs-
+code drift pattern을 들고 있었지만 v0.11.5 그물 밖. v0.11.7은 scanner를
+`ast.get_docstring` + per-file extractor로 확장, hook docstring과
+STATE.md의 stale version pin을 audit, B2/B5 stale pin closure + B6
+broken-promise reclassification 적용 + Codex Reviewer push에 따라 minimal
+B1 (profile mutation) 탐지 layer까지 같은 릴리스에 포함. 결과: 8+ release
+cycle 동안 "documented but not guarded" 상태였던 honesty residual에
+최초의 closure layer가 들어감.
+
+6 ~ 11+ release cycle 동안 `scripts/hooks/stop_verify_claims.py` Residual
+block + CLAUDE.md §Known residuals에 익명 "candidate"로 carry되던 4건
+(B1 profile mutation, B2 stale pin, B5 stale label, B6 broken-promise
+phrasing)이 v0.11.6 reclassification 패턴을 적용받아 명시 Severity /
+Target / Acceptance 라벨로 정직성 회복. B1은 특히 "not guarded" 라벨로만
+이어지던 것에 minimal detection을 ship해서 자기-위반 한 겹 closure.
+
+### Companion-fix arc 5 layers
+
+| Layer | Release | Bug |
+|---|---|---|
+| 1. Runtime stdin parser shape | v0.11.3 | script wrong (last_assistant_message vs transcript_path) |
+| 2. Hook command path resolution | v0.11.4 | path wrong (relative vs ${CLAUDE_PLUGIN_ROOT}) |
+| 3. CLAUDE.md doc drift class | v0.11.5 | Markdown untestable claims |
+| 4. Sentinel body-hash binding | v0.11.6 | trailing-whitespace round-trip mismatch |
+| **5. Scanner extension + Residual reclassification + B1 minimal** | **v0.11.7** | **Python docstrings + STATE.md outside scanner; documented bugs carried as anonymous "candidates"; profile mutation undetected** |
+
+Shared meta-cause 지속: documentation surface가 test coverage보다 빠르게
+drift; "Residual known limitations" block은 hold-everything bin이 되어
+v0.11.6 reclassification 패턴을 더 광범위하게 적용해야 했음. v0.11.7은
+각 entry를 ship 가능한 intent로 라벨링해서 bin을 정리.
+
+### v0.11.7 ship surface
+
+- 7 subtask shipped, 6 honesty-arc closure (B2/B5/B6 stale-or-broken
+  phrasing + Residual reclassification with explicit Severity / Target
+  / Acceptance + B1 minimal detection ship + xfail marker cleanup).
+- Tests: **453 passed + 1 skipped + 1 xpassed** (Case #19은 v0.11.3
+  pre-existing xfail-tolerant; 산문 voice safety 28 forbidden-phrase
+  패턴 → 0 hit).
+- Active executable contracts (v0.11.7 신규):
+  `v011-7-doc-drift-scanner-python-docstrings`,
+  `v011-7-import-path-invariants`,
+  `v011-7-profile-mutation-detection`,
+  `v011-7-residual-reclassification`.
+
+### v0.11.8+ deferred
+
+- **B1 full architectural treatment** — snapshot / cache / lock +
+  legitimate cross-session edit handling. v0.11.7는 detection-only.
+- **B3 full T2 navigation pattern** — clickable reference repair across
+  the vendored corpus. v0.11.7은 minimal honest message만 ship.
+- **B4 `_content_to_text` no-separator 실증 조사** — v0.11.3 helper의
+  separator-less join 동작은 문서화되었지만 fuzz / adversarial 테스트
+  부재.
+- LOW-7 tag gap v0.7.7 → v0.11.1 backfill (release archaeology)
+- LOW-8 detection coverage via transcript_path (35+ legacy tests
+  parameterization)
+- Bolder: CLAUDE.md generate-from-manifests architecture (Codex
+  Reviewer 제안, v0.11.5 / v0.11.6 / v0.11.7 carry)
+
+## Previous Phase: v0.11.6 (Sentinel body-hash binding fix — companion-fix arc 4th layer)
 
 v=2 sentinel protocol (도입 v0.7.9)의 hash-binding round-trip이 처음부터
 broken이었음. `sentinel_helper.py emit`은 stdin 받은 body를 그대로 hash
@@ -16,9 +80,10 @@ sentinel always rejected → verification skill 호출이 production에서
 실제로 작동한 적 없음.
 
 11+ release cycle (v0.7.9 → v0.11.5) 동안 `Residual known limitations`
-docstring에 "v0.11.0+ candidate"로 carry. 그 분류 자체가 honesty-arc
-위반 — documented bug를 "enhancement candidate"로 mask. v0.11.6은
-기술 버그 + 분류 drift 둘 다 closure.
+docstring에 originally "v0.11.0+ candidate"로 carry — 그 분류 자체가
+honesty-arc 위반이었음 (documented bug를 "enhancement candidate"로 mask).
+reclassified v0.11.7 as documented bug — closure 추적은 stop_verify_claims.py
+Residual table 참고. v0.11.6은 기술 버그 + 분류 drift 둘 다 closure.
 
 ### Companion-fix arc 4 layers
 
@@ -65,6 +130,69 @@ Shared meta-cause: source-repo-only manual testing이 각 layer를 동시에
 - Bolder: CLAUDE.md generate-from-manifests architecture
 - Audit `Residual known limitations` block for other documented-but-
   unfixed entries (apply v0.11.6 reclassification pattern)
+
+## Previous Phase: v0.11.5 (Documentation honesty hardening — CLAUDE.md drift closure)
+
+v0.11.3 + v0.11.4 runtime closure에 이어진 documentation-layer companion.
+v0.11.3은 Stop hook script 입력 파싱 (input-layer)을 정상화했고, v0.11.4는
+배포 경로 (`${CLAUDE_PLUGIN_ROOT}` expansion)를 정상화했다. v0.11.5은 5
+release cycle 동안 runtime bug를 가려둔 *documentation drift class*를 산문
+레벨에서 닫는다. CLAUDE.md가 test로 enforce되지 않는 truth claim을 누적
+하고 있었음 — "37 CE skills" (v0.11.2 scope-clarification cut 이후 실제 33),
+"SessionStart 자동 로드" (athanor `hooks/hooks.json`은 Stop event만 등록;
+SessionStart skill loading은 Claude Code platform 메커니즘), "v=1 sentinel"
+(production은 v0.7.9부터 v=2 nonce-bound 사용). v0.11.5은 2-layer scanner
++ historical-context exemption 기반 drift-class regression test
+infrastructure를 ship — 다음 8 release cycle 동안 같은 prose-vs-code gap
+이 누적되지 않도록 잠근다.
+
+Source: cross-model cutting-prep deep analysis 2026-05-20-002 (Researcher A
+Claude + Devil's Advocate Codex + Critic synthesis)가 origin이었고, v0.11.5
+이행은 2026-05-21 analyze 세션이 docs/STATE.md §"May 21, 2026" 항목에
+연결됨.
+
+- **U1**: CLAUDE.md CE-count drift 3건 (lines 35, 113, 319) "37" → "33".
+  Historical / attributed references (예: "absorbed compound-engineering
+  v3.8.3 (37 skills)" chronological artifact) 보존.
+- **U2**: README.md CE-count drift 2건 (lines 8, 12) + dependent
+  arithmetic "50 vendored skills" → "46" (33 ce-* + 13 sp-*).
+- **U3**: CLAUDE.md SessionStart fiction (line 113) — 실제 hook 등록
+  현황과 일치하도록 산문 교정. v=1 sentinel doc lag (lines 144, 161) 도
+  v=2 nonce-bound로 교정 (`SENTINEL_PATTERN` 일치).
+- **U4**: `tests/test_regression_v011_5_claude_md_invariants.py` 신설 —
+  4 invariant test (Layer A narrow current-state matcher + Layer B
+  claim-verb broad scan + `HISTORICAL_MARKERS` left-context filter).
+  drift class going forward 잠금. `scripts/hooks/__init__.py` 빈 패키지
+  marker도 함께 ship (LOW-6 latent import-path trap closure).
+- **U5**: lfg ghost MEDIUM-5 closure — `NATIVE_THIN_LEADER_SKILLS` tuple
+  9 → 10 (lfg 알파벳 위치). `skills/lfg/SKILL.md`에 v0.11.1 boundary
+  preamble subsection 추가. CLAUDE.md boundary row enumeration 동기화.
+- **U6**: version bump 0.11.4 → 0.11.5; CHANGELOG; STATE.md.
+
+honesty arc — v0.11.5은 v0.11.3 / v0.11.4를 supersede / retract하지 않음.
+companion-fix arc 계속: runtime gate restored (v0.11.3 input + v0.11.4
+path) + drift class closed (v0.11.5 prose level).
+
+### v0.11.5 ship surface
+
+- 사용자-호출 skills: **62개** (변동 없음).
+- Regression test suite: **423 passed + 4 xpassed** (v0.11.5 신규
+  invariants + 기존 xfail-tolerant 4건).
+- Drift-class regression test infrastructure ship — v0.11.7 scanner
+  extension의 precursor.
+- Active executable contracts (v0.11.5 신규):
+  `v011-5-claude-md-ce-count-invariant`,
+  `v011-5-claude-md-hook-event-invariant`,
+  `v011-5-claude-md-sentinel-version-invariant`,
+  `v011-5-historical-marker-exemption-filter`.
+
+### v0.11.5 알려진 residual (v0.11.6+ 후보 → v0.11.6 / v0.11.7에서 일부 closure)
+
+- MEDIUM-4: dangling `/ce-setup` references in 3 vendored skills
+  (v0.11.7 B3 minimal closure 적용)
+- LOW-7 tag gap v0.7.7 → v0.11.1 backfill (release archaeology — 잔류)
+- LOW-8 detection coverage via transcript_path (잔류)
+- xfail marker cleanup (v0.11.7 closure 적용)
 
 ## Previous Phase: v0.11.4 (Stop hook plugin-root path fix — deployment-path closure)
 
@@ -475,8 +603,9 @@ namespace policy + regression locks 로 보장:
    `/athanor:sp-test-driven-development` 는 outside.
 4. **Stop hook runtime gate** — `scripts/hooks/stop_verify_claims.py` 가
    모든 Stop 에 동일하게 발화. v0.7.7 voice-tuned whitelist 는 vendored
-   prose 에서 false-negative 가능 — vendor-aware whitelist 는 v0.10.1+
-   work.
+   prose 에서 false-negative 가능했으나 — vendor-aware whitelist 는
+   originally scoped as v0.10.1+ work, shipped in v0.10.2 (A2 closure:
+   18 CE/superpowers idioms + paraphrase regex + Cyrillic homoglyph fold).
 
 ### v0.10.0 ship surface
 
