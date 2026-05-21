@@ -5,11 +5,11 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**v0.10.0** — 10 athanor-native commands + 50 vendored skills (37 `/athanor:ce-*` from compound-engineering, 13 `/athanor:sp-*` from superpowers) + 49 CE sub-agents. Clean-context workers. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Identity guard layer preserves Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate on top of the vendored superset — see [CLAUDE.md §"Vendored Surface"](CLAUDE.md#vendored-surface--identity-guard-layer-v0100).
+**v0.10.0** — 10 athanor-native commands + 46 vendored skills (33 `/athanor:ce-*` from compound-engineering, 13 `/athanor:sp-*` from superpowers) + 49 CE sub-agents. Clean-context workers. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Identity guard layer preserves Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate on top of the vendored superset — see [CLAUDE.md §"Vendored Surface"](CLAUDE.md#vendored-surface--identity-guard-layer-v0100).
 
 ### What v0.10.0 absorbed
 
-- **compound-engineering 3.8.3** — 37 skills (`/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review` with 18 reviewer personas, `/athanor:ce-test-browser`, `/athanor:ce-proof` HITL, `/athanor:ce-strategy`, `/athanor:ce-ideate`, `/athanor:ce-doc-review`, `/athanor:ce-frontend-design`, `/athanor:ce-figma-design-sync`, `/athanor:ce-lfg` end-to-end pipeline, …) + 49 sub-agents. MIT, vendored verbatim with T2 provenance.
+- **compound-engineering 3.8.3** — 33 skills (`/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review` with 18 reviewer personas, `/athanor:ce-test-browser`, `/athanor:ce-proof` HITL, `/athanor:ce-strategy`, `/athanor:ce-ideate`, `/athanor:ce-doc-review`, `/athanor:ce-frontend-design`, `/athanor:ce-figma-design-sync`, `/athanor:ce-lfg` end-to-end pipeline, …) + 49 sub-agents. MIT, vendored verbatim with T2 provenance.
 - **superpowers 5.1.0** — 13 skills (`/athanor:sp-brainstorming`, `/athanor:sp-test-driven-development`, `/athanor:sp-systematic-debugging`, `/athanor:sp-using-superpowers`, `/athanor:sp-writing-plans`, `/athanor:sp-writing-skills`, …). MIT, vendored verbatim with T2 provenance.
 
 ### What v0.10.0 deliberately does NOT do

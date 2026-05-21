@@ -3,6 +3,127 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.5] — 2026-05-21
+
+**Documentation honesty hardening — companion to v0.11.3+v0.11.4 runtime
+closure.** v0.11.3 fixed the Stop hook script behavior (input-layer
+parser); v0.11.4 fixed the deployment path (`${CLAUDE_PLUGIN_ROOT}`
+expansion); v0.11.5 closes the *documentation drift class* that hid the
+runtime bug for 5 release cycles. CLAUDE.md was making truth claims that
+no test enforced — "37 CE skills" (actually 33 post-v0.11.2
+scope-clarification cut), "SessionStart 자동 로드" (athanor's
+`hooks/hooks.json` registers only the Stop event; SessionStart skill
+loading is a Claude Code platform mechanism, not a plugin hook),
+"v=1 sentinel" (production has used v=2 nonce-bound since v0.7.9).
+v0.11.5 ships drift-class regression test infrastructure with 2-layer
+scanner + historical-context exemption — so the next 8 release cycles
+cannot accumulate the same prose-vs-code gap unnoticed.
+
+### Fixed
+
+- **`CLAUDE.md` CE-count drift** — 3 stale "37 CE skills" references
+  corrected to "33" (lines 35, 113, 319). Historical and attributed
+  references (e.g., "absorbed compound-engineering v3.8.3 (37 skills)"
+  as a chronological artifact) preserved.
+- **`README.md` CE-count drift** — 2 stale "37" references corrected to
+  "33" (lines 8, 12), plus 1 dependent arithmetic adjustment "50 vendored
+  skills" → "46" (33 ce-* + 13 sp-*).
+- **`CLAUDE.md` SessionStart fiction** (line 113) — "SessionStart에 자동
+  로드" replaced with accurate description: athanor's `hooks/hooks.json`
+  registers only the Stop event; SessionStart skill loading is a Claude
+  Code platform-level mechanism (additional-context system-reminder
+  channel), not an athanor plugin hook.
+- **`CLAUDE.md` v=1 sentinel doc lag** (lines 144, 161) — v=1 references
+  describing the current protocol replaced with v=2 nonce-bound (matching
+  `SENTINEL_PATTERN` in `scripts/hooks/stop_verify_claims.py` since
+  v0.7.9). Historical mentions of v=1 as the original protocol shape
+  remain intact.
+
+### Added
+
+- **`tests/test_regression_v011_5_claude_md_invariants.py`** — 4
+  invariant tests with 2-layer scanner (Layer A narrow current-state
+  matcher + Layer B claim-verb broad scan) and `HISTORICAL_MARKERS`
+  left-context filter for historical-attribution exemption: (1.1) CE-count
+  claim matches actual `skills/ce-*` directory count; (1.2) hook event
+  claims match `hooks/hooks.json` registrations; (1.3) sentinel version
+  claim matches `SENTINEL_PATTERN` in the hook script; (1.4)
+  exemption-filter regression self-test. Locks the drift class going
+  forward.
+- **`scripts/hooks/__init__.py`** — empty package marker closing the
+  latent import-path trap surfaced in the 2026-05-21 analyze session
+  (LOW-6).
+
+### Changed
+
+- **`tests/test_regression_v011_1_using_superpowers_boundary.py`**
+  `NATIVE_THIN_LEADER_SKILLS` tuple grows 9 → 10 with `lfg` added at
+  the alphabetical position. Closes the MEDIUM-5 lfg ghost (the LFG
+  skill was silently outside the boundary roster).
+- **`skills/lfg/SKILL.md`** — `### v0.11.1 using-superpowers boundary`
+  preamble subsection added (canonical text copied verbatim from
+  `skills/plan/SKILL.md`).
+- **`CLAUDE.md`** `using-superpowers boundary` row enumeration —
+  "9 Thin Leader skill" updated to "10" + `lfg` inserted into the
+  alphabetical listing.
+- **Version bump** 0.11.4 → 0.11.5 across `.claude-plugin/plugin.json`
+  and `.claude-plugin/marketplace.json` (`"version"` field +
+  `"description"` refresh). URL pins (`"$schema"` / `"$id"` strings
+  containing `v0.11.x`) bumped v0.11.4 → v0.11.5 in `athanor.json`,
+  `templates/athanor.json`, `schemas/athanor-config.schema.json`.
+
+### Voice (what v0.11.5 deliberately does NOT do)
+
+- v0.11.5 does NOT supersede or retract v0.11.3 or v0.11.4. The
+  companion-fix arc continues: runtime gate restored (v0.11.3 input
+  layer + v0.11.4 deployment path) + drift class closed (v0.11.5
+  prose level).
+- v0.11.5 does NOT add new behavior to any skill. The release ships
+  drift-class tests + prose corrections + 1 empty package marker; no
+  detection-layer changes.
+- v0.11.5 does NOT modify `scripts/hooks/stop_verify_claims.py`
+  runtime logic or `scripts/hooks/hook_state.py` /
+  `scripts/hooks/sentinel_helper.py`. Detection layers and circuit
+  breaker untouched.
+- v0.11.5 does NOT remove the xfail markers on Subtask 1's tests
+  1.1/1.2/1.3 — they XPASS after the corrective fixes landed but the
+  `strict=False` markers stay so any future regression makes them fail
+  loud. Optional polish carried to v0.11.6.
+- v0.11.5 does NOT generate CLAUDE.md from machine-checkable manifests
+  — the Codex Reviewer's bolder architectural suggestion is deferred
+  to a v0.12.x design note.
+- v0.11.5 does NOT touch the 35+ legacy stop_hook_script tests'
+  payload shape (transcript_path detection coverage carried as LOW-8).
+
+### Self-violation acknowledgment (honesty arc)
+
+For 5+ release cycles (v0.10.0 cuts onward), CLAUDE.md accumulated
+truth-claim drift that no test enforced. The v0.11.3 + v0.11.4
+input-layer + deployment-path bug arc hid for the same number of cycles
+because manual testing happened only inside athanor's own source repo.
+v0.11.5 ships the drift-class regression test infrastructure that would
+have caught the same class of bug AT THE PROSE LEVEL — converting prose
+drift into testable invariants. Same arc, different layer.
+
+### Migration
+
+- No user action required. Users pick up the fix on next
+  `/plugin marketplace update athanor`. v0.11.5's behavior surface
+  change is zero — only docs and tests changed.
+
+### Deferred (v0.11.6+)
+
+- MEDIUM-4: dangling `/ce-setup` references in 3 vendored skills
+  (T2 navigation).
+- LOW-7: tag gap v0.7.7 → v0.11.1 backfill (archaeology).
+- LOW-8: detection coverage via `transcript_path` path (35+ legacy
+  tests parameterization).
+- Bolder: CLAUDE.md generate-from-manifests architecture (Codex
+  Reviewer suggestion).
+- A5 / sec-001 / sec-003 / profile-mutation guard — earlier carries.
+- xfail marker cleanup on `test_regression_v011_5_claude_md_invariants.py`
+  tests 1.1/1.2/1.3 (optional polish).
+
 ## [0.11.4] — 2026-05-21
 
 **Stop hook plugin-root deployment fix — companion to v0.11.3 input-layer
