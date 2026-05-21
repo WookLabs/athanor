@@ -855,10 +855,15 @@ def validate_emission_sentinel(message: str) -> bool:
         return False
     # Extract body after the sentinel line and verify SHA-256.
     body_after = message[m.end():]
-    # The helper hashed exactly what was piped in. The skill must emit
-    # that same body byte-for-byte AFTER the sentinel line. Allow one
-    # trailing newline between sentinel and body (markdown rendering quirks).
-    body_canonical = body_after.lstrip("\n")
+    # v0.11.6: normalize body (strip leading/trailing whitespace) before
+    # hashing so the round-trip is tolerant of trailing-newline differences
+    # between piped body (heredoc-style with trailing \n) and transcript-
+    # captured body (Claude Code strips trailing whitespace on response
+    # capture). The helper (scripts/hooks/sentinel_helper.py emit) applies
+    # the same .strip() before hashing so both sides agree on the canonical
+    # form. Content forgery still raises hash mismatch — whitespace is not
+    # a security boundary. Companion-fix to v0.11.3/4/5 runtime+doc arc.
+    body_canonical = body_after.strip()
     actual_hash = hashlib.sha256(body_canonical.encode("utf-8")).hexdigest()
     stored_hash = state.get("body_hash", "")
     if not isinstance(stored_hash, str) or actual_hash != stored_hash:

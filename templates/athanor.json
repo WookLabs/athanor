@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.11.5/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.11.6/schemas/athanor-config.schema.json",
   "version": "1.0",
   "_doc": "Athanor runtime configuration template — copied verbatim by /athanor:setup. _doc fields act as inline schema; root athanor.json (dev) and templates/athanor.json (user-install) stay shape-identical. To customize, edit your project root athanor.json after setup creates it.",
   "codex": {
