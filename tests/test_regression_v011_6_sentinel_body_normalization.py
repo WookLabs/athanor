@@ -231,7 +231,13 @@ def test_content_difference_still_rejected(tmp_path: Path):
         f"v0.11.6: content-forgery (not just whitespace) MUST still be rejected. "
         f"Got exit={exit_code} stderr={stderr!r}"
     )
-    assert "body hash mismatch" in stderr or "material claim detected" in stderr
+    # Windows-defensive: subprocess.run may return None for stderr under
+    # some buffer-flush conditions even with capture_output=True. Coerce
+    # to empty string before substring check.
+    stderr_str = stderr or ""
+    assert "body hash mismatch" in stderr_str or "material claim detected" in stderr_str, (
+        f"Expected stderr to mention hash mismatch or material claim; got: {stderr!r}"
+    )
 
 
 def test_normalization_consistency_between_helper_and_script():
