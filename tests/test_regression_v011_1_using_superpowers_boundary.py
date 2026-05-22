@@ -2,7 +2,7 @@
 
 The boundary is documented in two places:
 1. `CLAUDE.md §Defense Mechanisms` — status table row + detail paragraph.
-2. 10 athanor-native Thin Leader SKILL.md preambles — same canonical text.
+2. 11 athanor-native Thin Leader SKILL.md preambles — same canonical text.
 
 Carve-out (intentional, per plan §Scope):
 - `scope-drift` and `verification-before-completion` occupy unprefixed
@@ -12,16 +12,27 @@ Carve-out (intentional, per plan §Scope):
 
 v0.12.0 scope note: the vendored `sp-using-superpowers` SKILL.md is
 REMOVED in the atomic cut. The boundary itself survives as concept —
-declared in CLAUDE.md prose + restated in each of the 10 native
+declared in CLAUDE.md prose + restated in each of the native
 Thin Leader skill preambles + (per plan §Phase 1) tracked in the
 `concepts/` registry. The pre-v0.12.0 shape of this file included a
 `VENDORED_SP_USING_SUPERPOWERS` constant + `test_vendored_sp_using_
 superpowers_file_present`; both are removed because the vendored
 file is gone.
 
-Plan reference: docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
-§Subtask 15 (test rewrite scope).
-Earlier plan: docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md
+v0.13.0 scope extension: `lfg-goal` joins the boundary lock list as
+the 11th native Thin Leader skill. It is the goal-bounded N-cycle
+orchestrator that wraps `/athanor:lfg` and itself respects the Thin
+Leader contract (leader dispatches receipt-validator, tier-2 judges,
+etc.). Per D11 (decisions.md 2026-05-22-002), lfg-goal does NOT
+introduce a fifth identity invariant — it is an orchestration layer
+composed of the existing four. The boundary preamble is therefore
+required in `skills/lfg-goal/SKILL.md` exactly as in the other 10.
+
+Plan reference: docs/plans/2026-05-22-001-feat-v0.13.0-lfg-goal-skill-plan.md
+§Subtask 11 (test list extension 10 → 11).
+Earlier plans:
+- docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md
+- docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
 """
 
 from __future__ import annotations
@@ -32,13 +43,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 
-# 10 native Thin Leader skills — R2 scope.
+# 11 native Thin Leader skills — R2 scope.
+# v0.13.0 added `lfg-goal` as the 11th entry per plan §Subtask 11.
 NATIVE_THIN_LEADER_SKILLS = (
     "analyze",
     "debug",
     "deep-plan",
     "discuss",
     "lfg",
+    "lfg-goal",
     "lite-plan",
     "plan",
     "review",
@@ -108,12 +121,13 @@ def test_claude_md_boundary_uses_advisory_label():
     )
 
 
-# ---- 10 native Thin Leader SKILL.md preambles ----
+# ---- 11 native Thin Leader SKILL.md preambles ----
 
 
 def test_each_native_thin_leader_skill_has_canonical_preamble_heading():
-    """MUST (R2): each of the 10 native Thin Leader skills carries the
-    `### v0.11.1 using-superpowers boundary` heading exactly once."""
+    """MUST (R2): each of the 11 native Thin Leader skills carries the
+    `### v0.11.1 using-superpowers boundary` heading exactly once.
+    v0.13.0 extended the list 10 → 11 by adding `lfg-goal`."""
     failures: list[str] = []
     for skill_name in NATIVE_THIN_LEADER_SKILLS:
         skill_md = SKILLS_DIR / skill_name / "SKILL.md"
@@ -131,7 +145,8 @@ def test_each_native_preamble_contains_all_canonical_signals():
     """MUST (R2 + D4): each native preamble paragraph contains the
     7 canonical signal phrases (Thin Leader / planner-classified discipline /
     using-superpowers / SessionStart / advisory here / leader dispatch /
-    CLAUDE.md §Defense Mechanisms cross-reference)."""
+    CLAUDE.md §Defense Mechanisms cross-reference). Scope is the 11 native
+    Thin Leader skills as of v0.13.0."""
     failures: list[str] = []
     for skill_name in NATIVE_THIN_LEADER_SKILLS:
         skill_md = SKILLS_DIR / skill_name / "SKILL.md"

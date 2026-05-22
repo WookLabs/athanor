@@ -3,6 +3,54 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.13.0] — 2026-05-23
+
+**Goal-driven Validated Ralph Loop.** New athanor-native skill `/athanor:lfg-goal` combines (a) a user-stated goal + (b) macro Ralph loop + (c) existing /athanor:lfg pipeline. Runs lfg cycles until the goal is met or guards trip.
+
+The skill is an **orchestration layer** over the existing 4 identity invariants — no new invariant added (D11). Receipt-arithmetic + dispatched receipt-validator + 3-tier adversarial goal-check close the leader-discretion loophole exposed during v0.12.0 ship: a cycle that skipped /athanor:lfg Step 3 (review) cannot produce a valid receipt, and the validator dispatches Bash verification commands the leader cannot fabricate.
+
+### Added
+- `skills/lfg-goal/SKILL.md` (657 lines) — full skill spec covering Validated Receipt-Ledger Loop architecture, 9-step receipt format, 3-tier goal-completion check, scope-change protocol, resume/abort semantics, 4-identity-invariant survival check, honesty note on physical enforcement scope.
+- `skills/lfg-goal/references/` — 5 worker dispatch prompt templates:
+  - `receipt-validator.md` (9-step Bash verification command table; dispatched after each cycle)
+  - `judge-rubric.md` (Tier 2 cross-model judge-A Claude + judge-B Codex)
+  - `scope-change-critic.md` (accept/reject/escalate on mid-flight goal edits)
+  - `state-shape.md` (state.json format for resume/abort)
+  - `goal-md-template.md` (canonical goal.md structure with mandatory Verify command + Test-count command)
+- `lfgGoal.*` config block in `athanor.json` + `templates/athanor.json` with 11 fields (maxIterations=5 per D8 / consolidateCycles=false per D9 / both invocation forms per D10 / scopeDriftAutoCheck=true per D12 / tier3UserRatification=true per D6)
+- Schema `lfgGoal` sub-schema in `schemas/athanor-config.schema.json` (11 fields with descriptions)
+- 3 new regression test files (`tests/test_regression_v013_lfg_goal_*.py`) covering skill surface, receipt contract, config validation — 22 tests total
+- 3 receipt fixtures (`tests/fixtures/lfg_goal/receipt_{valid,invalid_missing_step3,partial_with_residuals}.md`)
+
+### Changed
+- `CLAUDE.md`: Commands table +/athanor:lfg-goal row (11 user-invocable skills now); "10 Thin Leader skill" → "11 Thin Leader skill" prose update with lfg-goal added to enumerated lists
+- `NOTICE.md`: new §"Native syntheses (not lifted)" section with /athanor:lfg-goal entry (internal synthesis, no upstream attribution)
+- `tests/test_regression_v011_1_using_superpowers_boundary.py`: NATIVE_THIN_LEADER_SKILLS tuple extended 10 → 11 (lfg-goal added)
+
+### Voice (what v0.13.0 deliberately does NOT do)
+- Does NOT add a 5th identity invariant — lfg-goal is orchestration over the existing 4 (Thin Leader / cross-model adversarial planning / Spec-then-TDD / Stop hook runtime gate). D11 makes this explicit in the skill body.
+- Does NOT modify `/athanor:lfg` — lfg-goal calls lfg verbatim then dispatches the validator + judges (Plan B Phase 4 dropped per D2).
+- Does NOT auto-bypass user ratification — Tier 3 user-confirm is BLOCKING by default (D6); only an explicit flag disables it.
+- Does NOT introduce a JSON-to-prompt templating engine — all worker prompts are .md references embedded in Agent() dispatches by the leader (D3 inventory-only principle preserved from v0.12.0).
+- Does NOT touch `skills/scope-drift/SKILL.md` — scope-drift is consumed read-only by lfg-goal Phase 6 integration (D12).
+- Does NOT silently mutate the v0.12.0 frozen-snapshot test (`tests/test_regression_v012_native_identity_surface.py`); v0.13.0 adds its own dedicated test files instead.
+
+### Honesty note
+The 3-layer architecture (goal ledger + dispatched receipt-validator + 3-tier check) is **advisory orchestration**, not runtime enforcement. The Stop hook fires per cycle as before; cycle validity is leader-discretion bounded by receipt-evidence Bash commands that are externally verifiable but not runtime-gated. Adversarial forgery of receipt evidence remains a residual; full hard-enforcement of receipt authenticity deferred to v0.13.x+.
+
+### Deferred to v0.13.x+
+- Stop hook runtime gate for receipt presence (currently advisory)
+- Multi-goal parallel execution (lfg-goal is single-goal per session)
+- Cleaner agent integration for `goalRetentionDays` aging (config field declared but cleaner not yet extended)
+- Goal templates library (`goals/templates/`) for common goal shapes
+
+### Migration
+No breaking changes. Existing /athanor:lfg invocations continue to work identically. /athanor:lfg-goal is opt-in via explicit invocation.
+
+### Session
+Plan: `.athanor/sessions/2026-05-22-002/plan.md` (deep-tier: Claude Planner A + Codex Planner B + cross-review + Critic; 15 subtasks via Splitter)
+Decisions: D1-D14 audit trail in decisions.md
+
 ## [0.12.0] — 2026-05-22
 
 ### Honesty Framing
