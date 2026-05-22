@@ -61,25 +61,29 @@ def test_claude_md_names_all_four_identity_commitments():
 
 
 def test_no_vendored_skill_content_was_mutated_to_remove_agent_voice():
-    """T1: T2 vendor provenance requires verbatim copies. Spot-check three
-    vendored CE skills retain upstream prose voice."""
+    """T1: T2 vendor provenance requires verbatim copies. v0.12.0 atomic cut
+    removed the bulk of vendored CE/superpowers content; only `ce-test-browser`
+    remains under `skills/ce-*/` (D8 KEEP). Spot-check it retains upstream
+    prose voice — a defaced version would mean we forked instead of vendoring.
+    """
     sample_paths = [
-        REPO_ROOT / "skills" / "ce-plan" / "SKILL.md",
-        REPO_ROOT / "skills" / "ce-work" / "SKILL.md",
-        REPO_ROOT / "skills" / "ce-brainstorm" / "SKILL.md",
+        REPO_ROOT / "skills" / "ce-test-browser" / "SKILL.md",
     ]
+    checked = 0
     for p in sample_paths:
         if not p.exists():
             continue
         text = p.read_text(encoding="utf-8")
-        # CE skills speak in agent-direct voice ("you", "the agent"). If
-        # ALL such voice tokens were stripped, that means we forked
-        # instead of vendoring.
         lower = text.lower()
         assert any(t in lower for t in ["you ", "agent", "this skill"]), (
             f"{p.name}: vendored content seems mutated — no agent-voice "
             f"tokens detected; T2 provenance violated"
         )
+        checked += 1
+    assert checked >= 1, (
+        "T1: expected at least one surviving vendored skill (ce-test-browser "
+        "per D8) to spot-check for upstream prose voice; none found"
+    )
 
 
 # ---- T2: Cross-model adversarial planning default ----

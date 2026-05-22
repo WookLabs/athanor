@@ -3,6 +3,110 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.12.0] — 2026-05-22
+
+### Honesty Framing
+
+v0.10.0 plan-of-record misread the user's concept-absorption intent as wholesale plugin vendoring. v0.12.0 is the scope correction.
+
+7 release cycles (v0.10.0 ~ v0.11.7) shipped 33 compound-engineering skills + 13 superpowers skills + 49 vendored sub-agents on a plan-of-record that converted a concept-absorption ask into a 95-item plugin marketplace. The companion-fix arc (v0.11.3 ~ v0.11.7) closed real Stop hook bugs on top of that over-scoped surface; the work was real, the product surface was wrong. v0.11.8 staged the deprecation warnings. v0.12.0 atomically removes the wrong surface and lifts the genuinely valuable concepts into athanor-native skills as prose subsections, with `concepts/` as the inventory ledger.
+
+97% vendored surface reduction: from 95 items (33 ce-* + 13 sp-* + 49 sub-agents) down to 3 (1 KEEP skill + 2 KEEP sub-agents).
+
+### Added
+
+- 5 LIFTs into athanor-native skills:
+  - `skills/review/SKILL.md` §"Personas" — 6-persona vocabulary (correctness/security/performance/testing/maintainability/adversarial), lifted from `ce-code-review@3.8.3`
+  - `skills/review/SKILL.md` §"Doc review mode" — 7-lens doc persona array + `--target docs` CLI, lifted from `ce-doc-review@3.8.3`
+  - `skills/debug/SKILL.md` §"Systematic Debugging Discipline" — Iron Law + Four Phases + "3+ fixes = architectural question" rule, lifted from `sp-systematic-debugging@5.1.0`
+  - `skills/discuss/references/requirements-capture.md` — R-ID / A-ID / F-ID / AE-ID structure (v0.9.0 concept absorption; v0.12.0 attribution formalized) from `ce-brainstorm@3.8.3`
+  - CLAUDE.md §"using-superpowers boundary (v0.11.1)" — concept formalization + attribution to `sp-using-superpowers@5.1.0`
+- `concepts/` inventory directory (7 files: README + 6 concept-attribution docs) — pure traceability ledger; NOT a runtime data layer
+- `docs/archive/v010-v011-vendoring-scope-correction.md` — Honesty Ledger retrospective (Subtask 1)
+- `docs/architecture/v012-concept-absorption.md` — forward-looking architecture doc (Subtask 2)
+- `scripts/v012_remove_vendored.py` — atomic removal script (Subtask 14)
+- `tests/test_regression_v012_*.py` — 7+ new regression test files covering: no-vendored-surface assertions, native-identity-surface assertions, LIFT concept presence, concepts/ inventory shape, review.personas schema enum, removal-script smoke, release-ready gates, NOTICE attribution survival, honesty-voice presence
+- `scripts/check_release_ready.py` extended with 3 new v0.12.0 surface gates (vendored skill count = 1, marketplace count match, concepts/ present)
+
+### Changed
+
+- `athanor.json` schema: added `review.personas` array (enum of 6 values)
+- `scripts/hooks/stop_verify_claims.py`: added v0.11.8 deprecation sentinel carve-out (Subtask 6); preserved v0.11.3 transcript_path parser, v0.11.6 body-hash normalization, v0.11.7 B1 mutation detection — all intact
+- `scripts/check_vendor_drift.py`: scope shrunk to 1-KEEP (`ce-test-browser`) — preserved per Subtask 15 alignment; v0.11.8 deprecation block strip added (Subtask 6)
+- `NOTICE.md`: added §"Concepts adopted from upstream (post-v0.12.0)" enumerating 5 LIFT entries with MIT attribution preserved
+- `.claude-plugin/marketplace.json`: description refreshed to v0.12.0 scope-correction reality (NOT "33 ce-* + 13 sp-*")
+
+### Removed
+
+- 45 vendored skill directories (`skills/ce-*` + `skills/sp-*`) — 5 LIFT-source + 40 DROP. Preserve: `skills/ce-test-browser/` per D8.
+- 47 vendored sub-agent files under `agents/vendored/ce/`. Preserve: `ce-git-history-analyzer.agent.md` + `ce-repo-research-analyst.agent.md`.
+- Per D9: `ce-plan`, `ce-work`, `ce-lfg` are FULL DROP (no THIN-ADAPTER stubs).
+- `tests/test_regression_v010_vendor_provenance.py` + `tests/test_regression_v010_1_vendor_provenance_sha.py` (scope shrunk too far post-removal)
+
+### Migration
+
+Users who invoke `/athanor:ce-*` or `/athanor:sp-*` (any except `/athanor:ce-test-browser`): the skill is no longer present. See `docs/v0.12.0-migration.md` (Subtask 19) for the migration target table.
+
+Common migrations:
+
+- `/athanor:ce-plan` / `/athanor:ce-work` / `/athanor:ce-lfg` → use `/athanor:plan` / `/athanor:work` / `/athanor:lfg` (athanor-native equivalents with cross-model adversarial planning + Spec-then-TDD discipline)
+- `/athanor:ce-code-review` → use `/athanor:review` (now includes `review.personas[]` array for explicit persona dispatch)
+- `/athanor:sp-systematic-debugging` → use `/athanor:debug` (now includes "Systematic Debugging Discipline" subsection with Iron Law + Four Phases)
+- Other removed skills: install `compound-engineering` or `superpowers` plugins directly if you need them — athanor v0.12.0 stands alone as a Thin Leader orchestrator
+
+### Voice (what v0.12.0 deliberately does NOT do)
+
+- Does NOT invalidate the v0.11.3 ~ v0.11.7 companion-fix arc; those Stop hook bugs were real and their fixes survive intact (`scripts/hooks/stop_verify_claims.py` + all v0.11.3-v0.11.7 regression tests preserved)
+- Does NOT erase the over-scope from history; `docs/archive/v010-v011-vendoring-scope-correction.md` is the durable retrospective
+- Does NOT touch the 1 KEEP-class skill `/athanor:ce-test-browser` (per D8 — user opt-in browser automation outside athanor identity)
+- Does NOT introduce a JSON-to-prompt templating engine; `concepts/` is .md inventory only (D3)
+- Does NOT lower the four identity invariants (Thin Leader + cross-model adversarial planning + Spec-then-TDD + Stop hook runtime gate) — they are reinforced by the smaller surface
+
+### Self-violation acknowledgment
+
+This is the scope-correction release. The v0.10.0 plan-of-record misread the user's request, and 7 release cycles shipped on that misread before the user re-stated the intent. v0.12.0 is the honest correction. The companion-fix arc work (v0.11.3 ~ v0.11.7) closed real Stop hook gaps on the over-scoped surface; it survives the pivot.
+
+## [0.11.8] — 2026-05-22
+
+**Deprecation warning cycle for v0.12.0 atomic scope-correction cut.** No functional changes. 45 vendored skills marked with a deprecation preamble — users invoking these skills now see an in-skill ⚠ DEPRECATION notice pointing at the migration target (or "no athanor-native migration" for DROP-class).
+
+### Added
+
+- `scripts/v011_8_deprecation_preamble.py` — idempotent injection of deprecation sentinel + 4-line preamble into 45 SKILL.md files (5 LIFT + 40 DROP). KEEP-class `ce-test-browser` (per D8) is the carve-out.
+- `tests/test_regression_v011_8_deprecation_preamble.py` — 12-test regression suite covering preamble shape + idempotency + Stop hook carve-out + vendor drift carve-out.
+- `docs/archive/v010-v011-vendoring-scope-correction.md` — Honesty Ledger archive (v0.10.0 plan-of-record misread retrospective + companion-fix arc preservation).
+- `docs/architecture/v012-concept-absorption.md` — forward-looking architecture doc for the v0.12.0 pivot (4 identity invariants + concepts/ inventory role + 3-item post-pivot surface).
+- `.athanor/sessions/2026-05-22-001/disk-inventory.txt` — disk-derived count audit (33 ce-* / 13 sp-* / 49 sub-agents / 46 tests at HEAD b3abc1f).
+
+### Changed
+
+- `scripts/hooks/stop_verify_claims.py` — added `<!-- athanor:deprecated v=1 since=0.11.8 removal=0.12.0 -->` early-return carve-out (placed after v=2 sentinel check, before material-claim detection; counter reset on hit). Does NOT alter v=2 sentinel handling, v0.11.3 transcript_path parser, v0.11.6 body-hash normalization, or v0.11.7 B1 mutation detection.
+- `scripts/check_vendor_drift.py` — added `_strip_deprecation_block` (mirrors `_strip_provenance_block`). Wired into `_diff_skill` so the 4-line preamble does not register as upstream drift.
+
+### Voice (what v0.11.8 deliberately does NOT do)
+
+- Does NOT remove any vendored skill — atomic removal is v0.12.0
+- Does NOT touch the 1 KEEP-class skill `ce-test-browser` (per D8 user decision)
+- Does NOT lift any concepts into athanor-native skills — concept LIFT is v0.12.0 Phase 3
+- Does NOT change the marketplace.json description shape — v0.12.0 will redo that
+- Does NOT supersede v0.11.3 ~ v0.11.7 companion-fix arc
+
+### Self-violation acknowledgment
+
+This is the **honest correction cycle**. The v0.10.0 plan-of-record misread the user's concept-absorption intent as wholesale plugin vendoring, and 7 releases (v0.10.0 ~ v0.11.7) shipped on that misread. v0.11.8 is the deprecation-warning release that precedes the v0.12.0 atomic cut. The companion-fix arc (v0.11.3 ~ v0.11.7) closed real bugs on the over-scoped surface; that work survives the pivot (Stop hook script + all regression tests + Spec-then-TDD discipline + cross-model `/athanor:plan` intact).
+
+### Migration
+
+No user action required for v0.11.8. Users who currently invoke `/athanor:ce-*` or `/athanor:sp-*` will see a deprecation preamble in those skill files. v0.12.0 removes the skill directories — users should migrate to the listed `/athanor:` native equivalents (or install compound-engineering / superpowers plugins directly for tools without an athanor-native target).
+
+### Deferred to v0.12.0
+
+- Concept LIFT into athanor-native skills (review personas, debug discipline, requirements-capture, skill-discovery preamble)
+- Vendored directory + sub-agent removal (40 DROP + 5 LIFT directories)
+- NOTICE.md restructure
+- `marketplace.json` description refresh
+- 5-file version bump 0.11.8 → 0.12.0
+
 ## [0.11.7] — 2026-05-22
 
 **Doc-drift scanner extension + Residual reclassification + minimal B1

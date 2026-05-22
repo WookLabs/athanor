@@ -374,6 +374,34 @@ Patterns enforced (English alias in parentheses):
 
 Also validate that each finding contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
 
+## Systematic Debugging Discipline
+
+Concept adopted from superpowers@5.1.0 `sp-systematic-debugging` (MIT, Copyright (c) 2025 Jesse Vincent; upstream: https://github.com/obra/superpowers).
+See NOTICE.md §Concepts adopted from upstream and `concepts/debug-discipline.md` (Subtask 11) for full attribution.
+
+This discipline binds every `/athanor:debug` worker (Triage, Error Analyst, Git History, Code Tracer). Workers MUST hold to the Iron Law and proceed phase-by-phase; the Leader MUST reject any finding that proposes a fix before Phase 1 evidence is on the table.
+
+### Iron Law
+
+```
+NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
+```
+
+Symptom fixes are failure. Random fixes waste time and create new bugs. If Phase 1 is not complete, no fix may be proposed — by any worker, at any tool-call budget. Workers under time pressure or with an "obvious" guess MUST still complete Phase 1; rushing guarantees rework. 한국어 응답이 자연스러우면 한글로 정리해도 무방하나, "근본 원인 조사 없이는 수정 없음" 원칙은 동일하다.
+
+### Four Phases
+
+Each phase MUST complete before the next begins. The /athanor:debug worker matrix maps onto these phases: Triage opens Phase 1; Error Analyst + Git History + Code Tracer extend Phase 1 and 2 in parallel; the Leader's merge step is the gateway to Phase 3; any follow-up `/athanor:work` dispatch carries Phase 4.
+
+1. **Phase 1 — Root Cause Investigation** — Read error messages carefully (stack traces, line numbers, error codes). Reproduce consistently or gather more data; do not guess. Check recent changes (git diff, recent commits, config/dependency shifts). For multi-component systems, add diagnostic instrumentation at each boundary to reveal WHERE the failure occurs before touching WHY. Trace data flow backward from the failing value to its origin — fix at source, not at symptom.
+2. **Phase 2 — Pattern Analysis** — Find working examples of similar code in the same codebase. Read reference implementations completely (no skimming). List every difference between working and broken paths, however small — "that can't matter" assumptions guarantee bugs. Understand the broken component's dependencies, config, and environmental assumptions.
+3. **Phase 3 — Hypothesis and Testing** — State a single hypothesis explicitly: "X is the root cause because Y." Test minimally — the smallest possible change, one variable at a time. Verify before continuing: if it worked, advance to Phase 4; if not, form a NEW hypothesis rather than stacking fixes. When you do not understand something, say so plainly and gather more data.
+4. **Phase 4 — Implementation** — Create a failing test case first (use `superpowers:test-driven-development` or athanor-native TDD discipline). Implement a single fix addressing the root cause — one change at a time, no bundled refactoring. Verify the fix: target test passes, no other tests broken, the issue is actually resolved. If the fix does not work, count attempts.
+
+### 3+ fixes = architectural question
+
+If three fix attempts have failed, the bug is downstream of a deeper architectural choice. STOP attempting Fix #4. Indicators that the pattern itself is wrong: each fix exposes new shared state or coupling in a different place; each fix requires "massive refactoring" to land; each fix produces fresh symptoms elsewhere. At that point the question is not "which fix next" but "is this pattern fundamentally sound, or are we sticking with it through inertia?" Surface the architectural question to a human partner (or escalate to `/athanor:plan` cross-model review) before any further fix. This is a wrong-architecture signal, not a failed hypothesis — treat it accordingly.
+
 ### Step 3: Merge Results
 
 After ALL workers return (and any re-dispatch from Step 2.5 has settled), merge their findings into a unified debug report.

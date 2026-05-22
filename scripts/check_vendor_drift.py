@@ -43,7 +43,6 @@ from __future__ import annotations
 
 import argparse
 import difflib
-import subprocess
 import sys
 from pathlib import Path
 
@@ -116,6 +115,46 @@ def _strip_provenance_block(text: str) -> str:
         return text
     end += len("-->")
     return text[:start] + text[end:]
+
+
+# v0.11.8 deprecation preamble — 4-line block injected by
+# scripts/v011_8_deprecation_preamble.py into 45 vendored SKILL.md files
+# (5 LIFT + 40 DROP; ce-test-browser is the KEEP carve-out). Same treatment
+# pattern as _strip_provenance_block above: strip on the athanor side
+# before body comparison so the preamble does not register as drift.
+DEPRECATION_SENTINEL_LITERAL = (
+    "<!-- athanor:deprecated v=1 since=0.11.8 removal=0.12.0 -->"
+)
+
+
+def _strip_deprecation_block(text: str) -> str:
+    """Remove the 4-line deprecation preamble block from text.
+
+    Block shape (injected as 4 consecutive lines):
+      <!-- athanor:deprecated v=1 since=0.11.8 removal=0.12.0 -->
+      ⚠ DEPRECATION: This skill is removed in athanor v0.12.0.
+      Rationale: <single line>
+      Migration: <single line>
+
+    The sentinel line plus the next 3 lines are removed entirely (including
+    their trailing newlines). The next line (typically a blank separator or
+    the original upstream content's leading line) is preserved unchanged.
+    Downstream normalization (_collapse_blank_line_runs) handles the
+    incidental blank-line bookkeeping.
+
+    Returns text unchanged if the sentinel literal is absent.
+    """
+    start = text.find(DEPRECATION_SENTINEL_LITERAL)
+    if start < 0:
+        return text
+    # Advance past the sentinel line + the next 3 body lines (4 total).
+    cursor = start
+    newlines_consumed = 0
+    while cursor < len(text) and newlines_consumed < 4:
+        if text[cursor] == "\n":
+            newlines_consumed += 1
+        cursor += 1
+    return text[:start] + text[cursor:]
 
 
 def _collapse_blank_line_runs(text: str) -> str:
@@ -192,6 +231,7 @@ def _diff_skill(athanor_dir: Path, upstream_dir: Path) -> list[str]:
         u_text = upstream_file.read_text(encoding="utf-8", errors="replace")
         if athanor_file.suffix.lower() in {".md", ".markdown"}:
             a_text = _strip_provenance_block(a_text)
+            a_text = _strip_deprecation_block(a_text)
             a_text, u_text = _strip_frontmatter_name_rewrite(a_text, u_text)
         # Final normalization: collapse blank-line runs on both sides so
         # the provenance-strip side-effects don't show as drift.
@@ -235,7 +275,7 @@ def _resolve_upstream_name(skill_dir_name: str, registry_entry: dict) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "check_vendor_drift").splitlines()[0])
     parser.add_argument("--cache-root", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument("--skill", help="Limit to a single vendored skill directory")
     parser.add_argument("--ci", action="store_true",

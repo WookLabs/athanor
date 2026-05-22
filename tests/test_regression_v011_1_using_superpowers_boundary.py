@@ -10,11 +10,18 @@ Carve-out (intentional, per plan §Scope):
   semantics. They keep their own voice (T2 modification minimization)
   and are explicitly excluded from R2.
 
-Vendored `sp-using-superpowers/SKILL.md` body is locked by the
-v0.10.1 drift script; this test only pins file presence.
+v0.12.0 scope note: the vendored `sp-using-superpowers` SKILL.md is
+REMOVED in the atomic cut. The boundary itself survives as concept —
+declared in CLAUDE.md prose + restated in each of the 10 native
+Thin Leader skill preambles + (per plan §Phase 1) tracked in the
+`concepts/` registry. The pre-v0.12.0 shape of this file included a
+`VENDORED_SP_USING_SUPERPOWERS` constant + `test_vendored_sp_using_
+superpowers_file_present`; both are removed because the vendored
+file is gone.
 
-Plan reference: docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md
-Origin requirements: docs/brainstorms/2026-05-20-001-athanor-using-superpowers-boundary-requirements.md
+Plan reference: docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
+§Subtask 15 (test rewrite scope).
+Earlier plan: docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md
 """
 
 from __future__ import annotations
@@ -24,7 +31,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 SKILLS_DIR = REPO_ROOT / "skills"
-VENDORED_SP_USING_SUPERPOWERS = SKILLS_DIR / "sp-using-superpowers" / "SKILL.md"
 
 # 10 native Thin Leader skills — R2 scope.
 NATIVE_THIN_LEADER_SKILLS = (
@@ -88,7 +94,6 @@ def test_claude_md_boundary_uses_advisory_label():
     `enforced`. v0.11.1 ships no runtime gate so an enforced claim would
     break the honesty arc."""
     body = CLAUDE_MD.read_text(encoding="utf-8")
-    # Locate the boundary row line.
     boundary_line = next(
         (ln for ln in body.splitlines() if "using-superpowers boundary (v0.11.1)" in ln),
         None,
@@ -157,26 +162,6 @@ def test_excluded_vendored_skills_do_not_carry_thin_leader_preamble():
     assert not failures, "\n".join(failures)
 
 
-# ---- Vendored sp-using-superpowers presence pin ----
-
-
-def test_vendored_sp_using_superpowers_file_present():
-    """MUST (R3): vendored skills/sp-using-superpowers/SKILL.md exists.
-    Body content is locked by the v0.10.1 drift script; this test only
-    pins presence to catch accidental deletion."""
-    assert VENDORED_SP_USING_SUPERPOWERS.exists(), (
-        f"v0.11.1 R3 violation — vendored superpowers file missing at "
-        f"{VENDORED_SP_USING_SUPERPOWERS}"
-    )
-    # Quick sanity: file has YAML frontmatter and the upstream name.
-    body = VENDORED_SP_USING_SUPERPOWERS.read_text(encoding="utf-8")
-    assert body.startswith("---\n"), "Vendored SKILL.md must start with YAML frontmatter"
-    assert "name: sp-using-superpowers" in body or "name: using-superpowers" in body, (
-        "Vendored SKILL.md frontmatter `name:` must match its directory or upstream "
-        "(athanor-renamed)."
-    )
-
-
 # ---- Honesty-arc voice pins for v0.11.1 ----
 
 
@@ -207,13 +192,9 @@ def test_claude_md_boundary_no_forbidden_supersession_phrases():
 
 def test_changelog_v011_1_entry_no_forbidden_supersession_phrases():
     """MUST (R6): if CHANGELOG.md has a v0.11.1 entry, it must not contain
-    forbidden supersession phrases. When the entry is absent (e.g., on a
-    pre-release branch), the test is skipped — the version pin test in
-    test_regression_v010_namespace_layout.py guards version monotonicity."""
+    forbidden supersession phrases."""
     changelog = REPO_ROOT / "CHANGELOG.md"
     body = changelog.read_text(encoding="utf-8")
-    # CHANGELOG uses Keep-a-Changelog style `## [0.11.1] — date`; accept that
-    # plus the `v0.11.1` variant for forward-compat.
     lines = body.splitlines()
     start = None
     for i, ln in enumerate(lines):
@@ -221,7 +202,6 @@ def test_changelog_v011_1_entry_no_forbidden_supersession_phrases():
             start = i
             break
     if start is None:
-        # No v0.11.1 entry yet — nothing to assert on. Layout test gates version.
         return
     end = len(lines)
     for j in range(start + 1, len(lines)):

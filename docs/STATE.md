@@ -4,7 +4,123 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: SHIPPING — v0.11.7 (Doc-drift scanner extension + Residual reclassification + minimal B1 — companion-fix arc 5th layer)
+## Current Phase: v0.12.0 — Concept Absorption Pivot
+
+v0.12.0 atomically removes 45 vendored skills (5 LIFT-source + 40 DROP) and 47
+vendored CE sub-agents under the `/athanor:ce-*` and `/athanor:sp-*` namespaces.
+Direct attribution per D7: **v0.10.0 plan-of-record misread the user's
+concept-absorption intent as wholesale plugin vendoring.** The cutover lands
+the scope correction in one atomic release after the v0.11.8 deprecation
+warning cycle.
+
+Per the v0.12.0 plan (`docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md`)
+and decisions D1, D7, D8, D9, D10, D11, D12 (`.athanor/sessions/2026-05-22-001/decisions.md`),
+the cutover does the following:
+
+- **5 LIFT** — concepts absorbed into athanor-native skills as prose subsections
+  (NOT vendored directories): review personas (`ce-code-review` → `skills/review/SKILL.md`),
+  doc-review mode (`ce-doc-review` → `skills/review/SKILL.md` §"Doc review mode"),
+  systematic debugging Iron Law + Four Phases (`sp-systematic-debugging` →
+  `skills/debug/SKILL.md` §"Systematic Debugging Discipline"), requirements
+  capture R/A/F/AE-IDs (`ce-brainstorm` → `skills/discuss/references/requirements-capture.md`),
+  skill-discovery preamble (`sp-using-superpowers` → CLAUDE.md §"using-superpowers
+  boundary (v0.11.1)"). Each concept enumerated in NOTICE.md §"Concepts adopted
+  from upstream" with MIT attribution preserved.
+- **1 KEEP** (D8) — `/athanor:ce-test-browser` retained as user opt-in browser
+  automation (non-identity but real utility); T2 provenance block preserved.
+- **2 KEEP sub-agents** (D12) — `ce-git-history-analyzer` + `ce-repo-research-analyst`
+  retained as generic discovery dispatch targets at `agents/vendored/ce/`.
+- **Surface reduction: 95 → 3 (97%)** — from 33 ce-* + 13 sp-* + 49 sub-agents
+  (95 items) down to 1 KEEP skill + 2 KEEP sub-agents (3 items).
+- **45 removed skill directories** + **47 removed sub-agents** + 1 ledger archive
+  + 1 architecture doc + 1 user-facing migration guide
+  (`docs/v0.12.0-migration.md`) shipped together as the atomic cut.
+
+### Companion-fix arc 5-layer closure intact across the pivot
+
+v0.11.3 (script wrong) → v0.11.4 (path wrong) → v0.11.5 (CLAUDE.md doc drift) →
+v0.11.6 (sentinel body-hash binding) → v0.11.7 (scanner extension + Residual
+reclassification + B1 minimal) is preserved by v0.12.0. Stop hook script
+(`scripts/hooks/stop_verify_claims.py`) + all v0.11.3 ~ v0.11.7 regression
+tests + Spec-then-TDD discipline + cross-model `/athanor:plan` + Stop hook
+runtime gate (D10) — every athanor identity invariant survives the cutover.
+
+### v0.12.0 ship surface
+
+- Skills: 10 athanor-native + 1 KEEP vendored (`ce-test-browser`) + 2 internal
+  vendored (`scope-drift`, `verification-before-completion`) = **13 surviving**
+  skills total (down from 58 at v0.11.7).
+- Sub-agents: 2 retained at `agents/vendored/ce/` (down from 49).
+- pytest test count: **473 passed + 3 skipped + 2 xfailed + 5 xpassed** at
+  v0.12.0 baseline (with Phase 6 prose updates landed). All companion-fix arc
+  regression tests + v0.12.0 invariant tests green.
+- Honesty arc — D7 voice discipline: "plan-of-record misread" verbatim;
+  the four forbidden softening phrases enumerated in D7 are absent from
+  the new v0.12.0 content (voice-safety greps land green in CI).
+
+Full retrospective: `docs/archive/v010-v011-vendoring-scope-correction.md`.
+
+## Previous Phase: v0.11.8 — Deprecation Warning Cycle (Scope-Correction Prep)
+
+v0.11.8은 v0.12.0 atomic scope-correction cut에 앞서 deprecation preamble을
+45개 vendored SKILL.md (5 LIFT + 40 DROP)에 ship한다. 기능 변경 없음 —
+사용자가 `/athanor:ce-*` 또는 `/athanor:sp-*` skill을 호출하면 in-skill
+⚠ DEPRECATION 안내 (migration target 또는 "no athanor-native migration"
+라벨)를 본다. D8 결정에 따라 `ce-test-browser`는 KEEP carve-out으로
+preamble 미적용.
+
+`docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md`
+의 18개 subtask 중 본 release (Subtasks 1-7)는 deprecation 인프라 + 회귀
+잠금 + Stop hook + drift carve-out + version bump을 ship; Subtasks 8-20은
+v0.12.0 atomic cut으로 이월 (concept LIFT + 45 directory 제거 + NOTICE
+재구성 + marketplace.json 재설명).
+
+### Companion-fix arc 5-layer closure intact
+
+v0.11.3 (script wrong) → v0.11.4 (path wrong) → v0.11.5 (CLAUDE.md doc drift)
+→ v0.11.6 (sentinel body-hash binding) → v0.11.7 (scanner extension +
+Residual reclassification + B1 minimal) 의 5-layer 회로는 v0.11.8 pivot이
+건드리지 않는다. Stop hook script (`scripts/hooks/stop_verify_claims.py`) +
+regression suite 46개 + Spec-then-TDD discipline + cross-model
+`/athanor:plan` 모두 보존; scope-correction은 vendored surface에만 적용.
+
+### Stop hook + drift carve-outs
+
+- `scripts/hooks/stop_verify_claims.py` — deprecation sentinel
+  (`<!-- athanor:deprecated v=1 since=0.11.8 removal=0.12.0 -->`) early-return
+  carve-out 추가. v=2 sentinel check 뒤, material-claim detection 앞에 위치;
+  hit 시 counter reset. v=2 sentinel handling, v0.11.3 transcript_path parser,
+  v0.11.6 body-hash normalization, v0.11.7 B1 mutation detection 모두
+  무손상 보존.
+- `scripts/check_vendor_drift.py` — `_strip_deprecation_block`
+  (`_strip_provenance_block` mirror) 추가; `_diff_skill`에 wired. 4-line
+  preamble이 upstream drift로 잡히지 않도록 잠금.
+
+### v0.11.8 ship surface
+
+- 45 preamble injected (5 LIFT class + 40 DROP class; 1 KEEP carve-out =
+  `ce-test-browser` per D8).
+- Tests: **465 passed + 1 skipped + 1 xpassed** (453 v0.11.7 baseline + 12
+  신규 v0.11.8 deprecation preamble regression tests).
+- Active executable contracts (v0.11.8 신규):
+  `v011-8-deprecation-preamble-shape`,
+  `v011-8-deprecation-preamble-idempotency`,
+  `v011-8-stop-hook-deprecation-carve-out`,
+  `v011-8-vendor-drift-deprecation-carve-out`.
+
+### Forward — v0.12.0 atomic cut
+
+v0.12.0 ships the cut from session `2026-05-22-001` Subtasks 8-20:
+
+- Concept LIFT (review personas, debug discipline, requirements-capture,
+  skill-discovery preamble) into athanor-native skills
+- 40 DROP-class directory removal + 5 LIFT-class source removal post-merge
+- 49 sub-agents at `agents/vendored/ce/` 및 superpowers 잔여 정리
+- NOTICE.md attribution 재구성 (interpretive citation 모드로 전환)
+- `marketplace.json` description 재작성 (concept-absorption shape)
+- 5-file version bump 0.11.8 → 0.12.0
+
+## Previous Phase: v0.11.7 (Doc-drift scanner extension + Residual reclassification + minimal B1 — companion-fix arc 5th layer)
 
 v0.11.5는 CLAUDE.md drift-class 회귀 infrastructure를 ship했지만 scanner
 가 Markdown narrative에만 적용. Python docstring (특히
