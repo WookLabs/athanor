@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.12.0/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.13.0/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
@@ -178,6 +178,62 @@
           "minimum": 0,
           "maximum": 100,
           "description": "Confidence-rubric threshold for suppressing low-signal findings during consolidation."
+        }
+      }
+    },
+    "lfgGoal": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Goal-oriented LFG loop configuration consumed by skills/lfg-goal/. Sub-block defines circuit-breaker thresholds, adversarial tiering, release shape, archival, and dry-run semantics for the v0.13.0 LFG-goal surface.",
+      "properties": {
+        "_doc": { "type": "string" },
+        "maxIterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum cycles per goal-loop invocation; circuit breaker fires when reached. Default 5 per D8."
+        },
+        "noProgressThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Consecutive cycles with no new diff or test count change abort the loop with a no-progress signal."
+        },
+        "userConfirmAfter": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Pause for user confirmation after N cycles even when guards have not tripped."
+        },
+        "tier2Adversarial": {
+          "type": "boolean",
+          "description": "Tier 2 goal-check dispatches judge-A (Claude) plus judge-B (Codex) in parallel; both must agree for the goal-check to pass."
+        },
+        "tier3UserRatification": {
+          "type": "boolean",
+          "description": "Tier 3 BLOCKING user prompt at goal-completion; cannot be disabled without an explicit flag."
+        },
+        "scopeDriftAutoCheck": {
+          "type": "boolean",
+          "description": "Auto-fire /athanor:scope-drift between cycles to guard against off-plan diffs."
+        },
+        "consolidateCycles": {
+          "type": "boolean",
+          "description": "When true, all cycles roll up into a single PR plus final release; when false (default per D9), each cycle ships its own patch release."
+        },
+        "archiveOnComplete": {
+          "type": "boolean",
+          "description": "Move completed goal directories to .athanor/goals/_archive/ after goal-complete."
+        },
+        "goalRetentionDays": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cleaner ages out completed or abandoned goals after N days."
+        },
+        "goalsDir": {
+          "type": "string",
+          "description": "Root directory for goal ledgers; relative to the project root. Default .athanor/goals."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "description": "When true, simulate cycles without committing. Intended for development and test mode."
         }
       }
     }

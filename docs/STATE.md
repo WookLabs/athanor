@@ -4,7 +4,7 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.12.0 — Concept Absorption Pivot
+## Previous Phase: v0.12.0 — Concept Absorption Pivot
 
 v0.12.0 atomically removes 45 vendored skills (5 LIFT-source + 40 DROP) and 47
 vendored CE sub-agents under the `/athanor:ce-*` and `/athanor:sp-*` namespaces.
@@ -59,6 +59,103 @@ runtime gate (D10) — every athanor identity invariant survives the cutover.
   the new v0.12.0 content (voice-safety greps land green in CI).
 
 Full retrospective: `docs/archive/v010-v011-vendoring-scope-correction.md`.
+
+## Current Phase: v0.13.0 — /athanor:lfg-goal (Goal-Driven Validated Ralph Loop)
+
+v0.13.0은 goal-driven Ralph loop orchestrator `/athanor:lfg-goal`을 도입한다.
+사용자 의도를 durable goal ledger로 고정하고, 매 cycle마다 별도 worker가
+"실제로 receipt가 떨어졌는지"를 검증한 뒤, goal-completion 판정을 세 단계
+adversarial check로 통과시키는 흐름이다. v0.11.0 `/athanor:lfg` wrapper와는
+다른 축 — lfg는 plan→work→review 파이프라인 엮기, lfg-goal은 goal-state
+컨버전스 루프.
+
+### Three-layer architecture (three-layer goal-driven loop)
+
+1. **Durable goal ledger** at `.athanor/goals/<id>/goal.md` — 사용자 의도가
+   세션 휘발성에 빠지지 않도록 별도 디렉토리에 기록한다.
+   `.athanor/sessions/<id>/`(per-session) 과 분리된 cross-session 영속
+   레이어. 각 ledger entry는 goal text + acceptance criteria + cycle ledger
+   (receipt-validator 결과 timeline) 를 포함한다.
+2. **Dispatched receipt-validator worker** — 매 cycle 종료 시 clean-context
+   worker가 dispatch 되어 cycle artifact (work-log.md, git diff, test
+   evidence)를 읽고 "이 cycle이 실제로 약속한 것을 만들었는가" 를 판정한다.
+   Leader 자신이 검증하지 않는다 (Thin Leader 유지) — 별도 worker가 evidence
+   shape + 실재성을 본다.
+3. **Adversarial 3-tier goal-completion check** — goal 전체가 닫혔는지 판정
+   할 때 세 단계 게이트: (a) mechanical (acceptance criteria의 grep-able /
+   command-runnable 조건이 통과), (b) cross-model judge (Codex가 goal text +
+   final state를 보고 closure 판정 — `/athanor:plan` 의 cross-model 패턴
+   재사용), (c) user ratification (최종 사용자 confirm). 셋 중 하나라도
+   fail이면 다음 cycle로 ralph-loop 계속.
+
+### 4 athanor identity invariants preserved
+
+D11에 따라 lfg-goal은 새 identity invariant를 추가하지 않는다. 기존 네 축
+위에 놓이는 orchestration layer:
+
+- **Thin Leader**: lfg-goal leader는 goal ledger 관리 + cycle dispatch만
+  한다. 실제 plan / work / receipt 검증은 모두 clean-context worker에서.
+- **Cross-model adversarial planning**: 각 cycle의 plan 단계는 기존
+  `/athanor:plan` (Planner A Claude + Planner B Codex + Critic) 을 그대로
+  호출한다. Layer 3-(b) goal-closure judge 역시 동일 cross-model 패턴.
+- **Spec-then-TDD discipline**: 각 cycle의 work 단계는 `/athanor:work` 의
+  Splitter execution_note + conjunction-of-three Phase 3 gate를 그대로
+  거친다. lfg-goal은 그 위에서 cycle을 묶을 뿐.
+- **Stop hook runtime gate**: 매 cycle의 worker turn은 기존 Stop hook
+  (`scripts/hooks/stop_verify_claims.py`) 의 material-claim verification을
+  통과해야 한다. v0.11.3 input-layer + v0.11.4 plugin-root + v0.11.6 sentinel
+  body-hash binding + v0.11.7 scanner extension 5-layer companion-fix arc
+  그대로.
+
+### User decisions (session `.athanor/sessions/2026-05-22-002/`)
+
+- **D8 — maxIterations=5 default.** Ralph loop는 무한이 아니다. 기본 5
+  cycle에서 goal-closure가 안 닫히면 leader가 사용자에게 escalate
+  ("5 cycle 돌렸는데 closure 못 받았습니다 — 계속/중단/goal 수정 중 선택").
+  config override 가능 (`athanor.json` `lfg-goal.maxIterations`).
+- **D9 — consolidateCycles=false (per-cycle release default).** 매 cycle이
+  독립적인 commit/release 단위로 닫힌다. 여러 cycle을 한 changeset으로
+  묶지 않는다 — Stop hook 게이트와 Spec-then-TDD evidence가 cycle 단위로
+  떨어지도록 강제. opt-in으로 cycle 묶기는 가능하나 기본 off.
+- **D10 — dual invocation surface.** 두 방식으로 호출:
+  (1) inline goal text → leader가 auto-id (`YYYY-MM-DD-NNN` 패턴) 부여 후
+  `.athanor/goals/<id>/goal.md` 생성;
+  (2) `--goal-file <path>` → 사전 작성된 goal ledger 재사용 (이전 lfg-goal
+  세션 이어가기 또는 외부에서 작성한 goal 가져오기).
+
+### Honesty boundary
+
+본 메커니즘은 advisory + orchestration. runtime 강제는 기존 Stop hook
+(material-claim verification) + Spec-then-TDD Phase 3 gate가 그대로 담당
+하며, lfg-goal 레이어 자체는 새 runtime guard를 추가하지 않는다. Layer 2
+receipt-validator의 "실재성" 검증은 evidence shape 검증 (command /
+test_node_id / exit_code / output_tail) 까지만 — adversarial forgery
+(worker가 evidence를 fabricate) 차단은 본 릴리스 범위 밖. Layer 3-(b)
+cross-model judge는 Codex 호출이 unavailable / disabled 일 때 fail-open
+(closure를 자동 grant하지 않고 사용자에게 fallback escalate) 로 운용한다.
+
+세션 참조: `.athanor/sessions/2026-05-22-002/` (계획 + decisions D1~D14 기록;
+deep-tier: Claude Planner A + Codex Planner B + cross-review + Critic
+synthesis).
+
+### v0.13.0 ship surface
+
+- 15 subtasks shipped via `/athanor:work` Splitter (Plan B Phase 4 dropped
+  per D2; Subtasks 1-15 covering goal ledger spec + receipt-validator
+  worker template + Tier 1/2/3 check + config block + schema + skill body
+  + CHANGELOG/STATE.md release entries + version bump).
+- Tests: **501 passed + 3 skipped + 1 xpassed** (479 v0.12.0 baseline + 22
+  신규 v0.13.0 regression tests across 3 files —
+  `tests/test_regression_v013_lfg_goal_*.py`).
+- Active executable contracts (v0.13.0 신규):
+  `v013-lfg-goal-skill-surface`,
+  `v013-lfg-goal-receipt-contract`,
+  `v013-lfg-goal-config-validation`.
+- 4 athanor identity invariants 무손상 보존 — lfg-goal은 orchestration
+  layer, 새 identity invariant 추가 안 함 (D11).
+- Companion-fix arc 5-layer closure (v0.11.3 ~ v0.11.7) 그대로 통과 —
+  Stop hook script + sentinel body-hash binding + scanner extension +
+  B1 minimal detection 모두 v0.13.0 ship에서 unchanged.
 
 ## Previous Phase: v0.11.8 — Deprecation Warning Cycle (Scope-Correction Prep)
 

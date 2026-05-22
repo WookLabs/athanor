@@ -274,20 +274,26 @@ def test_archive_ledger_contains_canonical_phrases():
 
 
 def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_x_series():
-    """MUST: docs/STATE.md Current Phase mentions a 0.10.x / 0.11.x / 0.12.x
-    version. v0.12.0+ accepted to keep the test stable through the cut."""
+    """MUST: docs/STATE.md Current Phase mentions a 0.10.x / 0.11.x / 0.12.x /
+    0.13.x version. v0.13.0+ accepted to keep the test stable through the
+    lfg-goal cut."""
     text = STATE.read_text(encoding="utf-8")
     found_current = False
     in_series = False
     for line in text.splitlines():
         if line.startswith("## Current Phase"):
             found_current = True
-            if "0.10." in line or "0.11." in line or "0.12." in line:
+            if (
+                "0.10." in line
+                or "0.11." in line
+                or "0.12." in line
+                or "0.13." in line
+            ):
                 in_series = True
             break
     assert found_current, "STATE.md must have Current Phase section"
     assert in_series, (
-        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x version"
+        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x / 0.13.x version"
     )
 
 
