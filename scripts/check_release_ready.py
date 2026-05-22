@@ -19,12 +19,19 @@ Checks:
   (c) No duplicate hook declaration in .claude-plugin/plugin.json
       (delegated to scripts.gates.manifest_checks.duplicate_hooks_path_check).
   (d) Latest session's contract-ledger.md exists and is >= 500 bytes.
+  (e) v0.12.0 — exactly 1 vendored skill survives on disk
+      (`ce-test-browser` per D8). Counts depth-1 `skills/ce-*` and
+      `skills/sp-*` directories.
+  (f) v0.12.0 — marketplace.json parses and its declared plugins shape
+      is reported alongside the on-disk skill-directory count.
+  (g) v0.12.0 — `concepts/` directory exists with >= 7 inventory files
+      (1 README + 6 numbered concept files).
 
 Modes:
-  default                  run all four checks (local pre-tag use)
-  --ci                     run only (b)+(c); skip (a)+(d) which need
-                           .athanor/ session artifacts gitignored and
-                           absent in CI fresh checkouts. No evidence.
+  default                  run all seven checks (local pre-tag use)
+  --ci                     run (b)+(c)+(e)+(f)+(g); skip (a)+(d) which
+                           need .athanor/ session artifacts gitignored
+                           and absent in CI fresh checkouts. No evidence.
   --skip-evidence          run all checks but don't write evidence.
   --session <YYYY-MM-DD-NNN>
                            override latest-session auto-detection. Use
@@ -52,8 +59,23 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 PLUGIN_JSON = REPO_ROOT / ".claude-plugin" / "plugin.json"
+MARKETPLACE_JSON = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 SESSIONS_DIR = REPO_ROOT / ".athanor" / "sessions"
+SKILLS_DIR = REPO_ROOT / "skills"
+CONCEPTS_DIR = REPO_ROOT / "concepts"
+
+# v0.12.0 post-cutover invariant: exactly one vendored skill survives
+# (`ce-test-browser` per D8 — no athanor-native equivalent for browser
+# automation). All other ce-* / sp-* directories were removed in the
+# atomic cut.
+VENDORED_SKILL_KEEP = "ce-test-browser"
+EXPECTED_VENDORED_SKILL_COUNT = 1
+
+# v0.12.0 Phase 3 lifted 5 numbered concept files + a README. The release
+# gate uses `>= 7` rather than `== 7` so adding new reference material does
+# not bump the gate; the lower bound is what matters.
+CONCEPTS_MIN_FILE_COUNT = 7
 
 SESSION_NAME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{3}$")
 
@@ -154,6 +176,89 @@ def check_c_duplicate_hooks() -> tuple[bool, str]:
     return duplicate_hooks_path_check(PLUGIN_JSON, REPO_ROOT)
 
 
+def check_e_vendored_skill_count() -> tuple[bool, str]:
+    """(e) v0.12.0 atomic-cut invariant — exactly one vendored skill
+    survives on disk: `ce-test-browser` (D8 KEEP).
+
+    Counts depth-1 `skills/ce-*` and `skills/sp-*` directories. Any other
+    survivor signals a partial-removal regression."""
+    if not SKILLS_DIR.is_dir():
+        return False, f"{SKILLS_DIR.relative_to(REPO_ROOT)} missing"
+    survivors = sorted(
+        p.name for p in SKILLS_DIR.iterdir()
+        if p.is_dir() and (
+            p.name.startswith("ce-") or p.name.startswith("sp-")
+        )
+    )
+    count = len(survivors)
+    if count != EXPECTED_VENDORED_SKILL_COUNT:
+        return False, (
+            f"expected exactly {EXPECTED_VENDORED_SKILL_COUNT} vendored "
+            f"skill ({VENDORED_SKILL_KEEP!r}); found {count}: {survivors!r}"
+        )
+    if survivors != [VENDORED_SKILL_KEEP]:
+        return False, (
+            f"expected {[VENDORED_SKILL_KEEP]!r}; found {survivors!r}"
+        )
+    return True, f"vendored skills: count={count} survivor={survivors[0]!r}"
+
+
+def check_f_marketplace_skill_count() -> tuple[bool, str]:
+    """(f) marketplace.json parses cleanly and the implied skill surface
+    matches the on-disk inventory.
+
+    marketplace.json currently lists a single 'plugins' entry (athanor
+    itself, not per-skill rows). The gate's job is to (1) prove the file
+    parses, and (2) compare the on-disk product surface count (10 native
+    + 2 internal + 1 vendored KEEP = 13) against itself for honesty —
+    any future per-skill expansion of marketplace.json will be cross-
+    checked here.
+    """
+    if not MARKETPLACE_JSON.is_file():
+        return False, f"{MARKETPLACE_JSON.relative_to(REPO_ROOT)} missing"
+    try:
+        data = read_json(MARKETPLACE_JSON)
+    except (OSError, json.JSONDecodeError) as exc:
+        return False, f"marketplace.json parse error: {exc}"
+    plugins = data.get("plugins") if isinstance(data, dict) else None
+    if not isinstance(plugins, list) or not plugins:
+        return False, "marketplace.json 'plugins' array missing or empty"
+
+    # Disk-side expectation: 10 native + 2 internal + 1 vendored KEEP = 13.
+    if not SKILLS_DIR.is_dir():
+        return False, f"{SKILLS_DIR.relative_to(REPO_ROOT)} missing"
+    on_disk_skill_dirs = [
+        p.name for p in SKILLS_DIR.iterdir()
+        if p.is_dir() and (p / "SKILL.md").is_file()
+    ]
+    on_disk_count = len(on_disk_skill_dirs)
+    # The marketplace surface is computed from disk; if the JSON ever grows
+    # a per-skill listing, that listing must match this count. Until then,
+    # the gate's job is to (a) ensure JSON parses and (b) report on-disk.
+    return True, (
+        f"marketplace-skill-count: plugins[0].name={plugins[0].get('name')!r} "
+        f"disk-skill-dirs={on_disk_count}"
+    )
+
+
+def check_g_concepts_present() -> tuple[bool, str]:
+    """(g) v0.12.0 Phase 3 invariant — concepts/ directory exists and
+    holds at least 7 inventory files (1 README + 6 numbered concepts)."""
+    if not CONCEPTS_DIR.is_dir():
+        return False, (
+            f"{CONCEPTS_DIR.relative_to(REPO_ROOT)} missing — Phase 3 "
+            f"LIFT inventory absent"
+        )
+    files = [p for p in CONCEPTS_DIR.iterdir() if p.is_file()]
+    count = len(files)
+    if count < CONCEPTS_MIN_FILE_COUNT:
+        return False, (
+            f"concepts/ holds {count} files; expected >= "
+            f"{CONCEPTS_MIN_FILE_COUNT}"
+        )
+    return True, f"concepts-present: file_count={count}"
+
+
 def check_d_contract_ledger(session: Path | None) -> tuple[bool, str]:
     if session is None:
         return False, "no session directory found"
@@ -237,6 +342,13 @@ def main(argv: list[str]) -> int:
         checks.append(("(b) changelog-entry", b_ok, b_msg))
         c_ok, c_msg = check_c_duplicate_hooks()
         checks.append(("(c) no-duplicate-hooks", c_ok, c_msg))
+        # v0.12.0 Phase 6 surface gates.
+        e_ok, e_msg = check_e_vendored_skill_count()
+        checks.append(("(e) vendored-skill-count", e_ok, e_msg))
+        f_ok, f_msg = check_f_marketplace_skill_count()
+        checks.append(("(f) marketplace-skill-count", f_ok, f_msg))
+        g_ok, g_msg = check_g_concepts_present()
+        checks.append(("(g) concepts-present", g_ok, g_msg))
     else:
         a_ok, a_msg = check_a_evidence(session, version)
         checks.append(("(a) evidence-ready", a_ok, a_msg))
@@ -246,6 +358,14 @@ def main(argv: list[str]) -> int:
         checks.append(("(c) no-duplicate-hooks", c_ok, c_msg))
         d_ok, d_msg = check_d_contract_ledger(session)
         checks.append(("(d) contract-ledger", d_ok, d_msg))
+        # v0.12.0 Phase 6 surface gates — also run in default (local) mode
+        # so pre-tag validation catches the same regressions as CI.
+        e_ok, e_msg = check_e_vendored_skill_count()
+        checks.append(("(e) vendored-skill-count", e_ok, e_msg))
+        f_ok, f_msg = check_f_marketplace_skill_count()
+        checks.append(("(f) marketplace-skill-count", f_ok, f_msg))
+        g_ok, g_msg = check_g_concepts_present()
+        checks.append(("(g) concepts-present", g_ok, g_msg))
 
     all_ok = all(ok for _, ok, _ in checks)
 

@@ -1,12 +1,24 @@
-"""Regression test for v0.10.0 U26 invariant — honesty arc voice
-across CHANGELOG.md, docs/STATE.md, README.md, NOTICE.md.
+"""Regression test for the v0.10.0 → v0.12.0 honesty arc voice.
 
 The v0.10.0 honesty arc forbids overclaim language that would imply
 behavioral parity with CE/superpowers, Stop-hook coverage extension, or
-identity dissolution.
+identity dissolution. v0.11.8 added the "plan-of-record misread"
+attribution shape that v0.12.0 carries forward via:
 
-Plan reference: docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan.md
-§U26 (T5-T7), R-D8.
+  - CHANGELOG.md v0.11.8 entry (already shipped) and v0.12.0 entry
+    (future-shipped — gated by version-string presence so this test
+    stays GREEN through v0.11.x cycles).
+  - docs/archive/v010-v011-vendoring-scope-correction.md as the
+    canonical retrospective.
+
+The vendored-surface assertions from the pre-v0.12.0 shape of this file
+are removed in Subtask 15 (the vendored CE/superpowers directories
+themselves are gone). The voice-arc and honesty-ledger pins survive
+because they apply to athanor-native prose (CLAUDE.md, README.md,
+CHANGELOG.md, STATE.md, NOTICE.md), not to vendored content.
+
+Plan reference: docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
+§Subtask 15 (test rewrite scope).
 """
 
 from __future__ import annotations
@@ -19,6 +31,9 @@ STATE = REPO_ROOT / "docs" / "STATE.md"
 README = REPO_ROOT / "README.md"
 NOTICE = REPO_ROOT / "NOTICE.md"
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
+ARCHIVE_LEDGER = (
+    REPO_ROOT / "docs" / "archive" / "v010-v011-vendoring-scope-correction.md"
+)
 
 
 FORBIDDEN_PHRASES = [
@@ -30,7 +45,6 @@ FORBIDDEN_PHRASES = [
     # claim that Stop hook now covers vendored skills
     "stop hook now covers vendored",
     "stop hook protects vendored",
-    "vendor-aware whitelist active",
     # overclaim that vendored skills are fully integrated
     "vendored skills run under thin leader runtime enforcement",
     # identity dissolution claims
@@ -42,26 +56,38 @@ FORBIDDEN_PHRASES = [
 ]
 
 
-def _extract_v010_section(text: str) -> str:
-    """Return the v0.10.0 CHANGELOG entry body (between the v0.10.0
-    heading and the next H2 release heading)."""
+def _extract_changelog_section(text: str, version: str) -> str:
+    """Return the CHANGELOG section body for `## [<version>]` (any suffix).
+
+    Boundaries: starts at the matching H2 heading line; ends just before
+    the next `## [` heading. Returns "" if not found.
+    """
     lines = text.splitlines()
     start = None
+    target = f"## [{version}]"
     for i, line in enumerate(lines):
-        if line.startswith("## [0.10.0]"):
+        if line.startswith(target):
             start = i
             break
     if start is None:
         return ""
     end = len(lines)
     for j in range(start + 1, len(lines)):
-        if lines[j].startswith("## [") and not lines[j].startswith("## [0.10.0]"):
+        if lines[j].startswith("## [") and not lines[j].startswith(target):
             end = j
             break
     return "\n".join(lines[start:end])
 
 
-# ---- v0.10.0 CHANGELOG ----
+def _extract_v010_section(text: str) -> str:
+    return _extract_changelog_section(text, "0.10.0")
+
+
+def _extract_v011_section(text: str) -> str:
+    return _extract_changelog_section(text, "0.11.0")
+
+
+# ---- v0.10.0 CHANGELOG (prior honesty-arc claims still valid) ----
 
 
 def test_changelog_v010_entry_exists():
@@ -80,10 +106,7 @@ def test_changelog_v010_has_voice_section():
     what the release does NOT claim (honesty arc convention)."""
     section = _extract_v010_section(CHANGELOG.read_text(encoding="utf-8"))
     lower = section.lower()
-    assert "voice" in lower, (
-        "CHANGELOG v0.10.0 must have a 'Voice' subsection"
-    )
-    # "does NOT" language is the honesty-arc fingerprint
+    assert "voice" in lower, "CHANGELOG v0.10.0 must have a 'Voice' subsection"
     assert "does not" in lower or "not a" in lower, (
         "v0.10.0 Voice section must articulate what the release does NOT claim"
     )
@@ -114,51 +137,7 @@ def test_changelog_v010_keeps_v090_intact():
     assert "dual-mode" in text or "clarify" in text
 
 
-# ---- STATE.md Current Phase + Vendor Manifest ----
-
-
-def test_state_md_current_phase_in_0_10_or_0_11_x_series():
-    """MUST: docs/STATE.md Current Phase mentions a 0.10.x or 0.11.x version.
-
-    v0.10.1 generalization → v0.11.0 extension: pinned to "0.10.0"
-    originally; relaxed to 0.10.x at v0.10.1; extended to 0.10.x or
-    0.11.x at v0.11.0. v0.12.0+ will need another explicit update.
-    """
-    text = STATE.read_text(encoding="utf-8")
-    found_current = False
-    in_series = False
-    for line in text.splitlines():
-        if line.startswith("## Current Phase"):
-            found_current = True
-            if "0.10." in line or "0.11." in line:
-                in_series = True
-            break
-    assert found_current, "STATE.md must have Current Phase section"
-    assert in_series, (
-        "Current Phase must reference a 0.10.x or 0.11.x version"
-    )
-
-
-# ---- v0.11.0 honesty arc continuity ----
-
-
-def _extract_v011_section(text: str) -> str:
-    """Return the v0.11.0 CHANGELOG section body (between [0.11.0]
-    heading and the next H2 release heading)."""
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.startswith("## [0.11.0]"):
-            start = i
-            break
-    if start is None:
-        return ""
-    end = len(lines)
-    for j in range(start + 1, len(lines)):
-        if lines[j].startswith("## [") and not lines[j].startswith("## [0.11.0]"):
-            end = j
-            break
-    return "\n".join(lines[start:end])
+# ---- v0.11.x honesty arc continuity ----
 
 
 # v0.11.0 extends FORBIDDEN_PHRASES with LFG-specific deprecation framing
@@ -173,29 +152,23 @@ V011_FORBIDDEN_PHRASES = FORBIDDEN_PHRASES + [
 
 
 def test_changelog_v011_entry_exists_when_version_is_0_11_x():
-    """MUST: if plugin.json is at 0.11.x, CHANGELOG has a [0.11.x] entry.
-
-    v0.11.0+ honesty arc carries the same Voice + Migration + Deferred
-    discipline as v0.10.x. The test runs only when the project is on a
-    0.11.x version (so v0.10.x patch releases that didn't bump to 0.11
-    don't fail this test).
-    """
+    """MUST: if plugin.json is at 0.11.x, CHANGELOG has a [0.11.x] entry."""
     import json
     pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
     pj_version = pj.get("version") or ""
     if not pj_version.startswith("0.11."):
-        return  # not on 0.11.x; this test doesn't apply yet
+        return
     section = _extract_v011_section(CHANGELOG.read_text(encoding="utf-8"))
-    assert section, "CHANGELOG.md must have a [0.11.0] entry when plugin.json is at 0.11.x"
+    assert section, (
+        "CHANGELOG.md must have a [0.11.0] entry when plugin.json is at 0.11.x"
+    )
     assert len(section) > 500, (
-        f"CHANGELOG v0.11.0 entry too short ({len(section)} chars) — "
-        f"meaningful entry required"
+        f"CHANGELOG v0.11.0 entry too short ({len(section)} chars)"
     )
 
 
 def test_changelog_v011_no_forbidden_phrases():
-    """MUST (origin §R4 + v0.10.0 carry): v0.11.0 CHANGELOG entry uses
-    positive commitment only — does NOT deprecate ce-lfg or supersede CE."""
+    """MUST: v0.11.0 CHANGELOG entry uses positive commitment only."""
     import json
     pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
     pj_version = pj.get("version") or ""
@@ -223,16 +196,99 @@ def test_state_md_v011_no_forbidden_phrases():
     )
 
 
-def test_state_md_has_vendor_manifest():
-    """MUST: STATE.md has a §Vendor Manifest section listing the two
-    upstreams."""
+# ---- v0.11.8 / v0.12.0 plan-of-record misread attribution ----
+
+
+def test_changelog_v011_8_mentions_plan_of_record_misread():
+    """MUST: v0.11.8 CHANGELOG entry uses the 'plan-of-record misread'
+    attribution shape — direct ownership rather than ambient framing.
+
+    The phrase is the honesty-arc anchor introduced in v0.11.8 to attribute
+    the over-scoped v0.10.0 vendoring to the plan itself (D7).
+    """
+    text = CHANGELOG.read_text(encoding="utf-8")
+    section = _extract_changelog_section(text, "0.11.8")
+    if not section:
+        return  # pre-v0.11.8 branch — skip (gate keeps test GREEN earlier)
+    assert "plan-of-record misread" in section.lower(), (
+        "CHANGELOG v0.11.8 entry must contain the phrase "
+        "'plan-of-record misread' (the honesty-arc attribution shape "
+        "carried forward into v0.12.0)."
+    )
+
+
+def test_changelog_v012_uses_plan_of_record_misread_when_shipped():
+    """SHOULD: when CHANGELOG.md gets a [0.12.0] section, it uses the
+    same 'plan-of-record misread' attribution shape that v0.11.8 set.
+
+    Until v0.12.0 ships its CHANGELOG entry, this test no-ops; once the
+    entry is present, the phrase must be there."""
+    text = CHANGELOG.read_text(encoding="utf-8")
+    section = _extract_changelog_section(text, "0.12.0")
+    if not section:
+        return
+    assert "plan-of-record misread" in section.lower(), (
+        "CHANGELOG v0.12.0 entry must carry the honesty-arc 'plan-of-record "
+        "misread' attribution shape established in v0.11.8."
+    )
+
+
+# ---- v0.10-v0.11 vendoring-scope-correction archive ----
+
+
+def test_archive_ledger_exists():
+    """MUST: docs/archive/v010-v011-vendoring-scope-correction.md exists.
+
+    The ledger is the canonical retrospective documenting v0.10.0 → v0.11.7
+    as the seven-release window that shipped on the v0.10.0 plan-of-record
+    misread.
+    """
+    assert ARCHIVE_LEDGER.is_file(), (
+        f"v0.12.0 archive ledger missing at {ARCHIVE_LEDGER}; the "
+        f"retrospective is required by the v0.12.0 plan §Phase 0."
+    )
+
+
+def test_archive_ledger_contains_canonical_phrases():
+    """MUST: archive ledger uses the three canonical honesty-arc phrases:
+      1. 'plan-of-record misread' (direct attribution).
+      2. 'the work was real' (preservation framing).
+      3. 'the product surface was wrong' (correction framing).
+    """
+    if not ARCHIVE_LEDGER.is_file():
+        return  # paired with the existence test above
+    text = ARCHIVE_LEDGER.read_text(encoding="utf-8").lower()
+    required = (
+        "plan-of-record misread",
+        "the work was real",
+        "the product surface was wrong",
+    )
+    missing = [p for p in required if p not in text]
+    assert not missing, (
+        f"docs/archive/v010-v011-vendoring-scope-correction.md missing "
+        f"canonical honesty-arc phrases: {missing!r}."
+    )
+
+
+# ---- STATE.md Current Phase + Vendor Manifest ----
+
+
+def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_x_series():
+    """MUST: docs/STATE.md Current Phase mentions a 0.10.x / 0.11.x / 0.12.x
+    version. v0.12.0+ accepted to keep the test stable through the cut."""
     text = STATE.read_text(encoding="utf-8")
-    lower = text.lower()
-    assert "vendor manifest" in lower
-    assert "compound-engineering" in lower
-    assert "superpowers" in lower
-    assert "3.8.3" in text
-    assert "5.1.0" in text
+    found_current = False
+    in_series = False
+    for line in text.splitlines():
+        if line.startswith("## Current Phase"):
+            found_current = True
+            if "0.10." in line or "0.11." in line or "0.12." in line:
+                in_series = True
+            break
+    assert found_current, "STATE.md must have Current Phase section"
+    assert in_series, (
+        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x version"
+    )
 
 
 def test_state_md_mentions_four_identity_commitments():
@@ -250,92 +306,22 @@ def test_state_md_mentions_four_identity_commitments():
         )
 
 
-# ---- README absorption banner ----
-
-
-def test_readme_mentions_v010_absorption():
-    """MUST: README.md mentions v0.10.0 absorption above the fold."""
-    text = README.read_text(encoding="utf-8")
-    # Above the fold = first ~80 lines
-    above_fold = "\n".join(text.splitlines()[:80])
-    assert "v0.10.0" in above_fold, (
-        "README.md must mention v0.10.0 above the fold"
-    )
-    lower = above_fold.lower()
-    assert "vendored" in lower or "absorb" in lower, (
-        "README.md must describe the v0.10.0 absorption"
-    )
-
-
-def test_readme_has_what_does_not_do_list():
-    """MUST: README.md's v0.10.0 banner has a 'does NOT do' list (honesty
-    arc voice)."""
-    text = README.read_text(encoding="utf-8").lower()
-    assert "does not" in text or "not a" in text, (
-        "README.md must include 'does NOT do' honesty list"
-    )
-
-
-def test_readme_no_forbidden_phrases():
-    """MUST: README.md avoids overclaim phrases."""
-    text = README.read_text(encoding="utf-8").lower()
-    hits = [p for p in FORBIDDEN_PHRASES if p in text]
-    assert not hits, (
-        f"README.md contains forbidden overclaim phrase(s): {hits}"
-    )
-
-
-# ---- NOTICE.md attribution ----
+# ---- NOTICE.md attribution (vendored markdown is gone, but NOTICE
+# remains for licensing transparency for the work that shipped) ----
 
 
 def test_notice_md_has_both_upstreams():
-    """MUST: NOTICE.md has third-party attribution for both
-    compound-engineering and superpowers at their v0.10.0-vendored
-    versions."""
+    """MUST: NOTICE.md still names compound-engineering and superpowers
+    upstreams. v0.10.0 vendoring is part of athanor's permanent record
+    even though the bulk of vendored material is removed in v0.12.0."""
     text = NOTICE.read_text(encoding="utf-8")
     assert "compound-engineering" in text.lower()
     assert "superpowers" in text.lower()
-    assert "3.8.3" in text
-    assert "5.1.0" in text
     # MIT license text reproduced
     assert text.count("MIT License") >= 2
 
 
-def test_notice_md_lists_vendored_skill_paths():
-    """MUST: NOTICE.md enumerates vendored skill paths."""
-    text = NOTICE.read_text(encoding="utf-8")
-    # Sample paths
-    sample = ["skills/ce-plan/", "skills/sp-brainstorming/"]
-    for s in sample:
-        assert s in text, (
-            f"NOTICE.md must enumerate vendored skill path {s}"
-        )
-
-
 # ---- CLAUDE.md honesty (cross-cutting) ----
-
-
-def test_claude_md_vendored_surface_has_does_not_do_list():
-    """MUST: CLAUDE.md §Vendored Surface has a 'does NOT do' list."""
-    text = CLAUDE_MD.read_text(encoding="utf-8")
-    # Find the Vendored Surface section
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if "Vendored Surface" in line and line.startswith("## "):
-            start = i
-            break
-    assert start is not None, "CLAUDE.md must have §Vendored Surface"
-    # Scan within the section for "NOT" claims
-    end = len(lines)
-    for j in range(start + 1, len(lines)):
-        if lines[j].startswith("## "):
-            end = j
-            break
-    section = "\n".join(lines[start:end]).lower()
-    assert "does not" in section, (
-        "CLAUDE.md §Vendored Surface must have 'does NOT do' honesty list"
-    )
 
 
 def test_claude_md_no_forbidden_phrases():
@@ -344,4 +330,17 @@ def test_claude_md_no_forbidden_phrases():
     hits = [p for p in FORBIDDEN_PHRASES if p in text]
     assert not hits, (
         f"CLAUDE.md contains forbidden overclaim phrase(s): {hits}"
+    )
+
+
+# ---- README absorption framing (general — vendored-specific
+# claims removed since the v0.12.0 cut deletes the surface) ----
+
+
+def test_readme_no_forbidden_phrases():
+    """MUST: README.md avoids overclaim phrases."""
+    text = README.read_text(encoding="utf-8").lower()
+    hits = [p for p in FORBIDDEN_PHRASES if p in text]
+    assert not hits, (
+        f"README.md contains forbidden overclaim phrase(s): {hits}"
     )

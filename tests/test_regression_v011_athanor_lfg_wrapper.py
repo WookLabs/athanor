@@ -23,8 +23,8 @@ def _load_athanor_lfg() -> str:
     return ATHANOR_LFG_SKILL.read_text(encoding="utf-8")
 
 
-def _load_ce_lfg() -> str:
-    return VENDORED_CE_LFG_SKILL.read_text(encoding="utf-8")
+# v0.12.0: `_load_ce_lfg` removed — vendored skills/ce-lfg/ deleted per D9
+# FULL DROP. See `test_vendored_ce_lfg_removed_post_v012` below.
 
 
 # ---- Structure: file exists at the right path for depth-1 auto-discovery ----
@@ -169,30 +169,25 @@ def test_body_discloses_difference_from_ce_lfg():
     )
 
 
-# ---- T2 commitment: vendored ce-lfg body untouched ----
+# ---- v0.12.0: vendored ce-lfg removed; athanor-native /athanor:lfg survives ----
 
 
-def test_vendored_ce_lfg_body_unchanged():
-    """MUST (AE2): vendored skills/ce-lfg/SKILL.md must NOT contain
-    /athanor:plan, /athanor:work, /athanor:review references. If those
-    appear, the vendored body was edited — T2 provenance violated."""
-    ce_lfg_body = _load_ce_lfg()
-    # The vendored body should only reference ce-* skills (and built-in
-    # tooling). Any /athanor:plan etc. reference indicates accidental edit.
-    athanor_native_refs = ["/athanor:plan", "/athanor:work", "/athanor:review",
-                           "/athanor:lfg", "/athanor:discuss", "/athanor:debug"]
-    leaks = [r for r in athanor_native_refs if r in ce_lfg_body]
-    assert not leaks, (
-        f"Vendored skills/ce-lfg/SKILL.md was edited — contains "
-        f"athanor-native references: {leaks}. T2 provenance violated."
+def test_vendored_ce_lfg_removed_post_v012():
+    """MUST (D9): the vendored skills/ce-lfg/ directory is REMOVED in the
+    v0.12.0 atomic cut (FULL DROP — no THIN-ADAPTER stub). Users migrate
+    to athanor-native /athanor:lfg."""
+    assert not VENDORED_CE_LFG_SKILL.exists(), (
+        f"v0.12.0 D9 FULL DROP: skills/ce-lfg/SKILL.md must NOT exist "
+        f"post-removal; found {VENDORED_CE_LFG_SKILL}"
     )
 
 
-# ---- Coexistence regression: both skills exist ----
-
-
-def test_both_lfg_skills_coexist():
-    """MUST (R2): both skills/lfg/SKILL.md and skills/ce-lfg/SKILL.md
-    exist; user chooses by namespace."""
-    assert ATHANOR_LFG_SKILL.exists()
-    assert VENDORED_CE_LFG_SKILL.exists()
+def test_athanor_native_lfg_survives_post_v012():
+    """MUST (R2 post-v0.12.0): athanor-native /athanor:lfg wrapper survives
+    the atomic cut (it's identity #3-adjacent — the user-facing pipeline
+    surface). The pre-v0.12.0 coexistence with /athanor:ce-lfg collapses
+    to native-only."""
+    assert ATHANOR_LFG_SKILL.exists(), (
+        f"/athanor:lfg native wrapper must survive v0.12.0; missing at "
+        f"{ATHANOR_LFG_SKILL}"
+    )

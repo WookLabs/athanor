@@ -1,13 +1,22 @@
 """Regression test for v0.10.1 U1 invariant — `scripts/check_vendor_drift.py`
 exists, is invocable, and produces sensible exit codes.
 
+v0.12.0 scope note: the atomic cut removed 45 vendored skills + 47 vendored
+sub-agents. The drift script survives — its job is to detect drift on
+whatever vendored content remains. Post-v0.12.0 that's just
+`ce-test-browser` (D8 KEEP) under `skills/` plus the 2 retained sub-agents
+under `agents/vendored/ce/`. The pre-v0.12.0 shape of this file used
+`ce-plan` to build the fixture cache; that source is gone now, so the
+fixture uses `ce-test-browser` instead.
+
 Exit code contract:
   0 — no drift detected (vendored tree matches upstream caches)
   1 — drift detected
   2 — upstream cache unreachable
 
 Plan reference: docs/plans/2026-05-19-004-feat-v0.10.1-vendor-hygiene-plan.md
-§U1.
+§U1. v0.12.0 rewrite per docs/plans/2026-05-22-001-feat-v0.12.0-concept-
+kernel-cutover-plan-b.md §Subtask 15 A6.
 
 CI note: GitHub Actions runners do not have the upstream plugin caches
 installed. Tests that need a working cache use a tiny on-disk fixture
@@ -16,7 +25,6 @@ under tmp_path to simulate the cache structure expected by the script.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -25,6 +33,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "check_vendor_drift.py"
+KEEP_SKILL = "ce-test-browser"
 
 
 def _run_drift(args: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -39,40 +48,32 @@ def _run_drift(args: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 def _make_minimal_cache(tmp_path: Path) -> Path:
-    """Build a minimal plugin-cache structure with one CE skill + one
-    superpowers skill that matches what's currently vendored. Returns
-    the cache root for --cache-root override.
+    """Build a minimal plugin-cache structure with the sole surviving vendored
+    skill (`ce-test-browser`) matching what's currently in athanor's tree.
+    Returns the cache root for --cache-root override.
     """
     cache_root = tmp_path / "cache"
-    # CE: skills/ce-plan/SKILL.md — copy from athanor's vendored copy with
-    # provenance stripped (so the script's normalization passes).
-    ce_skill_src = REPO_ROOT / "skills" / "ce-plan" / "SKILL.md"
+    ce_skill_src = REPO_ROOT / "skills" / KEEP_SKILL / "SKILL.md"
     if not ce_skill_src.exists():
-        pytest.skip("No vendored skill available to build cache fixture")
-    ce_dst = cache_root / "compound-engineering-plugin" / "compound-engineering" / "3.8.3" / "skills" / "ce-plan"
+        pytest.skip(
+            f"Vendored KEEP skill {KEEP_SKILL!r} missing — cannot build "
+            "drift-script fixture cache"
+        )
+    ce_dst = (
+        cache_root
+        / "compound-engineering-plugin"
+        / "compound-engineering"
+        / "3.8.3"
+        / "skills"
+        / KEEP_SKILL
+    )
     ce_dst.mkdir(parents=True, exist_ok=True)
     text = ce_skill_src.read_text(encoding="utf-8")
     start = text.find("<!-- Provenance:")
     end = text.find("-->", start) + len("-->") if start >= 0 else 0
     if start >= 0:
-        # Strip the provenance block AND its surrounding blank-line padding
-        # so the fixture's body matches what the script will see when it
-        # strips provenance from the vendored side.
         text = text[:start].rstrip() + "\n" + text[end:].lstrip()
     ce_dst.joinpath("SKILL.md").write_text(text, encoding="utf-8")
-    # Superpowers: skills/brainstorming/SKILL.md (upstream name UNPREFIXED)
-    sp_skill_src = REPO_ROOT / "skills" / "sp-brainstorming" / "SKILL.md"
-    if sp_skill_src.exists():
-        sp_dst = cache_root / "claude-plugins-official" / "superpowers" / "5.1.0" / "skills" / "brainstorming"
-        sp_dst.mkdir(parents=True, exist_ok=True)
-        text = sp_skill_src.read_text(encoding="utf-8")
-        start = text.find("<!-- Provenance:")
-        end = text.find("-->", start) + len("-->") if start >= 0 else 0
-        if start >= 0:
-            text = text[:start].rstrip() + "\n" + text[end:].lstrip()
-        # Also restore the upstream frontmatter `name:` (vendor renamed it)
-        text = text.replace("name: sp-brainstorming", "name: brainstorming", 1)
-        sp_dst.joinpath("SKILL.md").write_text(text, encoding="utf-8")
     return cache_root
 
 
@@ -106,10 +107,13 @@ def test_single_skill_filter_works(tmp_path):
     """MUST: --skill filter limits the diff to one skill.
 
     Uses a fixture cache so CI runners without the real upstream plugin
-    caches can still exercise the filter.
+    caches can still exercise the filter. Post-v0.12.0 the only vendored
+    skill remaining is `ce-test-browser` (D8 KEEP).
     """
     cache_root = _make_minimal_cache(tmp_path)
-    result = _run_drift(["--skill", "ce-plan", "--ci", "--cache-root", str(cache_root)])
+    result = _run_drift(
+        ["--skill", KEEP_SKILL, "--ci", "--cache-root", str(cache_root)]
+    )
     assert "total=1" in result.stdout, (
         f"--skill filter must restrict to total=1. stdout: {result.stdout!r} "
         f"stderr: {result.stderr!r}"

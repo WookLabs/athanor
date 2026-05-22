@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.11.7",
-  "description": "Self-sustaining agentic workflow orchestrator — cross-model adversarial planning with thin-leader dispatch. Vendored subset of compound-engineering 3.8.3 (33 ce-* skills after v0.11.2 scope-clarification cut) + superpowers 5.1.0 (13 sp-*) under athanor namespace (athanor identity commitments preserved). Standalone LFG (`/athanor:lfg`) runs the pipeline through athanor-native commands. v0.11.7 extends the doc-drift scanner (v0.11.5) to Python docstrings + docs/STATE.md via ast.get_docstring per-file extractors, applies the v0.11.6 reclassification pattern to documented Residual entries, and ships a minimal B1 profile-mutation detection layer — 5th layer of the v0.11.3/4/5/6 companion-fix arc. Stop hook with multi-script confusables fold + paraphrase regex + conditional/attribution suppression, sentinel body normalized via .strip() (v0.11.6), and detection-only stderr warning on mid-session profile mutation (v0.11.7).",
+  "version": "0.12.0",
+  "description": "Athanor v0.12.0 — Thin Leader orchestrator plugin for Claude Code. Cross-model adversarial planning (/athanor:plan), Spec-then-TDD discipline (/athanor:work), parallel multi-lens review (/athanor:review), Stop hook runtime gate (5-layer companion-fix arc). v0.12.0 is the scope correction: v0.10.0 plan-of-record misread concept absorption as wholesale plugin vendoring; v0.12.0 removes 97% of the vendored surface (95 items → 3) and lifts the 5 genuine concepts into athanor-native skill subsections.",
   "author": {
     "name": "WookLabs"
   },

@@ -246,3 +246,11 @@ identity) is v0.9.1+.]
 If `/athanor:plan` would need to invent product behavior, scope boundaries,
 or success criteria, the clarify dialog is not complete yet — return to
 Step 2-clarify and probe further before finalizing.
+
+## Attribution
+
+Concept adopted from compound-engineering@3.8.3 ce-brainstorm (MIT, Kieran Klaassen / Every Inc).
+See NOTICE.md §"Concepts adopted from upstream" and concepts/requirements-capture.md
+(Subtask 11) for the LIFT inventory.
+Source: https://github.com/EveryInc/compound-engineering-plugin
+

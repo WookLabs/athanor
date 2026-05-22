@@ -1,4 +1,4 @@
-"""Regression tests for v0.11.5 — doc-drift invariants (extended in v0.11.7).
+"""Regression tests for v0.11.5 — doc-drift invariants (extended in v0.11.7 and v0.12.0).
 
 Companion-to-runtime-closure framing (Decision D9): the v0.11.2 cuts and
 v0.11.3/4 stop-hook fixes closed code-level honesty gaps but left
@@ -6,6 +6,16 @@ CLAUDE.md prose at the pre-cut shape. v0.11.5 locked three drift
 classes (1.1/1.2/1.3) so CLAUDE.md prose stays in sync with code.
 v0.11.7 extends scope to multiple files (per-file extractor) and adds
 two new drift classes (1.5, 1.6) that would have caught B2/B5/B6.
+
+v0.12.0 scope note: the atomic vendored-surface cut reduces the CE skill
+count from 33 to 1 (ce-test-browser KEEP per D8). Test 1.1's dynamic
+comparison against `_actual_ce_skill_count()` continues to apply — every
+non-exempt CE-count claim must match disk reality. Current-tense pre-cut
+counts in CLAUDE.md prose are guarded by HISTORICAL_MARKERS exemption
+(prefixed with "Originally" or similar) to align with post-cut disk
+state. Test 1.2 (hook events) / 1.3 (sentinel version) / 1.5 (stale pin)
+/ 1.6 (broken promise) scan athanor-native files and remain unchanged
+in scope.
 
 Drift classes:
 

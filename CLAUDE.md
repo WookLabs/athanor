@@ -30,11 +30,11 @@ Documented infrastructure/output exceptions:
 | `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
 | `/athanor:lfg` | Execute | **Standalone end-to-end pipeline** (v0.11.0) — wraps the LFG flow through athanor-native commands at identity-bearing steps (Step 1 `/athanor:plan` cross-model + Step 2 `/athanor:work` Spec-then-TDD + Step 3 `/athanor:review` 6-lens) and reuses vendored ce-lfg step shape for the rest. Coexists with `/athanor:ce-lfg` (vendored CE single-agent + autofix flow); user selects by namespace. |
 
-### Vendored (v0.10.0 absorption — see §Vendored Surface below)
+### Vendored (post-v0.12.0 atomic cut — see §Concept Absorption Surface below)
 
-- `/athanor:ce-*` — 33 skills vendored from compound-engineering v3.8.3 (e.g., `/athanor:ce-plan`, `/athanor:ce-work`, `/athanor:ce-code-review`, `/athanor:ce-brainstorm`, `/athanor:ce-test-browser`, `/athanor:ce-lfg`, `/athanor:ce-proof`, `/athanor:ce-strategy`, …).
-- `/athanor:sp-*` — 13 skills vendored from superpowers v5.1.0 (e.g., `/athanor:sp-brainstorming`, `/athanor:sp-test-driven-development`, `/athanor:sp-systematic-debugging`, `/athanor:sp-using-superpowers`, …).
-- Naming policy (D2): athanor-native skills keep the unprefixed `/athanor:<name>` slot; CE/superpowers variants are reachable via the `ce-`/`sp-` prefix.
+- `/athanor:ce-test-browser` — sole CE skill retained (browser automation, no athanor-native equivalent, D8 KEEP). Originally v0.10.0 vendored 33 ce-* skills from compound-engineering v3.8.3; the v0.12.0 atomic cut removed 32 of them (3 LIFT-source concepts merged into native skills + 29 DROP). See `docs/archive/v010-v011-vendoring-scope-correction.md` for the plan-of-record misread retrospective.
+- No `/athanor:sp-*` skills remain. Originally v0.10.0 vendored 13 sp-* skills from superpowers v5.1.0; the v0.12.0 atomic cut removed all 13 (2 LIFT-source concepts + 11 DROP).
+- Naming policy (D2): athanor-native skills keep the unprefixed `/athanor:<name>` slot; the surviving `ce-test-browser` retains the `ce-` prefix.
 
 ## Rules
 
@@ -112,7 +112,7 @@ restating semantics (drift between skills caused the v0.7.7 M4 finding).
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
 | Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. RED 안 가는 경우 즉시 완료 아닌 **pending-then-gated** 처리 — Phase 3 게이트를 다시 통과해야 success로 마감. 메커니즘은 advisory — Stop hook 같은 runtime 강제는 없고 worker prompt + result 검증으로 운용. evidence shape 검증 (command/test_node_id/exit_code/output_tail) + 게이트 conjunction으로 가장 흔한 실수(RED 건너뛰기, full suite 미실행)는 잡지만 adversarial forgery (worker가 fields를 fabricate)는 못 잡음. **v0.10.0 scope:** discipline applies to athanor-native `/athanor:work` only. Vendored `/athanor:ce-work` and `/athanor:sp-test-driven-development` are OUTSIDE — users opt in by explicit invocation; CE/superpowers carry their own execution semantics. 운용 근거: `docs/STATE.md` §Current Phase. |
-| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 매 세션 시작 시 Claude Code platform이 제공하는 SessionStart system reminder channel (additional-context)로 로드된다 — 이것은 athanor의 hooks.json 등록 결과가 아니다 (athanor `hooks/hooks.json`은 Stop event만 등록; SessionStart는 platform mechanism이 skill body를 system reminder channel을 통해 자동 포함시키는 Claude Code platform 동작이며, athanor가 register하는 hook event가 아님). 그 skill의 "ABSOLUTELY MUST invoke before response" / "1% chance → MUST use it" 톤은 athanor-native **10 Thin Leader skill** (analyze, debug, deep-plan, discuss, lfg, lite-plan, plan, review, setup, work) 호출 context에서는 **advisory**다. 이 영역에서는 discovery가 leader dispatch로 해소된다 (Thin Leader pattern + planner-classified discipline) — pre-response invocation check은 native context에서 advisory 안내일 뿐 강제 아님. 본 boundary는 10 skill 각각의 §Identity 직후 `### v0.11.1 using-superpowers boundary` subsection에 동일 문구로 인라인 선언됨; 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. **scope (intentional carve-outs):** (a) `scope-drift` 와 `verification-before-completion`는 unprefixed slot을 차지하나 Thin Leader 패턴이 아닌 vendored-content skill — 자체 body voice 유지 (T2 modification 최소화); (b) sp-* 13 skill은 superpowers 출신이라 자연 정합 (carve-out 불필요); (c) ce-* 33 skill은 별도 voice (boundary 무관). vendored `skills/sp-using-superpowers/SKILL.md` body는 T2 lock — 편집 금지 (drift script로 enforced). runtime gate 추가 없음 — "advisory" 라벨 honesty 회귀 잠금. |
+| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 매 세션 시작 시 Claude Code platform이 제공하는 SessionStart system reminder channel (additional-context)로 로드된다 — 이것은 athanor의 hooks.json 등록 결과가 아니다 (athanor `hooks/hooks.json`은 Stop event만 등록; SessionStart는 platform mechanism이 skill body를 system reminder channel을 통해 자동 포함시키는 Claude Code platform 동작이며, athanor가 register하는 hook event가 아님). 그 skill의 "ABSOLUTELY MUST invoke before response" / "1% chance → MUST use it" 톤은 athanor-native **10 Thin Leader skill** (analyze, debug, deep-plan, discuss, lfg, lite-plan, plan, review, setup, work) 호출 context에서는 **advisory**다. 이 영역에서는 discovery가 leader dispatch로 해소된다 (Thin Leader pattern + planner-classified discipline) — pre-response invocation check은 native context에서 advisory 안내일 뿐 강제 아님. 본 boundary는 10 skill 각각의 §Identity 직후 `### v0.11.1 using-superpowers boundary` subsection에 동일 문구로 인라인 선언됨; 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. **scope (intentional carve-outs):** (a) `scope-drift` 와 `verification-before-completion`는 unprefixed slot을 차지하나 Thin Leader 패턴이 아닌 vendored-content skill — 자체 body voice 유지 (T2 modification 최소화); (b) sp-* 13 skill은 superpowers 출신이라 자연 정합 (carve-out 불필요); (c) ce-* 33 skill은 별도 voice (boundary 무관). vendored `skills/sp-using-superpowers/SKILL.md` body는 T2 lock — 편집 금지 (drift script로 enforced). runtime gate 추가 없음 — "advisory" 라벨 honesty 회귀 잠금. Concept adopted from superpowers v5.1.0 sp-using-superpowers (MIT, Jesse Vincent). Source: https://github.com/obra/superpowers |
 
 Detail follows.
 
@@ -320,81 +320,175 @@ v0.8.1+ 후보 (verification-before-completion skill 확장).
 - **Honesty arc:** v0.7.7~v0.7.9의 advisory/enforced 라벨 정직성 약속 유지.
   본 작업은 "advisory (planner-classified)" — runtime 강제 없음 명시.
 
-## Vendored Surface — Identity Guard Layer (v0.10.0)
+## Concept Absorption Surface (post-v0.12.0)
 
-athanor v0.10.0 absorbed **compound-engineering v3.8.3** (33 skills + 49
-sub-agents) and **superpowers v5.1.0** (13 skills) under the
-`/athanor:ce-*` and `/athanor:sp-*` namespaces. Every vendored file
-carries a T2 provenance block (see
-`skills/ce-plan/SKILL.md` first 14 lines after the YAML frontmatter for the
-canonical shape). NOTICE.md enumerates every vendored skill with MIT
-attribution.
+This section was previously titled §"Vendored Surface — Identity Guard
+Layer" through v0.10.0 → v0.11.8. v0.12.0 renames it to reflect the
+post-cutover reality: the wholesale vendored surface is gone; what
+remains is a 5-concept absorption inventory + 1 KEEP skill + 2 KEEP
+sub-agents.
 
-### Identity guard layer (what survives the absorption)
+athanor v0.10.0 originally absorbed **compound-engineering v3.8.3**
+(33 skills + 49 sub-agents) and **superpowers v5.1.0** (13 skills) under
+the `/athanor:ce-*` and `/athanor:sp-*` namespaces. **v0.10.0
+plan-of-record misread the user's concept-absorption intent as wholesale
+plugin vendoring.** v0.12.0 atomic cut closes the scope correction —
+surface reduced from 95 items down to 3 (97%): 1 KEEP skill +
+2 KEEP sub-agents, plus 5 concepts absorbed as prose subsections in
+athanor-native skills. See
+`docs/archive/v010-v011-vendoring-scope-correction.md` for the full
+retrospective and `docs/v0.12.0-migration.md` for the user-facing
+migration guide.
 
-The user's confirmed scope at v0.10.0 was **full merge with athanor identity
-preserved**. The four identity commitments are upheld by *guard prose +
-namespace policy + regression locks*, NOT by mutating vendored content
-(mutation would invalidate T2 provenance — see modifications field per file):
+### Retained vendored items
 
-1. **Thin Leader contract.** When a user invokes a vendored skill (e.g.,
-   `/athanor:ce-plan`), the athanor leader does NOT execute the skill's
-   SKILL.md content directly. The leader dispatches a clean-context worker
-   with the vendored content as the worker's prompt, then collects results.
-   Vendored prose that says "the agent does X" is read by the worker as
-   "I (the worker) do X" — the Thin Leader semantics survive even when
-   upstream content was written in agent-direct voice.
+**1 retained skill** (D8):
+
+- `/athanor:ce-test-browser` — user opt-in UI browser automation
+  (compound-engineering v3.8.3). Non-identity but real utility; T2
+  provenance block preserved.
+
+**2 retained sub-agents** (D12) under `agents/vendored/ce/`:
+
+- `ce-git-history-analyzer.agent.md` — generic git-history discovery
+  dispatch target.
+- `ce-repo-research-analyst.agent.md` — generic repo-research discovery
+  dispatch target.
+
+### 5 concepts absorbed as native prose (NOT vendored directories)
+
+The following upstream concepts have been lifted into athanor-native
+skills with full MIT attribution preserved. Each entry cross-links to
+NOTICE.md §"Concepts adopted from upstream" for the canonical attribution
+ledger.
+
+1. **Reviewer-persona vocabulary** — from `ce-code-review@3.8.3` (MIT,
+   Kieran Klaassen / Every Inc) into `skills/review/SKILL.md` §"Personas".
+   See NOTICE.md §"Concepts adopted from upstream" entry #1.
+2. **Iron Law + Four Phases (debugging discipline)** — from
+   `sp-systematic-debugging@5.1.0` (MIT, Jesse Vincent) into
+   `skills/debug/SKILL.md` §"Systematic Debugging Discipline". See NOTICE.md
+   §"Concepts adopted from upstream" entry #2.
+3. **Requirements capture (R-ID / A-ID / F-ID / AE-ID)** — from
+   `ce-brainstorm@3.8.3` (MIT, Kieran Klaassen / Every Inc) into
+   `skills/discuss/references/requirements-capture.md` (v0.9.0
+   absorption; v0.12.0 attribution formalized). See NOTICE.md §"Concepts
+   adopted from upstream" entry #3.
+4. **Skill-discovery preamble** — from `sp-using-superpowers@5.1.0` (MIT,
+   Jesse Vincent) into CLAUDE.md §"using-superpowers boundary (v0.11.1)".
+   See NOTICE.md §"Concepts adopted from upstream" entry #4.
+5. **Doc-review persona mode** — from `ce-doc-review@3.8.3` (MIT, Kieran
+   Klaassen / Every Inc) into `skills/review/SKILL.md` §"Doc review mode".
+   See NOTICE.md §"Concepts adopted from upstream" entry #5.
+
+### Removed in v0.12.0
+
+The atomic cut removed **45 skill directories** + **47 sub-agents** under
+the vendored namespaces. Full enumeration lives in NOTICE.md §"Removed in
+v0.12.0" + `docs/v0.12.0-migration.md` (user-facing migration table).
+Summary grouped by source plugin:
+
+**compound-engineering v3.8.3 — originally 33 ce-* skill directories, 32 removed at v0.12.0** (3
+LIFT-source + 29 DROP; `ce-test-browser` carved out per D8):
+
+- LIFT-source (concept absorbed into native skills): `ce-code-review`,
+  `ce-doc-review`, `ce-brainstorm`.
+- DROP (no athanor-native migration target — install upstream
+  compound-engineering if needed): `ce-agent-native-architecture`,
+  `ce-agent-native-audit`, `ce-clean-gone-branches`, `ce-commit`,
+  `ce-commit-push-pr`, `ce-compound`, `ce-compound-refresh`, `ce-debug`,
+  `ce-demo-reel`, `ce-dhh-rails-style`, `ce-frontend-design`,
+  `ce-gemini-imagegen`, `ce-ideate`, `ce-lfg` (D9 full DROP),
+  `ce-optimize`, `ce-plan` (D9 full DROP), `ce-polish-beta`,
+  `ce-product-pulse`, `ce-proof`, `ce-resolve-pr-feedback`,
+  `ce-riffrec-feedback-analysis`, `ce-sessions`, `ce-simplify-code`,
+  `ce-slack-research`, `ce-strategy`, `ce-test-xcode`, `ce-work` (D9
+  full DROP), `ce-work-beta`, `ce-worktree`.
+
+**superpowers v5.1.0 — originally 13 sp-* skill directories, all removed at v0.12.0** (2
+LIFT-source + 11 DROP):
+
+- LIFT-source (concept absorbed into native skills): `sp-systematic-debugging`,
+  `sp-using-superpowers`.
+- DROP (install upstream superpowers if needed):
+  `sp-brainstorming`, `sp-dispatching-parallel-agents`,
+  `sp-executing-plans`, `sp-finishing-a-development-branch`,
+  `sp-receiving-code-review`, `sp-requesting-code-review`,
+  `sp-subagent-driven-development`, `sp-test-driven-development`,
+  `sp-using-git-worktrees`, `sp-writing-plans`, `sp-writing-skills`.
+
+**compound-engineering sub-agents — originally 49, with 47 removed at v0.12.0** under
+`agents/vendored/ce/`. 2 retained per D12 above (`ce-git-history-analyzer`,
+`ce-repo-research-analyst`); the remaining 47 `*.agent.md` files removed
+together (no athanor-native dispatch target relies on them post-cutover).
+
+### Identity guard layer (what survives the cutover)
+
+The four athanor identity commitments survive the v0.12.0 cutover intact.
+Post-cutover the surface is much smaller (1 KEEP skill + 2 KEEP sub-agents
++ 5 absorbed concept prose subsections); the identity commitments are
+upheld by *native skill prose + regression locks* — namespace defense is
+no longer needed because the inflated vendored namespace was removed:
+
+1. **Thin Leader contract.** The athanor leader (main session) NEVER does
+   implementation work directly. It dispatches clean-context workers and
+   presents results. The post-v0.12.0 surface is athanor-native + 1 KEEP
+   skill + 2 KEEP sub-agents — the wholesale vendored namespace that
+   previously required guard prose against agent-direct voice is gone.
 2. **Cross-model adversarial planning stays athanor-native.** `/athanor:plan`
-   continues to dispatch Planner A (Claude) + Planner B (Codex) + Critic
-   per v0.7.x~v0.9.0. Vendored `/athanor:ce-plan` is CE's single-agent flow
-   for users who explicitly want it. No silent downgrade.
+   dispatches Planner A (Claude) + Planner B (Codex) + Critic per
+   v0.7.x~v0.9.0. CE's single-agent planning skill (`ce-plan`) was DROPped
+   per D9; users wanting CE's flow install the upstream compound-engineering
+   plugin.
 3. **Spec-then-TDD discipline stays athanor-native.** `/athanor:work`
-   continues to apply Splitter `execution_note` classification +
-   conjunction-of-three Phase 3 gate. Vendored `/athanor:ce-work` and
-   `/athanor:sp-test-driven-development` are OUTSIDE this discipline; users
-   opt into them by explicit invocation.
-4. **Stop hook runtime gate scope.** The Stop hook (`scripts/hooks/stop_verify_claims.py`)
-   triggers on every `Stop` event regardless of which skill produced the
-   turn output. **v0.10.2 update:** the vendor-aware whitelist extension
-   (A2 closure) added 18 idioms emitted by vendored CE/superpowers skills
-   (`review complete`, `<promise>DONE</promise>`, `all checks passing`,
-   `branch merged`, `리뷰 완료`, etc.) plus a paraphrase-regex layer (CI
-   is green / build is healthy / 테스트가 다 통과 / etc.) and a Cyrillic
-   homoglyph fold (NFKC + 17-char Latin↔Cyrillic table). Coverage of
-   vendored skill outputs is now substantively improved over the v0.7.7
-   athanor-native voice baseline. Honesty residuals (v0.10.3+):
-   conditional / speculative tense, attributed historical quotes,
-   non-Cyrillic homoglyphs.
+   applies Splitter `execution_note` classification + conjunction-of-three
+   Phase 3 gate. CE's execution skill (`ce-work`) and superpowers'
+   test-driven-development skill (`sp-test-driven-development`) were
+   DROPped at v0.12.0 (D9 + DROP-class respectively); users wanting those
+   flows install the upstream plugins directly.
+4. **Stop hook runtime gate scope.** The Stop hook
+   (`scripts/hooks/stop_verify_claims.py`) triggers on every `Stop` event
+   regardless of which skill produced the turn output. Per D11 the
+   v0.10.2 vendor-aware whitelist extension (18 idioms + paraphrase regex
+   layer + Cyrillic / Greek / Armenian homoglyph fold) is preserved with
+   rationale re-framed to **general defensive coverage**: those idioms +
+   normalizations apply broadly to English / Korean material-claim
+   phrasing and are not vendored-prose-specific. The companion-fix arc
+   5 layers (v0.11.3 input parser → v0.11.4 plugin-root path → v0.11.5
+   doc drift → v0.11.6 sentinel body hash → v0.11.7 scanner extension +
+   B1 minimal) survive the cutover intact (D10). Honesty residuals
+   (v0.11.8+): LLM-class semantic similarity, conditional / speculative
+   tense without prefix marker, multi-paragraph quote spans,
+   Cherokee / full-width-Latin homoglyphs.
 
-### Vendor manifest
+### Vendor manifest (post-v0.12.0)
 
-- Source plugins: `compound-engineering@3.8.3`
+- Source plugins (origin attribution preserved):
+  `compound-engineering@3.8.3`
   (https://github.com/EveryInc/compound-engineering-plugin),
   `superpowers@5.1.0` (https://github.com/obra/superpowers).
-- Vendor pattern: T2 (per `docs/DEPENDENCIES.md` §Tier ordering — T0/T1
-  unavailable for Claude Code plugin-cache content).
-- Layout: flat — `skills/ce-<name>/` and `skills/sp-<name>/` at depth 1
-  under `skills/` so Claude Code skill auto-discovery resolves them.
-  Sub-agents at `agents/vendored/ce/*.agent.md` (agents are not user-
-  invocable commands; nesting acceptable there).
-- Inventory file: `docs/plans/2026-05-19-003-feat-v0.10.0-absorb-ce-superpowers-plan-INVENTORY.md`.
-- Drift check process: see `docs/STATE.md` §"Vendor Manifest" (manual at
-  v0.10.0; scripted drift check deferred to v0.10.1).
+- Vendor pattern: T2 (per `docs/DEPENDENCIES.md` §Tier ordering).
+- Layout (post-v0.12.0): `skills/ce-test-browser/` (1 KEEP) at depth 1
+  under `skills/`; 2 sub-agents at `agents/vendored/ce/*.agent.md`.
+  No `skills/ce-*` or `skills/sp-*` directories beyond `ce-test-browser`
+  exist.
+- Concept-absorption inventory (5 LIFT entries): NOTICE.md §"Concepts
+  adopted from upstream"; per-concept inventory under `concepts/*.md`.
+- Drift check process: `scripts/check_vendor_drift.py` (since v0.10.1)
+  walks the present skill tree, so it naturally iterates the post-cutover
+  surface.
 
-### What this absorption does NOT do
+### What the post-v0.12.0 surface does NOT do
 
-- Does NOT extend the Stop hook gate to silently enforce on vendored skill
-  outputs (per scope decision above — vendored prose may bypass the
-  whitelist).
-- Does NOT re-license athanor (athanor stays MIT; CE and superpowers are
-  also MIT — no compatibility work needed).
-- Does NOT translate vendored prose to athanor's bilingual voice (upstream
-  English voice preserved verbatim under T2; only athanor wrappers and
-  sentinels are bilingual).
+- Does NOT carry a wholesale vendored namespace. Users who need
+  upstream CE or superpowers skills install those plugins directly
+  (`docs/v0.12.0-migration.md` documents the path).
+- Does NOT re-license athanor (athanor stays MIT; CE and superpowers
+  stay MIT under their copyright holders).
 - Does NOT deprecate any athanor-native skill in favour of a vendored
-  variant. Deprecations are deferred (see CHANGELOG v0.10.0 §Deferred).
-- Does NOT auto-install upstream plugins as dependencies. athanor stands
-  alone after vendoring.
+  variant.
+- Does NOT auto-install upstream plugins as dependencies. athanor
+  stands alone.
 
 ### Effort Level
 - Planner and Critic agents: always use highest reasoning effort
