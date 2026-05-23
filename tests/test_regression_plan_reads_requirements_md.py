@@ -16,6 +16,7 @@ unless Critic actively reviews for it — hence axis (C).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -178,9 +179,11 @@ def test_codex_planner_b_prompt_lists_requirements_md():
     dispatched prompt must also mention requirements.md so the contrarian
     plan also traces back to origin requirements."""
     body = _load()
-    # Find the Codex Planner B prompt — anchor on the Codex exec command
-    codex_idx = body.find("codex exec --full-auto --ephemeral")
-    assert codex_idx >= 0, "Codex Planner B dispatch not found"
+    # Find the Codex Planner B prompt — anchor on the Codex exec command.
+    # Flag-agnostic regex anchor — survives future flag changes (per v0.13.1 review).
+    m = re.search(r'codex .*\bexec\b.*--ephemeral.*-o \.athanor/sessions', body)
+    assert m, "Codex Planner B dispatch not found"
+    codex_idx = m.start()
     window = body[codex_idx : codex_idx + 3000]
     assert "requirements.md" in window, (
         "Codex Planner B prompt must reference requirements.md in its "

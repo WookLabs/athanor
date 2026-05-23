@@ -189,7 +189,7 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 **Codex CLI Integration:**
 Deep/Standard 티어에서 Codex는 `codex exec` CLI를 통해 호출한다:
 ```
-codex exec --full-auto --ephemeral -o <output_file> "<prompt>"
+timeout 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
 ```
 - `codex-companion.mjs task`는 Windows에서 spawn ENOENT 버그로 사용 불가
 - `codex exec` CLI가 정상 동작하는 유일한 패턴

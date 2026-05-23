@@ -3,6 +3,58 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.13.1] — 2026-05-23
+
+### Fixed
+- Codex CLI stdin EOF deadlock (GitHub Issue #20919) — added `< /dev/null`
+  redirect to all `codex exec` invocations (`skills/plan/SKILL.md` Planner B
+  + Reviewer B blocks) and `codex --version` probes (`skills/plan/SKILL.md`
+  Step 0 + `skills/discuss/SKILL.md` line 397). Prevents `readFileSync(0)`
+  hang in non-TTY environments where Bash tool dispatches inherit stdin.
+- Migrated deprecated `--full-auto` flag (removed in codex CLI 0.133.0) to
+  top-level `codex -a never -s workspace-write exec …` form per empirical
+  byte-capture of `codex --help` and `codex exec --help` output.
+- Replaced prose-only "(timeout 300000ms)" comment with shell-level
+  `timeout 300s` prefix as PRIMARY hard wall-clock fence; Bash-tool
+  `timeout: 300000` parameter remains as belt-and-suspenders secondary.
+
+### Added
+- `codex.timeoutMs` config key in `athanor.json` (default 300000) wired
+  through Step 0 probe with seconds conversion (`CODEX_TIMEOUT_S`) and
+  schema validation (minimum 1000ms).
+- New regression test file `tests/test_regression_v013_1_codex_hang.py`
+  (11 tests, ~470 LOC): prose-grep redirect/flag/timeout audits +
+  schema/probe contract locks + deterministic static text-level redirect
+  verification.
+
+### Changed
+- Schema `$id` v0.13.0 → v0.13.1 (`schemas/athanor-config.schema.json`).
+- `tests/test_regression_plan_reads_requirements_md.py:182` regex anchor
+  made flag-agnostic to survive future codex CLI flag tweaks.
+- `tests/test_regression_v013_release_smoke.py:34` version pin bumped
+  to 0.13.1.
+- Stale doc references in `docs/CONVENTIONS.md`, `docs/DESIGN.md`,
+  `docs/ROADMAP.md` updated to v0.13.1 canonical codex command form
+  (ST15 scope — note here for traceability).
+
+### Honesty note
+- This is an operational hardening patch — 4 athanor identity invariants
+  intact (Thin Leader / cross-model adversarial / Spec-then-TDD / Stop
+  hook gate), companion-fix arc 5 layer (v0.11.3 → v0.11.8) untouched.
+- **v0.13.1 intentionally ships `timeoutMs` only.** `fallbackAfterMs`
+  (leader-side soft deadline) requires async join infrastructure absent
+  in current synchronous Bash-dispatch model; deferred to v0.14+.
+- **Minimum codex CLI version required: 0.133.0+.** The
+  `-a never -s workspace-write` top-level flag form requires codex CLI
+  0.133.0 or later. Users with older CLI versions will see dispatch
+  failures attributed to "codex unavailable" — the actual cause is
+  version mismatch. Step 0 probe currently does NOT version-gate (only
+  checks CLI presence); explicit version detection deferred to v0.14+.
+- Pre-edit byte-capture artifact (`/tmp/codex-{top,exec}-help.txt` from
+  CLI 0.133.0) was used to empirically verify flag positions before
+  migration — locked in `.athanor/sessions/2026-05-23-001/discoveries/
+  worker-3-codex-cli-shape.md` for future PR audit trail.
+
 ## [0.13.0] — 2026-05-23
 
 **Goal-driven Validated Ralph Loop.** New athanor-native skill `/athanor:lfg-goal` combines (a) a user-stated goal + (b) macro Ralph loop + (c) existing /athanor:lfg pipeline. Runs lfg cycles until the goal is met or guards trip.

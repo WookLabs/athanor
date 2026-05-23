@@ -89,14 +89,18 @@ dispatch sites in Steps 2, 3, and 4 (see contract block before Step 3 below).
 if command -v jq >/dev/null 2>&1; then
   CODEX_CONFIG_ENABLED=$(jq -r '.codex.enabled // true' athanor.json 2>/dev/null)
   CODEX_FALLBACK=$(jq -r '.codex.fallback // "self-critic"' athanor.json 2>/dev/null)
+  CODEX_TIMEOUT_MS=$(jq -r '.codex.timeoutMs // 300000' athanor.json 2>/dev/null)
+  CODEX_TIMEOUT_S=$((CODEX_TIMEOUT_MS / 1000))
 else
   # jq not installed — assume defaults from shipped config
   CODEX_CONFIG_ENABLED=true
   CODEX_FALLBACK=self-critic
+  CODEX_TIMEOUT_MS=300000
+  CODEX_TIMEOUT_S=300
 fi
 
 # Probe CLI
-if codex --version >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
+if codex --version </dev/null >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
 
 # State machine
 if [ "$CODEX_CONFIG_ENABLED" = "true" ] && [ "$CODEX_CLI" = "true" ]; then
@@ -332,9 +336,18 @@ Agent({
 Call Codex to create an alternative implementation plan.
 
 ## Codex Invocation
-Run this command via Bash (timeout 300000ms):
+Per `codex --help` (CLI 0.133.0+): `-a/--ask-for-approval` and `-s/--sandbox`
+are TOP-LEVEL options preceding the `exec` subcommand. `never` is the
+documented noninteractive approval policy. `--full-auto` is deprecated (removed in 0.133.0).
+
+Run this command via the Bash tool. The shell-level `timeout ${CODEX_TIMEOUT_S}s`
+prefix is the hard wall-clock fence. Additionally pass `timeout:
+${CODEX_TIMEOUT_MS}` as a Bash tool parameter (belt-and-suspenders). If Bash
+returns non-zero or `timeout` exits with 124, report failure (do
+NOT retry inside the worker — leader handles codex.fallback enum).
+<!-- stdin redirected to prevent readFileSync(0) hang (GitHub codex#20919) -->
 ```bash
-codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \"Create an ALTERNATIVE implementation plan for:
+timeout ${CODEX_TIMEOUT_S}s codex -a never -s workspace-write exec --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \"Create an ALTERNATIVE implementation plan for:
 
 {user's planning request}
 
@@ -353,12 +366,15 @@ Format your plan as:
 ## Phases (with Steps, files, verify)
 ## Risks
 ## Why This Alternative?
-## Estimated Scope\"
+## Estimated Scope\" < /dev/null
 ```
 
 ## After Codex Returns
 1. Check exit code and verify output file exists
 2. If Codex fails or times out, report failure
+3. If shell `timeout` exits with code 124, or Bash tool returns
+   timeout, report status: timeout and let the leader route via
+   codex.fallback enum.
 
 Return:
 ATHANOR_RESULT
@@ -577,9 +593,18 @@ Agent({
 Call Codex to critically review Plan A (the standard approach plan).
 
 ## Codex Invocation
-Run this command via Bash (timeout 300000ms):
+Per `codex --help` (CLI 0.133.0+): `-a/--ask-for-approval` and `-s/--sandbox`
+are TOP-LEVEL options preceding the `exec` subcommand. `never` is the
+documented noninteractive approval policy. `--full-auto` is deprecated (removed in 0.133.0).
+
+Run this command via the Bash tool. The shell-level `timeout ${CODEX_TIMEOUT_S}s`
+prefix is the hard wall-clock fence. Additionally pass `timeout:
+${CODEX_TIMEOUT_MS}` as a Bash tool parameter (belt-and-suspenders). If Bash
+returns non-zero or `timeout` exits with 124, report failure (do
+NOT retry inside the worker — leader handles codex.fallback enum).
+<!-- stdin redirected to prevent readFileSync(0) hang (GitHub codex#20919) -->
 ```bash
-codex exec --full-auto --ephemeral -o .athanor/sessions/{session-id}/review-of-a.md \"Critically review this implementation plan:
+timeout ${CODEX_TIMEOUT_S}s codex -a never -s workspace-write exec --ephemeral -o .athanor/sessions/{session-id}/review-of-a.md \"Critically review this implementation plan:
 
 $(cat .athanor/sessions/{session-id}/plan-a.md)
 
@@ -597,12 +622,15 @@ Output as structured markdown:
 ## Weaknesses
 ## Missing Steps
 ## Risk Assessment
-## Verdict\"
+## Verdict\" < /dev/null
 ```
 
 ## After Codex Returns
 1. Check exit code and verify output file exists
 2. If Codex fails or times out, report failure
+3. If shell `timeout` exits with code 124, or Bash tool returns
+   timeout, report status: timeout and let the leader route via
+   codex.fallback enum.
 
 Return:
 ATHANOR_RESULT
