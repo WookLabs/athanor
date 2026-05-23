@@ -587,25 +587,31 @@ def test_shell_timeout_prefix_uses_template_variable():
 
 
 def test_stdin_redirect_actually_prevents_block():
-    """Behavior-level proof: `< /dev/null` actually prevents stdin block.
+    """Behavior-level proof: stdin redirect to null device prevents stdin block.
 
     Spawns a Python subprocess that reads stdin to EOF + prints "ok".
     Without redirect: subprocess inherits pytest's stdin (which may be a
     TTY pipe or closed) and may block.
-    With `< /dev/null`: subprocess gets immediate EOF and prints "ok".
+    With stdin=DEVNULL: subprocess gets immediate EOF and prints "ok".
 
     This is the behavior-level companion to the static text-presence checks
     above — H3 mitigation against adversarial refactor that satisfies the
     string-presence tests while reintroducing the upstream hang.
+
+    Uses `subprocess.DEVNULL` (platform-portable — `/dev/null` on POSIX,
+    `NUL` on Windows) rather than shell `< /dev/null` redirect.
     """
     import subprocess
     import sys
 
-    shim = f"{sys.executable} -c \"import sys; sys.stdin.read(); print('ok')\""
-    # With redirect — must succeed in <2s
+    # subprocess.DEVNULL is the portable equivalent of shell `< /dev/null`
+    # / `< NUL` — proves stdin is closed before child reads, regardless of OS.
     result = subprocess.run(
-        f"{shim} < /dev/null",
-        shell=True, capture_output=True, text=True, timeout=2,
+        [sys.executable, "-c", "import sys; sys.stdin.read(); print('ok')"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=2,
     )
     assert result.returncode == 0, f"Redirect test failed: {result.stderr}"
     assert "ok" in result.stdout, f"Expected 'ok', got: {result.stdout!r}"
