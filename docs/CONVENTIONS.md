@@ -49,7 +49,7 @@ Agent({
 
 deep/standard tier에서 Codex가 필요한 경우, Worker가 Bash로 직접 호출:
 ```bash
-codex exec --full-auto --ephemeral -o <output_file> "<prompt>"
+timeout 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
 ```
 Codex 불가 시 Claude Agent() fallback.
 

@@ -394,7 +394,7 @@ else
   CODEX_CONFIG_ENABLED=true
   CODEX_FALLBACK=self-critic
 fi
-if codex --version >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
+if codex --version </dev/null >/dev/null 2>&1; then CODEX_CLI=true; else CODEX_CLI=false; fi
 
 if [ "$CODEX_CONFIG_ENABLED" = "true" ] && [ "$CODEX_CLI" = "true" ]; then
   codex_available=true

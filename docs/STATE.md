@@ -4,63 +4,28 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Previous Phase: v0.12.0 — Concept Absorption Pivot
+## Current Phase: v0.13.1 — Codex CLI Hang Prevention Patch
 
-v0.12.0 atomically removes 45 vendored skills (5 LIFT-source + 40 DROP) and 47
-vendored CE sub-agents under the `/athanor:ce-*` and `/athanor:sp-*` namespaces.
-Direct attribution per D7: **v0.10.0 plan-of-record misread the user's
-concept-absorption intent as wholesale plugin vendoring.** The cutover lands
-the scope correction in one atomic release after the v0.11.8 deprecation
-warning cycle.
+**v0.13.1 — Codex CLI Hang Prevention Patch** (released 2026-05-23)
 
-Per the v0.12.0 plan (`docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md`)
-and decisions D1, D7, D8, D9, D10, D11, D12 (`.athanor/sessions/2026-05-22-001/decisions.md`),
-the cutover does the following:
+Operational hardening patch closing user-reported `/athanor:deep-plan`
+hangs. Root cause (GitHub codex#20919): `codex exec` `readFileSync(0)`
+blocking stdin read in non-TTY Bash dispatch environments.
 
-- **5 LIFT** — concepts absorbed into athanor-native skills as prose subsections
-  (NOT vendored directories): review personas (`ce-code-review` → `skills/review/SKILL.md`),
-  doc-review mode (`ce-doc-review` → `skills/review/SKILL.md` §"Doc review mode"),
-  systematic debugging Iron Law + Four Phases (`sp-systematic-debugging` →
-  `skills/debug/SKILL.md` §"Systematic Debugging Discipline"), requirements
-  capture R/A/F/AE-IDs (`ce-brainstorm` → `skills/discuss/references/requirements-capture.md`),
-  skill-discovery preamble (`sp-using-superpowers` → CLAUDE.md §"using-superpowers
-  boundary (v0.11.1)"). Each concept enumerated in NOTICE.md §"Concepts adopted
-  from upstream" with MIT attribution preserved.
-- **1 KEEP** (D8) — `/athanor:ce-test-browser` retained as user opt-in browser
-  automation (non-identity but real utility); T2 provenance block preserved.
-- **2 KEEP sub-agents** (D12) — `ce-git-history-analyzer` + `ce-repo-research-analyst`
-  retained as generic discovery dispatch targets at `agents/vendored/ce/`.
-- **Surface reduction: 95 → 3 (97%)** — from 33 ce-* + 13 sp-* + 49 sub-agents
-  (95 items) down to 1 KEEP skill + 2 KEEP sub-agents (3 items).
-- **45 removed skill directories** + **47 removed sub-agents** + 1 ledger archive
-  + 1 architecture doc + 1 user-facing migration guide
-  (`docs/v0.12.0-migration.md`) shipped together as the atomic cut.
+Fixes (5):
+1. `< /dev/null` redirect on all codex invocations + probes
+2. `--full-auto` → top-level `-a never -s workspace-write` migration
+   (deprecated/removed in CLI 0.133.0)
+3. Shell-level `timeout 300s` prefix as primary wall-clock fence
+4. `codex.timeoutMs` config key + Step 0 probe wiring
+5. 11-test regression file + 2 lock-step existing-test updates +
+   3-doc stale reference migration
 
-### Companion-fix arc 5-layer closure intact across the pivot
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched. `fallbackAfterMs` (soft deadline) deferred to v0.14+.
 
-v0.11.3 (script wrong) → v0.11.4 (path wrong) → v0.11.5 (CLAUDE.md doc drift) →
-v0.11.6 (sentinel body-hash binding) → v0.11.7 (scanner extension + Residual
-reclassification + B1 minimal) is preserved by v0.12.0. Stop hook script
-(`scripts/hooks/stop_verify_claims.py`) + all v0.11.3 ~ v0.11.7 regression
-tests + Spec-then-TDD discipline + cross-model `/athanor:plan` + Stop hook
-runtime gate (D10) — every athanor identity invariant survives the cutover.
-
-### v0.12.0 ship surface
-
-- Skills: 10 athanor-native + 1 KEEP vendored (`ce-test-browser`) + 2 internal
-  vendored (`scope-drift`, `verification-before-completion`) = **13 surviving**
-  skills total (down from 58 at v0.11.7).
-- Sub-agents: 2 retained at `agents/vendored/ce/` (down from 49).
-- pytest test count: **473 passed + 3 skipped + 2 xfailed + 5 xpassed** at
-  v0.12.0 baseline (with Phase 6 prose updates landed). All companion-fix arc
-  regression tests + v0.12.0 invariant tests green.
-- Honesty arc — D7 voice discipline: "plan-of-record misread" verbatim;
-  the four forbidden softening phrases enumerated in D7 are absent from
-  the new v0.12.0 content (voice-safety greps land green in CI).
-
-Full retrospective: `docs/archive/v010-v011-vendoring-scope-correction.md`.
-
-## Current Phase: v0.13.0 — /athanor:lfg-goal (Goal-Driven Validated Ralph Loop)
+## Previous Phase: v0.13.0 — /athanor:lfg-goal (Goal-Driven Validated Ralph Loop)
 
 v0.13.0은 goal-driven Ralph loop orchestrator `/athanor:lfg-goal`을 도입한다.
 사용자 의도를 durable goal ledger로 고정하고, 매 cycle마다 별도 worker가
@@ -156,6 +121,62 @@ synthesis).
 - Companion-fix arc 5-layer closure (v0.11.3 ~ v0.11.7) 그대로 통과 —
   Stop hook script + sentinel body-hash binding + scanner extension +
   B1 minimal detection 모두 v0.13.0 ship에서 unchanged.
+
+## Previous Phase: v0.12.0 — Concept Absorption Pivot
+
+v0.12.0 atomically removes 45 vendored skills (5 LIFT-source + 40 DROP) and 47
+vendored CE sub-agents under the `/athanor:ce-*` and `/athanor:sp-*` namespaces.
+Direct attribution per D7: **v0.10.0 plan-of-record misread the user's
+concept-absorption intent as wholesale plugin vendoring.** The cutover lands
+the scope correction in one atomic release after the v0.11.8 deprecation
+warning cycle.
+
+Per the v0.12.0 plan (`docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md`)
+and decisions D1, D7, D8, D9, D10, D11, D12 (`.athanor/sessions/2026-05-22-001/decisions.md`),
+the cutover does the following:
+
+- **5 LIFT** — concepts absorbed into athanor-native skills as prose subsections
+  (NOT vendored directories): review personas (`ce-code-review` → `skills/review/SKILL.md`),
+  doc-review mode (`ce-doc-review` → `skills/review/SKILL.md` §"Doc review mode"),
+  systematic debugging Iron Law + Four Phases (`sp-systematic-debugging` →
+  `skills/debug/SKILL.md` §"Systematic Debugging Discipline"), requirements
+  capture R/A/F/AE-IDs (`ce-brainstorm` → `skills/discuss/references/requirements-capture.md`),
+  skill-discovery preamble (`sp-using-superpowers` → CLAUDE.md §"using-superpowers
+  boundary (v0.11.1)"). Each concept enumerated in NOTICE.md §"Concepts adopted
+  from upstream" with MIT attribution preserved.
+- **1 KEEP** (D8) — `/athanor:ce-test-browser` retained as user opt-in browser
+  automation (non-identity but real utility); T2 provenance block preserved.
+- **2 KEEP sub-agents** (D12) — `ce-git-history-analyzer` + `ce-repo-research-analyst`
+  retained as generic discovery dispatch targets at `agents/vendored/ce/`.
+- **Surface reduction: 95 → 3 (97%)** — from 33 ce-* + 13 sp-* + 49 sub-agents
+  (95 items) down to 1 KEEP skill + 2 KEEP sub-agents (3 items).
+- **45 removed skill directories** + **47 removed sub-agents** + 1 ledger archive
+  + 1 architecture doc + 1 user-facing migration guide
+  (`docs/v0.12.0-migration.md`) shipped together as the atomic cut.
+
+### Companion-fix arc 5-layer closure intact across the pivot
+
+v0.11.3 (script wrong) → v0.11.4 (path wrong) → v0.11.5 (CLAUDE.md doc drift) →
+v0.11.6 (sentinel body-hash binding) → v0.11.7 (scanner extension + Residual
+reclassification + B1 minimal) is preserved by v0.12.0. Stop hook script
+(`scripts/hooks/stop_verify_claims.py`) + all v0.11.3 ~ v0.11.7 regression
+tests + Spec-then-TDD discipline + cross-model `/athanor:plan` + Stop hook
+runtime gate (D10) — every athanor identity invariant survives the cutover.
+
+### v0.12.0 ship surface
+
+- Skills: 10 athanor-native + 1 KEEP vendored (`ce-test-browser`) + 2 internal
+  vendored (`scope-drift`, `verification-before-completion`) = **13 surviving**
+  skills total (down from 58 at v0.11.7).
+- Sub-agents: 2 retained at `agents/vendored/ce/` (down from 49).
+- pytest test count: **473 passed + 3 skipped + 2 xfailed + 5 xpassed** at
+  v0.12.0 baseline (with Phase 6 prose updates landed). All companion-fix arc
+  regression tests + v0.12.0 invariant tests green.
+- Honesty arc — D7 voice discipline: "plan-of-record misread" verbatim;
+  the four forbidden softening phrases enumerated in D7 are absent from
+  the new v0.12.0 content (voice-safety greps land green in CI).
+
+Full retrospective: `docs/archive/v010-v011-vendoring-scope-correction.md`.
 
 ## Previous Phase: v0.11.8 — Deprecation Warning Cycle (Scope-Correction Prep)
 
