@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.13.1/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.13.2/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
@@ -37,7 +37,8 @@
         "timeoutMs": {
           "type": "integer",
           "minimum": 1000,
-          "description": "Hard wall-clock timeout (ms) for codex exec invocations. Default 300000 (5min). Converted to seconds at dispatch and applied as shell `timeout NNNs codex …` prefix. Soft-deadline (fallbackAfterMs) requires leader-side async join, deferred to v0.14+. Lowering below ~60000 may truncate legitimate Codex planning runs."
+          "maximum": 600000,
+          "description": "Hard wall-clock timeout (ms) for codex exec invocations. Default 300000 (5min). Maximum 600000 (10min). Converted to seconds at dispatch and applied as shell `timeout NNNs codex …` prefix. Soft-deadline (fallbackAfterMs) requires leader-side async join, deferred to v0.14+. Lowering below ~60000 may truncate legitimate Codex planning runs."
         }
       }
     },

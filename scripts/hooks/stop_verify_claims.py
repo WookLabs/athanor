@@ -584,9 +584,9 @@ _PATTERN_SOURCE: list[str] = [
     # Deploy assertions (paraphrase of "deployment succeeded")
     r"\bdeployed\s+(?:it\s+)?(?:to|onto)\s+(?:prod|production|main|staging)\b",
     # KO verb-anchored paraphrase: "테스트가 모두 통과", "테스트 다 통과"
-    r"테스트(?:가|는)?\s*(?:다|모두|전부)?\s*통과(?:했|함|됨)",
+    r"테스트(?:가|는)?\s*(?:다|모두|전부)?\s*통과(?:했|함|됨)?",
     # KO build success paraphrase
-    r"빌드(?:가|는)?\s*(?:다|모두)?\s*성공(?:했|함|됨)",
+    r"빌드(?:가|는)?\s*(?:다|모두)?\s*성공(?:했|함|됨)?",
 ]
 MATERIAL_CLAIM_PATTERNS: list[re.Pattern[str]] = _compile_patterns(_PATTERN_SOURCE)
 

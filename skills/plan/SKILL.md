@@ -91,6 +91,8 @@ if command -v jq >/dev/null 2>&1; then
   CODEX_FALLBACK=$(jq -r '.codex.fallback // "self-critic"' athanor.json 2>/dev/null)
   CODEX_TIMEOUT_MS=$(jq -r '.codex.timeoutMs // 300000' athanor.json 2>/dev/null)
   CODEX_TIMEOUT_S=$((CODEX_TIMEOUT_MS / 1000))
+  [ "$CODEX_TIMEOUT_S" -lt 1 ] && CODEX_TIMEOUT_S=300
+  [ "$CODEX_TIMEOUT_S" -gt 600 ] && CODEX_TIMEOUT_S=600
 else
   # jq not installed — assume defaults from shipped config
   CODEX_CONFIG_ENABLED=true
@@ -340,13 +342,16 @@ Per `codex --help` (CLI 0.133.0+): `-a/--ask-for-approval` and `-s/--sandbox`
 are TOP-LEVEL options preceding the `exec` subcommand. `never` is the
 documented noninteractive approval policy. `--full-auto` is deprecated (removed in 0.133.0).
 
-Run this command via the Bash tool. The shell-level `timeout ${CODEX_TIMEOUT_S}s`
-prefix is the hard wall-clock fence. Additionally pass `timeout:
-${CODEX_TIMEOUT_MS}` as a Bash tool parameter (belt-and-suspenders). If Bash
-returns non-zero or `timeout` exits with 124, report failure (do
-NOT retry inside the worker — leader handles codex.fallback enum).
+Run this command via the Bash tool. The Worker bash block computes
+`CODEX_TIMEOUT_S` inline from `athanor.json` with clamping (1-600s,
+default 300). The shell-level `timeout ${CODEX_TIMEOUT_S}s` prefix is the
+hard wall-clock fence. Additionally pass `timeout: ${CODEX_TIMEOUT_MS}` as
+a Bash tool parameter (belt-and-suspenders). If Bash returns non-zero or
+`timeout` exits with 124, report failure (do NOT retry inside the worker —
+leader handles codex.fallback enum).
 <!-- stdin redirected to prevent readFileSync(0) hang (GitHub codex#20919) -->
 ```bash
+CODEX_TIMEOUT_S=$(jq -r '(.codex.timeoutMs // 300000) / 1000 | floor | if . < 1 then 300 elif . > 600 then 600 else . end' athanor.json 2>/dev/null || echo 300) && \
 timeout ${CODEX_TIMEOUT_S}s codex -a never -s workspace-write exec --ephemeral -o .athanor/sessions/{session-id}/plan-b.md \"Create an ALTERNATIVE implementation plan for:
 
 {user's planning request}
@@ -597,13 +602,16 @@ Per `codex --help` (CLI 0.133.0+): `-a/--ask-for-approval` and `-s/--sandbox`
 are TOP-LEVEL options preceding the `exec` subcommand. `never` is the
 documented noninteractive approval policy. `--full-auto` is deprecated (removed in 0.133.0).
 
-Run this command via the Bash tool. The shell-level `timeout ${CODEX_TIMEOUT_S}s`
-prefix is the hard wall-clock fence. Additionally pass `timeout:
-${CODEX_TIMEOUT_MS}` as a Bash tool parameter (belt-and-suspenders). If Bash
-returns non-zero or `timeout` exits with 124, report failure (do
-NOT retry inside the worker — leader handles codex.fallback enum).
+Run this command via the Bash tool. The Worker bash block computes
+`CODEX_TIMEOUT_S` inline from `athanor.json` with clamping (1-600s,
+default 300). The shell-level `timeout ${CODEX_TIMEOUT_S}s` prefix is the
+hard wall-clock fence. Additionally pass `timeout: ${CODEX_TIMEOUT_MS}` as
+a Bash tool parameter (belt-and-suspenders). If Bash returns non-zero or
+`timeout` exits with 124, report failure (do NOT retry inside the worker —
+leader handles codex.fallback enum).
 <!-- stdin redirected to prevent readFileSync(0) hang (GitHub codex#20919) -->
 ```bash
+CODEX_TIMEOUT_S=$(jq -r '(.codex.timeoutMs // 300000) / 1000 | floor | if . < 1 then 300 elif . > 600 then 600 else . end' athanor.json 2>/dev/null || echo 300) && \
 timeout ${CODEX_TIMEOUT_S}s codex -a never -s workspace-write exec --ephemeral -o .athanor/sessions/{session-id}/review-of-a.md \"Critically review this implementation plan:
 
 $(cat .athanor/sessions/{session-id}/plan-a.md)

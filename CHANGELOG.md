@@ -3,6 +3,36 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.13.2] — 2026-05-24
+
+### Fixed
+- `${CODEX_TIMEOUT_S}` phantom variable in Worker bash blocks — Worker's
+  clean-context Agent() dispatch has no access to Leader's Step 0 shell
+  variables. Fix: each Worker bash block now computes timeout inline via
+  `jq` with value clamping (1-600s, default 300s fallback).
+- Korean paraphrase regex suffix mismatch in Stop hook — `(?:했|함|됨)`
+  was mandatory, missing particle-inserted base forms like "테스트가 모두
+  통과". Fix: suffix group made optional with `?` (2-char edit).
+- `codex.timeoutMs` schema lacked upper bound — added `"maximum": 600000`
+  (10 min ceiling matching Bash tool's own limit).
+
+### Added
+- `tests/test_regression_v013_2_korean_regex.py` (5 tests locking Korean
+  base-form + suffixed-form + full-pipeline detection).
+- 4 new tests in `tests/test_regression_v013_1_codex_hang.py`: inline-jq
+  self-containment + clamping bounds + schema maximum + clamping consistency.
+
+### Changed
+- CHANGELOG v0.13.1 entry: removed internal "ST15 scope" planning identifier.
+- `skills/discuss/SKILL.md` Step 0: "kept in sync" comment corrected to "subset".
+- `test_no_deprecated_full_auto_flag` prose assertion relaxed to flexible regex.
+
+### Honesty note
+- Bug fix patch — 4 identity invariants intact, companion-fix arc untouched.
+- Discovered convention: **Worker prompts must not depend on Leader shell
+  variables** — `Agent()` dispatch creates clean context. Codex dispatcher
+  extraction deferred to v0.14+ (Plan B architectural insight captured).
+
 ## [0.13.1] — 2026-05-23
 
 ### Fixed
@@ -35,7 +65,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   to 0.13.1.
 - Stale doc references in `docs/CONVENTIONS.md`, `docs/DESIGN.md`,
   `docs/ROADMAP.md` updated to v0.13.1 canonical codex command form
-  (ST15 scope — note here for traceability).
+.
 
 ### Honesty note
 - This is an operational hardening patch — 4 athanor identity invariants

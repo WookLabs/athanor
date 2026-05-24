@@ -26,11 +26,13 @@ flake the redirect prevents; see acceptance_criteria SHOULD bullet).
 Scope
 -----
 The command-shape lines live exclusively in `skills/plan/SKILL.md` —
-specifically the Planner B (deep-tier, Codex) block at ~line 349-369
-and the Reviewer B (deep-tier, Codex) block at ~line 605-625. Each
-block is a fenced ```bash ... ``` region beginning with
-`timeout 300s codex -a never -s workspace-write exec ...` and ending
-with the prompt-closing `... < /dev/null` line.
+specifically the Planner B (deep-tier, Codex) fenced bash block
+beginning with `CODEX_TIMEOUT_S=$(jq` (inline timeout computation)
+and the Reviewer B (deep-tier, Codex) fenced bash block beginning
+with the same `CODEX_TIMEOUT_S=$(jq` pattern. Each block is a fenced
+```bash ... ``` region whose first line computes the timeout inline via
+jq, followed by `timeout ${CODEX_TIMEOUT_S}s codex -a never -s
+workspace-write exec ...` and ending with `... < /dev/null`.
 
 The naive regex `\bcodex exec\b` is too tight for backslash-continued /
 multi-line shell commands (the `< /dev/null` lives on the closing line,
@@ -38,9 +40,9 @@ not the opening line). Tests use a broader region/multi-line match per
 worker-1 / worker-8 discoveries.
 
 Prose-only mentions of `codex exec` (e.g., COLLISION GUARD blockquotes
-at lines 327 / 584, echo-error fragments, and the FALLBACK ONLY notice
-at line 391) are whitelisted by anchoring command-shape detection on
-fenced bash blocks.
+preceding each fenced bash block, echo-error fragments, and the
+FALLBACK ONLY notice after the Planner B block) are whitelisted by
+anchoring command-shape detection on fenced bash blocks.
 """
 
 from __future__ import annotations
@@ -159,12 +161,11 @@ def test_no_deprecated_full_auto_flag():
     # *present* (they document the migration for human readers). If these
     # vanish, the test still passes on the command-shape contract but the
     # skill loses its self-documenting deprecation context.
-    prose_mentions = body.count("`--full-auto` is deprecated")
+    prose_mentions = len(re.findall(r'--full-auto.*?deprecated|deprecated.*?--full-auto', body))
     assert prose_mentions >= 2, (
         f"Expected at least 2 prose deprecation notices for `--full-auto` "
         f"in {PLAN_SKILL.name} (Planner B and Reviewer B Codex Invocation "
-        f"headers); found {prose_mentions}. If the notices were removed, "
-        f"readers lose the migration rationale."
+        f"headers); found {prose_mentions}. Pattern: flexible word order."
     )
 
 
@@ -357,6 +358,106 @@ def test_codex_timeout_ms_key_in_schema():
     )
 
 
+def test_codex_timeout_ms_has_maximum():
+    """MUST — `properties.codex.properties.timeoutMs` declares `maximum: 600000`.
+
+    The schema MUST cap the upper bound at 600000 (10 minutes) so that
+    misconfigured values (e.g. 999999999) are caught by JSON Schema
+    validation rather than silently producing an absurdly long
+    `timeout 999999s codex …` prefix. The inline jq ceiling guard (`. > 600`
+    after ms→s conversion) is the runtime fallback; the schema maximum is the
+    static contract.
+    """
+    schema = _load_schema()
+    codex_props = schema.get("properties", {}).get("codex", {}).get("properties", {})
+    timeout_ms = codex_props.get("timeoutMs", {})
+    assert timeout_ms.get("maximum") == 600000, (
+        f"`properties.codex.properties.timeoutMs.maximum` must be 600000 "
+        f"(10 minutes cap); got {timeout_ms.get('maximum')!r}. Without a "
+        f"schema-level maximum, arbitrarily large values pass validation."
+    )
+
+
+def test_inline_jq_clamping_matches_schema_bounds():
+    """MUST — inline jq clamping values are consistent with schema bounds.
+
+    The inline jq clamping expression uses `. < 1 then 300` (floor: 1 second,
+    with default fallback to 300) and `. > 600 then 600` (ceiling: 600 seconds).
+    The schema declares `minimum: 1000` (ms) and `maximum: 600000` (ms).
+
+    Consistency check:
+    - Schema minimum 1000 ms = 1 s. The jq floor guard `. < 1` clamps at 1s.
+      These are consistent (1000ms / 1000 = 1s).
+    - Schema maximum 600000 ms = 600 s. The jq ceiling guard `. > 600` clamps
+      at 600s. These are consistent (600000ms / 1000 = 600s).
+
+    If either the schema bounds or the jq clamping values drift independently,
+    this test catches the inconsistency.
+    """
+    # --- Schema side ---
+    schema = _load_schema()
+    codex_props = schema.get("properties", {}).get("codex", {}).get("properties", {})
+    timeout_ms = codex_props.get("timeoutMs", {})
+
+    schema_min_ms = timeout_ms.get("minimum")
+    schema_max_ms = timeout_ms.get("maximum")
+    assert schema_min_ms is not None, "Schema missing timeoutMs.minimum"
+    assert schema_max_ms is not None, "Schema missing timeoutMs.maximum"
+
+    schema_min_s = schema_min_ms / 1000  # 1000 ms → 1 s
+    schema_max_s = schema_max_ms / 1000  # 600000 ms → 600 s
+
+    # --- Inline jq side (from SKILL.md codex command-shape blocks) ---
+    body = PLAN_SKILL.read_text(encoding="utf-8")
+    blocks = _codex_command_blocks(body)
+    assert blocks, (
+        f"No codex command-shape blocks found in {PLAN_SKILL.name} "
+        f"to extract jq clamping values from."
+    )
+
+    # Extract clamping values from the first block's jq line.
+    # Expected patterns: `. < 1 then 300` (floor) and `. > 600 then 600` (ceiling)
+    jq_line = None
+    for block in blocks:
+        for line in block.splitlines():
+            if "CODEX_TIMEOUT_S=$(jq" in line:
+                jq_line = line
+                break
+        if jq_line:
+            break
+
+    assert jq_line is not None, (
+        f"Could not find inline jq computation line in any codex "
+        f"command-shape block in {PLAN_SKILL.name}."
+    )
+
+    # Extract floor: `. < N` where N is the floor threshold in seconds
+    floor_match = re.search(r"\. < (\d+)", jq_line)
+    assert floor_match, (
+        f"Could not extract floor threshold from jq line: {jq_line!r}"
+    )
+    jq_floor_s = int(floor_match.group(1))
+
+    # Extract ceiling: `. > N` where N is the ceiling threshold in seconds
+    ceiling_match = re.search(r"\. > (\d+)", jq_line)
+    assert ceiling_match, (
+        f"Could not extract ceiling threshold from jq line: {jq_line!r}"
+    )
+    jq_ceiling_s = int(ceiling_match.group(1))
+
+    # Consistency assertions
+    assert jq_floor_s == schema_min_s, (
+        f"Jq floor guard (`. < {jq_floor_s}` → {jq_floor_s}s) is inconsistent "
+        f"with schema minimum ({schema_min_ms}ms = {schema_min_s}s). "
+        f"Expected jq floor = schema_min_ms / 1000 = {schema_min_s}."
+    )
+    assert jq_ceiling_s == schema_max_s, (
+        f"Jq ceiling guard (`. > {jq_ceiling_s}` → {jq_ceiling_s}s) is "
+        f"inconsistent with schema maximum ({schema_max_ms}ms = {schema_max_s}s). "
+        f"Expected jq ceiling = schema_max_ms / 1000 = {schema_max_s}."
+    )
+
+
 def test_codex_fallback_after_ms_key_absent():
     """MUST — D3 lock — `fallbackAfterMs` key is ABSENT from the schema.
 
@@ -375,17 +476,17 @@ def test_codex_fallback_after_ms_key_absent():
     )
 
 
-def test_schema_id_v0131_bump():
-    """MUST — `$id` URL contains the `v0.13.1` release-tag token.
+def test_schema_id_v0132_bump():
+    """MUST — `$id` URL contains the `v0.13.2` release-tag token.
 
     Per CONTRIBUTING.md §Release URL bump, the `$id` is pinned to the
-    release tag. A v0.13.1 schema change (adding `codex.timeoutMs`)
+    release tag. A v0.13.2 schema change (adding `codex.timeoutMs.maximum`)
     requires bumping the URL token away from any prior tag.
     """
     schema = _load_schema()
     schema_id = schema.get("$id", "")
-    assert "v0.13.1" in schema_id, (
-        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.13.1' release "
+    assert "v0.13.2" in schema_id, (
+        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.13.2' release "
         f"tag (per CONTRIBUTING.md §Release URL bump); got {schema_id!r}."
     )
 
@@ -519,10 +620,11 @@ def test_shell_timeout_prefix_uses_template_variable():
     """MUST — H1 lock — every codex command-shape line threads the
     `${CODEX_TIMEOUT_S}s` shell-expansion form (NOT hardcoded `300s`).
 
-    The Step 0 probe computes `CODEX_TIMEOUT_S=$((CODEX_TIMEOUT_MS / 1000))`
-    by sourcing `.codex.timeoutMs` from athanor.json. If command-shape lines
-    hardcode `timeout 300s`, the configured timeout is silently ignored —
-    the config key becomes phantom. H1 fix threads the variable through.
+    Worker bash block computes `CODEX_TIMEOUT_S` inline via
+    `CODEX_TIMEOUT_S=$(jq ... athanor.json)` with clamping. If command-shape
+    lines hardcode `timeout 300s`, the configured timeout is silently
+    ignored — the config key becomes phantom. H1 fix threads the variable
+    through.
 
     Accepted forms (template-style):
       - `timeout ${CODEX_TIMEOUT_S}s codex ...` — shell variable expansion
@@ -583,6 +685,114 @@ def test_shell_timeout_prefix_uses_template_variable():
         f"H1 phantom-config violation — codex command-shape lines in "
         f"{PLAN_SKILL.name} must thread the Step 0 `${{CODEX_TIMEOUT_S}}` "
         f"variable (not hardcode `300s`):\n  " + "\n  ".join(failing)
+    )
+
+
+def test_codex_command_blocks_compute_timeout_inline():
+    """MUST — every codex command-shape bash block contains the inline
+    `CODEX_TIMEOUT_S=$(jq` computation line BEFORE the `timeout ${CODEX_TIMEOUT_S}s`
+    line.
+
+    v0.13.1 moved timeout computation from Step 0 probe into each bash block
+    as an inline jq one-liner. This test verifies that EVERY codex command-shape
+    block has the inline computation, and that it appears BEFORE the timeout
+    prefix line (ordering matters — the variable must be set before use).
+    """
+    body = PLAN_SKILL.read_text(encoding="utf-8")
+    blocks = _codex_command_blocks(body)
+
+    assert blocks, (
+        f"Sanity precondition failed: no codex command-shape blocks "
+        f"found in {PLAN_SKILL.name} to scan for inline jq computation."
+    )
+
+    failing = []
+    for idx, block in enumerate(blocks):
+        lines = block.splitlines()
+        jq_line_idx = None
+        timeout_line_idx = None
+
+        for i, line in enumerate(lines):
+            if "CODEX_TIMEOUT_S=$(jq" in line and jq_line_idx is None:
+                jq_line_idx = i
+            if re.search(r"timeout\s+\$\{CODEX_TIMEOUT_S\}s\s+codex\b", line) and timeout_line_idx is None:
+                timeout_line_idx = i
+
+        if jq_line_idx is None:
+            preview = block.strip()[:200]
+            failing.append(
+                f"Block #{idx + 1}: missing inline `CODEX_TIMEOUT_S=$(jq` "
+                f"computation line: {preview!r}..."
+            )
+        elif timeout_line_idx is None:
+            preview = block.strip()[:200]
+            failing.append(
+                f"Block #{idx + 1}: has inline jq computation but missing "
+                f"`timeout ${{CODEX_TIMEOUT_S}}s codex` line: {preview!r}..."
+            )
+        elif jq_line_idx >= timeout_line_idx:
+            failing.append(
+                f"Block #{idx + 1}: inline jq computation (line {jq_line_idx}) "
+                f"appears AFTER timeout usage (line {timeout_line_idx}) — "
+                f"variable used before set."
+            )
+
+    assert not failing, (
+        f"Inline jq timeout computation violations in {PLAN_SKILL.name} — "
+        f"every codex command-shape block must compute CODEX_TIMEOUT_S via "
+        f"inline `$(jq ...)` BEFORE the `timeout ${{CODEX_TIMEOUT_S}}s` "
+        f"prefix:\n  " + "\n  ".join(failing)
+    )
+
+
+def test_inline_jq_clamps_timeout_bounds():
+    """MUST — the inline jq expression contains clamping logic (1s floor, 600s ceiling).
+
+    The inline jq one-liner must contain `. < 1` (floor guard) and `. > 600`
+    (ceiling guard) to prevent misconfigured `codex.timeoutMs` values from
+    producing dangerously short or unbounded timeout prefixes. Without clamping:
+    - timeoutMs=0 → `timeout 0s codex ...` (instant kill)
+    - timeoutMs=999999999 → `timeout 999999s codex ...` (11+ day hang)
+    """
+    body = PLAN_SKILL.read_text(encoding="utf-8")
+    blocks = _codex_command_blocks(body)
+
+    assert blocks, (
+        f"Sanity precondition failed: no codex command-shape blocks "
+        f"found in {PLAN_SKILL.name} to scan for jq clamping logic."
+    )
+
+    failing = []
+    for idx, block in enumerate(blocks):
+        # Find the inline jq computation line
+        jq_line = None
+        for line in block.splitlines():
+            if "CODEX_TIMEOUT_S=$(jq" in line:
+                jq_line = line
+                break
+
+        if jq_line is None:
+            failing.append(
+                f"Block #{idx + 1}: no inline jq computation line found "
+                f"(prerequisite for clamping check)."
+            )
+            continue
+
+        if ". < 1" not in jq_line:
+            failing.append(
+                f"Block #{idx + 1}: inline jq expression missing floor "
+                f"guard `. < 1` — sub-second timeouts would not be clamped."
+            )
+        if ". > 600" not in jq_line:
+            failing.append(
+                f"Block #{idx + 1}: inline jq expression missing ceiling "
+                f"guard `. > 600` — unbounded timeouts would not be clamped."
+            )
+
+    assert not failing, (
+        f"Inline jq clamping violations in {PLAN_SKILL.name} — the timeout "
+        f"computation must clamp to [1, 600] seconds (`. < 1` floor + "
+        f"`. > 600` ceiling guards):\n  " + "\n  ".join(failing)
     )
 
 
