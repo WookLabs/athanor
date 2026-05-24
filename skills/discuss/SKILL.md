@@ -381,7 +381,7 @@ END_RESULT"
 > The Devil's Advocate fallback is the default when Codex is disabled or absent.
 
 Before dispatching workers, the Leader resolves `codex_available` using the
-same configuration matrix as `/athanor:plan` (kept in sync — see
+same configuration matrix as `/athanor:plan` (subset — discuss reads only enabled/fallback, not timeoutMs; see
 `skills/plan/SKILL.md` Step 0). This is a Leader Bash exception (config read
 gating dispatch, not analytical work):
 

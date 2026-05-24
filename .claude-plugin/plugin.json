@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.13.1",
-  "description": "Athanor v0.13.1 — Thin Leader orchestrator plugin for Claude Code. Cross-model adversarial planning (/athanor:plan), Spec-then-TDD discipline (/athanor:work), parallel multi-lens review (/athanor:review), Stop hook runtime gate, and (v0.13.0) goal-driven validated Ralph loop (/athanor:lfg-goal — orchestration layer with durable goal ledger + dispatched receipt-validator + adversarial 3-tier goal-completion check; no new identity invariant added per D11).",
+  "version": "0.13.2",
+  "description": "Athanor v0.13.2 — Thin Leader orchestrator plugin for Claude Code. Cross-model adversarial planning (/athanor:plan), Spec-then-TDD discipline (/athanor:work), parallel multi-lens review (/athanor:review), Stop hook runtime gate, and (v0.13.0) goal-driven validated Ralph loop (/athanor:lfg-goal — orchestration layer with durable goal ledger + dispatched receipt-validator + adversarial 3-tier goal-completion check; no new identity invariant added per D11).",
   "author": {
     "name": "WookLabs"
   },
