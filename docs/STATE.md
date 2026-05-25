@@ -4,7 +4,38 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.13.1 — Codex CLI Hang Prevention Patch
+## Current Phase: v0.14.0 — Native Agent Definitions
+
+**v0.14.0 — Native Agent Definitions** (released 2026-05-24)
+
+3 new native agent definition files added to `agents/`:
+- `agents/releaser.md` — Release ceremony automation
+- `agents/codex-dispatcher.md` — Codex CLI dispatch wrapper with timeout
+  clamping and stdin redirect
+- `agents/ci-watcher.md` — CI watch + autofix loop
+
+Agent definitions are REFERENCE DOCUMENTS — they describe purpose, tools,
+and dispatch contract but are NOT full implementations. The inline codex
+invocation, CI loop, and release ceremony patterns remain in their
+respective skills as canonical code.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched. `fallbackAfterMs` (soft deadline) deferred to v0.15+.
+Codex dispatcher extraction (v0.13.2 Plan B) realized as agent reference
+definition; full extraction deferred to v0.15+.
+
+## Previous Phase: v0.13.2 — Bug Fix Patch (Phantom Variable + Korean Regex + Schema Max)
+
+**v0.13.2** (released 2026-05-24) — Bug fix patch: `${CODEX_TIMEOUT_S}`
+phantom variable fix (Worker clean-context Agent() dispatch has no access
+to Leader shell variables; inline jq computation instead), Korean
+paraphrase regex suffix mismatch fix, `codex.timeoutMs` schema maximum
+(600000) addition. 4 identity invariants intact, companion-fix arc
+untouched. "Worker prompts must not depend on Leader shell variables"
+convention discovered.
+
+## Previous Phase: v0.13.1 — Codex CLI Hang Prevention Patch
 
 **v0.13.1 — Codex CLI Hang Prevention Patch** (released 2026-05-23)
 
@@ -23,7 +54,7 @@ Fixes (5):
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
-v0.11.8) untouched. `fallbackAfterMs` (soft deadline) deferred to v0.14+.
+v0.11.8) untouched. `fallbackAfterMs` (soft deadline) deferred to v0.15+.
 
 ## Previous Phase: v0.13.0 — /athanor:lfg-goal (Goal-Driven Validated Ralph Loop)
 

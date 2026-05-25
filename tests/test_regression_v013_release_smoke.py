@@ -1,4 +1,4 @@
-"""v0.13.0 + v0.13.1 + v0.13.2 release-smoke regression test. Locks the v0.13.x deliverable surface as a single high-signal check."""
+"""v0.13.0 + v0.13.1 + v0.13.2 + v0.14.0 release-smoke regression test. Locks the v0.13.x + v0.14.0 deliverable surface as a single high-signal check."""
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -7,9 +7,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_v013_release_surface_intact():
-    """Locks all v0.13.0 + v0.13.1 + v0.13.2 deliverables in one assertion bundle.
+    """Locks all v0.13.0 + v0.13.1 + v0.13.2 + v0.14.0 deliverables in one assertion bundle.
 
-    Catches regression of any single deliverable shipping in the v0.13.x release line.
+    Catches regression of any single deliverable shipping in the v0.13.x + v0.14.0 release line.
     """
     # skill spec
     assert (REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md").is_file()
@@ -31,7 +31,7 @@ def test_v013_release_surface_intact():
     assert template["lfgGoal"] == config["lfgGoal"], "athanor.json + templates/athanor.json lfgGoal parity violated"
     # version bump
     plugin = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
-    assert plugin["version"] == "0.13.2", f"plugin.json version not bumped: {plugin['version']}"
+    assert plugin["version"] == "0.14.0", f"plugin.json version not bumped: {plugin['version']}"
 
 
 def test_companion_fix_arc_scripts_present():
