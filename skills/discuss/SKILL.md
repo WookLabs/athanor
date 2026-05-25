@@ -518,6 +518,22 @@ Athanor Discussion: {dilemma title}
 
 {Critic's synthesis — reformatted for readability}
 
+## 옵션 비교
+
+| 항목 | Option A | Option B |
+|------|----------|----------|
+| {dimension} | {assessment} | {assessment} |
+
+> discuss.md `## Options Analyzed` 섹션에서 추출. 섹션 부재 시 표 생략.
+
+## Trade-off 매트릭스
+
+| Trade-off | 영향 | 권장 |
+|-----------|------|------|
+| {trade-off} | {impact} | {recommendation} |
+
+> discuss.md `## Key Trade-offs` 섹션에서 추출. 섹션 부재 시 표 생략.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Session: .athanor/sessions/{id}/
 Files:   research-a.md, research-b.md, discuss.md

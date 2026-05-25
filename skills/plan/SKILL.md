@@ -1137,7 +1137,17 @@ before confirming.
 ## Approach
 {전략 요약 — 어떤 방식으로 접근하는지}
 
-## Phases
+## Phase Summary
+
+| Phase | Name | Files | Verify | Note |
+|-------|------|-------|--------|------|
+| 1 | {name} | {N}개 | {MUST×N / prose} | {spec-then-tdd / test-aware / direct} |
+| 2 | {name} | {N}개 | {MUST×N} | {classification} |
+
+## Scope
+  Files to modify: {N}개  |  New files: {N}개  |  Complexity: {low/medium/high}
+
+## Phase Detail
 
 Phase 1: {이름}
   ├── Step 1.1: {구체적 행동} → {대상 파일}
@@ -1149,15 +1159,17 @@ Phase 2: {이름}
   └── Verify: {검증 방법}
 
 ## Key Decisions
-  • {결정 1}: {이유}
-  • {결정 2}: {이유}
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 1 | {결정} | {이유} |
+| 2 | {결정} | {이유} |
+
+> Deep tier: Resolved Conflicts에서 추출 | Standard: Changes from Review에서 | Lite: plan-a.md Risks에서
 
 ## Risks
   ⚠ {리스크 1}: {대응}
   ⚠ {리스크 2}: {대응}
-
-## Scope
-  Files to modify: {N}개  |  New files: {N}개  |  Complexity: {low/medium/high}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -1166,9 +1178,22 @@ Phase 2: {이름}
 ```
 ⚠ {N}개 미해결 충돌:
 
-1. {conflict description}
-   [A] {Plan A approach}
-   [B] {Plan B approach}
+| # | Conflict | Option A | Option B | Lean |
+|---|----------|----------|----------|------|
+| 1 | {description} | {approach} | {approach} | {preference} |
+
+각 충돌에 대해 AskUserQuestion으로 사용자 선택을 요청합니다.
+preview 필드에 각 옵션의 영향을 ASCII 비교로 표시:
+
+AskUserQuestion({
+  questions: [{
+    question: "Conflict 1: {description}",
+    options: [
+      { label: "Option A", description: "...", preview: "Option A impact:\n─────────\nPhase 2: unchanged\nRisk: low" },
+      { label: "Option B", description: "...", preview: "Option B impact:\n─────────\nPhase 2: +1 file\nRisk: medium" }
+    ]
+  }]
+})
 
 선택해주세요 (예: "1A, 2B") 또는 직접 피드백을 주세요.
 ```
