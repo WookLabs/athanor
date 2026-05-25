@@ -461,7 +461,7 @@ def test_inline_jq_clamping_matches_schema_bounds():
 def test_codex_fallback_after_ms_key_absent():
     """MUST — D3 lock — `fallbackAfterMs` key is ABSENT from the schema.
 
-    Soft-deadline async-join (`fallbackAfterMs`) was deferred to v0.14+
+    Soft-deadline async-join (`fallbackAfterMs`) was deferred to v0.15+
     per the v0.13.1 plan D3 decision. Adding the key now would imply the
     leader-side wait/cancel orchestration is implemented when it is not.
     This test locks the deferral — even after ST6+ST7 landing.
@@ -470,29 +470,28 @@ def test_codex_fallback_after_ms_key_absent():
     codex_props = schema.get("properties", {}).get("codex", {}).get("properties", {})
     assert "fallbackAfterMs" not in codex_props, (
         f"D3 lock violated: `properties.codex.properties.fallbackAfterMs` "
-        f"must NOT exist in {CONFIG_SCHEMA.name} (deferred to v0.14+). "
+        f"must NOT exist in {CONFIG_SCHEMA.name} (deferred to v0.15+). "
         f"Adding this key implies the leader-side soft-deadline async-join "
         f"orchestration is implemented; it is not."
     )
 
 
-def test_schema_id_v0132_bump():
-    """MUST — `$id` URL contains the `v0.13.2` release-tag token.
+def test_schema_id_v0140_bump():
+    """MUST — `$id` URL contains the `v0.14.0` release-tag token.
 
     Per CONTRIBUTING.md §Release URL bump, the `$id` is pinned to the
-    release tag. A v0.13.2 schema change (adding `codex.timeoutMs.maximum`)
-    requires bumping the URL token away from any prior tag.
+    release tag. v0.14.0 bumps the URL token away from any prior tag.
     """
     schema = _load_schema()
     schema_id = schema.get("$id", "")
-    assert "v0.13.2" in schema_id, (
-        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.13.2' release "
+    assert "v0.14.0" in schema_id, (
+        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.14.0' release "
         f"tag (per CONTRIBUTING.md §Release URL bump); got {schema_id!r}."
     )
 
 
 def test_schema_describes_fallback_after_ms_deferral():
-    """MUST — schema documents the `fallbackAfterMs` deferral to v0.14+.
+    """MUST — schema documents the `fallbackAfterMs` deferral to v0.15+.
 
     Schema is the primary contract; its `description` text for `timeoutMs`
     (or any sibling description in the codex sub-object) must mention the
@@ -508,9 +507,9 @@ def test_schema_describes_fallback_after_ms_deferral():
             descriptions.append(desc)
 
     combined = "\n".join(descriptions)
-    assert "deferred to v0.14+" in combined, (
+    assert "deferred to v0.15+" in combined, (
         f"Schema {CONFIG_SCHEMA.name} must document the fallbackAfterMs "
-        f"deferral with the phrase 'deferred to v0.14+' in at least one "
+        f"deferral with the phrase 'deferred to v0.15+' in at least one "
         f"`properties.codex.properties.*.description`. Existing descriptions:"
         f"\n  - " + "\n  - ".join(descriptions or ["(none)"])
     )

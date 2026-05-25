@@ -13,6 +13,26 @@ Documented infrastructure/output exceptions:
 - In `/athanor:discuss` clarify mode, after explicit user confirmation, the leader may write `.athanor/sessions/{id}/requirements.md` as a captured dialogue artifact.
 - These exceptions do not permit editing project source files or performing implementation work before `/athanor:work`.
 
+## Native Agent Inventory
+
+Agent definitions live in `agents/` as `.md` reference documents. The Leader reads these when dispatching via `Agent()`. They describe purpose, tools, and dispatch contract but are NOT full implementations — canonical code remains in the respective skills.
+
+| Agent | Purpose | Since |
+|-------|---------|-------|
+| `analyst.md` | Analysis dispatch target | v0.7.x |
+| `cleaner.md` | Session/memory lifecycle | v0.7.x |
+| `critic.md` | Adversarial plan review | v0.7.x |
+| `executor.md` | Subtask execution (Ralph loop) | v0.7.x |
+| `learner.md` | Lessons extraction | v0.7.x |
+| `planner.md` | Plan generation | v0.7.x |
+| `researcher.md` | Research/discovery dispatch | v0.7.x |
+| `reviewer.md` | Multi-lens code review | v0.7.x |
+| `releaser.md` | Release ceremony automation (version bump, CHANGELOG, STATE.md, test pins) | v0.14.0 |
+| `codex-dispatcher.md` | Codex CLI dispatch wrapper (timeout clamping, stdin redirect, exit-code handling) | v0.14.0 |
+| `ci-watcher.md` | CI watch + autofix loop (gh pr checks, failure log analysis, fix dispatch) | v0.14.0 |
+
+Additionally, 2 vendored sub-agents at `agents/vendored/ce/`: `ce-git-history-analyzer.agent.md` and `ce-repo-research-analyst.agent.md` (retained per D12).
+
 ## Commands
 
 ### Athanor-native (11 user-invocable + 2 internal)

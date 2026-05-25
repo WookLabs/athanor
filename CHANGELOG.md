@@ -3,6 +3,38 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.14.0] — 2026-05-24
+
+### Added
+- 3 new native agent definitions:
+  - `agents/releaser.md` — Release ceremony automation (5-file version bump,
+    CHANGELOG, STATE.md rotation, test pin updates, release-ready verification)
+  - `agents/codex-dispatcher.md` — Codex CLI dispatch wrapper with timeout
+    clamping (1-600s), stdin redirect (`< /dev/null`), and structured exit-code
+    handling. Enforces "Worker prompts must not depend on Leader shell variables"
+    convention discovered in v0.13.2.
+  - `agents/ci-watcher.md` — CI watch + autofix loop (gh pr checks, failure log
+    analysis, fix dispatch, residual escalation)
+- Cross-reference notes in `skills/plan/SKILL.md` (codex-dispatcher) and
+  `skills/lfg/SKILL.md` (releaser + ci-watcher)
+- `tests/test_regression_v014_agent_definitions.py` (20 tests)
+- `tests/test_regression_v014_release_smoke.py` (7 tests)
+
+### Changed
+- `CLAUDE.md` updated with native agent inventory (11 agents total: 8 existing + 3 new)
+- `fallbackAfterMs` deferral re-targeted from v0.14+ to v0.15+ (codex-dispatcher agent
+  is an agent definition, not the async-join implementation that fallbackAfterMs requires)
+- Codex dispatcher extraction (v0.13.2 Plan B) is realized as an agent REFERENCE
+  DEFINITION — the inline codex invocation in `skills/plan/SKILL.md` remains the
+  canonical implementation. Full extraction deferred to v0.15+.
+
+### Honesty note
+- Agent definition files describe the agent's PURPOSE, TOOLS, and DISPATCH CONTRACT
+  but are NOT full implementations — they are reference documents that the Leader
+  reads when dispatching via Agent(). The inline codex invocation, CI loop, and
+  release ceremony patterns remain in their respective skills as canonical code.
+- 4 identity invariants intact. Companion-fix arc untouched.
+
 ## [0.13.2] — 2026-05-24
 
 ### Fixed
@@ -31,7 +63,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - Bug fix patch — 4 identity invariants intact, companion-fix arc untouched.
 - Discovered convention: **Worker prompts must not depend on Leader shell
   variables** — `Agent()` dispatch creates clean context. Codex dispatcher
-  extraction deferred to v0.14+ (Plan B architectural insight captured).
+  extraction deferred to v0.15+ (Plan B architectural insight captured).
 
 ## [0.13.1] — 2026-05-23
 
@@ -73,13 +105,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   hook gate), companion-fix arc 5 layer (v0.11.3 → v0.11.8) untouched.
 - **v0.13.1 intentionally ships `timeoutMs` only.** `fallbackAfterMs`
   (leader-side soft deadline) requires async join infrastructure absent
-  in current synchronous Bash-dispatch model; deferred to v0.14+.
+  in current synchronous Bash-dispatch model; deferred to v0.15+.
 - **Minimum codex CLI version required: 0.133.0+.** The
   `-a never -s workspace-write` top-level flag form requires codex CLI
   0.133.0 or later. Users with older CLI versions will see dispatch
   failures attributed to "codex unavailable" — the actual cause is
   version mismatch. Step 0 probe currently does NOT version-gate (only
-  checks CLI presence); explicit version detection deferred to v0.14+.
+  checks CLI presence); explicit version detection deferred to v0.15+.
 - Pre-edit byte-capture artifact (`/tmp/codex-{top,exec}-help.txt` from
   CLI 0.133.0) was used to empirically verify flag positions before
   migration — locked in `.athanor/sessions/2026-05-23-001/discoveries/

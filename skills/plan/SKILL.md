@@ -374,6 +374,12 @@ Format your plan as:
 ## Estimated Scope\" < /dev/null
 ```
 
+> **v0.14.0:** The `athanor-codex-dispatcher` agent (`agents/codex-dispatcher.md`)
+> encapsulates the codex invocation pattern above — timeout computation, stdin
+> redirect, and flag management. Skills dispatching Codex MAY use the agent
+> directly instead of inline bash. The inline form is preserved here as the
+> canonical reference implementation.
+
 ## After Codex Returns
 1. Check exit code and verify output file exists
 2. If Codex fails or times out, report failure
@@ -632,6 +638,12 @@ Output as structured markdown:
 ## Risk Assessment
 ## Verdict\" < /dev/null
 ```
+
+> **v0.14.0:** The `athanor-codex-dispatcher` agent (`agents/codex-dispatcher.md`)
+> encapsulates the codex invocation pattern above — timeout computation, stdin
+> redirect, and flag management. Skills dispatching Codex MAY use the agent
+> directly instead of inline bash. The inline form is preserved here as the
+> canonical reference implementation.
 
 ## After Codex Returns
 1. Check exit code and verify output file exists

@@ -192,6 +192,10 @@ Use a value-first PR title and a description that summarizes:
 - Test plan (verification steps)
 - Migration / breaking-change notes (if any)
 
+> **v0.14.0:** The `athanor-releaser` agent (`agents/releaser.md`) can automate
+> the version bump + CHANGELOG + STATE rotation ceremony. Invoke via worker
+> dispatch when the release involves mechanical version bumps.
+
 ### Step 8 — CI watch and autofix loop
 
 (Only when an open PR exists for the current branch.)
@@ -234,6 +238,10 @@ For up to **3 fix iterations**, repeat:
 after 3 fix cycles, compose a `## CI Failures Unresolved` markdown
 section in the PR body and proceed to step 9. The autopilot contract is
 "make residuals durable, then exit."
+
+> **v0.14.0:** The `athanor-ci-watcher` agent (`agents/ci-watcher.md`)
+> encapsulates this CI watch + autofix loop. Skills MAY dispatch the agent
+> instead of running inline. The inline form is preserved as canonical reference.
 
 ### Step 9 — Output `<promise>DONE</promise>` when complete
 
