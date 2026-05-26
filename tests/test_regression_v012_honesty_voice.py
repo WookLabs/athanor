@@ -97,13 +97,13 @@ def test_changelog_v012_no_forbidden_phrases():
 
 def test_state_md_v012_current_phase():
     """MUST 2.c — docs/STATE.md §"Current Phase" references a current
-    series version (0.12.x / 0.13.x) by version literal.
+    series version (0.12.x / 0.13.x / 0.14.x) by version literal.
 
     Originally pinned to v0.12.0 (Subtask 19). Lock-step relaxed in
     v0.13.1 to accept 0.12.x or 0.13.x literals — Current Phase advances
     with each release; this test's role is to ensure §"Current Phase"
     is present and version-literal-anchored, not to pin one specific
-    release forever.
+    release forever. v0.14.3 extends to accept 0.14.x.
     """
     body = STATE_MD_PATH.read_text(encoding="utf-8")
     # Find §"Current Phase" heading + capture body to next sibling heading.
@@ -117,14 +117,15 @@ def test_state_md_v012_current_phase():
         "post-Subtask 19"
     )
     # Include the matched heading line for version-literal scanning so the
-    # heading-only form `## Current Phase: v0.13.x — ...` qualifies.
+    # heading-only form `## Current Phase: v0.14.x — ...` qualifies.
     current_phase_section = m.group(0)
     assert (
         "0.12." in current_phase_section
         or "0.13." in current_phase_section
+        or "0.14." in current_phase_section
     ), (
         "docs/STATE.md '## Current Phase' must reference a current-series "
-        "(0.12.x / 0.13.x) version literal"
+        "(0.12.x / 0.13.x / 0.14.x) version literal"
     )
 
 
