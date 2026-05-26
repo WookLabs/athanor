@@ -910,23 +910,30 @@ def validate_emission_sentinel(message: str) -> bool:
     return True
 
 
-def _match_is_suppressed(message: str, normalized: str,
+def _match_is_suppressed(_message: str, normalized: str,
                          match_start_norm: int, match_end_norm: int) -> bool:
     """Apply v0.10.3 context suppressions to a candidate match.
 
-    Context checks run against the ORIGINAL message (case + non-folded text
-    preserved) so attribution verbs and conditional markers retain their
-    natural form. The position is mapped from the normalized text to the
-    raw text by length-preservation: NFKC + str.translate + .lower() all
-    preserve string length character-by-character (translate is 1-char→
-    1-char; lower is 1-char→1-char for the letters in our matching set).
+    Context checks run against the NORMALIZED text consistently. The
+    positions (`match_start_norm`, `match_end_norm`) are derived from
+    substring/regex matches on `normalized`, so context extraction must
+    also use `normalized` to maintain position coherence.
+
+    v0.14.2 fix: prior versions indexed into the original `message` with
+    positions from `normalized`. NFKC normalization can change string
+    length (e.g., U+FB03 'ffi' ligature → 3 chars 'ffi'), causing
+    position mapping divergence. Using `normalized` for both match
+    positions AND context extraction eliminates this class of bug.
+    The conditional markers ('if', 'once', etc.) and attribution verbs
+    ('said', 'claimed', etc.) are already lowercase Latin — they match
+    correctly in normalized text.
 
     Returns True if the match should be suppressed (i.e., the match is
     inside a conditional clause or an attributed quote).
     """
-    if _is_conditional_or_speculative_context(message, match_start_norm):
+    if _is_conditional_or_speculative_context(normalized, match_start_norm):
         return True
-    if _is_attributed_quote_context(message, match_start_norm, match_end_norm):
+    if _is_attributed_quote_context(normalized, match_start_norm, match_end_norm):
         return True
     return False
 

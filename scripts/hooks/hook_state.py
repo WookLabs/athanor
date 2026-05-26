@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import sys
 import tempfile
 import time
@@ -47,9 +48,11 @@ from pathlib import Path
 # Stop event payloads.
 SESSION_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
-# Nonce TTL: a nonce older than this is treated as stale. Generous (60s)
-# to tolerate normal latency between skill invocation and Stop event.
-NONCE_TTL_SECONDS = 60
+# Nonce TTL: a nonce older than this is treated as stale. 120s to tolerate
+# complex workflows where verification skill → model response → Stop hook
+# re-entry can take 30-50+ seconds (v0.14.2: raised from 60s after
+# observing TTL expiry in real-world multi-step verification flows).
+NONCE_TTL_SECONDS = 120
 
 # Default counter threshold when hooks.stopLoopThreshold is unset or invalid.
 DEFAULT_STOP_LOOP_THRESHOLD = 3
@@ -123,7 +126,9 @@ def _atomic_write_json(path: Path, data: dict) -> bool:
         # NamedTemporaryFile in the same dir guarantees atomic rename works
         # (cross-device renames would fail).
         fd, tmp_path = tempfile.mkstemp(
-            prefix=".tmp-", suffix=".json", dir=str(path.parent)
+            prefix=".tmp-",
+            suffix=f"-{secrets.token_hex(4)}.json",
+            dir=str(path.parent),
         )
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
