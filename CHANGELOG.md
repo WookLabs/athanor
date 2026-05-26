@@ -3,6 +3,51 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.14.3] — 2026-05-26
+
+### Fixed
+- **G4: Version manifest drift** — 5 manifest files (`plugin.json`,
+  `marketplace.json`, `athanor.json` `$schema`, `templates/athanor.json`
+  `$schema`, `schemas/athanor-config.schema.json` `$id`) were stuck at
+  0.14.0 through v0.14.2; bumped atomically to 0.14.3.
+- **G5: CHANGELOG test count correction** — v0.14.0 entry claimed
+  "20 tests" for `test_regression_v014_agent_definitions.py` (actual: 9)
+  and "7 tests" for `test_regression_v014_release_smoke.py` (actual: 3);
+  corrected in place.
+- **G6: Agent definition honesty framing** — v0.14.0 Honesty note now
+  distinguishes `codex-dispatcher.md` (reference for existing inline
+  implementation in `skills/plan/SKILL.md`) from `releaser.md` +
+  `ci-watcher.md` (dispatch-contract reference documents with no inline
+  implementation yet).
+
+### Changed
+- Test pins bumped: `test_schema_id` → 0.14.3, `test_v013_release_surface`
+  version pin → 0.14.3, `test_v014_version_consistent` TARGET_VERSION →
+  0.14.3.
+- `docs/STATE.md` Current Phase → v0.14.3; v0.14.2 as Previous.
+
+### Honesty note
+- Documentation/version hygiene patch — 4 identity invariants intact,
+  companion-fix arc untouched.
+
+## [0.14.2] — 2026-05-26
+
+### Fixed
+- **G1: `check_release_ready.py` version source** — script read version
+  from `athanor.json` top-level `version` field (config schema version
+  "1.0"), not the plugin version; switched to `.claude-plugin/plugin.json`.
+- **G2: `check_release_ready.py` CHANGELOG heading format** — parser
+  expected `## v0.X.Y` but CHANGELOG uses `## [0.X.Y]`; regex updated to
+  match both bracket and bare formats.
+- **G3: `test_regression_v010_namespace_layout.py` `check_release_ready`
+  import** — test imported the script as a module but the script lacked
+  `if __name__` guard and function entry points; added `main()` function
+  and `__main__` guard.
+
+### Honesty note
+- Infrastructure bug fix patch — 4 identity invariants intact,
+  companion-fix arc untouched.
+
 ## [0.14.0] — 2026-05-24
 
 ### Added
@@ -17,8 +62,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
     analysis, fix dispatch, residual escalation)
 - Cross-reference notes in `skills/plan/SKILL.md` (codex-dispatcher) and
   `skills/lfg/SKILL.md` (releaser + ci-watcher)
-- `tests/test_regression_v014_agent_definitions.py` (20 tests)
-- `tests/test_regression_v014_release_smoke.py` (7 tests)
+- `tests/test_regression_v014_agent_definitions.py` (9 tests)
+- `tests/test_regression_v014_release_smoke.py` (3 tests)
 
 ### Changed
 - `CLAUDE.md` updated with native agent inventory (11 agents total: 8 existing + 3 new)
@@ -29,10 +74,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   canonical implementation. Full extraction deferred to v0.15+.
 
 ### Honesty note
-- Agent definition files describe the agent's PURPOSE, TOOLS, and DISPATCH CONTRACT
-  but are NOT full implementations — they are reference documents that the Leader
-  reads when dispatching via Agent(). The inline codex invocation, CI loop, and
-  release ceremony patterns remain in their respective skills as canonical code.
+- Agent definition files describe the agent's PURPOSE, TOOLS, and DISPATCH CONTRACT.
+  Implementation status differs per agent:
+  - `codex-dispatcher.md` — reference document for the inline implementation already
+    present in `skills/plan/SKILL.md` (Planner B + Reviewer B codex dispatch blocks);
+    full extraction into a standalone dispatcher deferred to v0.15+.
+  - `releaser.md` + `ci-watcher.md` — dispatch-contract reference documents only;
+    no inline implementation exists yet in any skill file. These define the agent
+    shape for future Leader dispatch.
 - 4 identity invariants intact. Companion-fix arc untouched.
 
 ## [0.13.2] — 2026-05-24

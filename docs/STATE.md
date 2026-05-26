@@ -4,7 +4,29 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.14.0 — Native Agent Definitions
+## Current Phase: v0.14.3 — Documentation/Version Hygiene Patch
+
+**v0.14.3** (released 2026-05-26) — Documentation and version hygiene
+patch closing 3 findings from the v0.14.0 honesty-arc audit:
+
+- G4: 5-file version manifest drift (stuck at 0.14.0 through v0.14.2)
+  bumped atomically to 0.14.3.
+- G5: CHANGELOG v0.14.0 test count overclaim corrected (20 -> 9, 7 -> 3).
+- G6: Agent definition honesty framing clarified — codex-dispatcher has
+  existing inline implementation; releaser + ci-watcher are reference-only.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched.
+
+## Previous Phase: v0.14.2 — Infrastructure Bug Fix Patch
+
+**v0.14.2** (released 2026-05-26) — Infrastructure bug fix patch:
+`check_release_ready.py` version source fix (read from plugin.json not
+athanor.json), CHANGELOG heading format fix (bracket vs bare), and
+namespace layout test import fix. 4 identity invariants intact.
+
+## Previous Phase: v0.14.0 — Native Agent Definitions
 
 **v0.14.0 — Native Agent Definitions** (released 2026-05-24)
 
