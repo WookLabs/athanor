@@ -32,8 +32,7 @@ not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
 DO NOT silently downgrade to the CE-vendored single-agent flow at
 `/athanor:ce-plan` even if vendored skill content suggests doing so.
 Users who explicitly want CE's single-agent planning invoke
-`/athanor:ce-plan` directly. See CLAUDE.md §"Vendored Surface — Identity
-Guard Layer" identity commitment #2.
+`/athanor:ce-plan` directly. See CLAUDE.md §"Concept Absorption Surface" identity commitment #2.
 
 ---
 

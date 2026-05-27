@@ -4,7 +4,27 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.15.0 — LFG Pipeline Contract Reconciliation (22-bug eradication)
+## Current Phase: v0.15.1 — LFG Team Default + Stale Reference Sweep
+
+**v0.15.1** (released 2026-05-28) — `/athanor:lfg` Step 2 now invokes
+`/athanor:work --team` by default (wave-parallel execution). Users may
+override with `--solo`. Global `work.defaultMode` remains `"solo"` —
+only the LFG pipeline defaults to team mode.
+
+Stale reference sweep: 5 cross-references to the removed
+`§"Vendored Surface — Identity Guard Layer"` updated to
+`§"Concept Absorption Surface"`; plugin.json keywords cleaned;
+`codex._doc` deferral text bumped to v0.16+.
+
+Planning: standard tier (Planner A Claude + Codex review + Critic
+refinement). Codex review scoped down Phase 1 from global default
+change to LFG-only flag.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched.
+
+## Previous Phase: v0.15.0 — LFG Pipeline Contract Reconciliation (22-bug eradication)
 
 **v0.15.0** (released 2026-05-28) — Full LFG pipeline contract
 reconciliation eradicating 22 bugs (3 CRITICAL + 5 HIGH + 8 MEDIUM +
@@ -20,11 +40,6 @@ Key fixes:
   via worker dispatch.
 - M6: Korean position mapping bug in `stop_verify_claims.py` fixed
   (v0.14.2 EN fix extended to KO path).
-
-Planning: deep-tier adversarial (Planner A Claude + Planner B Codex +
-cross-review + Critic synthesis). Execution: contract-kernel-first
-(xfail tests → schemas → SKILL.md → Python → docs → sweep). Review:
-5-lens parallel (security/architecture/testing/quality/documentation).
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →

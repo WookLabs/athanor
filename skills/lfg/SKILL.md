@@ -86,9 +86,13 @@ until a written plan exists. **Record the plan file path** — it will
 be passed to step 3 (review) if the review skill accepts a plan
 reference.
 
-### Step 2 — Invoke `/athanor:work` (Spec-then-TDD)
+### Step 2 — Invoke `/athanor:work --team` (Spec-then-TDD)
 
-Invoke the `/athanor:work` skill.
+Invoke the `/athanor:work --team` skill.
+
+v0.15.1: LFG defaults to team mode (`--team`) because most plans produce
+subtasks with parallelizable dependency graphs. Users may override with
+`--solo` if sequential execution is preferred.
 
 `/athanor:work` applies athanor v0.8.0 Spec-then-TDD discipline:
 Splitter Step 0.5 classifies each subtask as `execution_note:
