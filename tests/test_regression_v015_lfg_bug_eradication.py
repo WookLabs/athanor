@@ -282,12 +282,25 @@ def test_c3_resume_mentions_cycle_phase():
 # H1: No stale "Vendored Surface — Identity Guard Layer" references
 # ---------------------------------------------------------------------------
 def test_h1_no_stale_vendored_surface_reference():
-    """H1 lock: neither lfg/SKILL.md nor lfg-goal/SKILL.md may contain the
+    """H1 lock: critical skill and script files must not contain the
     literal ``"Vendored Surface — Identity Guard Layer"``.
 
     This section was renamed to "Concept Absorption Surface" at v0.12.0.
+    v0.15.1 extends the scan to cover stop_verify_claims.py, plan/SKILL.md,
+    work/SKILL.md, and discuss/references/*.md.
     """
-    for path in [LFG_SKILL, LFG_GOAL_SKILL]:
+    scan_paths = [
+        LFG_SKILL,
+        LFG_GOAL_SKILL,
+        REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py",
+        REPO_ROOT / "skills" / "plan" / "SKILL.md",
+        REPO_ROOT / "skills" / "work" / "SKILL.md",
+        REPO_ROOT / "skills" / "discuss" / "references" / "requirements-capture.md",
+        REPO_ROOT / "skills" / "discuss" / "references" / "clarify-gap-probes.md",
+    ]
+    for path in scan_paths:
+        if not path.is_file():
+            continue
         body = _read(path)
         assert "Vendored Surface — Identity Guard Layer" not in body, (
             f"{path.relative_to(REPO_ROOT)} contains stale reference to "

@@ -1,12 +1,12 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.15.0/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.15.1/schemas/athanor-config.schema.json",
   "version": "1.0",
   "_doc": "Athanor runtime configuration. Project root file. Source of truth for memory/codex/work/team/triggers settings referenced from CLAUDE.md and skills/. User installs may override individual fields; missing fields fall back to these defaults.",
   "codex": {
     "enabled": true,
     "fallback": "self-critic",
     "timeoutMs": 300000,
-    "_doc": "Cross-model planning via Codex CLI. enabled=true makes /athanor:plan deep tier dispatch a Codex Planner B in parallel with Claude Planner A. fallback strategy when codex CLI is unavailable: 'self-critic' (Claude self-reviews) | 'skip' (single-planner only) | 'fail' (abort). See skills/plan/SKILL.md §Step 0 codex_available probe. timeoutMs (v0.13.1): hard wall-clock upper bound for codex exec invocations (default 300000ms / 5min); converted to seconds at dispatch and applied as shell `timeout` prefix. Soft-deadline (fallbackAfterMs) requires leader-side async join, deferred to v0.15+."
+    "_doc": "Cross-model planning via Codex CLI. enabled=true makes /athanor:plan deep tier dispatch a Codex Planner B in parallel with Claude Planner A. fallback strategy when codex CLI is unavailable: 'self-critic' (Claude self-reviews) | 'skip' (single-planner only) | 'fail' (abort). See skills/plan/SKILL.md §Step 0 codex_available probe. timeoutMs (v0.13.1): hard wall-clock upper bound for codex exec invocations (default 300000ms / 5min); converted to seconds at dispatch and applied as shell `timeout` prefix. Soft-deadline (fallbackAfterMs) requires leader-side async join, deferred to v0.16+."
   },
   "work": {
     "defaultMode": "solo",

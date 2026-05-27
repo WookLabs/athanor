@@ -183,7 +183,7 @@ v0.10.0 scope (vendored-surface coverage):
   extension (A2 closure) raises coverage on vendored CE/superpowers skill
   idioms. The gate remains "best-effort across all skills" — coverage is
   whitelist + regex + normalization based, not semantic. See CLAUDE.md
-  §"Vendored Surface — Identity Guard Layer" identity commitment #4.
+  §"Concept Absorption Surface" identity commitment #4.
 """
 from __future__ import annotations
 

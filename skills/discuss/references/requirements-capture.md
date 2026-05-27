@@ -4,7 +4,7 @@
                  (vendored at athanor v0.9.0 release time; verified still present
                  at compound-engineering@3.8.3 during v0.10.0 absorption).
                  SHA pin not available from plugin-cache distribution; version-tag
-                 fallback per CLAUDE.md §"Vendored Surface" drift policy
+                 fallback per CLAUDE.md §"Concept Absorption Surface" drift policy
                  (v0.10.1 correction).
   license: MIT (Copyright (c) 2025 Every Inc / compound-engineering authors)
   modifications:

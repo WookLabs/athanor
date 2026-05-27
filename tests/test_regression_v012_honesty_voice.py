@@ -123,9 +123,10 @@ def test_state_md_v012_current_phase():
         "0.12." in current_phase_section
         or "0.13." in current_phase_section
         or "0.14." in current_phase_section
+        or "0.15." in current_phase_section
     ), (
         "docs/STATE.md '## Current Phase' must reference a current-series "
-        "(0.12.x / 0.13.x / 0.14.x) version literal"
+        "(0.12.x / 0.13.x / 0.14.x / 0.15.x) version literal"
     )
 
 

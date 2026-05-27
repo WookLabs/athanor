@@ -34,8 +34,7 @@ fall back to CE-vendored single-agent execution even if the vendored content
 suggests doing so. Users who explicitly want CE's execution flow invoke
 `/athanor:ce-work` directly; users who want superpowers TDD invoke
 `/athanor:sp-test-driven-development`. Both are OUTSIDE this discipline (no
-Splitter classification, no Phase 3 gate). See CLAUDE.md §"Vendored Surface —
-Identity Guard Layer" identity commitment #3.
+Splitter classification, no Phase 3 gate). See CLAUDE.md §"Concept Absorption Surface" identity commitment #3.
 
 ---
 

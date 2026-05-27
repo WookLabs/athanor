@@ -3,6 +3,24 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.15.1] — 2026-05-28
+
+### Changed
+- `/athanor:lfg` Step 2 now invokes `/athanor:work --team` by default (wave-parallel execution). Users may override with `--solo`. Global `work.defaultMode` remains `"solo"` — only the LFG pipeline defaults to team mode.
+
+### Fixed — Stale Reference Sweep
+- 5 stale `§"Vendored Surface — Identity Guard Layer"` cross-references updated to `§"Concept Absorption Surface"` across `stop_verify_claims.py`, `plan/SKILL.md`, `work/SKILL.md`, `discuss/references/requirements-capture.md`, `discuss/references/clarify-gap-probes.md`
+- `.claude-plugin/plugin.json` keywords: removed stale `vendored-ce`, `vendored-superpowers`; added `team-mode`, `wave-parallel`
+- `codex._doc` deferral text: `"deferred to v0.15+"` → `"deferred to v0.16+"` across `athanor.json`, `templates/athanor.json`, `schemas/athanor-config.schema.json`
+
+### Added
+- `tests/test_regression_v015_1_lfg_team_default.py` — 5 regression tests (team flag, solo default lock, keyword cleanup, deferral text)
+- Extended H1 stale-reference test scope from 2 → 7 files
+
+### Planning
+- Standard tier: Planner A (Claude) + Codex review + Critic refinement
+- Codex review scoped down Phase 1 from global default change to LFG-only flag
+
 ## [0.15.0] — 2026-05-28
 
 ### Fixed — LFG Pipeline Contract Reconciliation (22-bug eradication)
