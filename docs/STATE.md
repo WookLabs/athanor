@@ -4,7 +4,33 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.14.3 — Documentation/Version Hygiene Patch
+## Current Phase: v0.15.0 — LFG Pipeline Contract Reconciliation (22-bug eradication)
+
+**v0.15.0** (released 2026-05-28) — Full LFG pipeline contract
+reconciliation eradicating 22 bugs (3 CRITICAL + 5 HIGH + 8 MEDIUM +
+6 LOW) across `/athanor:lfg` and `/athanor:lfg-goal` skills, their
+supporting schemas, agent definitions, and the Stop hook Korean path.
+
+Key fixes:
+- C1: No-progress circuit breaker moved inside `for cycle` loop (was dead
+  code outside loop).
+- C2: Aggregate status enum unified to 3-value across 4 files.
+- C3: `cycle_phase` 7-value enum + resume semantics added to state-shape.
+- H2/H3: Thin Leader violations in `/athanor:lfg` Steps 3 and 8 resolved
+  via worker dispatch.
+- M6: Korean position mapping bug in `stop_verify_claims.py` fixed
+  (v0.14.2 EN fix extended to KO path).
+
+Planning: deep-tier adversarial (Planner A Claude + Planner B Codex +
+cross-review + Critic synthesis). Execution: contract-kernel-first
+(xfail tests → schemas → SKILL.md → Python → docs → sweep). Review:
+5-lens parallel (security/architecture/testing/quality/documentation).
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched.
+
+## Previous Phase: v0.14.3 — Documentation/Version Hygiene Patch
 
 **v0.14.3** (released 2026-05-26) — Documentation and version hygiene
 patch closing 3 findings from the v0.14.0 honesty-arc audit:
@@ -130,7 +156,7 @@ D11에 따라 lfg-goal은 새 identity invariant를 추가하지 않는다. 기�
 - **D8 — maxIterations=5 default.** Ralph loop는 무한이 아니다. 기본 5
   cycle에서 goal-closure가 안 닫히면 leader가 사용자에게 escalate
   ("5 cycle 돌렸는데 closure 못 받았습니다 — 계속/중단/goal 수정 중 선택").
-  config override 가능 (`athanor.json` `lfg-goal.maxIterations`).
+  config override 가능 (`athanor.json` `lfgGoal.maxIterations`).
 - **D9 — consolidateCycles=false (per-cycle release default).** 매 cycle이
   독립적인 commit/release 단위로 닫힌다. 여러 cycle을 한 changeset으로
   묶지 않는다 — Stop hook 게이트와 Spec-then-TDD evidence가 cycle 단위로

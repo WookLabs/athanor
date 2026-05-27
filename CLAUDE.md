@@ -44,11 +44,11 @@ Additionally, 2 vendored sub-agents at `agents/vendored/ce/`: `ce-git-history-an
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
 | `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
 | `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex 교차 검증) |
-| `/athanor:plan` | Plan | **Cross-model adversarial planning** (Planner A Claude + Planner B Codex + Critic) — athanor identity #2. To use CE's single-agent flow, invoke `/athanor:ce-plan` explicitly. |
+| `/athanor:plan` | Plan | **Cross-model adversarial planning** (Planner A Claude + Planner B Codex + Critic) — athanor identity #2. Post-v0.12.0: sole native planner. Install upstream compound-engineering for CE variant. |
 | `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, 리뷰 없음) |
-| `/athanor:work` | Execute | **Spec-then-TDD discipline** (Splitter execution_note + conjunction-of-three Phase 3 gate) — athanor identity #3. To use CE's single-agent execution flow, invoke `/athanor:ce-work` explicitly. |
+| `/athanor:work` | Execute | **Spec-then-TDD discipline** (Splitter execution_note + conjunction-of-three Phase 3 gate) — athanor identity #3. Post-v0.12.0: sole native executor. Install upstream compound-engineering for CE variant. |
 | `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
-| `/athanor:lfg` | Execute | **Standalone end-to-end pipeline** (v0.11.0) — wraps the LFG flow through athanor-native commands at identity-bearing steps (Step 1 `/athanor:plan` cross-model + Step 2 `/athanor:work` Spec-then-TDD + Step 3 `/athanor:review` 6-lens) and reuses vendored ce-lfg step shape for the rest. Coexists with `/athanor:ce-lfg` (vendored CE single-agent + autofix flow); user selects by namespace. |
+| `/athanor:lfg` | Execute | **Standalone end-to-end pipeline** (v0.11.0) — wraps the LFG flow through athanor-native commands at identity-bearing steps (Step 1 `/athanor:plan` cross-model + Step 2 `/athanor:work` Spec-then-TDD + Step 3 `/athanor:review` 6-lens). Post-v0.12.0: sole pipeline (`/athanor:ce-lfg` removed). |
 | `/athanor:lfg-goal` | Execute | **Goal-driven macro Ralph loop** (v0.13.0) — orchestration layer over existing 4 identity invariants (no new invariant per D11). Combines durable goal ledger + dispatched receipt-validator + adversarial 3-tier goal-completion check. |
 
 ### Vendored (post-v0.12.0 atomic cut — see §Concept Absorption Surface below)

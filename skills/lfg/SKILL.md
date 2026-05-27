@@ -9,7 +9,7 @@ description: >
   '진행해', '전체 파이프라인', '배포해', '커밋 푸시 PR', 'ship this',
   'release this end-to-end', '/athanor:lfg', 'athanor lfg'.
 user-invocable: true
-allowed-tools: Bash, Read, Skill
+allowed-tools: Bash, Read, Write, Skill
 ---
 
 # /athanor:lfg — Athanor-native LFG Pipeline
@@ -20,8 +20,8 @@ You are the Athanor LFG leader. You orchestrate the full ship pipeline by
 dispatching to athanor-native commands at the identity-bearing steps and
 reusing vendored CE step shape for the non-identity-bearing steps. You
 follow the **Thin Leader** pattern: you parse, dispatch, and verify — you
-do NOT write code or run tests directly. See CLAUDE.md §"Vendored
-Surface — Identity Guard Layer" identity commitment #1.
+do NOT write code or run tests directly. See CLAUDE.md §"Concept
+Absorption Surface" identity commitment #1.
 
 This is the athanor-native end-to-end pipeline. It is invoked when the
 user says "진행해", "ship this", "release this", "/athanor:lfg" — i.e.,
@@ -45,21 +45,13 @@ not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
 - For one-off review without commit/push/PR — use `/athanor:review`
   directly.
 
-## Difference from /athanor:ce-lfg
+## Historical note (post-v0.12.0)
 
-athanor v0.10.0 vendored `/athanor:ce-lfg` from compound-engineering 3.8.3.
-Both skills coexist; the user selects by namespace:
-
-| | `/athanor:lfg` | `/athanor:ce-lfg` (vendored) |
-|---|---|---|
-| Step 1 (plan) | `/athanor:plan` (cross-model adversarial — Planner A Claude + Planner B Codex + Critic) | `ce-plan` (CE single-agent flow) |
-| Step 2 (work) | `/athanor:work` (Spec-then-TDD; Splitter `execution_note` + Phase 3 gate) | `ce-work` (CE single-agent execution) |
-| Step 3 (review) | `/athanor:review` (parallel 6-lens, no autofix) | `ce-code-review mode:autofix` (18 personas, autofix-enabled) |
-| Steps 4-8 (autofix persist, residual handoff, browser test, commit-push-pr, CI watch) | shape verbatim from ce-lfg | same |
-| When to choose | default for athanor identity (cross-model planning + Spec-then-TDD discipline + 6-lens review) | when CE's autofix-aware reviewer and single-agent planning are explicitly wanted |
-
-The two flows do NOT collide. `/athanor:ce-lfg` remains an explicit
-alternative; v0.11.0 does NOT deprecate it.
+`/athanor:ce-lfg` was vendored from compound-engineering v3.8.3 in v0.10.0
+and removed in the v0.12.0 atomic cut. `/athanor:lfg` is the sole
+end-to-end pipeline. Users wanting CE's single-agent LFG flow should
+install the upstream compound-engineering plugin directly. See
+`docs/v0.12.0-migration.md` for the migration path.
 
 ---
 
@@ -87,9 +79,8 @@ Codex + cross-review + Critic synthesis). The tier is decided inside
 `/athanor:plan` based on user signals; LFG callers do not override the
 tier choice.
 
-**GATE: STOP.** Verify that the `/athanor:plan` workflow produced a
-plan file in `docs/plans/` (or `.athanor/sessions/<id>/plan.md` per
-athanor session convention). If no plan file was created, re-invoke
+**GATE: STOP.** Verify that the `/athanor:plan` workflow produced
+`.athanor/sessions/<id>/plan.md`. If no plan file was created, re-invoke
 `/athanor:plan` with the same description. Do NOT proceed to step 2
 until a written plan exists. **Record the plan file path** — it will
 be passed to step 3 (review) if the review skill accepts a plan
@@ -123,14 +114,15 @@ above the `review.minConfidence` threshold (default 25). The Leader
 consolidates findings and surfaces blockers + recommendations.
 
 If `/athanor:review` surfaces merge-blocker findings, the LFG leader
-applies fixes (or re-dispatches `/athanor:work` for a focused subtask).
-Iterate up to **3 fix rounds**, then stop and proceed to step 4 with
-any unresolved blockers recorded.
+re-dispatches `/athanor:work` with a focused subtask scoped to the merge-blocker findings.
+Iterate up to **3 fix rounds** (the iteration limit is prose guidance
+for the leader; there is no programmatic counter enforced by the Stop
+hook or any runtime gate), then stop and proceed to step 4 with any
+unresolved blockers recorded.
 
 `/athanor:review` does NOT auto-apply fixes (athanor identity choice).
-If the user explicitly wanted CE's autofix behavior, they should have
-invoked `/athanor:ce-lfg` instead — recorded in §"Difference from
-/athanor:ce-lfg".
+Users wanting CE's autofix behavior should install the upstream
+compound-engineering plugin — see §"Historical note (post-v0.12.0)".
 
 ### Step 4 — Persist review fixes (REQUIRED after step 3, before residual handoff)
 
@@ -142,6 +134,10 @@ If an upstream exists, run `git push`. If no upstream exists, resolve
 a writable remote dynamically: prefer `origin` when present, otherwise
 use `git remote` and choose the first configured remote. Then run
 `git push --set-upstream <remote> HEAD`.
+
+If `git remote` returns no remotes, skip the push and note: "No remote
+configured — review fixes committed locally only. Push manually when a
+remote is available."
 
 Do not proceed to step 5, run browser tests, or output DONE while review
 fix edits remain only in the working tree. If no files changed,
@@ -192,6 +188,12 @@ Use a value-first PR title and a description that summarizes:
 - Test plan (verification steps)
 - Migration / breaking-change notes (if any)
 
+If `git push` fails (non-zero exit), diagnose the error (authentication,
+diverged history, protected branch). Report the push failure as a residual
+finding and proceed to Step 8 only if a PR was already opened by a prior
+step. If no PR exists and push failed, skip Steps 8-9 and emit the failure
+as the pipeline outcome.
+
 > **v0.14.0:** The `athanor-releaser` agent (`agents/releaser.md`) can automate
 > the version bump + CHANGELOG + STATE rotation ceremony. Invoke via worker
 > dispatch when the release involves mechanical version bumps.
@@ -207,26 +209,38 @@ entirely and proceed to step 9.
 gh pr view --json number,url,state
 ```
 
-For up to **3 fix iterations**, repeat:
+For up to **3 fix iterations** (the iteration limit is prose guidance
+for the leader; there is no programmatic counter enforced by the Stop
+hook or any runtime gate), repeat:
 
 1. Wait for CI to complete:
    ```bash
-   gh pr checks --watch
+   timeout 600s gh pr checks --watch
    ```
    If the command exits 0, all checks passed. Break out of the loop and
    proceed to step 9.
+   If the `timeout` wrapper expires (exit 124), treat the cycle as
+   CI-still-pending and continue to step (2) failure handling. The shell
+   `timeout` command wraps the unbounded `--watch` flag; `gh pr checks`
+   itself has no native `--timeout` flag.
    If it exits non-zero, one or more checks failed. Continue to (2).
 2. Identify failing checks and pull failure logs:
    ```bash
-   gh pr checks --json name,state,conclusion,workflow,link
-   gh run view <run-id> --log-failed
+   BRANCH=$(git branch --show-current)
+   run_id=$(gh run list --branch "$BRANCH" --status failure --limit 1 \
+     --json databaseId --jq '.[0].databaseId')
+   if [ -n "$run_id" ]; then
+     gh run view "$run_id" --log-failed
+   else
+     echo "No failed run found for branch $BRANCH"
+   fi
    ```
-3. Read the failure logs, identify root cause, apply a fix in the
-   working tree. Do NOT weaken, skip, or mock the failing assertion to
-   make it pass — repair the actual issue. If the failure is a flaky
-   test that has no fix path, document it as a residual outcome rather
-   than retrying without a code change.
-4. Stage only the files you changed, commit, push:
+3. Dispatch a worker (via `athanor-ci-watcher` agent or `/athanor:work` focused subtask)
+   with the failure logs as context. The worker identifies root cause and applies
+   the fix. Do NOT weaken, skip, or mock the failing assertion — repair the actual
+   issue. If the failure is a flaky test with no fix path, the worker documents it
+   as a residual outcome.
+4. After the worker completes, verify files were changed, then stage, commit, push:
    ```bash
    git add <changed-files>
    git commit -m "fix(ci): <one-line summary of the failure repaired>"
@@ -240,8 +254,9 @@ section in the PR body and proceed to step 9. The autopilot contract is
 "make residuals durable, then exit."
 
 > **v0.14.0:** The `athanor-ci-watcher` agent (`agents/ci-watcher.md`)
-> encapsulates this CI watch + autofix loop. Skills MAY dispatch the agent
-> instead of running inline. The inline form is preserved as canonical reference.
+> encapsulates this CI watch + autofix loop. **v0.15.0:** Worker dispatch
+> (item 3 above) is now the canonical form — the leader MUST NOT apply
+> fixes directly (Thin Leader contract).
 
 ### Step 9 — Output `<promise>DONE</promise>` when complete
 

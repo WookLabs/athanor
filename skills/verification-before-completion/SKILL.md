@@ -47,7 +47,7 @@ As of athanor v0.7.9, the v=1 bare-string sentinel is no longer accepted (it was
 
 3. Emit your response as: the sentinel line (verbatim from the helper's stdout) on line 1, followed by your evidence body (verbatim — must match what you piped, byte-for-byte).
 
-If the body you emit does not byte-for-byte match what you piped into the helper, the SHA-256 mismatch causes the Stop hook to reject the sentinel and the gate fires normally. The hook also rejects nonces older than 60 seconds (TTL) and re-used nonces (state file is atomically deleted on successful validation — one-shot).
+If the body you emit does not byte-for-byte match what you piped into the helper, the SHA-256 mismatch causes the Stop hook to reject the sentinel and the gate fires normally. The hook also rejects nonces older than 120 seconds (TTL) and re-used nonces (state file is atomically deleted on successful validation — one-shot).
 
 The sentinel is an HTML comment so it is invisible in rendered Markdown. It is anchored at response-start — a sentinel placed on line 2 or later does NOT count and the gate fires normally.
 

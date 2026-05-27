@@ -26,7 +26,7 @@ every cycle to a durable goal ledger. You follow the **Thin Leader**
 pattern: you parse the goal, dispatch validators / judges / cycles, and
 collect verdicts. You do NOT write project source code, you do NOT
 author per-cycle receipts, and you do NOT decide goal-met yourself. See
-CLAUDE.md §"Vendored Surface — Identity Guard Layer" identity
+CLAUDE.md §"Concept Absorption Surface" identity
 commitment #1.
 
 This skill is invoked when the user wants hands-off multi-cycle work
@@ -227,12 +227,12 @@ output as the evidence for that step. **Per-step status enum:**
 
 **Per-cycle aggregate status:**
 
-- `valid` — all steps `completed` or `skipped-by-rule`
-- `partial` — ≥1 `completed-with-residuals`, 0 `failed`, 0 `missing`
-- `invalid` — ≥1 `failed` or `missing`
+- `all_valid` — all steps `completed` or `skipped-by-rule`
+- `completed_with_residuals` — ≥1 `completed-with-residuals`, 0 `failed`, 0 `missing`
+- `invalid_steps_present` — ≥1 `failed` or `missing`
 
-Only `valid` and `partial` (with user override) can close G-markers.
-`invalid` blocks marker closure — the next cycle resumes from the
+Only `all_valid` and `completed_with_residuals` (with user override) can close G-markers.
+`invalid_steps_present` blocks marker closure — the next cycle resumes from the
 failure point with explicit reason recorded.
 
 ## Receipt Validation Protocol
@@ -269,7 +269,7 @@ structurally rather than by prose admonition.
 
 ## 3-Tier Goal-Completion Check
 
-After the receipt-validator returns `all_valid` (or `partial` + user
+After the receipt-validator returns `all_valid` (or `completed_with_residuals` + user
 override), the leader dispatches the goal-completion check. Three
 sub-tiers, each independent:
 
@@ -414,17 +414,28 @@ cycle_phase: not_started | lfg_done_seen | receipt_validated |
 
 - `cycle_state == bootstrapping` → next invocation finishes goal.md
   bootstrap (resume from the goal-shape user confirmation prompt).
-- `cycle_state == cycle_n_in_progress` with `cycle_phase ∈ {not_started}`
-  → next invocation RE-RUNS the cycle (does NOT increment counter).
+  `cycle_phase` is `null` in this state.
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == not_started`
+  → RE-RUNS the cycle from the beginning (does NOT increment counter).
   User is prompted before re-run with reason from `state.json`.
 - `cycle_state == cycle_n_in_progress` with `cycle_phase == lfg_done_seen`
-  → next invocation dispatches receipt-validator on the existing cycle
-  session.
-- `cycle_state == cycle_n_in_progress` with `cycle_phase ∈
-  {tier1_checked, tier2_checked, tier3_pending}` → next invocation
-  jumps to Tier 3 prompt for the same cycle.
-- `cycle_state == cycle_n_complete` (or `cycle_phase == tier3_ratified`)
-  → cycle is closed; next invocation starts cycle+1.
+  → dispatches receipt-validator on the existing cycle session (skips
+  re-running `/athanor:lfg`).
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == receipt_validated`
+  → skips receipt validation; proceeds to Tier 1 mechanical check on the
+  existing receipt.
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == tier1_checked`
+  → skips Tier 1; dispatches Tier 2 adversarial cross-model judge dispatch.
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == tier2_checked`
+  → proceeds to Tier 3 user ratification prompt for the same cycle.
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == tier3_pending`
+  → re-issues Tier 3 user ratification prompt (user response was lost
+  mid-session).
+- `cycle_state == cycle_n_in_progress` with `cycle_phase == tier3_ratified`
+  → cycle is effectively closed; next invocation starts cycle+1
+  (equivalent to `cycle_n_complete`).
+- `cycle_state == cycle_n_complete` → cycle is closed; next invocation
+  starts cycle+1.
 - `cycle_state == scope_change_pending` → next invocation resumes from
   the scope-change-critic verdict / user ratification gate.
 - `cycle_state ∈ {goal_complete, aborted}` → terminal; leader refuses
@@ -453,6 +464,7 @@ function lfg_goal_loop(goal_input | --goal-file path):
     resume_with_user_confirm()
 
   # ───── Cycles 1..N ─────
+  no_progress_counter = 0
   for cycle in 1..lfgGoal.maxIterations:   # default 5 (D8)
     inject_goal_into_session_requirements(cycle)
     if cycle > 1:
@@ -468,12 +480,27 @@ function lfg_goal_loop(goal_input | --goal-file path):
 
     write_compressed_cycle_summary(cycle)  # ≤300 words
 
-    if validator_result.aggregate == "invalid":
+    # ── No-progress circuit breaker (C1 fix: moved inside loop) ──
+    if no_progress_against_prior(cycle - 1):
+      no_progress_counter += 1
+      if no_progress_counter >= lfgGoal.noProgressThreshold:
+        emit_durable_residual_exit(reason="no-progress")
+        return
+    else:
+      no_progress_counter = 0   # reset on progress
+
+    if validator_result.aggregate == "invalid_steps_present":
       log_to_goal_log("cycle N invalid: <failing steps>")
       if cycle == lfgGoal.maxIterations:
         emit_durable_residual_exit(reason="max-iter-with-invalid")
         return
       continue   # next cycle resumes from failure
+
+    if validator_result.aggregate == "completed_with_residuals":
+      log_to_goal_log("cycle N completed_with_residuals: <residual steps>")
+      # proceed to tier checks with user-override gate at tier 3
+
+    # else: all_valid — proceed to tier checks directly
 
     # ── Auto scope-drift between cycles ──
     if cycle < lfgGoal.maxIterations AND lfgGoal.scopeDriftAutoCheck:
@@ -511,13 +538,6 @@ function lfg_goal_loop(goal_input | --goal-file path):
       continue
     elif user_verdict == "abort":
       mark_goal_abandoned(goal_id, cycle)
-      return
-
-  # ───── Guards (checked between cycles) ─────
-  if no_progress_against_prior(cycle - 1):
-    no_progress_counter += 1
-    if no_progress_counter >= lfgGoal.noProgressThreshold:
-      emit_durable_residual_exit(reason="no-progress")
       return
 
   # ───── Hit max-iter ─────

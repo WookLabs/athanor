@@ -273,10 +273,10 @@ def test_archive_ledger_contains_canonical_phrases():
 # ---- STATE.md Current Phase + Vendor Manifest ----
 
 
-def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_x_series():
+def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_x_series():
     """MUST: docs/STATE.md Current Phase mentions a 0.10.x / 0.11.x / 0.12.x /
-    0.13.x / 0.14.x version. v0.14.0+ accepted to keep the test stable through
-    the native agent definitions release."""
+    0.13.x / 0.14.x / 0.15.x version. v0.15.0+ accepted to keep the test stable
+    through the LFG pipeline contract reconciliation release."""
     text = STATE.read_text(encoding="utf-8")
     found_current = False
     in_series = False
@@ -289,12 +289,13 @@ def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_x_series
                 or "0.12." in line
                 or "0.13." in line
                 or "0.14." in line
+                or "0.15." in line
             ):
                 in_series = True
             break
     assert found_current, "STATE.md must have Current Phase section"
     assert in_series, (
-        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x version"
+        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x version"
     )
 
 

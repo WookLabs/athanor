@@ -119,6 +119,14 @@ After all 9 steps are evaluated, compute the aggregate:
 - **`all_valid`** — every one of the 9 steps is `VALID`. The cycle is
   receipt-clean. (`UNDETERMINED` counts are non-zero only if explicitly
   none — see next bullet for the residual-tolerance rule.)
+- **`completed_with_residuals`** — **≥ 1** step is
+  `VALID` with a residual note (e.g., Step 5 residual handoff recorded
+  non-empty residuals, or Step 8 CI has `## CI Failures Unresolved`
+  section), **0** steps are `INVALID`, and **0** steps are `missing`.
+  The cycle completed but carries forward residual findings that
+  downstream tiers should surface. The leader treats this as
+  non-blocking for cycle progress but records the residuals in
+  `decisions.md` for the goal-completion 3-tier check.
 - **`invalid_steps_present`** — **≥ 1** step is `INVALID`. The cycle
   has at least one failed verification; the leader treats this as the
   receipt-side blocking signal for cycle closure.
@@ -145,7 +153,7 @@ Emit exactly this shape (YAML-flavored, fenced inside the
 ATHANOR_RESULT
 status: success
 subtask_id: receipt-validator-CNNN
-validation_status: all_valid | invalid_steps_present
+validation_status: all_valid | completed_with_residuals | invalid_steps_present
 undetermined_count: <integer ≥ 0>
 per_step_status:
   - step: 1
@@ -236,7 +244,7 @@ Procedure:
 If the body emitted does not byte-for-byte match what was piped, the
 SHA-256 mismatch causes the Stop hook to reject the sentinel and the
 runtime gate fires as if no sentinel were present. The hook also
-rejects nonces older than 60 seconds (TTL) and re-used nonces.
+rejects nonces older than 120 seconds (TTL) and re-used nonces.
 
 ## Dispatch hygiene
 
