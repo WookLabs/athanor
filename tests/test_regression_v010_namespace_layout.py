@@ -126,16 +126,17 @@ def test_vendored_skill_frontmatter_name_matches_directory():
     )
 
 
-def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_x_series():
-    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x series.
+def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_x_series():
+    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x series.
 
     v0.10.1 generalization → v0.11.0 extension → v0.12.0 extension →
-    v0.13.0 extension → v0.14.0 extension: pinned to "0.10.0" originally;
-    relaxed to 0.10.x at v0.10.1; extended to 0.10.x or 0.11.x at v0.11.0;
-    extended to include 0.12.x at v0.12.0 (concept-kernel cutover release);
-    extended to include 0.13.x at v0.13.0 (lfg-goal release); extended to
-    include 0.14.x at v0.14.0 (native agent definitions). v0.15.0+ will
-    need another explicit update.
+    v0.13.0 extension → v0.14.0 extension → v0.15.0 extension: pinned to
+    "0.10.0" originally; relaxed to 0.10.x at v0.10.1; extended to 0.10.x
+    or 0.11.x at v0.11.0; extended to include 0.12.x at v0.12.0 (concept-kernel
+    cutover release); extended to include 0.13.x at v0.13.0 (lfg-goal release);
+    extended to include 0.14.x at v0.14.0 (native agent definitions); extended
+    to include 0.15.x at v0.15.0 (LFG pipeline contract reconciliation).
+    v0.16.0+ will need another explicit update.
     """
     import json
     mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
@@ -147,9 +148,10 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_x_series():
                      or v.startswith("0.12.")
                      or v.startswith("0.13.")
                      or v.startswith("0.14.")
+                     or v.startswith("0.15.")
                  )]
     assert in_series, (
-        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x series; "
+        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x series; "
         f"got {versions}"
     )
 
@@ -172,7 +174,8 @@ def test_plugin_manifest_version_matches_marketplace():
         or pj_version.startswith("0.12.")
         or pj_version.startswith("0.13.")
         or pj_version.startswith("0.14.")
+        or pj_version.startswith("0.15.")
     ), (
-        f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x series; "
+        f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x series; "
         f"got {pj_version!r}"
     )

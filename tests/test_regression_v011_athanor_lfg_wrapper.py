@@ -148,23 +148,20 @@ def test_no_ce_deprecate_phrases_in_lfg_body():
 # ---- Difference-from-ce-lfg section disclosed ----
 
 
-def test_body_discloses_difference_from_ce_lfg():
-    """MUST: body has a section explaining how /athanor:lfg differs from
-    vendored /athanor:ce-lfg so users can choose by namespace."""
+def test_body_discloses_ce_lfg_historical_note():
+    """MUST (post-v0.12.0): body has a historical-note section recording
+    that /athanor:ce-lfg was removed in the v0.12.0 atomic cut and
+    /athanor:lfg is the sole end-to-end pipeline."""
     body = _load_athanor_lfg().lower()
-    # The difference disclosure can be a §"Difference from /athanor:ce-lfg"
-    # heading or inline prose mentioning the alternative.
     signals = [
-        "difference from",
-        "vs /athanor:ce-lfg",
-        "vs ce-lfg",
-        "ce-lfg coexists",
-        "ce-lfg as the explicit alternative",
-        "compared to /athanor:ce-lfg",
-        "vendored /athanor:ce-lfg",
+        "historical note",
+        "post-v0.12.0",
+        "removed in the v0.12.0",
+        "sole end-to-end pipeline",
+        "upstream compound-engineering",
     ]
     assert any(s in body for s in signals), (
-        f"/athanor:lfg body must disclose its difference from /athanor:ce-lfg. "
+        f"/athanor:lfg body must disclose ce-lfg historical note (post-v0.12.0). "
         f"Expected one of: {signals}"
     )
 

@@ -77,7 +77,7 @@ aggregate: partial
 
 aggregate: partial
 reason: 9 steps closed structurally; Step 3 completed-with-residuals (2 blockers); deferred per Step 4-5 handoff rule
-validator_status: all_valid
+validator_status: completed_with_residuals
 undetermined_count: 0
 residual_count: 2
 residuals_carried_forward:

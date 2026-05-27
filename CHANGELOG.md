@@ -3,6 +3,50 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.15.0] — 2026-05-28
+
+### Fixed — LFG Pipeline Contract Reconciliation (22-bug eradication)
+
+**CRITICAL (3):**
+- **C1:** No-progress circuit breaker moved inside `for cycle` loop (was dead code outside loop) — `skills/lfg-goal/SKILL.md`
+- **C2:** Aggregate status enum unified to `all_valid | completed_with_residuals | invalid_steps_present` across SKILL.md, receipt-validator.md, state-shape.md, and test fixtures
+- **C3:** `cycle_phase` 7-value enum added to `state-shape.md` with Tier 3 goal_complete fix, 4-value last_validator_status, and cycle_phase-aware resume semantics
+
+**HIGH (5):**
+- **H1:** Stale "Vendored Surface — Identity Guard Layer" → "Concept Absorption Surface" in both LFG skills
+- **H2:** Thin Leader violation in `/athanor:lfg` Step 3 → worker dispatch via `/athanor:work`
+- **H3:** Thin Leader violation in `/athanor:lfg` Step 8 → `athanor-ci-watcher` agent dispatch
+- **H4:** Stale `/athanor:ce-lfg` comparison → historical note (post-v0.12.0) + test updated
+- **H5:** Stale `docs/plans/` in Step 1 GATE → `.athanor/sessions/<id>/plan.md` only
+
+**MEDIUM (8):**
+- **M1:** Resume rules completed for all 7 `cycle_phase` values (receipt_validated added, tier1→Tier 2 fixed)
+- **M2:** Pseudocode handles 3-value aggregate branch (was 1-value only)
+- **M3:** Schema `archiveOnComplete` path aligned to `docs/goals-completed/<id>/`
+- **M4:** STATE.md config key `lfg-goal.maxIterations` → `lfgGoal.maxIterations`
+- **M5:** `gh pr checks --watch` wrapped with `timeout 600s` (no native --timeout flag)
+- **M6:** Korean raw-message position mapping bug in `stop_verify_claims.py` — re-derive position in normalized text for suppression context check (v0.14.2 EN fix extended to KO path)
+- **M7:** `Write` added to `/athanor:lfg` allowed-tools frontmatter
+- **M8:** CLAUDE.md Commands table updated: sole pipeline post-v0.12.0, stale ce-plan/ce-work refs removed
+
+**LOW (6):**
+- **L1:** Nonce TTL documentation aligned to 120s across 3 files
+- **L2:** Zero-remote fallback added to Step 4
+- **L3:** Push-failure handling added to Step 7
+- **L4:** Prose-only enforcement transparency notes on 3-iteration clauses
+- **L5:** Explicit `gh run list` run-id extraction in Step 8 (replaces bare placeholder)
+- **L6:** LFG dispatcher back-references added to ci-watcher.md and releaser.md
+
+### Added
+- `tests/test_regression_v015_lfg_bug_eradication.py` — 21 regression tests locking all 22 bug fixes
+- Updated `tests/test_regression_v013_lfg_goal_receipt_contract.py` (+1 test: 3-value aggregate)
+- Updated `tests/test_regression_v013_lfg_goal_skill.py` (+1 test: 7-value cycle_phase resume)
+
+### Planning
+- Deep-tier adversarial plan: Planner A (Claude) + Planner B (Codex) + cross-review + Critic synthesis
+- Contract-kernel-first execution: xfail tests (Phase 0) → schemas (Phase 1) → SKILL.md (Phase 2) → Python (Phase 3) → docs (Phase 4) → sweep (Phase 5)
+- 5-lens parallel review (security 8/10, architecture 8/10, testing 8/10, quality 8/10, documentation 7/10)
+
 ## [0.14.3] — 2026-05-26
 
 ### Fixed

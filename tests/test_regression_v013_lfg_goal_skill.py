@@ -358,3 +358,46 @@ def test_both_invocation_forms_documented():
     assert "--goal-file" in body_lower, (
         "skill body must document the `--goal-file <path>` invocation form"
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 10 (v0.15.0) -- resume rules cover all 7 cycle_phase values
+# ---------------------------------------------------------------------------
+
+
+def test_resume_rules_cover_all_7_cycle_phase_values():
+    """v0.15.0 M1 lock: lfg-goal/SKILL.md §Resume rules must individually
+    cover all 7 ``cycle_phase`` enum values in dedicated resume rule
+    bullets, not just mention them in the enum code block.
+
+    Expected values: not_started, lfg_done_seen, receipt_validated,
+    tier1_checked, tier2_checked, tier3_pending, tier3_ratified.
+
+    Currently ``receipt_validated`` appears in the enum definition but has
+    no dedicated resume rule bullet (no ``cycle_phase == receipt_validated``
+    entry). The companion state-shape.md also does not define cycle_phase
+    at all.
+    """
+    text = _read_skill_text()
+    _fm, body = _split_frontmatter(text)
+    # Find the **Resume rules** prose (after the enum code block)
+    resume_rules_idx = body.find("**Resume rules**")
+    assert resume_rules_idx >= 0, "SKILL.md must have **Resume rules** section"
+    # Grab until next ## section
+    next_section = body.find("\n## ", resume_rules_idx + 5)
+    resume_rules = body[resume_rules_idx:next_section] if next_section > 0 else body[resume_rules_idx:]
+
+    expected_phases = [
+        "not_started",
+        "lfg_done_seen",
+        "receipt_validated",
+        "tier1_checked",
+        "tier2_checked",
+        "tier3_pending",
+        "tier3_ratified",
+    ]
+    missing = [v for v in expected_phases if v not in resume_rules]
+    assert not missing, (
+        f"SKILL.md **Resume rules** bullets must cover all 7 cycle_phase "
+        f"values individually; missing: {missing}"
+    )

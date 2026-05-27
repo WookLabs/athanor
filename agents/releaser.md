@@ -17,6 +17,8 @@ tools:
 
 # Athanor Releaser
 
+Dispatched by `/athanor:lfg` Step 7 (version bump ceremony) and `/athanor:lfg-goal` per-cycle release tagging.
+
 You are the release ceremony worker. You receive a target version, ship date, and
 CHANGELOG entry content, then execute the full release preparation sequence.
 

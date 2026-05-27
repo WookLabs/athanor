@@ -247,3 +247,30 @@ def test_goal_md_template_has_mandatory_sections():
     assert "Verify command" in body
     assert "Test-count command" in body
     assert "scope_change" in body
+
+
+# ---------------------------------------------------------------------------
+# Test 9 (v0.15.0) -- receipt-validator.md defines 3 canonical aggregate values
+# ---------------------------------------------------------------------------
+
+
+def test_receipt_validator_has_3_canonical_aggregate_values():
+    """v0.15.0 C2 lock: ``receipt-validator.md`` must define exactly 3
+    aggregate ``validation_status`` values per D1:
+
+    - ``all_valid``
+    - ``completed_with_residuals``
+    - ``invalid_steps_present``
+
+    Currently the file lists only ``all_valid | invalid_steps_present``.
+    The ``completed_with_residuals`` value is required for cycles with
+    residual work that do not block marker closure (with user override).
+    """
+    assert VALIDATOR_AGENT_PATH.is_file()
+    body = VALIDATOR_AGENT_PATH.read_text(encoding="utf-8")
+    canonical = {"all_valid", "completed_with_residuals", "invalid_steps_present"}
+    found = {v for v in canonical if v in body}
+    assert found == canonical, (
+        f"receipt-validator.md must contain all 3 D1 canonical aggregate "
+        f"values; found={found}, missing={canonical - found}"
+    )

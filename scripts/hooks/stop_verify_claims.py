@@ -853,7 +853,7 @@ def validate_emission_sentinel(message: str) -> bool:
          must be the first non-whitespace line.
       2. The nonce must match the state file at
          `.athanor/sessions/active/.hook-state/nonce.json`.
-      3. State timestamp must be within NONCE_TTL_SECONDS (60s).
+      3. State timestamp must be within NONCE_TTL_SECONDS (120s).
       4. SHA-256 of the message body AFTER the sentinel line must match the
          stored `body_hash` from the verification skill's emit step.
       5. On all-pass: atomic-delete the state file (one-shot) and return True.
@@ -984,7 +984,14 @@ def is_material_claim(message: str) -> bool:
     for phrase in MATERIAL_CLAIMS_KO:
         pos_raw = message.find(phrase)
         if pos_raw >= 0:
-            if _match_is_suppressed(message, normalized, pos_raw, pos_raw + len(phrase)):
+            # v0.15.x fix (M6): Re-derive position in normalized text for
+            # suppression context check.  pos_raw is a position in the raw
+            # ``message`` but ``_match_is_suppressed`` indexes into
+            # ``normalized``.  If NFKC normalization changed string length
+            # earlier in the message (e.g. U+FB03 'ffi' → 3 chars), the
+            # raw position is wrong for the normalized string.
+            pos_norm_equiv = normalized.find(phrase)
+            if pos_norm_equiv >= 0 and _match_is_suppressed(message, normalized, pos_norm_equiv, pos_norm_equiv + len(phrase)):
                 continue
             return True
         pos_norm = normalized.find(phrase)
