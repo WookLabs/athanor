@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.17.0/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.18.0/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
@@ -148,6 +148,25 @@
           "type": "integer",
           "minimum": 1,
           "description": "v0.7.9+: Max consecutive exit-2 blocks per session before the circuit breaker opens and the (N+1)th invocation releases (exit 0). Prevents infinite gate loops when the verification skill misbehaves. Default 3 if missing. Set higher to be more strict, lower to release faster on suspected misconfiguration."
+        },
+        "freeze": {
+          "type": "object",
+          "description": "Freeze guard configuration (v0.18.0). Opt-in scope-locked editing for Claude file tools (Edit/Write/MultiEdit). Subprocess writes (Bash, Codex) are NOT gated (residual).",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["off", "session", "warn"],
+              "default": "off",
+              "description": "off = no enforcement (default), session = enforce per-session allowlist, warn = log violations but allow"
+            },
+            "allowedPaths": {
+              "type": "array",
+              "items": {"type": "string"},
+              "default": [],
+              "description": "User-extended allowlist; added to dynamic per-session allowlist, never replaces it"
+            }
+          }
         }
       }
     },

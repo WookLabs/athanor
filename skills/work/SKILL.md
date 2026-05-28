@@ -103,6 +103,13 @@ verifies `execution_note`, `classification_reason` (non-empty, ≤200 chars,
 no newlines), and — for spec-then-tdd — `acceptance_criteria` with ≥1 MUST
 bullet. Failure restores `plan.md.bak`.
 
+### Step 0.6: Build Freeze Allowlist (v0.18.0)
+
+After Splitter validates, build per-session freeze allowlist from Subtasks
+`files:` declarations. See `references/freeze.md` for builder contract +
+dispatcher integration. Allowlist is **always built**; Freeze enforcement
+is opt-in via `athanor.json` `hooks.freeze.mode` (default `"off"`).
+
 ### Step 1: Initialize TodoList & Announce
 
 Re-read plan.md (parse `## Subtasks`); read decisions.md if exists; create

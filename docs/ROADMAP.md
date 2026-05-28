@@ -354,3 +354,82 @@ Phase 7은 6 완료 후.
 | 7 | ~3 | Medium — wave 병렬 |
 | 8 | ~4 | Medium — 학습 메커니즘 |
 | 9 | ~5 | Low — 정리/문서 |
+
+---
+
+## Post-Release Roadmap (v0.18.x → v0.19.0)
+
+### v0.18.0 (shipped 2026-05-29) — Freeze infrastructure stage
+
+- [x] Builder: `scripts/work/build_freeze_allowlist.py`
+- [x] Dispatcher: `scripts/hooks/pretool_dispatcher.py` (kernel-FIRST)
+- [x] Guard: `scripts/hooks/freeze_guard.py`
+- [x] Config block: `hooks.freeze` (mode default `"off"`)
+- [x] Honesty residuals documented (D2 Codex stage + Bash subprocess)
+- [x] Migration guide: `docs/v0.18.0-migration.md`
+
+### v0.18.1 — git-worktree isolation per subtask (DEFERRED)
+
+**Status: deferred behind admission criteria.** Both deep-tier
+reviewers (Planner A Claude, Planner B Codex) converged on shipping
+Freeze first and only escalating to git-worktree if the data shows
+in-process scope locks are insufficient.
+
+**Admission criteria (one of three triggers required):**
+
+1. **Quantitative:** `.athanor/sessions/*/freeze-violations.jsonl`
+   accumulates **>= 10 violations** across **>= 5 distinct sessions**.
+   Indicates the Claude-tool allowlist alone is materially insufficient.
+2. **Qualitative:** **>= 1 user-reported issue** with a clear
+   reproduction case where in-process freeze guard failed to prevent
+   bad cross-subtask coupling.
+3. **Team-mode collision:** A documented `/athanor:work --team`
+   same-file wave-collision case that worktree isolation would have
+   prevented. Single instance suffices because team-mode collisions
+   compound across waves.
+
+Until at least one trigger fires, v0.18.1 stays scoped and is not on
+the active development path. `docs/v0.18.0-migration.md` describes the
+Freeze stage as load-bearing on its own.
+
+### v0.18.2 — UserPromptSubmit injection (DEFERRED)
+
+**Status: deferred behind a design precondition.**
+
+**Design precondition (spike required):** A **live UserPromptSubmit
+spike** that captures the real payload shape Claude Code sends. The
+v0.17.0 `scripts/hooks/capability_probe.py` passively records
+UPS `supported=false`, but this is the **safe passive default** — it
+does not mean UPS is unavailable, only that no live probe has
+confirmed the payload shape.
+
+The spike methodology mirrors the 2026-05-18 Stop hook spike (see
+`docs/STATE.md` §"Command-hook Stop blocking spike"): register a
+log-only probe in `~/.claude/settings.json`, trigger a real prompt
+submission, capture the JSON payload to `.athanor/spikes/ups-payload-*.json`,
+and only then begin design work on the injection contract.
+
+Until the spike completes, v0.18.2 stays unscoped. Premature design
+work would replay the v0.7.8 -> v0.11.2 input-layer fail-open pattern
+(payload shape assumed wrong).
+
+### v0.19.0 — PostToolUse evidence sniffer (placeholder)
+
+**Status: placeholder anchor for the next release line.**
+
+**Intent:** Close part of the D2 honesty residual by inspecting
+`tool_response.files_changed`-style fields **after** Bash returns,
+catching subprocess writes (`python -c "..."`, `codex exec ...`,
+`make build`, etc.) that bypass the v0.18.0 Freeze guard's
+syntactic Bash pattern check.
+
+**Also queued for v0.19.0:** Evidence-bound Spec-then-TDD enforcement
+(forward-compat anchor in `skills/work/references/spec-then-tdd-handler.md`
+§"v0.19.0 — Evidence-Bound Enforcement (planned)"). Runtime
+verification of worker-reported `red_evidence` + `full_suite_passed`
+fields via transcript-event introspection rather than self-report
+trust.
+
+This entry is a placeholder — full Plan B planning kicks off when
+v0.18.0 stabilises and v0.18.1 / v0.18.2 admission criteria are
+re-evaluated.

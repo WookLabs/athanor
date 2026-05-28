@@ -65,6 +65,25 @@ entry. Some platforms list skills under a plugin namespace (e.g.,
 Invoking a short-form guess that isn't in the list will fail — always
 match a listed entry verbatim before calling the Skill/Task tool.
 
+### v0.18.0 honesty residual — Codex stage NOT freeze-gated
+
+If the user has enabled `athanor.json` `hooks.freeze.mode = "session"`,
+the v0.18.0 Freeze guard gates Claude file-tool writes (Edit / Write /
+MultiEdit + conservative Bash patterns) against the per-session
+allowlist. **Codex subprocess writes invoked during this LFG run
+(`/athanor:plan` Step 1 Codex dispatches, any `codex exec ...` worker
+calls) are NOT gated by Freeze** — those writes happen inside a
+subprocess whose destination paths are not visible to the PreToolUse
+dispatcher. This is the documented D2 residual; see
+`skills/work/references/freeze.md` §"D2 residual — subprocess writes
+NOT gated" and `docs/v0.18.0-migration.md` §"D2 Honesty Residual".
+
+The leader does not warn the user about this on every invocation
+(noise); the residual is documented in CHANGELOG, ROADMAP, and the
+migration guide. LFG users with strong scope-lock requirements should
+be aware that Codex stage writes are on the honour system within this
+release line.
+
 ### Step 1 — Invoke `/athanor:plan` (cross-model adversarial)
 
 Invoke the `/athanor:plan` skill with the user's feature description.
