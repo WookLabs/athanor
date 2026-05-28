@@ -55,6 +55,7 @@ def test_probe_script_exists():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX executable bit not used on Windows")
 def test_probe_script_executable():
     """The probe must be runnable as a script.
 
@@ -63,6 +64,9 @@ def test_probe_script_executable():
         can invoke it as `./scripts/hooks/capability_probe.py`.
       - first line is a python shebang, so the OS knows what interpreter to
         use when the file is run directly.
+
+    Skipped on Windows — POSIX executable bits are not used there; functional
+    invocability is covered by the subprocess-based tests.
     """
     mode = PROBE_SCRIPT.stat().st_mode
     is_executable = bool(mode & 0o111)
