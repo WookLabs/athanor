@@ -9,6 +9,16 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_kernel_guard.py\""
+          }
+        ]
+      }
     ]
   }
 }

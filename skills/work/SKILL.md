@@ -336,6 +336,10 @@ Initialize tracking:
 - `consecutiveFailures = 0`
 - `completedCount = 0`
 - `failedCount = 0`
+- `blocked_queue = []` (v0.16.0 — list of `{subtask_id, blocker, dependents}` entries
+  collected when a worker returns `status: blocked`. Drained in Step 3 below
+  so the user sees all external blockers at the end of the run rather than
+  one-at-a-time.)
 
 ### Step 2: Execute Subtasks (Solo Mode)
 
@@ -474,7 +478,7 @@ the end gate enforces test artifact changes:
 ### Output Format
 Return your result as:
 ATHANOR_RESULT
-status: {success|failure}
+status: {done|failure|done_with_concerns|needs_context|blocked}
 subtask_id: {id}
 summary: {what was done}
 files_changed:
@@ -497,7 +501,30 @@ red_status: {red|partial_never_red|never_red}        # v0.8.0 — only when spec
 tests_modified: {true|false}                          # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}, so Phase 2 downgrade can route a spec-then-tdd subtask through the Phase 3 gate without false-positive failure
 test_paths_touched: [{paths}]                         # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}
 full_suite_passed: {true|false}                       # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}; result of `pytest tests/` (full suite) the worker ran as the GREEN step or test-aware gate step. Leader's Phase 3 gate trusts this self-report but combined with test_paths_touched gives a stronger signal than verification line alone
+concerns: [{string}, ...]                             # v0.16.0 — REQUIRED when status == done_with_concerns; non-empty list of flagged issues (e.g., deprecated API, uncovered edge case)
+context_needed: \"{description}\"                     # v0.16.0 — REQUIRED when status == needs_context; description of the missing information (design decision, external API response, etc.) the worker cannot resolve from its dispatch packet
+blocker: \"{external blocker description}\"           # v0.16.0 — REQUIRED when status == blocked; description of the external blocker (CI down, API unreachable, dependency missing)
 END_RESULT\"
+
+#### Status Vocabulary (v0.16.0 multi-status)
+
+The executor returns one of five `status` values. Each value is paired with a
+one-sentence definition and (where applicable) a required companion field that
+the worker MUST emit when using that status.
+
+| Status | Definition | Required field |
+|--------|------------|----------------|
+| `done` | Subtask fully completed; all verify criteria met. | (none) |
+| `failure` | Subtask attempted but failed after max retries. | (none — uses existing `last_error` / `attempts` fields) |
+| `done_with_concerns` | Implementation complete but worker flags potential issues (e.g., deprecated API, uncovered edge case). Leader logs concerns and continues. | `concerns: [<string>, ...]` (non-empty list) |
+| `needs_context` | Worker cannot proceed without information outside its dispatch context (design decision, external API response). Leader asks the user or re-dispatches with injected context — leader MUST NOT read project source files itself (Thin Leader). | `context_needed: \"<description>\"` |
+| `blocked` | External blocker (CI down, API unreachable, dependency missing). Leader pauses this subtask, continues with non-dependent subtasks. | `blocker: \"<external blocker description>\"` |
+
+**Backwards compatibility:** Legacy `status: success` is accepted as an alias
+for `done` (existing workers and grandfathered plans continue to work
+unchanged — no deprecation timeline). Legacy `status: failure` is unchanged.
+Workers that don't know the new statuses keep returning `success`/`failure`;
+the leader handler (Step 2b) maps `success` → `done` before branching.
 })
 ```
 
@@ -634,6 +661,120 @@ If `ATHANOR_RESULT.execution_note_source == "grandfathered"`:
 - `consecutiveFailures += 1`
 - `failedCount += 1`
 
+**v0.16.0 multi-status branches** (run AFTER the legacy success/failure
+branches above; the leader normalizes `status: success` → `done` before
+branching, so legacy workers continue to land in the existing success path
+without modification):
+
+**Legacy mapping:**
+- `status: success` → treated as `done` (backwards-compat alias for
+  grandfathered workers; legacy `success` path is preserved by the mapping,
+  not by a second code path).
+- `status: failure` → unchanged; uses the failure block above (retry / skip
+  / abort prompt + circuit-breaker accounting).
+
+**If `status: done`:**
+- Identical to the legacy success path above. Reset `consecutiveFailures`,
+  increment `completedCount`, mark subtask complete in the TodoList, append
+  the `✓ {title}` entry to work-log.md, save discoveries if any.
+
+**If `status: done_with_concerns`:**
+- Validate that the worker emitted a non-empty `concerns: [...]` list. If
+  missing or empty, treat as a worker contract violation: log a warning to
+  work-log.md and fall through to the `done` path anyway (concerns absent →
+  no relay payload, but the implementation work itself stands).
+- Reset `consecutiveFailures`, increment `completedCount`, mark subtask
+  complete in the TodoList (same as `done` — the implementation IS complete;
+  the concerns are advisory).
+- Append to work-log.md with a `[concern]` prefix on each concern bullet:
+  ```
+  ## Subtask {id}: ✓ {title} [done_with_concerns]
+  - Status: completed
+  - Time: {timestamp}
+  - Summary: {from result brief}
+  - Files: {changed files}
+  - [concern] {first concern from concerns[]}
+  - [concern] {second concern from concerns[]}
+  ```
+- If any concern string contains a security/safety keyword (`security`,
+  `auth`, `secret`, `credential`, `sandbox`, `escape`, `injection`, `XSS`,
+  `CSRF`, `RCE`, `보안`, `취약점`), set a session-scoped flag
+  `recommend_review = true`. The Step 6 final summary appends
+  `Recommendation: run /athanor:review on this branch before merging.`
+- Save discoveries if any. Concerns are also forwarded to the team-mode
+  discovery relay (see Team Mode section below).
+
+**If `status: needs_context`:**
+- This is NOT a failure. Do NOT increment `consecutiveFailures`. Do NOT
+  burn a retry attempt against `maxRetries`. The Ralph-Loop budget counts
+  this as 1 iteration only for the global circuit-breaker / iteration-cap
+  accounting (so an infinite "needs_context" loop still trips the breaker).
+- Validate that the worker emitted a non-empty `context_needed:` string.
+  If missing or empty, this is a worker contract violation: treat as
+  failure (the worker should have either completed or returned a real
+  context request).
+- Append to work-log.md with a `[context-needed]` prefix:
+  ```
+  ## Subtask {id}: ⏸ {title} [context-needed]
+  - Status: paused
+  - Time: {timestamp}
+  - context_needed: {description from worker}
+  ```
+- **Thin Leader compliance:** The leader MUST NOT read project source
+  files to answer the worker's context request itself. The only two
+  resolution paths are:
+  1. **Ask the user.** Surface the worker's `context_needed:` string
+     verbatim with a prompt:
+     ```
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ⏸ Subtask {id} needs context:
+       {context_needed verbatim}
+
+       Reply with the missing information, or
+       [S] Skip this subtask  [A] Abort the run
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ```
+     On user response, re-dispatch the same subtask with the user's reply
+     injected into the dispatch packet under a new section heading
+     `### Injected Context (from user)`. The worker reads the project files
+     itself — the leader still does not.
+  2. **Re-dispatch a research worker.** If the user replies with a tag
+     like `research:` or the context_needed obviously requires file/source
+     discovery (and the user opts in), dispatch a clean-context
+     researcher/analyst worker to gather the answer, then re-dispatch the
+     original executor with the researcher's brief injected. The leader
+     orchestrates dispatch; it still does not read project source itself.
+- The re-dispatched subtask runs through the normal Step 2b flow again —
+  including this same `needs_context` handler if the worker still cannot
+  proceed. The iteration cap (above) is the only safeguard against loops.
+
+**If `status: blocked`:**
+- This is NOT a failure (the worker did its job; an external dependency is
+  the problem). Do NOT increment `consecutiveFailures`. Increment
+  a separate `blockedCount` counter.
+- Validate that the worker emitted a non-empty `blocker:` string. If
+  missing or empty, treat as a worker contract violation: log a warning
+  and fall through to the failure path.
+- Append to work-log.md with a `[blocked]` prefix:
+  ```
+  ## Subtask {id}: ⛔ {title} [blocked]
+  - Status: blocked (external)
+  - Time: {timestamp}
+  - blocker: {blocker description from worker}
+  ```
+- **Dependent propagation:** Walk the remaining subtasks. Any subtask
+  whose `depends_on` includes this `subtask_id` (transitively) is also
+  marked `blocked` with `blocker: "transitive: subtask {id} blocked"` and
+  appended to the `blocked_queue[]` so the user sees the full impact set.
+  Mark those dependents as skipped-blocked in the TodoList; do NOT
+  dispatch them.
+- Push `{subtask_id, blocker, dependents: [list of transitively-blocked
+  subtask ids]}` onto `blocked_queue[]` (initialized in Step 1).
+- Continue with the next non-dependent subtask (do NOT halt the run;
+  the unblocked work proceeds). The `blocked_queue` is drained at the
+  end of the run in Step 3 below — the user sees all external blockers
+  together rather than one prompt per blocked subtask mid-run.
+
 **Circuit Breaker Check:**
 ```
 if consecutiveFailures >= circuitBreaker.consecutiveFailures:
@@ -671,10 +812,36 @@ After all subtasks processed, finalize `.athanor/sessions/{id}/work-log.md`:
 - Completed: {completedCount}
 - Failed: {failedCount}
 - Skipped: {skippedCount}
+- Blocked: {len(blocked_queue)}    # v0.16.0 — external blockers
 
 ## Timeline
 {appended entries from Step 2b}
 ```
+
+**v0.16.0 — `blocked_queue` drain.** If `blocked_queue` is non-empty,
+present the full list to the user before the Step 6 final summary so
+external blockers are visible together rather than one prompt per blocked
+subtask:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⛔ External blockers encountered ({N} subtask(s)):
+
+  Subtask {id}: {title}
+    blocker: {blocker description}
+    blocks: {comma-separated transitively-blocked subtask ids, or "none"}
+
+  Subtask {id}: {title}
+    blocker: {blocker description}
+    blocks: {...}
+
+  Resolve the blockers and re-run /athanor:work to resume the blocked
+  subtasks. The Ralph-Loop will pick up where it left off.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Also append a `## Blocked Queue` section to work-log.md mirroring this
+content so the persisted log captures the blocker set for later resumption.
 
 ### Step 4: Learning (automatic)
 
@@ -862,7 +1029,60 @@ for each wave:
     7. Handle failures:
        - Failed subtasks: ask user — retry in next wave? skip? abort?
        - If a failed subtask blocks later subtasks: warn user
+    
+    8. v0.16.0 multi-status wave semantics — process each non-success
+       status per Step 2b rules, then apply the wave-level rules below
+       before advancing to the next wave.
 ```
+
+#### Wave-Level Multi-Status Semantics (v0.16.0)
+
+Solo mode processes statuses one subtask at a time (see Step 2b). Team mode
+runs subtasks in parallel within a wave, so the leader must additionally
+decide what happens to *later waves* when a current-wave worker returns one
+of the three new statuses. The rules below are consistent with the solo-mode
+semantics in Step 2b — wave grouping only changes the unit of work, not the
+status meanings.
+
+**`done_with_concerns` in a wave:**
+- The wave **continues normally**. The subtask is marked complete (same as
+  solo mode); the wave does not pause.
+- The worker's `concerns: [...]` list is appended to the wave's discovery
+  relay under a dedicated `## Concerns from Wave {N}` section. Next-wave
+  workers receive these concerns in their dispatch packet alongside
+  `previous_discoveries` so downstream work can react (e.g., a follow-up
+  subtask that touches the same module sees the deprecated-API concern).
+- The `recommend_review = true` flag from Step 2b still triggers the
+  `/athanor:review` recommendation in the Step 6 final summary.
+
+**`needs_context` in a wave:**
+- The current wave **completes** all in-flight workers (do not kill mid-flight
+  — same cancellation rule as solo mode). The leader then **pauses dispatch
+  of any later wave whose subtasks transitively depend on the
+  `needs_context` subtask** until the context is resolved.
+- Other in-flight subtasks in the same wave that complete normally
+  (`done` / `done_with_concerns` / `blocked`) are processed via their own
+  branches and their results are saved.
+- Later waves that do NOT depend on the paused subtask MAY proceed (the
+  leader walks `depends_on` transitively; only the dependent sub-DAG pauses).
+- The user prompt described in Step 2b (`needs_context` handler) is the
+  resolution path. On user response, re-dispatch the paused subtask with
+  injected context; once it completes, the previously-paused dependent
+  waves resume in order.
+- Thin Leader compliance carries through to team mode: the leader still
+  does NOT read project source to resolve the context request.
+
+**`blocked` in a wave:**
+- The blocked subtask is pushed to `blocked_queue[]` (same as solo mode).
+  Only the **downstream subtasks that `depends_on` the blocked subtask**
+  (transitively) are also marked blocked — this matches solo-mode dependent
+  propagation. Other in-flight and later-wave subtasks proceed normally.
+- The wave itself does NOT pause; other workers in the same wave continue
+  to completion. Later waves that have no dependency on the blocked subtask
+  also dispatch normally.
+- The `blocked_queue` is drained at the end of the run in Step 3, exactly
+  the same as solo mode. The user sees all external blockers together at
+  the end rather than per-wave prompts.
 
 ### Parallel Dispatch (within a wave)
 

@@ -3,6 +3,49 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.16.0] — 2026-05-28
+
+### Added — Multi-Status Executor
+
+- `/athanor:work` now distinguishes four worker completion statuses:
+  - `done` — subtask complete, evidence shape valid
+  - `done_with_concerns` — subtask complete but worker flagged residuals worth surfacing
+  - `needs_context` — worker requires additional inputs before it can proceed
+  - `blocked` — external dependency or unresolved decision halts progress
+- New `blocked_queue` lets the leader route partial completions without flattening to binary success/failure. The Phase 3 gate (conjunction of three signals) still applies to `done` and `done_with_concerns`; `needs_context` / `blocked` defer through the queue instead of marking the subtask success or failure.
+
+### Added — PreToolUse Kernel Guard (3-class safety)
+
+- New PreToolUse hook intercepts tool invocations before they reach the runtime and blocks three classes of operation:
+  1. **Destructive shell** — `rm -rf` against tracked paths, `find -delete` on broad globs, `dd of=`, and equivalent patterns.
+  2. **Force-push** — `git push --force` / `git push -f` against protected branches (main/master + remote tracking).
+  3. **Credentials** — reads / writes that traverse `.env*`, `~/.aws/credentials`, `~/.ssh/`, `*.pem`, and similar.
+- Sits alongside the existing Stop hook gate; both are command-based and honour `athanor.json` `hooks.profile: "off"` for per-project opt-out.
+
+### Changed — CLAUDE.md Token Diet
+
+- CLAUDE.md slimmed from ~534 → ~175 lines. The file is now a contract index (Session Lookup Convention, Defense Mechanisms Status table, 4 identity invariants enumeration, Concept Absorption Surface anchor) — not a prose source-of-truth dump.
+- Heavyweight prose moved to `docs/archive/`:
+  - `stop-hook-postmortem.md` — companion-fix arc v0.11.3 → v0.11.8 detail
+  - `concept-absorption-surface.md` — full v0.12.0 cutover ledger
+  - `defense-mechanisms-detail.md` — Stop hook detection pipeline + Spec-then-TDD operational detail + scope-drift trigger glob
+- Pinned by new `tests/test_regression_v016_claude_md_contract.py`:
+  - line count band [145, 175]
+  - §"Session Lookup Convention" anchor
+  - §"Defense Mechanisms" + §"Status table" subsection
+  - 4 identity invariants by literal name
+  - 3 archive companion files exist
+
+### Tests
+
+- Total: 639 → 644 (+5 ST16). Additional coverage shipped alongside the executor and kernel-guard work landed earlier in the cycle.
+- New file: `tests/test_regression_v016_claude_md_contract.py` (5 tests).
+- Version-pinned tests updated: `test_regression_v014_release_smoke.py` (`TARGET_VERSION = "0.16.0"`), `test_regression_v013_release_smoke.py` (plugin.json version assert), `test_regression_v013_1_codex_hang.py` (`test_schema_id_v0160_bump`), `test_regression_v012_honesty_voice.py` (whitelist now accepts 0.16.x in `## Current Phase`).
+
+### Identity invariants (unchanged)
+
+Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate. Companion-fix arc 5-layer (v0.11.3 → v0.11.8) untouched.
+
 ## [0.15.1] — 2026-05-28
 
 ### Changed

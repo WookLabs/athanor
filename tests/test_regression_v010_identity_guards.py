@@ -28,20 +28,44 @@ PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
 STOP_HOOK = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
 
+# v0.16.0 CLAUDE.md diet (ST15 retarget): the verbose §"Vendored Surface
+# — Identity Guard Layer" section (renamed at v0.12.0 to "Concept
+# Absorption Surface") moved to `docs/archive/concept-absorption-
+# surface.md`. The legacy phrases "vendored surface" + "identity guard
+# layer" remain in the archive (preserved as historical title context
+# and as a retained subsection heading respectively) so the T1 scan
+# now reads the archive file.
+CONCEPT_ABSORPTION_ARCHIVE = (
+    REPO_ROOT / "docs" / "archive" / "concept-absorption-surface.md"
+)
+
 
 # ---- T1: Thin Leader guard ----
 
 
 def test_claude_md_has_vendored_surface_section():
-    """T1: CLAUDE.md contains a section explicitly enumerating the
-    identity guard layer for vendored content."""
-    text = CLAUDE_MD.read_text(encoding="utf-8")
+    """T1: athanor docs contain a section explicitly enumerating the
+    identity guard layer for vendored content.
+
+    v0.16.0 retarget (ST15): the §"Vendored Surface — Identity Guard
+    Layer" section (renamed to "Concept Absorption Surface" at v0.12.0)
+    moved from CLAUDE.md to `docs/archive/concept-absorption-surface.md`.
+    The archive file preserves the legacy phrases "vendored surface"
+    (historical title context) + "identity guard layer" (subsection
+    heading retained verbatim) so this T1 invariant scan reads from the
+    archive instead of CLAUDE.md.
+    """
+    text = CONCEPT_ABSORPTION_ARCHIVE.read_text(encoding="utf-8")
     lower = text.lower()
     assert "vendored surface" in lower, (
-        "CLAUDE.md must contain a §'Vendored Surface' section"
+        "`docs/archive/concept-absorption-surface.md` must contain the "
+        "legacy phrase 'Vendored Surface' (historical title context for "
+        "the pre-v0.12.0 section name)"
     )
     assert "identity guard layer" in lower, (
-        "CLAUDE.md §Vendored Surface must use the phrase 'identity guard layer'"
+        "`docs/archive/concept-absorption-surface.md` must use the phrase "
+        "'identity guard layer' (subsection heading retained from the "
+        "pre-v0.12.0 section)"
     )
 
 

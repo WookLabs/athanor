@@ -124,9 +124,10 @@ def test_state_md_v012_current_phase():
         or "0.13." in current_phase_section
         or "0.14." in current_phase_section
         or "0.15." in current_phase_section
+        or "0.16." in current_phase_section
     ), (
         "docs/STATE.md '## Current Phase' must reference a current-series "
-        "(0.12.x / 0.13.x / 0.14.x / 0.15.x) version literal"
+        "(0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x) version literal"
     )
 
 
@@ -163,6 +164,12 @@ def test_claude_md_has_v012_acknowledgment():
     Pending Subtask 19. The §"Vendored Surface" section needs a v0.12.0
     update to record the post-cutover reality (vendored carry-over =
     ce-test-browser only, with the bulk of v0.10.0 absorption removed).
+
+    v0.16.0 retarget (ST15) note: per the test-migration catalog, the
+    plan-of-record preference is to keep the 4-line CLAUDE.md summary
+    honest about v0.12.0 inline (so this test stays GREEN unchanged)
+    AND extend coverage to the archive — see
+    `test_concept_absorption_archive_has_v012_acknowledgment` below.
     """
     body = CLAUDE_MD_PATH.read_text(encoding="utf-8")
     assert "v0.12.0" in body, (
@@ -182,4 +189,36 @@ def test_claude_md_has_v012_acknowledgment():
         f"CLAUDE.md must carry at least two v0.12.0 scope-correction "
         f"signals (e.g., 'v0.12.0', 'concept-kernel', 'cutover'); found "
         f"{matching_signals!r}"
+    )
+
+
+def test_concept_absorption_archive_has_v012_acknowledgment():
+    """v0.16.0 ST15 extension — the canonical Concept Absorption archive
+    must also carry the v0.12.0 acknowledgment signals.
+
+    Per the test-migration catalog (ST9), the verbose §"Concept Absorption
+    Surface" content moved from CLAUDE.md to
+    `docs/archive/concept-absorption-surface.md`. The catalog notes that
+    coverage of the v0.12.0 acknowledgment should be extended to the
+    archive file (in addition to the preserved 4-line CLAUDE.md summary).
+    """
+    archive_path = REPO_ROOT / "docs" / "archive" / "concept-absorption-surface.md"
+    body = archive_path.read_text(encoding="utf-8")
+    assert "v0.12.0" in body, (
+        "`docs/archive/concept-absorption-surface.md` must mention v0.12.0 "
+        "by version literal — the post-cutover canonical home for the "
+        "Concept Absorption narrative"
+    )
+    cutover_signals = (
+        "v0.12.0",
+        "concept-kernel",
+        "scope correction",
+        "cutover",
+    )
+    body_lower = body.lower()
+    matching_signals = [s for s in cutover_signals if s.lower() in body_lower]
+    assert len(matching_signals) >= 2, (
+        f"`docs/archive/concept-absorption-surface.md` must carry at least "
+        f"two v0.12.0 scope-correction signals (e.g., 'v0.12.0', "
+        f"'concept-kernel', 'cutover'); found {matching_signals!r}"
     )

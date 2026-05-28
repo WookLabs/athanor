@@ -86,6 +86,21 @@ README_MD = REPO_ROOT / "README.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"
 PLUGIN_JSON = REPO_ROOT / ".claude-plugin" / "plugin.json"
 
+# v0.16.0 CLAUDE.md diet (ST15 retarget): the verbose Stop-hook subsection
+# (sentinel-version detail, NFKC normalization, paraphrase regex layer)
+# and Spec-then-TDD discipline narrative moved to two archive files. The
+# CLAUDE.md `v=N` sentinel claims that lived in those subsections moved
+# with them — the per-file CLAUDE.md scan will naturally pytest.skip
+# post-diet because no current `v=N` claims remain inline. The drift
+# class 1.3 scan must continue to cover the canonical archive locations
+# so a stale sentinel-version claim there is still caught.
+STOP_HOOK_POSTMORTEM_ARCHIVE = (
+    REPO_ROOT / "docs" / "archive" / "stop-hook-postmortem.md"
+)
+DEFENSE_MECHANISMS_DETAIL_ARCHIVE = (
+    REPO_ROOT / "docs" / "archive" / "defense-mechanisms-detail.md"
+)
+
 
 # ---------------------------------------------------------------------------
 # Per-file extractor architecture — Decision D2 (v0.11.7)
@@ -104,6 +119,20 @@ INVARIANT_FILES: tuple[tuple[str, Path, str], ...] = (
     ),
     ("STATE.md", STATE_MD, "markdown_prose"),
     ("README.md", README_MD, "markdown_prose"),
+    # v0.16.0 ST15 retarget: verbose Stop-hook narrative + sentinel-version
+    # detail moved to these archive files. Cover them for the same drift
+    # classes (1.3 sentinel-version, 1.5 stale-pin, 1.6 broken-promise)
+    # that previously scanned only the inline CLAUDE.md prose.
+    (
+        "stop-hook-postmortem",
+        STOP_HOOK_POSTMORTEM_ARCHIVE,
+        "markdown_prose",
+    ),
+    (
+        "defense-mechanisms-detail",
+        DEFENSE_MECHANISMS_DETAIL_ARCHIVE,
+        "markdown_prose",
+    ),
 )
 
 
@@ -229,7 +258,16 @@ def _is_historical(text: str, match_start: int) -> bool:
 # Use file labels (not paths) so test IDs are readable.
 _MATRIX_11 = ("CLAUDE.md", "README.md")
 _MATRIX_12 = ("CLAUDE.md",)
-_MATRIX_13 = ("CLAUDE.md", "stop_verify_claims")
+# v0.16.0 ST15 retarget: extend 1.3 (sentinel-version drift) scan to the
+# two archive files that now canonically carry the verbose Stop-hook
+# narrative. CLAUDE.md remains in scope (the lite summary still carries
+# a `v=2 nonce=...` mention in line 133's emission-sentinel reference).
+_MATRIX_13 = (
+    "CLAUDE.md",
+    "stop_verify_claims",
+    "stop-hook-postmortem",
+    "defense-mechanisms-detail",
+)
 
 
 def _files_for_labels(labels: tuple[str, ...]) -> tuple[tuple[str, Path, str], ...]:

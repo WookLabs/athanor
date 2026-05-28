@@ -47,10 +47,26 @@ Based on the `verify.type` in your dispatch:
 
 ## Result Brief Format
 
-**On success:**
+The `status` field is one of five values (v0.16.0 multi-status executor
+contract). Pick the status that most accurately describes the outcome and
+emit the required companion field for that status.
+
+| Status | Meaning | Required companion field |
+|--------|---------|--------------------------|
+| `done` | Subtask fully completed; all verify criteria met. | (none) |
+| `failure` | Subtask attempted but failed after max retries. | `attempts`, `last_error`, `suggestion` (existing) |
+| `done_with_concerns` | Implementation complete but you flag potential issues (deprecated API, uncovered edge case). | `concerns: [<string>, ...]` non-empty list |
+| `needs_context` | You cannot proceed without information outside your dispatch context (design decision, external API response). The leader will ask the user or re-dispatch with injected context. Do NOT count this as a failure attempt. | `context_needed: "<description>"` |
+| `blocked` | External blocker prevents progress (CI down, API unreachable, dependency missing). | `blocker: "<external blocker description>"` |
+
+Legacy `status: success` is accepted as a backwards-compatible alias for
+`done` — existing workers and grandfathered dispatches continue to work
+unchanged. Use `done` in all new emissions.
+
+**On done (status: done):**
 ```
 ATHANOR_RESULT
-status: success
+status: done
 subtask_id: {id}
 summary: {what was done in 1 sentence}
 files_changed:
@@ -75,6 +91,41 @@ summary: {what was attempted}
 attempts: {number of attempts}
 last_error: {why it failed}
 suggestion: {what might fix it}
+END_RESULT
+```
+
+**On done_with_concerns:**
+```
+ATHANOR_RESULT
+status: done_with_concerns
+subtask_id: {id}
+summary: {what was done}
+files_changed:
+  - {file}: {what changed}
+concerns:
+  - {first concern, e.g., "uses deprecated requests.get() — should migrate to httpx in follow-up"}
+  - {second concern, e.g., "edge case for empty input not covered by tests"}
+verification: {command run} → pass
+END_RESULT
+```
+
+**On needs_context:**
+```
+ATHANOR_RESULT
+status: needs_context
+subtask_id: {id}
+summary: {what was attempted before pausing}
+context_needed: "{description of the missing information — e.g., 'Which schema version should the new field target — v0.15.1 or v0.16.0?'}"
+END_RESULT
+```
+
+**On blocked:**
+```
+ATHANOR_RESULT
+status: blocked
+subtask_id: {id}
+summary: {what was attempted before blocking}
+blocker: "{description of the external blocker — e.g., 'CI is down; cannot run regression suite to verify'}"
 END_RESULT
 ```
 
