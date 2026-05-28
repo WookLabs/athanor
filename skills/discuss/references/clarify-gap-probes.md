@@ -7,7 +7,7 @@
                  verified still present at compound-engineering@3.8.3 during
                  v0.10.0 absorption). SHA pin not available from plugin-cache
                  distribution; version-tag fallback per CLAUDE.md §"Concept Absorption
-                 Surface" drift policy (v0.10.1 correction).
+                 Surface" drift policy (v0.10.1 correction; vendor manifest detail: docs/archive/concept-absorption-surface.md).
   license: MIT (Copyright (c) 2025 Every Inc / compound-engineering authors)
   modifications:
     - Vendored verbatim conceptual content from ce-brainstorm Phase 1.2-1.3

@@ -27,13 +27,50 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 
+# v0.16.0 CLAUDE.md diet (ST15 retarget): verbose Stop-hook subsection +
+# Spec-then-TDD discipline subsection moved to archive. The status-table
+# row and one-paragraph enforcement summaries stay inline in CLAUDE.md;
+# the verbose internals (script path narrative, sentinel mechanics,
+# profile opt-out detail, spike evidence, branch semantics, honesty
+# arc) now canonically live in these two files. Tests scanning for
+# those verbose signals read from the archive.
+STOP_HOOK_ARCHIVE = REPO_ROOT / "docs" / "archive" / "stop-hook-postmortem.md"
+DEFENSE_DETAIL_ARCHIVE = REPO_ROOT / "docs" / "archive" / "defense-mechanisms-detail.md"
+
 
 def _load_claude_md() -> str:
     return CLAUDE_MD.read_text(encoding="utf-8")
 
 
+def _load_stop_hook_archive() -> str:
+    """Concatenated post-mortem + defense-mechanisms-detail archive content.
+
+    The Stop-hook verbose subsection narrative is split between the two
+    archive files (v0.11.3/v0.11.4 post-mortem material in
+    `stop-hook-postmortem.md`; runtime contract + sentinel mechanics +
+    opt-out + spike-evidence narrative in `defense-mechanisms-detail.md`).
+    Returning the union lets scans hit either origin.
+    """
+    return (
+        STOP_HOOK_ARCHIVE.read_text(encoding="utf-8")
+        + "\n"
+        + DEFENSE_DETAIL_ARCHIVE.read_text(encoding="utf-8")
+    )
+
+
+def _load_defense_detail_archive() -> str:
+    return DEFENSE_DETAIL_ARCHIVE.read_text(encoding="utf-8")
+
+
 def _extract_stop_hook_subsection(content: str) -> str:
-    """Return the body between the Stop hook `###` heading and the next H2/H3 heading."""
+    """Return the body between the Stop hook `###` heading and the next H2/H3 heading.
+
+    Pre-v0.16.0 this extracted the verbose subsection from CLAUDE.md. Post-
+    diet (ST15 retarget) the verbose narrative lives in archive files; this
+    helper now operates on whichever content string is passed in (the
+    CLAUDE.md lite summary still carries the heading, and the archive
+    files carry the verbose headings).
+    """
     lines = content.splitlines()
     start_idx = None
     for i, line in enumerate(lines):
@@ -106,41 +143,65 @@ def test_subsection_heading_says_enforced_command_based():
 
 
 def test_subsection_describes_script_path():
-    """Subsection must cite the actual gate script."""
-    subsection = _extract_stop_hook_subsection(_load_claude_md())
-    assert subsection, "Stop hook subsection not found"
-    assert "scripts/hooks/stop_verify_claims.py" in subsection, (
-        "Subsection must name the gate script `scripts/hooks/stop_verify_claims.py` "
-        "so users can find it."
+    """Verbose Stop-hook narrative must cite the actual gate script.
+
+    v0.16.0 retarget (ST15): verbose detail moved from CLAUDE.md to
+    `docs/archive/stop-hook-postmortem.md` + `docs/archive/defense-
+    mechanisms-detail.md`. The script-path mention is canonical in the
+    archive; the CLAUDE.md lite summary may also retain it.
+    """
+    archive = _load_stop_hook_archive()
+    assert "scripts/hooks/stop_verify_claims.py" in archive, (
+        "Stop-hook archive must name the gate script "
+        "`scripts/hooks/stop_verify_claims.py` so users can find it."
     )
 
 
 def test_subsection_describes_sentinel_mechanism():
-    """Subsection must describe the re-entry-prevention sentinel."""
-    subsection = _extract_stop_hook_subsection(_load_claude_md())
-    assert "athanor:verification-emission" in subsection, (
-        "Subsection must describe the verification-emission sentinel that "
-        "prevents re-entry loops on the verification skill's own output."
+    """Verbose Stop-hook narrative must describe the re-entry-prevention sentinel.
+
+    v0.16.0 retarget (ST15): verbose detail moved to archive.
+    """
+    archive = _load_stop_hook_archive()
+    assert "athanor:verification-emission" in archive, (
+        "Stop-hook archive must describe the verification-emission sentinel "
+        "that prevents re-entry loops on the verification skill's own output."
     )
 
 
 def test_subsection_describes_profile_off_opt_out():
-    """Subsection must document the per-project opt-out."""
-    subsection = _extract_stop_hook_subsection(_load_claude_md())
-    assert 'profile: "off"' in subsection or '"profile": "off"' in subsection or "profile: 'off'" in subsection, (
-        "Subsection must document the `hooks.profile: \"off\"` per-project opt-out "
-        "so users have a documented escape hatch."
+    """Verbose Stop-hook narrative must document the per-project opt-out.
+
+    v0.16.0 retarget (ST15): the `hooks.profile: "off"` opt-out detail
+    lives canonically in `docs/archive/defense-mechanisms-detail.md`
+    §"Per-project opt-out".
+    """
+    archive = _load_stop_hook_archive()
+    assert (
+        'profile: "off"' in archive
+        or '"profile": "off"' in archive
+        or "profile: 'off'" in archive
+    ), (
+        "Stop-hook archive must document the `hooks.profile: \"off\"` "
+        "per-project opt-out so users have a documented escape hatch."
     )
 
 
 def test_subsection_cites_spike_evidence():
-    """Subsection must reference the empirical spike evidence in docs/STATE.md."""
-    subsection = _extract_stop_hook_subsection(_load_claude_md())
-    assert "STATE.md" in subsection, (
-        "Subsection must cite docs/STATE.md (where the 2026-05-18 spike evidence lives)."
+    """Verbose Stop-hook narrative must reference the empirical spike evidence
+    in docs/STATE.md.
+
+    v0.16.0 retarget (ST15): spike-evidence citation lives canonically in
+    `docs/archive/stop-hook-postmortem.md` + `docs/archive/defense-
+    mechanisms-detail.md` (companion-fix arc destination).
+    """
+    archive = _load_stop_hook_archive()
+    assert "STATE.md" in archive, (
+        "Stop-hook archive must cite docs/STATE.md (where the 2026-05-18 "
+        "spike evidence lives)."
     )
-    assert "spike" in subsection.lower() or "2026-05-18" in subsection, (
-        "Subsection must reference the spike (by name or date)."
+    assert "spike" in archive.lower() or "2026-05-18" in archive, (
+        "Stop-hook archive must reference the spike (by name or date)."
     )
 
 
@@ -218,35 +279,60 @@ def test_spec_then_tdd_row_no_overclaim_language():
 
 
 def test_spec_then_tdd_subsection_present():
-    """v0.8.0: a new ### subsection describes the Spec-then-TDD discipline."""
-    subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
+    """v0.8.0: a Spec-then-TDD discipline subsection describes the mechanism.
+
+    v0.16.0 retarget (ST15): the verbose Spec-then-TDD subsection moved to
+    `docs/archive/defense-mechanisms-detail.md` §"Spec-then-TDD Discipline
+    (Splitter Internals)". The CLAUDE.md lite subsection (post-diet) still
+    carries the heading + advisory label; either origin satisfies the
+    "subsection present" invariant.
+    """
+    # Prefer the canonical archive subsection; fall back to the CLAUDE.md
+    # lite summary if it still carries the heading (post-diet it does).
+    archive_subsection = _extract_spec_then_tdd_subsection(_load_defense_detail_archive())
+    inline_subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
+    subsection = archive_subsection or inline_subsection
     assert subsection, (
-        "CLAUDE.md must contain a '### Spec-then-TDD Discipline' subsection "
-        "describing the v0.8.0 mechanism"
+        "Spec-then-TDD discipline subsection must be present in either "
+        "`docs/archive/defense-mechanisms-detail.md` (canonical, verbose) "
+        "or CLAUDE.md (lite summary)."
     )
-    # The heading itself should include 'advisory'
-    first_line = subsection.splitlines()[0]
-    assert "advisory" in first_line.lower(), (
-        f"Spec-then-TDD subsection heading must include 'advisory'; got: {first_line!r}"
+    # Heading semantics: archive uses "Spec-then-TDD Discipline (Splitter
+    # Internals)"; CLAUDE.md uses "Spec-then-TDD Discipline (advisory —
+    # planner-classified)". Accept either by requiring the section body
+    # (combined inline + archive) to carry the 'advisory' label.
+    combined_lower = (archive_subsection + "\n" + inline_subsection).lower()
+    assert "advisory" in combined_lower, (
+        "Spec-then-TDD subsection must carry the 'advisory' label (the "
+        "mechanism is advisory only, not enforced)."
     )
 
 
 def test_spec_then_tdd_subsection_describes_three_branches():
-    """The subsection must describe all three execution_note branches."""
-    subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
-    assert subsection
-    lower = subsection.lower()
+    """The subsection must describe all three execution_note branches.
+
+    v0.16.0 retarget (ST15): branch-detail prose lives canonically in
+    `docs/archive/defense-mechanisms-detail.md` §"Branch semantics" /
+    §"Splitter classification".
+    """
+    archive = _load_defense_detail_archive()
+    lower = archive.lower()
     assert "spec-then-tdd" in lower
     assert "test-aware" in lower
     assert "direct" in lower
 
 
 def test_spec_then_tdd_subsection_what_it_does_not_catch():
-    """Honesty arc: the subsection must include a 'What it does NOT catch'
-    paragraph (matching the v0.7.8 honesty pattern)."""
-    subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
-    assert subsection
-    lower = subsection.lower()
+    """Honesty arc: archive subsection must include a 'What it does NOT catch'
+    paragraph (matching the v0.7.8 honesty pattern).
+
+    v0.16.0 retarget (ST15): honesty-arc detail lives canonically in
+    `docs/archive/defense-mechanisms-detail.md` §"What it does NOT catch".
+    The CLAUDE.md lite summary also carries a one-line "What it does NOT
+    catch" sentence; the archive is the verbose canonical home.
+    """
+    archive = _load_defense_detail_archive()
+    lower = archive.lower()
     not_catch_signals = [
         "what it does not catch",
         "does not catch",
@@ -254,7 +340,7 @@ def test_spec_then_tdd_subsection_what_it_does_not_catch():
         "advisory limitation",
     ]
     assert any(s in lower for s in not_catch_signals), (
-        f"Spec-then-TDD subsection must include a 'What it does NOT catch' or "
+        f"Spec-then-TDD archive must include a 'What it does NOT catch' or "
         f"equivalent honesty paragraph. Expected one of: {not_catch_signals}"
     )
 
