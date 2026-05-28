@@ -23,10 +23,25 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
+WORK_REFS_DIR = REPO_ROOT / "skills" / "work" / "references"
 
 
 def _load():
-    return WORK_SKILL.read_text(encoding="utf-8")
+    """Return SKILL.md + references corpus.
+
+    v0.17.0 (ST-S01): Splitter prompt prose moved to
+    ``references/splitter.md``. Tests grep the concatenated corpus so
+    v0.8.0 U2 contract anchors continue to satisfy.
+    """
+    text = WORK_SKILL.read_text(encoding="utf-8")
+    if WORK_REFS_DIR.is_dir():
+        for ref in sorted(WORK_REFS_DIR.glob("*.md")):
+            text += (
+                f"\n\n<!-- begin {ref.name} -->\n"
+                + ref.read_text(encoding="utf-8")
+                + f"\n<!-- end {ref.name} -->\n"
+            )
+    return text
 
 
 def test_splitter_prompt_lists_execution_note_enum():

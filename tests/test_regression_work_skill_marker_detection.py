@@ -40,7 +40,17 @@ MARKER_LITERAL = "<!-- athanor:review-skipped -->"
 
 
 def _load(path):
-    return path.read_text(encoding="utf-8")
+    """Load skill body. For PLAN_SKILL, splice in references/*.md too —
+    S02 (v0.17.x) moved Critic dispatch packets into
+    `references/critic-variants.md`; the marker-prepend invariant lives
+    there now. WORK_SKILL is read as-is."""
+    text = path.read_text(encoding="utf-8")
+    if path == PLAN_SKILL:
+        references_dir = path.parent / "references"
+        if references_dir.is_dir():
+            for ref in sorted(references_dir.glob("*.md")):
+                text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
 
 
 def _extract_step_0(content):

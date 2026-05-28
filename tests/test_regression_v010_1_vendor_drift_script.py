@@ -3,11 +3,13 @@ exists, is invocable, and produces sensible exit codes.
 
 v0.12.0 scope note: the atomic cut removed 45 vendored skills + 47 vendored
 sub-agents. The drift script survives — its job is to detect drift on
-whatever vendored content remains. Post-v0.12.0 that's just
-`ce-test-browser` (D8 KEEP) under `skills/` plus the 2 retained sub-agents
-under `agents/vendored/ce/`. The pre-v0.12.0 shape of this file used
-`ce-plan` to build the fixture cache; that source is gone now, so the
-fixture uses `ce-test-browser` instead.
+whatever vendored content remains. Post-v0.15.x that's just
+`ce-test-browser` (D8 KEEP) under `skills/`; the 2 D12-retained sub-agents
+(`ce-git-history-analyzer`, `ce-repo-research-analyst`) were removed in
+v0.15.x after confirming zero live dispatch references, so `agents/vendored/`
+no longer exists. The pre-v0.12.0 shape of this file used `ce-plan` to build
+the fixture cache; that source is gone now, so the fixture uses
+`ce-test-browser` instead.
 
 Exit code contract:
   0 — no drift detected (vendored tree matches upstream caches)

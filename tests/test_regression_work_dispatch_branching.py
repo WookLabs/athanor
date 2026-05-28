@@ -32,10 +32,27 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
+WORK_REFS_DIR = REPO_ROOT / "skills" / "work" / "references"
 
 
 def _load():
-    return WORK_SKILL.read_text(encoding="utf-8")
+    """Return SKILL.md + references corpus.
+
+    v0.17.0 (ST-S01): SKILL.md was split into a thin router + topic
+    references under ``skills/work/references/``. v0.8.0 dispatch
+    branching contract assertions that previously grepped the monolithic
+    SKILL.md must now scan the concatenated corpus so the relocated
+    Spec-then-TDD / Test-Aware / Direct prose still satisfies the contract.
+    """
+    text = WORK_SKILL.read_text(encoding="utf-8")
+    if WORK_REFS_DIR.is_dir():
+        for ref in sorted(WORK_REFS_DIR.glob("*.md")):
+            text += (
+                f"\n\n<!-- begin {ref.name} -->\n"
+                + ref.read_text(encoding="utf-8")
+                + f"\n<!-- end {ref.name} -->\n"
+            )
+    return text
 
 
 # --- U3 dispatch branching ---
@@ -52,19 +69,33 @@ def test_dispatch_branches_on_execution_note():
 
 def test_spec_then_tdd_branch_has_red_first_5_steps():
     """MUST: spec-then-tdd branch contains WRITE → RUN → VERIFY RED → IMPLEMENT
-    → VERIFY GREEN keywords."""
+    → VERIFY GREEN keywords.
+
+    v0.17.0 (ST-S01): the full Spec-then-TDD Instructions block lives in
+    ``references/spec-then-tdd-handler.md``. Scan EVERY occurrence of the
+    heading; the actual block carries all 5 step keywords.
+    """
     body = _load()
-    # Find the spec-then-tdd block
-    spec_idx = body.find("Spec-then-TDD Instructions")
-    if spec_idx < 0:
-        spec_idx = body.lower().find("spec-then-tdd instructions")
-    assert spec_idx >= 0, "Spec-then-TDD Instructions block not found"
-    window = body[spec_idx : spec_idx + 3000]
-    # 5 step keywords
-    for keyword in ["WRITE", "RUN", "VERIFY RED", "IMPLEMENT", "VERIFY GREEN"]:
-        assert keyword in window, (
-            f"Spec-then-TDD branch must contain '{keyword}' step keyword"
-        )
+    body_lower_full = body.lower()
+    pos = 0
+    contract_anchored = False
+    while True:
+        spec_idx = body_lower_full.find("spec-then-tdd instructions", pos)
+        if spec_idx < 0:
+            break
+        window = body[spec_idx : spec_idx + 3000]
+        if all(
+            keyword in window
+            for keyword in ["WRITE", "RUN", "VERIFY RED", "IMPLEMENT", "VERIFY GREEN"]
+        ):
+            contract_anchored = True
+            break
+        pos = spec_idx + 1
+    assert contract_anchored, (
+        "Spec-then-TDD Instructions block must contain all 5 step keywords "
+        "(WRITE / RUN / VERIFY RED / IMPLEMENT / VERIFY GREEN) within 3KB "
+        "of at least one occurrence of the heading."
+    )
 
 
 def test_spec_then_tdd_requires_red_evidence_shape():
@@ -101,28 +132,39 @@ def test_red_status_enum_in_dispatch():
 
 def test_test_aware_gate_uses_broader_tests_path():
     """MUST: test-aware gate accepts 'tests/' broader pattern, not just
-    'tests/test_*.py'. Must allow conftest.py, fixtures/, snapshots."""
+    'tests/test_*.py'. Must allow conftest.py, fixtures/, snapshots.
+
+    v0.17.0 (ST-S01): the Test-Aware End Gate block lives in
+    ``references/spec-then-tdd-handler.md``. Scan EVERY occurrence of
+    the gate heading so the contract evidence (git diff + tests/ pattern)
+    is found wherever it lives.
+    """
     body = _load()
-    gate_idx = body.find("Test-Aware End Gate")
-    if gate_idx < 0:
-        gate_idx = body.lower().find("test-aware end gate")
-    assert gate_idx >= 0, "Test-Aware End Gate block not found"
-    window = body[gate_idx : gate_idx + 2000]
-    # Must mention git diff inspection
-    assert "git diff" in window, "test-aware gate must use git diff inspection"
-    # Must mention tests/ as broader pattern (not just test_*.py)
-    body_lower = window.lower()
-    # Accept either explicit broader phrasing or path-only mention
-    broader_signals = [
-        "tests/",
-        "conftest.py",
-        "fixtures/",
-        "any file under `tests/`",
-        "test artifact",
-    ]
-    assert any(s in body_lower for s in broader_signals), (
-        f"test-aware gate must accept broader tests/ pattern. "
-        f"Expected one of: {broader_signals}"
+    pos = 0
+    body_lower_full = body.lower()
+    contract_anchored = False
+    while True:
+        gate_idx = body_lower_full.find("test-aware end gate", pos)
+        if gate_idx < 0:
+            break
+        window = body[gate_idx : gate_idx + 2000]
+        window_lower = window.lower()
+        broader_signals = [
+            "tests/",
+            "conftest.py",
+            "fixtures/",
+            "any file under `tests/`",
+            "test artifact",
+        ]
+        if "git diff" in window and any(s in window_lower for s in broader_signals):
+            contract_anchored = True
+            break
+        pos = gate_idx + 1
+    assert contract_anchored, (
+        "test-aware gate must use git diff inspection AND accept broader "
+        "tests/ pattern. Expected `git diff` + one of: tests/, conftest.py, "
+        "fixtures/, test artifact — within a single 2KB window after some "
+        "occurrence of `Test-Aware End Gate`."
     )
 
 

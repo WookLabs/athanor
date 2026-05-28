@@ -17,11 +17,27 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
+WORK_REFS_DIR = REPO_ROOT / "skills" / "work" / "references"
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "splitter_cases"
 
 
 def _load_skill_md() -> str:
-    return WORK_SKILL.read_text(encoding="utf-8")
+    """Return SKILL.md + references corpus.
+
+    v0.17.0 (ST-S01): the Splitter prompt was moved to
+    ``references/splitter.md``. The router keeps the v0.10.1
+    classification_reason contract anchors; reference holds the full
+    template + validation checklist. Tests grep the concatenated corpus.
+    """
+    text = WORK_SKILL.read_text(encoding="utf-8")
+    if WORK_REFS_DIR.is_dir():
+        for ref in sorted(WORK_REFS_DIR.glob("*.md")):
+            text += (
+                f"\n\n<!-- begin {ref.name} -->\n"
+                + ref.read_text(encoding="utf-8")
+                + f"\n<!-- end {ref.name} -->\n"
+            )
+    return text
 
 
 # ---- U3: schema has classification_reason field ----

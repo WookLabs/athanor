@@ -1,4 +1,4 @@
-"""Regression: v0.15.1 LFG team default — 5 contract tests.
+"""Regression: v0.15.1 LFG team default — 4 contract tests.
 
 Locks the v0.15.1 LFG `--team` default change and related version-pinned
 invariants that ship with the v0.15.1 patch release.
@@ -7,8 +7,15 @@ Tests:
   1. lfg Step 2 invokes /athanor:work with --team flag
   2. athanor.json work.defaultMode remains "solo" (global default NOT changed)
   3. plugin.json keywords contain no stale vendored keywords
-  4. codex._doc deferral reference updated past v0.15+
-  5. schema fallbackAfterMs description deferral updated past v0.15+
+  4. schema fallbackAfterMs description deferral updated past v0.15+
+
+S09 history: previously included a test
+``test_codex_doc_deferral_not_current_version`` that scanned the
+athanor.json ``codex._doc`` string for stale "deferred to v0.15+"
+phrasing. S09 hard-removed all ``_doc`` fields from athanor.json per
+user decision U3, so the field no longer exists; the schema
+``description`` field still carries the deferral note and is locked
+by test 4 below.
 """
 from __future__ import annotations
 
@@ -88,26 +95,7 @@ def test_plugin_json_no_stale_vendored_keywords():
 
 
 # ---------------------------------------------------------------------------
-# 4. codex._doc deferral reference updated past v0.15+
-# ---------------------------------------------------------------------------
-def test_codex_doc_deferral_not_current_version():
-    """athanor.json codex._doc must NOT contain "deferred to v0.15+".
-
-    v0.15.x is the current release line. Deferral references must point
-    to the NEXT major version window (v0.16+) so readers understand the
-    feature is still deferred, not landed.
-    """
-    config_path = REPO_ROOT / "athanor.json"
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    codex_doc = config.get("codex", {}).get("_doc", "")
-    assert "deferred to v0.15+" not in codex_doc, (
-        "athanor.json codex._doc still says 'deferred to v0.15+' — this is "
-        "the current release line. Update to 'deferred to v0.16+' or later."
-    )
-
-
-# ---------------------------------------------------------------------------
-# 5. schema fallbackAfterMs description deferral updated past v0.15+
+# 4. schema fallbackAfterMs description deferral updated past v0.15+
 # ---------------------------------------------------------------------------
 def test_schema_deferral_not_current_version():
     """Schema timeoutMs description must NOT contain "deferred to v0.15+".

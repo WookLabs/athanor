@@ -27,6 +27,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
+WORK_REFS_DIR = REPO_ROOT / "skills" / "work" / "references"
 EXECUTOR_AGENT = REPO_ROOT / "agents" / "executor.md"
 
 # The 5 status values in the v0.16.0 multi-status executor contract.
@@ -43,9 +44,25 @@ NEW_STATUSES = ["done_with_concerns", "needs_context", "blocked"]
 
 
 def _read(path: Path) -> str:
-    """Read a UTF-8 file, assert it exists and is non-trivial."""
+    """Read a UTF-8 file, assert it exists and is non-trivial.
+
+    v0.17.0 (ST-S01): when reading WORK_SKILL.md, the function transparently
+    concatenates the thin router with every file under
+    ``skills/work/references/*.md`` so v0.16.0 multi-status contract
+    assertions that grep for handler prose continue to find it after the
+    SKILL.md split. The split moved heavy prose to references/ without
+    changing the contract.
+    """
     assert path.exists(), f"{path} does not exist"
     text = path.read_text(encoding="utf-8")
+    if path == WORK_SKILL and WORK_REFS_DIR.is_dir():
+        # Append references corpus so test greps still hit the relocated prose.
+        ref_chunks = []
+        for ref in sorted(WORK_REFS_DIR.glob("*.md")):
+            ref_chunks.append(f"\n\n<!-- begin {ref.name} -->\n")
+            ref_chunks.append(ref.read_text(encoding="utf-8"))
+            ref_chunks.append(f"\n<!-- end {ref.name} -->\n")
+        text = text + "".join(ref_chunks)
     assert len(text.encode("utf-8")) > 500, (
         f"{path} is unexpectedly small ({len(text.encode('utf-8'))} bytes); "
         f"expected >500 bytes for a v0.16.0 multi-status contract surface"
@@ -132,7 +149,13 @@ def test_backwards_compat_success_mentioned():
 
 
 def test_done_with_concerns_requires_concerns_field():
-    """SKILL.md documents ``concerns:`` as the required field for done_with_concerns."""
+    """SKILL.md documents ``concerns:`` as the required field for done_with_concerns.
+
+    v0.17.0 (ST-S01): the status name appears in both router and
+    ``references/multi-status.md``. The proximity check scans EVERY
+    occurrence and passes if ANY occurrence has the contractual evidence
+    in its 2KB window.
+    """
     text = _read(WORK_SKILL)
     assert "done_with_concerns" in text, (
         "skills/work/SKILL.md must document `done_with_concerns` status."
@@ -141,21 +164,27 @@ def test_done_with_concerns_requires_concerns_field():
         "skills/work/SKILL.md must document the `concerns:` field "
         "(required companion field for done_with_concerns status)."
     )
-    # Locate the done_with_concerns documentation and confirm `concerns`
-    # is mentioned in the same neighborhood (within 2KB of the status name)
-    # so we know the field is bound to the status, not just any list.
-    idx = text.find("done_with_concerns")
-    window = text[max(0, idx - 200) : idx + 2000]
-    assert "concerns" in window, (
-        "skills/work/SKILL.md must mention `concerns` near the "
-        "`done_with_concerns` status documentation (companion field binding)."
-    )
-    # Also confirm "non-empty" or "required" appears in the same window so
-    # the contractual non-empty list requirement is locked.
-    window_lower = window.lower()
-    assert "non-empty" in window_lower or "required" in window_lower, (
+    # Scan every occurrence; at least one window must carry the contractual
+    # non-empty / required language (otherwise the field-status binding is
+    # not anchored anywhere).
+    pos = 0
+    contract_anchored = False
+    while True:
+        idx = text.find("done_with_concerns", pos)
+        if idx == -1:
+            break
+        window = text[max(0, idx - 200) : idx + 2000]
+        window_lower = window.lower()
+        if "concerns" in window and (
+            "non-empty" in window_lower or "required" in window_lower
+        ):
+            contract_anchored = True
+            break
+        pos = idx + 1
+    assert contract_anchored, (
         "skills/work/SKILL.md must mark `concerns:` as a non-empty / "
-        "required list for `done_with_concerns` status."
+        "required list for `done_with_concerns` status (within 2KB of "
+        "at least one occurrence of the status name)."
     )
 
 
@@ -165,7 +194,11 @@ def test_done_with_concerns_requires_concerns_field():
 
 
 def test_needs_context_requires_context_needed_field():
-    """SKILL.md documents ``context_needed:`` as the required field for needs_context."""
+    """SKILL.md documents ``context_needed:`` as the required field for needs_context.
+
+    v0.17.0 (ST-S01): proximity scan covers every occurrence of the status
+    name across SKILL.md + references corpus.
+    """
     text = _read(WORK_SKILL)
     assert "needs_context" in text, (
         "skills/work/SKILL.md must document `needs_context` status."
@@ -174,16 +207,24 @@ def test_needs_context_requires_context_needed_field():
         "skills/work/SKILL.md must document the `context_needed:` field "
         "(required companion field for needs_context status)."
     )
-    idx = text.find("needs_context")
-    window = text[max(0, idx - 200) : idx + 2000]
-    assert "context_needed" in window, (
-        "skills/work/SKILL.md must mention `context_needed` near the "
-        "`needs_context` status documentation (companion field binding)."
-    )
-    window_lower = window.lower()
-    assert "required" in window_lower or "must" in window_lower, (
+    pos = 0
+    contract_anchored = False
+    while True:
+        idx = text.find("needs_context", pos)
+        if idx == -1:
+            break
+        window = text[max(0, idx - 200) : idx + 2000]
+        window_lower = window.lower()
+        if "context_needed" in window and (
+            "required" in window_lower or "must" in window_lower
+        ):
+            contract_anchored = True
+            break
+        pos = idx + 1
+    assert contract_anchored, (
         "skills/work/SKILL.md must mark `context_needed:` as a required "
-        "field for `needs_context` status."
+        "field for `needs_context` status (within 2KB of at least one "
+        "occurrence of the status name)."
     )
 
 

@@ -34,7 +34,20 @@ PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 
 
 def _load():
-    return PLAN_SKILL.read_text(encoding="utf-8")
+    """Load skills/plan/SKILL.md spliced with all references/*.md.
+
+    S02 (v0.17.x) split the plan skill into a thin router + references/.
+    The Critic Agent({prompt: ...}) blocks live in
+    `references/critic-variants.md` and the rubric in
+    `references/critic-rubric.md`; this concatenation preserves the
+    rubric-coverage invariants across the split.
+    """
+    text = PLAN_SKILL.read_text(encoding="utf-8")
+    references_dir = PLAN_SKILL.parent / "references"
+    if references_dir.is_dir():
+        for ref in sorted(references_dir.glob("*.md")):
+            text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
 
 
 def test_critic_evaluates_acceptance_criteria_coverage():

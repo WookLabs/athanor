@@ -13,28 +13,31 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
 
 You are the Athanor work leader. You execute the confirmed plan by dispatching
 clean-context executor workers for each subtask. You follow the **Thin Leader**
-pattern: you do NOT write code, edit files, or debug yourself.
+pattern: you do NOT write code, edit files, or debug yourself. This is the
+ONLY Athanor command that modifies project files (via workers).
 
-This is the ONLY Athanor command that modifies project files (via workers).
+### using-superpowers boundary
 
-### v0.11.1 using-superpowers boundary
-
-Athanor's Thin Leader + planner-classified discipline applies in this
-skill context. `superpowers:using-superpowers` is loaded at SessionStart
-and its "MUST invoke before response" pressure is **advisory here** —
-discovery in athanor-native skills resolves through leader dispatch,
-not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration" for the canonical text.
 
 ### v0.10.0 vendored-surface relationship
 
-`/athanor:work` applies the athanor-native **Spec-then-TDD discipline**:
-Splitter `execution_note` classification (`spec-then-tdd | test-aware | direct`)
-+ conjunction-of-three Phase 3 gate. This discipline is the default — DO NOT
-fall back to CE-vendored single-agent execution even if the vendored content
-suggests doing so. Users who explicitly want CE's execution flow invoke
-`/athanor:ce-work` directly; users who want superpowers TDD invoke
-`/athanor:sp-test-driven-development`. Both are OUTSIDE this discipline (no
-Splitter classification, no Phase 3 gate). See CLAUDE.md §"Concept Absorption Surface" identity commitment #3.
+`/athanor:work` applies athanor-native **Spec-then-TDD discipline** (canonical
+overview: CLAUDE.md §"Spec-then-TDD Discipline"; identity invariant #3 in
+CLAUDE.md §"Concept Absorption Surface"). Post-v0.12.0: sole native executor —
+no CE-vendored single-agent fallback. `/athanor:ce-work` and
+`/athanor:sp-test-driven-development` are **outside** this discipline (no
+Splitter classification, no Phase 3 gate) — users wanting those flows install
+upstream compound-engineering or superpowers, which carry their own execution
+semantics.
+
+## Reference layout
+
+Heavy prose under `skills/work/references/`:
+`references/splitter.md`, `references/spec-then-tdd-handler.md` (carries
+v0.19.0 forward-compat anchor for PostToolUse sniffer),
+`references/multi-status.md` (backwards-compat success→done alias),
+`references/team-mode.md`, `references/learner-cleaner.md`.
 
 ---
 
@@ -42,304 +45,70 @@ Splitter classification, no Phase 3 gate). See CLAUDE.md §"Concept Absorption S
 
 ### Step 0: Load Plan & Determine Mode
 
-1. Find the active session in `.athanor/sessions/` using the canonical lookup rule
-   from `CLAUDE.md` §Session Lookup Convention. Bash reference (skills MAY embed inline):
+1. Find active session via `CLAUDE.md` §Session Lookup Convention:
    ```bash
    LATEST=$(ls -1 .athanor/sessions 2>/dev/null \
-     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
-     | sort | tail -1)
+     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' | sort | tail -1)
    ```
-   If `<LATEST>` date != today's date, announce:
-   `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
-   (The Step 0.5 resume guard below still runs on `<LATEST>` regardless of date.)
-2. Read plan.md — verify it exists; do NOT yet parse subtasks
-   (Step 0.5 will handle splitter/guard logic).
-2a. **Detect review-skipped marker.** If the first line of `plan.md` is the
-    literal HTML header comment `<!-- athanor:review-skipped -->`, the plan
-    was produced with `codex.fallback=skip` and no Critic refinement pass
-    (see `skills/plan/SKILL.md` §Step 4 standard-tier pass-through and the
-    deep-tier 2-input variant). Announce verbatim:
-    ```
-    ⚠ Working from an unreviewed plan (review_strategy=none).
-      The plan was generated without a Critic refinement pass.
-      Consider running /athanor:review on it before executing risky changes.
-      Proceeding — interrupt to switch to /athanor:plan and rerun with
-      codex_available=true if available.
-    ```
-    Bash reference:
-    ```bash
-    head -1 .athanor/sessions/<LATEST>/plan.md | grep -Fq '<!-- athanor:review-skipped -->'
-    ```
-    Continue with the normal Step 0 / 0.5 flow regardless — the announcement
-    is advisory, not blocking.
-3. Check for work-log.md existence (needed by Step 0.5 resume guard).
-4. Determine mode:
-   - If user specified `--solo` or `--team` → use that
-   - Otherwise → read `work.defaultMode` from `athanor.json` (default: solo)
-5. Read config: `work.ralphLoop.maxRetries` and `work.circuitBreaker`
+2. Read plan.md — verify exists; do NOT yet parse subtasks.
+2a. **Detect review-skipped marker.** If line 1 of `plan.md` is the literal
+    `<!-- athanor:review-skipped -->`, announce: `⚠ Working from an
+    unreviewed plan (review_strategy=none). The plan was generated without
+    a Critic refinement pass. Consider running /athanor:review before
+    risky changes.` Bash: `head -1 .athanor/sessions/<LATEST>/plan.md | grep -Fq '<!-- athanor:review-skipped -->'`.
+3. Check work-log.md existence (resume guard input).
+4. Mode: `--solo` / `--team` flag, else `work.defaultMode` (default: solo).
+5. Read config: `work.ralphLoop.maxRetries`, `work.circuitBreaker`.
 
-<!-- thin-leader-rejection: bullet-1 — Steps 0.4–0.5 read `athanor.json`
-     at project root (outside `.athanor/sessions/**`). Accepted as a
-     documented exception: this is infrastructure config needed to
-     parameterize dispatch (mode, retries, circuit breaker) BEFORE any
-     worker can be launched. Dispatching a worker to fetch
-     dispatch-config is circular. Mirrors the Step 0.5 pre-flight
-     precedent (line 47: "Thin Leader 예외"). Allowed reads from
-     `athanor.json` are limited to: work.defaultMode,
-     work.ralphLoop.maxRetries, work.circuitBreaker. -->
+<!-- thin-leader-rejection: Steps 0.4–0.5 read `athanor.json` at project root. Infra exception: dispatch parameters must be known BEFORE workers launch. Allowed: work.defaultMode, work.ralphLoop.maxRetries, work.circuitBreaker. -->
 
-
-**If no plan.md found:**
-```
-⚠ 실행할 플랜이 없습니다.
-  먼저 /athanor:plan으로 계획을 세워주세요.
-```
+**If no plan.md:** `⚠ 실행할 플랜이 없습니다. 먼저 /athanor:plan으로 계획을 세워주세요.`
 
 ### Step 0.5: Task Splitter Dispatch
 
-Load plan.md 후, TodoList 초기화(Step 1) 이전에 실행된다.
-세 가지 pre-flight 가드를 거쳐 Task Splitter 워커를 조건부로 디스패치한다.
+**See `references/splitter.md`** for the full Splitter dispatch prompt,
+pre-flight state detection (`has_subtasks` / `work_in_progress` /
+`manual_marker`), dispatch decision matrix, snapshot-and-restore, fast paths.
 
-#### Pre-flight State Detection
+Critical contract anchors (router-side invariants):
 
-Leader는 다음을 확인한다 (파일 존재 확인만 수행 — Thin Leader 예외):
-- `plan.md`에 `## Subtasks` 헤더가 존재하는가? → `has_subtasks`
-- `.athanor/sessions/{id}/work-log.md`가 존재하는가? → `work_in_progress`
-- `## Subtasks` 섹션 직전 또는 직후에 `<!-- athanor:subtasks:manual -->` 마커가 있는가? → `manual_marker`
+- Splitter assigns `execution_note` per subtask, valid values:
+  `spec-then-tdd | test-aware | direct`. **source code modification**
+  introducing new behavior → `spec-then-tdd`. Source-code-mod preserving
+  existing behavior (refactor) → `test-aware`. **prose-only** modification
+  (`.md`, `_doc`, CHANGELOG) → `direct`.
+- **Security-adjacent JSON configuration changes** — `hooks/hooks.json`,
+  `.claude-plugin/plugin.json` `hooks` field, `schemas/*.json`,
+  `scripts/hooks/`, `athanor.json` `hooks` block — NEVER classify these
+  files as `direct`. Default classification: `test-aware`.
+- For `execution_note: spec-then-tdd`, Splitter copies parent phase
+  `Verify:` MUST/SHOULD bullets into `acceptance_criteria` (AC field is
+  ONLY for spec-then-tdd).
+- **v0.10.1** — every subtask MUST carry `classification_reason: <one-line>`
+  directly below `execution_note`, **regardless of classification value**
+  (required `for every subtask`; one line, ≤ 200 chars, no embedded newlines).
 
-#### Dispatch Decision Matrix
+#### Output Format anchors
 
-| has_subtasks | work_in_progress | 동작 |
-|---|---|---|
-| No | - | [신규] Splitter 무조건 디스패치 |
-| Yes | Yes | [Resume] 사용자 확인: R(기본)/S/A |
-| Yes | No | [Manual Edit 가능성] manual_marker 있으면 자동 Keep; 없으면 사용자 확인: K/R(기본)/A |
-
-**Resume 프롬프트** (has_subtasks AND work_in_progress):
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ 진행 중인 작업이 감지되었습니다.
-  work-log.md가 이미 존재합니다.
-
-  [R] Resume  - 기존 subtasks 유지 (기본값)
-  [S] Re-split - subtask 재생성 (진행 상태 초기화)
-  [A] Abort
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**Manual Edit 프롬프트** (has_subtasks AND NOT work_in_progress AND NOT manual_marker):
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ℹ 기존 Subtasks 섹션이 감지되었습니다.
-  (수동 편집되었을 수 있습니다)
-
-  [K] Keep as-is - 기존 Subtasks 유지
-  [R] Regenerate - plan.md로부터 재생성 (기본값)
-  [A] Abort
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-(구 세션에서는 R 선택이 기존 /athanor:plan Task Splitter와 동일한 결과를 줍니다.)
-
-#### Snapshot & Restore
-
-Splitter를 디스패치하기로 결정한 경우, 직전에 `plan.md`를 `plan.md.bak`으로 복사한다
-(leader의 기존 session-creation 예외와 같은 infra 수준의 파일 조작).
-Splitter 완료 후 post-split 검증에 실패하면 `plan.md.bak`을 `plan.md`로 복원하고 abort한다.
-
-#### Splitter Worker Dispatch
-
-Note: outer fence uses ~~~ to avoid clashing with inner ``` blocks.
-
-~~~
-Agent({
-  description: "Athanor task splitter",
-  model: "sonnet",
-  prompt: "You are the Athanor Task Splitter.
-
-## Task
-Split this confirmed plan into granular, executable subtasks.
-Read the confirmed plan from: .athanor/sessions/{session-id}/plan.md
-
-## Idempotency (strip-then-append)
-plan.md MAY already contain a `## Subtasks` section from a previous run.
-If it does, remove that entire section (from the `## Subtasks` header through
-the next `## ` header or EOF, whichever comes first) before appending the new one.
-Do NOT touch any content under other `## ` headers that come after Subtasks.
-This keeps re-runs clean without eating unrelated sections.
-
-## Atomic Write Rule
-Prepare the complete new plan.md content in memory first. Only when the full
-new content (original body + fresh Subtasks block) is ready, write it to plan.md
-in a single write. Do not perform incremental writes.
-
-## Rules (per subtask)
-- ONE atomic unit of work, 5-30 minutes
-- Include verification strategy (type: command|check|review|none)
-- Respect dependency ordering
-- Be specific: files, functions, expected changes
-- IDs must be stable, unique, sequential (Subtask 1, 2, ...)
-- depends_on references must all point to existing subtask IDs
-- **v0.8.0**: Assign `execution_note` per subtask using these classification heuristics:
-  - **source code modification** (.py/.js/.ts/.rb/.go/etc.) introducing new
-    behavior or contract → `execution_note: spec-then-tdd`
-  - **source code modification** preserving existing behavior (refactor,
-    narrow bug fix without contract change) → `execution_note: test-aware`
-  - **prose-only modification** (.md / `_doc` strings in config / CHANGELOG /
-    README / doc-only edits) → `execution_note: direct`
-  - **security-adjacent configuration changes** (hooks/hooks.json,
-    .claude-plugin/plugin.json `hooks` field, schemas/*.json behavior
-    constraints, anything under hooks/ or scripts/hooks/, athanor.json
-    `hooks` block that the Stop hook reads at runtime) — these are JSON
-    files, not source code, so the "source code" rules above do not apply.
-    Default classification: **`test-aware`** (require regression test
-    accompanying the config edit). If the JSON change introduces a new
-    runtime contract (new hook event, new field consumed by code paths,
-    materially different schema constraint) → **`spec-then-tdd`**. NEVER
-    classify these files as `direct` even when the edit looks small —
-    silent reclassification of security-adjacent files defeats the purpose
-    of the discipline.
-- **v0.8.0**: For `execution_note: spec-then-tdd` subtasks, copy the parent
-  phase's `Verify:` MUST/SHOULD bullets into the subtask's
-  `acceptance_criteria` field. If the parent phase has free-form prose Verify
-  (no MUST/SHOULD bullets), reclassify the subtask to `test-aware` and note
-  the reclassification reason in the subtask's task description. The
-  `acceptance_criteria` field is **only** populated for spec-then-tdd subtasks
-  (test-aware and direct subtasks must NOT have an `acceptance_criteria` line).
-- **v0.10.1**: Every subtask MUST carry a `classification_reason: <one-line>`
-  field directly below `execution_note`. The reason is a single descriptive
-  sentence explaining which heuristic rule above fired ("source-code mod
-  introducing new behavior" / "tests/** only, doc-shape change" /
-  "security-adjacent JSON edit, no new runtime contract" / etc.). The
-  reason is descriptive not prescriptive — the heuristic itself is
-  unchanged; v0.10.1 only adds the audit field so misclassifications are
-  diagnosable from the work log. Splitter MUST emit the field for every
-  subtask regardless of classification value (spec-then-tdd / test-aware
-  / direct all require a reason). Length contract: one line, ≤ 200 chars,
-  no embedded newlines. Free-form English or Korean prose.
-
-## Output Format
-Append this section to plan.md (after stripping any old Subtasks block):
-
----
-
-## Subtasks
-
-- [ ] **Subtask 1: {title}**
-  - task: {what to do}
-  - files: [{file paths}]
-  - verify: {type: command|check|review|none, value: ...}
-  - depends_on: []
-  - execution_note: {spec-then-tdd|test-aware|direct}  # v0.8.0 — required
-  - classification_reason: {one-line descriptive reason}  # v0.10.1 — required for every subtask
-  - acceptance_criteria:                                # v0.8.0 — ONLY when execution_note == spec-then-tdd
-    - MUST <observable assertion copied from parent phase Verify>
-    - MUST <observable assertion>
-    - SHOULD <quality assertion>
-
-- [ ] **Subtask 2: {title}**
-  - task: {what to do}
-  - files: [...]
-  - verify: {...}
-  - depends_on: [1]
-  - execution_note: {spec-then-tdd|test-aware|direct}
-  - classification_reason: {one-line descriptive reason}
-
-...
-
-<!-- athanor:subtasks:generated -->
-
-Also create .athanor/sessions/{session-id}/decisions.md (OVERWRITE if exists):
-
-# Decision Log
-
-| # | Decision | Rationale | Date |
-|---|----------|-----------|------|
-{list all key decisions from the plan}
-
-Save to: .athanor/sessions/{session-id}/plan.md
-Save to: .athanor/sessions/{session-id}/decisions.md
-
-Return:
-ATHANOR_RESULT
-status: success
-summary: {subtask count and structure, 1-2 sentences}
-END_RESULT"
-})
-~~~
+Splitter `## Output Format` template (full in `references/splitter.md`)
+yields per-subtask field lines: `execution_note:
+{spec-then-tdd|test-aware|direct}` (required), `classification_reason:`
+(required for every subtask), `acceptance_criteria:` (ONLY when
+`execution_note == spec-then-tdd`).
 
 #### Post-split Validation
 
-Splitter 복귀 후 leader는 plan.md를 재로드하고 다음을 검증:
-1. `## Subtasks` 헤더가 존재하는가?
-2. 최소 1개 이상의 `- [ ] **Subtask N:**` 항목이 있는가?
-3. 각 subtask에 task/files/verify/depends_on 필드가 모두 있는가?
-4. 모든 depends_on 참조가 실제 존재하는 subtask 번호인가?
-5. decisions.md가 생성/갱신되었는가?
-6. Subtasks 섹션 끝에 `<!-- athanor:subtasks:generated -->` 마커가 존재하는가?
-7. **v0.8.0**: 각 subtask에 `execution_note` 필드가 존재하는가? 값은
-   `spec-then-tdd | test-aware | direct` 셋 중 하나여야 한다.
-8. **v0.8.0**: `execution_note: spec-then-tdd` 인 subtask는 `acceptance_criteria`
-   필드를 가지며 최소 1개 MUST bullet이 있어야 한다.
-9. **v0.10.1**: 각 subtask에 `classification_reason` 필드가 존재하며 비어 있지
-   않은가? (분류값과 무관하게 모든 subtask가 가져야 한다 — Splitter audit trail
-   요건). 200 chars 초과 또는 newline 포함 시 검증 실패.
-
-하나라도 실패하면:
-- `plan.md.bak` → `plan.md`로 복원
-- `decisions.md`는 복원 대상 제외 (다음 성공 run에서 overwrite됨)
-- Leader 메시지:
-  `⚠ Task Splitter 검증 실패 — plan.md를 원복했습니다.
-  /athanor:plan으로 돌아가 플랜을 검토하거나 plan.md를 직접 수정 후
-  /athanor:work를 재실행해주세요.`
-- Abort.
-
-검증 성공 시 `plan.md.bak` 삭제 후 Step 1로 진행.
-
-#### Fast Paths
-
-- **Resume(R) 선택**: Splitter 디스패치 스킵. 기존 `## Subtasks`와 기존 `decisions.md`를 그대로 사용.
-  Subtask ID와 진행 상태가 안전하게 유지된다.
-- **Keep as-is(K) 선택**: 수동 편집된 Subtasks를 그대로 사용.
-  `decisions.md`가 없으면 경고만 띄우고 진행한다.
+Full checklist in `references/splitter.md`. Router invariant: leader
+verifies `execution_note`, `classification_reason` (non-empty, ≤200 chars,
+no newlines), and — for spec-then-tdd — `acceptance_criteria` with ≥1 MUST
+bullet. Failure restores `plan.md.bak`.
 
 ### Step 1: Initialize TodoList & Announce
 
-1. Re-read plan.md — parse the `## Subtasks` section (guaranteed fresh or explicitly preserved by Step 0.5).
-2. Read decisions.md if it exists (may be absent if user chose Keep-as-is without prior decisions.md).
-
-Create a TodoList from the subtasks. Announce:
-
-**For solo mode:**
-```
-⚡ Athanor Work: {plan title}
-   Mode: solo (순차 실행)
-   Subtasks: {N}개
-   Max retries: {maxRetries}/subtask
-   Circuit breaker: {consecutiveFailures}회 연속 실패 시 중단
-
-   실행 시작...
-```
-
-**For team mode:**
-```
-⚡ Athanor Work: {plan title}
-   Mode: team (wave 병렬 실행)
-   Subtasks: {N}개 → {W}개 wave
-   Wave size: max {waveSize}
-   Max retries: {maxRetries}/subtask
-   Discovery relay: enabled
-
-   실행 시작...
-```
-
-Initialize tracking:
-- `consecutiveFailures = 0`
-- `completedCount = 0`
-- `failedCount = 0`
-- `blocked_queue = []` (v0.16.0 — list of `{subtask_id, blocker, dependents}` entries
-  collected when a worker returns `status: blocked`. Drained in Step 3 below
-  so the user sees all external blockers at the end of the run rather than
-  one-at-a-time.)
+Re-read plan.md (parse `## Subtasks`); read decisions.md if exists; create
+TodoList; announce per mode. Initialize tracking: `consecutiveFailures = 0`,
+`completedCount = 0`, `failedCount = 0`, `blocked_queue = []` (v0.16.0 —
+drained in Step 3 so external blockers surface together at end of run).
 
 ### Step 2: Execute Subtasks (Solo Mode)
 
@@ -347,797 +116,110 @@ For each subtask in order (respecting `depends_on`):
 
 #### 2a. Build Dispatch Packet
 
-Read the subtask definition and build the executor prompt:
+Inject **Execution Instructions** by `execution_note` — full 3-branch
+(`Spec-then-TDD Instructions` / `Test-Aware End Gate` / `Direct` Ralph-Loop,
+plus grandfathered fallback to direct when the `execution_note field is
+absent` in plan) in `references/spec-then-tdd-handler.md`.
 
-```
-Agent({
-  description: "Athanor executor: {subtask title short}",
-  model: "opus",
-  prompt: "You are an Athanor executor worker.
-
-## Subtask {id}: {title}
-
-### Task
-{subtask task description}
-
-### Files
-{list of relevant file paths}
-
-### Decisions to Follow
-{from decisions.md — relevant decisions for this subtask}
-
-### Prior Lessons
-Before starting, check .athanor/lessons/ for files tagged with skill: work.
-Read any relevant lessons and apply them to your approach.
-**Report which lesson files you read** in your ATHANOR_RESULT under a `lessons_read:` field.
-Example: lessons_read: [work-2026-04-01-001.md, work-2026-04-05-002.md]
-
-### Constraints
-{any constraints or rules}
-
-### Verification
-- type: {command|check|review|none}
-- value: {verification command or condition}
-- maxRetries: {from config}
-
-### Execution Instructions (v0.8.0 — branches on execution_note)
-
-The leader MUST inject ONE of the three blocks below based on the subtask's
-`execution_note` value. If the `execution_note` field is absent (grandfathered
-plan from before v0.8.0), the leader treats the subtask as `direct` and
-includes the Direct block. The worker should be told which block applies and
-report `execution_note_source: grandfathered` in ATHANOR_RESULT when the
-fallback fires.
-
-#### Direct (execution_note: direct OR field absent — grandfathered)
-
-Standard Ralph-Loop unchanged from earlier athanor releases:
-
-1. Read the relevant files first (targeted, not full files)
-2. Implement the change
-3. Run verification:
-   - command: run the command via Bash, exit code 0 = pass
-   - check: verify the condition (file exists, content matches, etc.)
-   - review: self-review your changes for correctness
-   - none: just implement once, no retry
-4. If verification fails: analyze why, adjust, retry
-5. If all retries exhausted: return failure brief
-
-#### Spec-then-TDD Instructions (execution_note: spec-then-tdd)
-
-You have a list of `acceptance_criteria` (passed as the subtask's
-acceptance_criteria field). Process each criterion in order:
-
-For each criterion (e.g., \"MUST exit 2 when material claim detected\"):
-
-1. **WRITE**: Write a failing test for this criterion in the test file listed
-   under Files. Do NOT touch implementation code in this step.
-2. **RUN**: Execute `pytest <test_file>::<new_test_function> -v` via Bash.
-   Capture full output.
-3. **VERIFY RED**: Confirm the test FAILED (exit code non-zero). Record
-   per-criterion `red_evidence` with these required fields:
-   - `command`: the exact pytest command you ran
-   - `test_node_id`: the parametrized test node id
-     (e.g., `tests/test_foo.py::test_bar[case-1]`)
-   - `exit_code`: integer exit code from pytest
-   - `output_tail`: last ~10 lines of pytest output proving the failure mode
-   If the test PASSES on first run (exit_code == 0), set
-   `red_status: never_red` for this criterion in your ATHANOR_RESULT (still
-   record the GREEN-on-first-run command and exit_code as red_evidence) and
-   SKIP to the next criterion. The auto-downgrade is handled by the leader,
-   not by you.
-4. **IMPLEMENT**: Add the minimum implementation to satisfy this criterion.
-5. **VERIFY GREEN**: Execute the same pytest command. Confirm the test PASSES
-   (exit code 0). Also run the full test suite (`pytest tests/`) — all
-   existing tests must still pass.
-
-After all criteria processed:
-- Optional refactor pass (improve naming, dedupe — no behavior change)
-- Final pytest run — all tests green
-- Report ATHANOR_RESULT with per-criterion `red_evidence` list AND aggregate
-  `red_status`:
-  - `red` if all criteria recorded a RED exit_code != 0 in their red_evidence
-  - `partial_never_red` if some criteria had RED but others were never_red
-  - `never_red` if all criteria's first-run exit_code was 0 (i.e. tests
-    didn't actually go RED)
-- ALSO report `tests_modified: true` and the list of test artifact paths
-  touched (`test_paths_touched: [...]`) using `git diff --name-only` filtered
-  to `tests/**`. These fields look redundant with `red_evidence` but Phase 2
-  downgrade can route a spec-then-tdd subtask through the Phase 3 test-aware
-  gate, and the gate validates the same fields a true test-aware subtask
-  would emit. Omitting them causes Phase 3 to false-positive fail any
-  downgraded subtask even when tests were written.
-- ALSO report `full_suite_passed: true` ONLY after running `pytest tests/`
-  end-to-end and observing exit code 0. This is the worker's self-report
-  that the broader regression suite stayed green — the leader's Phase 3
-  gate treats `full_suite_passed: false` (or missing) as a gate violation.
-
-The leader will validate that every criterion in your acceptance_criteria
-list has a matching red_evidence entry. Missing or malformed red_evidence
-for any criterion is treated as `never_red` for that criterion (defensive —
-workers cannot silently skip the RED check by omitting evidence).
-
-#### Test-Aware End Gate (execution_note: test-aware)
-
-You may write tests and implementation in any order. Before reporting success,
-the end gate enforces test artifact changes:
-
-1. Run `git diff --name-only` and confirm at least one path is under
-   `tests/` (i.e. matches `^tests/.*` regex — this includes any file under
-   `tests/`: `test_*.py` files, `conftest.py`, fixture modules under
-   `tests/fixtures/`, snapshot files, golden files, etc. — a broader test
-   artifact pattern than just `test_*.py`).
-   If no path under `tests/` has changes, REPORT failure — test-aware
-   subtasks require test artifact changes.
-2. Run `pytest tests/` end-to-end — full suite must pass with exit code 0.
-3. Report all three fields in your ATHANOR_RESULT:
-   - `tests_modified: true`
-   - `test_paths_touched: [...]` (list of paths from step 1)
-   - `full_suite_passed: true` (only if step 2 actually returned exit code 0)
-
-### Output Format
-Return your result as:
-ATHANOR_RESULT
-status: {done|failure|done_with_concerns|needs_context|blocked}
-subtask_id: {id}
-summary: {what was done}
-files_changed:
-  - {file}: {change description}
-decisions:
-  - {decisions made}
-discoveries:
-  {tagged with importance}
-lessons_read: [{list of lesson filenames you read, or empty}]
-verification: {what was run} → {pass|fail}
-execution_note: {spec-then-tdd|test-aware|direct}   # v0.8.0
-execution_note_source: {plan|grandfathered}          # v0.8.0
-red_evidence:                                         # v0.8.0 — only when spec-then-tdd
-  - criterion: \"MUST <text>\"
-    command: \"pytest tests/...\"
-    test_node_id: \"tests/...::test_...\"
-    exit_code: <int>
-    output_tail: \"...\"
-red_status: {red|partial_never_red|never_red}        # v0.8.0 — only when spec-then-tdd
-tests_modified: {true|false}                          # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}, so Phase 2 downgrade can route a spec-then-tdd subtask through the Phase 3 gate without false-positive failure
-test_paths_touched: [{paths}]                         # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}
-full_suite_passed: {true|false}                       # v0.8.0 — ALWAYS emit when execution_note in {spec-then-tdd, test-aware}; result of `pytest tests/` (full suite) the worker ran as the GREEN step or test-aware gate step. Leader's Phase 3 gate trusts this self-report but combined with test_paths_touched gives a stronger signal than verification line alone
-concerns: [{string}, ...]                             # v0.16.0 — REQUIRED when status == done_with_concerns; non-empty list of flagged issues (e.g., deprecated API, uncovered edge case)
-context_needed: \"{description}\"                     # v0.16.0 — REQUIRED when status == needs_context; description of the missing information (design decision, external API response, etc.) the worker cannot resolve from its dispatch packet
-blocker: \"{external blocker description}\"           # v0.16.0 — REQUIRED when status == blocked; description of the external blocker (CI down, API unreachable, dependency missing)
-END_RESULT\"
+Worker result schema — full table in
+`references/spec-then-tdd-handler.md` §"ATHANOR_RESULT schema". Required
+fields: status, subtask_id, summary, files_changed, decisions, discoveries,
+lessons_read, verification, execution_note,
+`execution_note_source: {plan|grandfathered}` (grandfathered when
+execution_note field is absent in plan). v0.8.0 fields: red_evidence (only
+when spec-then-tdd; per-criterion shape command/test_node_id/exit_code/
+output_tail), `red_status: {red|partial_never_red|never_red}`,
+`tests_modified: {true|false}`, `test_paths_touched: [{paths}]`,
+`full_suite_passed: {true|false}`. v0.16.0 companion fields: `concerns:
+[{string}, ...]` (done_with_concerns; non-empty list), `context_needed:
+"{description}"` (needs_context), `blocker: "{description}"` (blocked).
 
 #### Status Vocabulary (v0.16.0 multi-status)
 
-The executor returns one of five `status` values. Each value is paired with a
-one-sentence definition and (where applicable) a required companion field that
-the worker MUST emit when using that status.
-
-| Status | Definition | Required field |
-|--------|------------|----------------|
-| `done` | Subtask fully completed; all verify criteria met. | (none) |
-| `failure` | Subtask attempted but failed after max retries. | (none — uses existing `last_error` / `attempts` fields) |
-| `done_with_concerns` | Implementation complete but worker flags potential issues (e.g., deprecated API, uncovered edge case). Leader logs concerns and continues. | `concerns: [<string>, ...]` (non-empty list) |
-| `needs_context` | Worker cannot proceed without information outside its dispatch context (design decision, external API response). Leader asks the user or re-dispatches with injected context — leader MUST NOT read project source files itself (Thin Leader). | `context_needed: \"<description>\"` |
-| `blocked` | External blocker (CI down, API unreachable, dependency missing). Leader pauses this subtask, continues with non-dependent subtasks. | `blocker: \"<external blocker description>\"` |
-
-**Backwards compatibility:** Legacy `status: success` is accepted as an alias
-for `done` (existing workers and grandfathered plans continue to work
-unchanged — no deprecation timeline). Legacy `status: failure` is unchanged.
-Workers that don't know the new statuses keep returning `success`/`failure`;
-the leader handler (Step 2b) maps `success` → `done` before branching.
-})
-```
+5 statuses: `done`, `failure`, `done_with_concerns`, `needs_context`,
+`blocked`. Legacy `status: success` is a **backwards-compat alias** for
+`done`. Required companion fields: `done_with_concerns` → `concerns:`
+(non-empty list); `needs_context` → `context_needed:`; `blocked` →
+`blocker:`. Full table + handlers in `references/multi-status.md`.
 
 #### 2b. Process Result
 
-After worker returns:
+**Stop-phrase check** — re-dispatch "Complete the task. Do not stop early."
+on hit. Whitelist in `references/multi-status.md`.
 
-**Stop-phrase check:**
-If the worker result contains any of these patterns, re-dispatch with instruction "Complete the task. Do not stop early.":
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+**v0.8.0 Spec-then-TDD result handler** runs BEFORE the success/failure
+branch — **advisory self-report shape**. Phases 1-4 (validate red_evidence
+shape; auto-downgrade `spec-then-tdd → test-aware` on `never_red` /
+`partial_never_red`; conjunction-of-three test-aware gate; grandfathered
+fallback breadcrumb) and their router-locked invariants are fully specified
+in `references/spec-then-tdd-handler.md`. Conceptual overview in CLAUDE.md
+§"Spec-then-TDD Discipline". Runtime hard-enforcement deferred to v0.19.0
+PostToolUse sniffer (forward-compat anchor in the handler ref). Auto-downgrade
+is silent (no user escalation) except for a work-log breadcrumb
+`auto-downgraded: spec-then-tdd → test-aware`; on gate violation the leader
+marks the subtask failed and increments `consecutiveFailures`.
 
-**v0.8.0 Spec-then-TDD result handler** (runs BEFORE the success/failure branch):
-
-This handler is an **advisory self-report shape** — the leader validates the
-shape of the worker's `red_evidence` (command, test_node_id, exit_code,
-output_tail) but does NOT independently re-execute the RED check. A worker
-that fabricates evidence can still pass. The handler's value is catching
-the most common failure mode (worker forgets the RED step entirely → no
-evidence shape) rather than adversarial forgery. Runtime hard-enforcement
-of `red_evidence` authenticity is deferred to v0.8.1+ (verification skill
-extension candidate).
-
-**Phase 1 — validate red_evidence shape** (only when subtask.execution_note == "spec-then-tdd"):
-
-For each criterion in `subtask.acceptance_criteria`:
-- Find the matching entry in `ATHANOR_RESULT.red_evidence`.
-- If absent OR missing any of {command, test_node_id, exit_code, output_tail},
-  mark this criterion as `never_red` (defensive default).
-- If `exit_code == 0` (RED check did not actually fail), mark this criterion
-  as `never_red`.
-
-Compute `red_status_resolved`:
-- All criteria `never_red` → `red_status_resolved = "never_red"`
-- Some `never_red` but not all → `red_status_resolved = "partial_never_red"`
-- All criteria had non-zero RED exit_code → `red_status_resolved = "red"`
-
-**Phase 2 — apply downgrade rule**:
-
-If `red_status_resolved in {"never_red", "partial_never_red"}`:
-- Mark the subtask as a downgrade-pending candidate. The actual completion
-  decision is deferred to Phase 3 below — a downgraded subtask must STILL
-  pass the test-aware gate (test files touched + pytest green) before being
-  marked complete. Without this rule, a worker that fabricates `red_evidence`
-  failures (or simply never writes any tests) could be silently marked
-  successful via downgrade. Phase 3 enforcement closes that loophole.
-- Append to work-log.md:
-  ```
-  ## Subtask {id}: pending [auto-downgraded: spec-then-tdd → test-aware, awaiting gate]
-  - Reason: red_status_resolved={value} (one or more criteria did not produce RED evidence)
-  - Detected by: leader validation of worker's red_evidence shape
-    (criteria with missing/malformed evidence were defaulted to never_red)
-  - Remediation: leader auto-downgraded the completion criteria to test-aware;
-    Phase 3 below now applies and the subtask completes ONLY if the
-    test-aware gate (tests/** paths modified + pytest green) passes
-  - Original execution_note: spec-then-tdd
-  - effective_execution_note: test-aware (downgrade applied)
-  - never_red criteria: [list of criterion text]
-  ```
-- No user escalation. The downgrade and subsequent gate check are silent
-  except for the work-log entries.
-
-**Phase 3 — test-aware gate enforcement** (applies when subtask.execution_note == "test-aware" OR Phase 2 downgraded a spec-then-tdd subtask to test-aware):
-
-The gate is a **conjunction** of three signals — all three MUST hold for
-the subtask to pass:
-
-1. `ATHANOR_RESULT.tests_modified == true` AND `test_paths_touched` is
-   non-empty (the worker actually touched `tests/**`).
-2. `ATHANOR_RESULT.full_suite_passed == true` (the worker self-reports that
-   it ran `pytest tests/` and saw exit code 0). Missing field is treated as
-   `false` (defensive default — worker that forgot to run the full suite
-   does not pass the gate).
-3. The `verification:` line in ATHANOR_RESULT (free-form prose set by the
-   existing Ralph-Loop instruction) shows a pass/green signal consistent
-   with full_suite_passed.
-
-If any of the three fails:
-- This is a worker-side gate violation — test-aware (or downgraded
-  spec-then-tdd) subtask completed without proper test discipline.
-- Mark subtask as failed (NOT success), increment `consecutiveFailures`.
-- work-log message names the specific gate clause that failed:
-  - `test-aware gate violation: no tests/** paths modified (test_paths_touched empty)`
-  - `test-aware gate violation: full_suite_passed=false or missing (worker did not run pytest tests/)`
-  - `test-aware gate violation: verification line contradicts full_suite_passed`
-- If this subtask was a Phase 2 downgrade, the work-log entry is updated
-  from `pending` to `✗ failed [downgraded then gate-rejected]` so the audit
-  trail captures both steps.
-
-If all three gate clauses pass:
-- Subtask is marked complete and the work-log `pending` entry (if any) is
-  updated to `✓ {title} [auto-downgraded: spec-then-tdd → test-aware]`.
-
-**Honesty note on the gate**: the leader does not independently re-execute
-`pytest tests/` to verify `full_suite_passed`. The signal is worker
-self-report; a worker that fabricates `full_suite_passed: true` can still
-pass. The gate's value is catching the most common honest mistake (worker
-forgot the full-suite run, or wrote tests but they failed) rather than
-adversarial forgery. Runtime hard-enforcement (Stop-hook validating
-test-commit presence in the session diff) is deferred to v0.8.1+ candidates.
-
-**Phase 4 — grandfathered fallback breadcrumb** (only when execution_note absent in plan):
-
-If `ATHANOR_RESULT.execution_note_source == "grandfathered"`:
-- Append `[grandfathered: execution_note field absent in plan; treated as direct]`
-  to the work-log entry for traceability. This applies to BOTH branches:
-  - On success (the "If success" block below), append the breadcrumb to the
-    `✓ {title}` line so the success entry reads
-    `✓ {title} [grandfathered: execution_note field absent in plan; treated as direct]`.
-  - On failure (the "If failure" block below), append the breadcrumb to the
-    failure work-log entry so the failure record also captures the
-    grandfathered status. If the failure path normally writes no work-log
-    entry (current pre-v0.8.0 behavior), write a minimal one anchored on
-    grandfathered status: `## Subtask {id}: ✗ {title} [grandfathered, failed]`.
-
-**If success** (after v0.8.0 phases above resolve to success):
-- `consecutiveFailures = 0`
-- `completedCount += 1`
-- Mark subtask complete in TodoList
-- Append to work-log.md:
-  ```
-  ## Subtask {id}: ✓ {title}
-  - Status: completed
-  - Time: {timestamp}
-  - Summary: {from result brief}
-  - Files: {changed files}
-  ```
-- If worker reported discoveries, save to `.athanor/sessions/{id}/discoveries/worker-{subtask-id}.md`
-
-**If failure:**
-- `consecutiveFailures += 1`
-- `failedCount += 1`
-
-**v0.16.0 multi-status branches** (run AFTER the legacy success/failure
-branches above; the leader normalizes `status: success` → `done` before
-branching, so legacy workers continue to land in the existing success path
-without modification):
-
-**Legacy mapping:**
-- `status: success` → treated as `done` (backwards-compat alias for
-  grandfathered workers; legacy `success` path is preserved by the mapping,
-  not by a second code path).
-- `status: failure` → unchanged; uses the failure block above (retry / skip
-  / abort prompt + circuit-breaker accounting).
-
-**If `status: done`:**
-- Identical to the legacy success path above. Reset `consecutiveFailures`,
-  increment `completedCount`, mark subtask complete in the TodoList, append
-  the `✓ {title}` entry to work-log.md, save discoveries if any.
-
-**If `status: done_with_concerns`:**
-- Validate that the worker emitted a non-empty `concerns: [...]` list. If
-  missing or empty, treat as a worker contract violation: log a warning to
-  work-log.md and fall through to the `done` path anyway (concerns absent →
-  no relay payload, but the implementation work itself stands).
-- Reset `consecutiveFailures`, increment `completedCount`, mark subtask
-  complete in the TodoList (same as `done` — the implementation IS complete;
-  the concerns are advisory).
-- Append to work-log.md with a `[concern]` prefix on each concern bullet:
-  ```
-  ## Subtask {id}: ✓ {title} [done_with_concerns]
-  - Status: completed
-  - Time: {timestamp}
-  - Summary: {from result brief}
-  - Files: {changed files}
-  - [concern] {first concern from concerns[]}
-  - [concern] {second concern from concerns[]}
-  ```
-- If any concern string contains a security/safety keyword (`security`,
-  `auth`, `secret`, `credential`, `sandbox`, `escape`, `injection`, `XSS`,
-  `CSRF`, `RCE`, `보안`, `취약점`), set a session-scoped flag
-  `recommend_review = true`. The Step 6 final summary appends
-  `Recommendation: run /athanor:review on this branch before merging.`
-- Save discoveries if any. Concerns are also forwarded to the team-mode
-  discovery relay (see Team Mode section below).
-
-**If `status: needs_context`:**
-- This is NOT a failure. Do NOT increment `consecutiveFailures`. Do NOT
-  burn a retry attempt against `maxRetries`. The Ralph-Loop budget counts
-  this as 1 iteration only for the global circuit-breaker / iteration-cap
-  accounting (so an infinite "needs_context" loop still trips the breaker).
-- Validate that the worker emitted a non-empty `context_needed:` string.
-  If missing or empty, this is a worker contract violation: treat as
-  failure (the worker should have either completed or returned a real
-  context request).
-- Append to work-log.md with a `[context-needed]` prefix:
-  ```
-  ## Subtask {id}: ⏸ {title} [context-needed]
-  - Status: paused
-  - Time: {timestamp}
-  - context_needed: {description from worker}
-  ```
-- **Thin Leader compliance:** The leader MUST NOT read project source
-  files to answer the worker's context request itself. The only two
-  resolution paths are:
-  1. **Ask the user.** Surface the worker's `context_needed:` string
-     verbatim with a prompt:
-     ```
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     ⏸ Subtask {id} needs context:
-       {context_needed verbatim}
-
-       Reply with the missing information, or
-       [S] Skip this subtask  [A] Abort the run
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     ```
-     On user response, re-dispatch the same subtask with the user's reply
-     injected into the dispatch packet under a new section heading
-     `### Injected Context (from user)`. The worker reads the project files
-     itself — the leader still does not.
-  2. **Re-dispatch a research worker.** If the user replies with a tag
-     like `research:` or the context_needed obviously requires file/source
-     discovery (and the user opts in), dispatch a clean-context
-     researcher/analyst worker to gather the answer, then re-dispatch the
-     original executor with the researcher's brief injected. The leader
-     orchestrates dispatch; it still does not read project source itself.
-- The re-dispatched subtask runs through the normal Step 2b flow again —
-  including this same `needs_context` handler if the worker still cannot
-  proceed. The iteration cap (above) is the only safeguard against loops.
-
-**If `status: blocked`:**
-- This is NOT a failure (the worker did its job; an external dependency is
-  the problem). Do NOT increment `consecutiveFailures`. Increment
-  a separate `blockedCount` counter.
-- Validate that the worker emitted a non-empty `blocker:` string. If
-  missing or empty, treat as a worker contract violation: log a warning
-  and fall through to the failure path.
-- Append to work-log.md with a `[blocked]` prefix:
-  ```
-  ## Subtask {id}: ⛔ {title} [blocked]
-  - Status: blocked (external)
-  - Time: {timestamp}
-  - blocker: {blocker description from worker}
-  ```
-- **Dependent propagation:** Walk the remaining subtasks. Any subtask
-  whose `depends_on` includes this `subtask_id` (transitively) is also
-  marked `blocked` with `blocker: "transitive: subtask {id} blocked"` and
-  appended to the `blocked_queue[]` so the user sees the full impact set.
-  Mark those dependents as skipped-blocked in the TodoList; do NOT
-  dispatch them.
-- Push `{subtask_id, blocker, dependents: [list of transitively-blocked
-  subtask ids]}` onto `blocked_queue[]` (initialized in Step 1).
-- Continue with the next non-dependent subtask (do NOT halt the run;
-  the unblocked work proceeds). The `blocked_queue` is drained at the
-  end of the run in Step 3 below — the user sees all external blockers
-  together rather than one prompt per blocked subtask mid-run.
-
-**Circuit Breaker Check:**
-```
-if consecutiveFailures >= circuitBreaker.consecutiveFailures:
-    ⚠ Circuit Breaker TRIP
-    "{consecutiveFailures}개 subtask 연속 실패.
-     접근 방식에 문제가 있을 수 있습니다.
-     
-     [1] /athanor:plan으로 돌아가기
-     [2] 계속 진행 (circuit breaker 리셋)
-     [3] 중단 (현재까지 저장)"
-    
-    → Wait for user decision
-```
-
-**If failed but no circuit breaker:**
-```
-⚠ Subtask {id} 실패: {error summary}
-
-  [1] 재시도 (같은 subtask)
-  [2] 스킵 (다음 subtask로)
-  [3] 중단 (현재까지 저장)
-```
+**v0.16.0 multi-status branches** run AFTER legacy success/failure (leader
+normalizes `status: success` → `done` first). All 5 branches in
+`references/multi-status.md`. **Thin Leader compliance** for the
+`needs_context` handler — the **leader does not read project source** to
+resolve the worker's context request; resolution is via user prompt or
+research worker re-dispatch. Legacy failure prompt — retry / skip / abort
+(재시도 / 스킵 / 중단) — preserved. Circuit breaker + retry/skip/abort
+prompts in `references/multi-status.md`.
 
 #### 2c. Repeat until all subtasks complete or user aborts
 
 ### Step 3: Work Log Finalization
 
-After all subtasks processed, finalize `.athanor/sessions/{id}/work-log.md`:
+Finalize `.athanor/sessions/{id}/work-log.md` with summary (Total /
+Completed / Failed / Skipped / Blocked counts) + Step 2b timeline.
 
-```markdown
-# Work Log: {plan title}
-
-## Summary
-- Total: {N} subtasks
-- Completed: {completedCount}
-- Failed: {failedCount}
-- Skipped: {skippedCount}
-- Blocked: {len(blocked_queue)}    # v0.16.0 — external blockers
-
-## Timeline
-{appended entries from Step 2b}
-```
-
-**v0.16.0 — `blocked_queue` drain.** If `blocked_queue` is non-empty,
-present the full list to the user before the Step 6 final summary so
-external blockers are visible together rather than one prompt per blocked
-subtask:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⛔ External blockers encountered ({N} subtask(s)):
-
-  Subtask {id}: {title}
-    blocker: {blocker description}
-    blocks: {comma-separated transitively-blocked subtask ids, or "none"}
-
-  Subtask {id}: {title}
-    blocker: {blocker description}
-    blocks: {...}
-
-  Resolve the blockers and re-run /athanor:work to resume the blocked
-  subtasks. The Ralph-Loop will pick up where it left off.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-Also append a `## Blocked Queue` section to work-log.md mirroring this
-content so the persisted log captures the blocker set for later resumption.
+**v0.16.0 — `blocked_queue` drain.** If non-empty, present external
+blockers list to user (and append `## Blocked Queue` to work-log.md)
+before Step 6. Drain prompt template in `references/multi-status.md`.
 
 ### Step 4: Learning (automatic)
 
-After all subtasks complete, dispatch the Learner.
+Dispatch Learner agent (sonnet) — extract lessons to `.athanor/lessons/`.
+Full prompt in `references/learner-cleaner.md`.
 
-**4a. Dispatch Learner:**
+### Step 5: Cleanup (automatic, after Learner)
 
-```
-Agent({
-  description: "Athanor learner: session analysis",
-  model: "sonnet",
-  prompt: "You are the Athanor Learner agent.
-
-## Task
-Analyze the completed work session and extract reusable lessons.
-
-## Session
-- Session ID: {session-id}
-- Session path: .athanor/sessions/{session-id}/
-
-## Read These Files
-1. .athanor/sessions/{session-id}/work-log.md
-2. .athanor/sessions/{session-id}/plan.md
-3. .athanor/sessions/{session-id}/decisions.md (if exists)
-4. .athanor/sessions/{session-id}/discoveries/ (all files, if exist)
-
-## Instructions
-1. Analyze: count successes/failures, identify patterns
-2. Extract lessons: save to .athanor/lessons/{skill}-{date}-{NNN}.md
-   Each lesson file needs YAML frontmatter:
-   ---
-   type: lesson
-   skill: {plan|work|analyze|discuss|debug}
-   confidence: {high|medium|low}
-   source: {session-id}
-   access_count: 0
-   created: {today's date}
-   importance: {permanent|working}
-   ---
-3. Deduplicate: check .athanor/lessons/ for existing similar lessons
-4. Update access_count: for each lesson file listed in workers' `lessons_read` fields
-   (found in work-log.md or discovery files), increment the `access_count` in that
-   lesson file's YAML frontmatter by 1.
-5. Report your results as:
-
-ATHANOR_RESULT
-status: success
-summary: {1-2 sentence learning summary}
-lessons_new: {count}
-lessons_reinforced: {count}
-lessons_permanent: {count}
-lessons_working: {count}
-top_lesson: {most significant finding}
-END_RESULT
-
-Only extract genuinely useful lessons. If nothing significant, say so."
-})
-```
-
-### Step 5: Cleanup (automatic, after Learner completes)
-
-**5a. Dispatch Cleaner:**
-
-```
-Agent({
-  description: "Athanor cleaner: decay + cleanup",
-  model: "sonnet",
-  prompt: "You are the Athanor Cleaner agent.
-
-## Task
-Apply memory decay rules and clean old sessions.
-
-## Config
-- memory.decayDays: {from athanor.json, default 7}
-- memory.promotionThreshold: {default 5}
-- memory.maxAgeDays: {default 30}
-
-## Instructions
-1. Scan .athanor/sessions/{session-id}/discoveries/ for permanent tags
-   - Promote any <!-- importance: permanent --> to .athanor/lessons/
-2. Scan ALL .athanor/lessons/ files, read frontmatter:
-   - permanent → KEEP always
-   - working + age <= decayDays → KEEP
-   - working + age > decayDays + access_count >= promotionThreshold → PROMOTE to permanent
-   - working + age > decayDays + access_count < promotionThreshold → DELETE
-   - working + age > maxAgeDays → DELETE
-3. Clean old sessions (older than maxAgeDays days)
-   - NEVER delete today's sessions
-   - Promote permanent discoveries before deleting
-4. Report your results as:
-
-ATHANOR_RESULT
-status: success
-summary: {1-2 sentence cleanup summary}
-promoted: {count}
-deleted_lessons: {count}
-deleted_sessions: {count}
-retained: {count}
-END_RESULT
-
-When in doubt, KEEP — false retention is better than lost knowledge."
-})
-```
+Dispatch Cleaner agent (sonnet) — memory decay + old-session cleanup. Full
+prompt in `references/learner-cleaner.md`.
 
 ### Step 6: Final Summary
 
-After learning and cleanup complete, present results including their metrics:
-
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Athanor Work Complete: {plan title}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Subtasks:    {completedCount}/{N} completed
-Failed:      {failedCount}
-
-Learning:    {lesson_count} lessons extracted
-             {permanent_count} permanent, {working_count} working
-Cleanup:     {promoted_count} promoted, {deleted_count} expired
-
-Session: .athanor/sessions/{id}/
-Log:     work-log.md
-Lessons: .athanor/lessons/
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subtasks: {completedCount}/{N} | Failed: {failedCount}
+Learning: {lesson_count} lessons | Cleanup: {promoted} promoted, {deleted} expired
+Session:  .athanor/sessions/{id}/
 ```
 
 ---
 
 ## Team Mode (Wave-Based Parallel Execution)
 
-When `--team` is specified, subtasks run in parallel waves.
+When `--team` is specified, subtasks run in parallel waves grouped by
+`depends_on`. Wave grouping, parallel dispatch shape, discovery relay, and
+v0.16.0 wave-level multi-status semantics (`done_with_concerns`,
+`needs_context`, `blocked` propagation) in `references/team-mode.md`.
 
-### Wave Grouping (Leader performs this)
-
-Group subtasks into waves based on `depends_on`:
-
-```
-Algorithm:
-1. remaining = all subtasks
-2. wave_number = 1
-3. while remaining is not empty:
-     wave = subtasks whose depends_on are ALL already completed or in prior waves
-     cap wave at waveSize (from athanor.json, default 3)
-     if wave is empty → error: circular dependency
-     assign wave_number to these subtasks
-     move them from remaining to assigned
-     wave_number += 1
-```
-
-Example:
-```
-Subtasks: [1(no dep), 2(no dep), 3(dep:1), 4(dep:1,2), 5(dep:4)]
-waveSize: 3
-
-Wave 1: [1, 2]       ← no dependencies, run in parallel
-Wave 2: [3, 4]       ← depend on wave 1, run in parallel
-Wave 3: [5]          ← depends on wave 2
-```
-
-### Wave Execution
-
-```
-for each wave:
-    1. Announce: "Wave {N}/{total}: subtasks [{ids}]"
-    
-    2. Dispatch ALL wave subtasks simultaneously:
-       - Each gets the same executor dispatch prompt as solo mode
-       - PLUS: previous_discoveries from prior waves
-       
-    3. Wait for ALL workers in this wave to complete
-    
-    4. Process results:
-       - Update TodoList for each completed/failed subtask
-       - Save discoveries to .athanor/sessions/{id}/discoveries/
-       - Append to work-log.md
-    
-    5. Build discovery relay for next wave:
-       - Read all discovery files from this wave
-       - Compress into a brief summary (under 300 words)
-       - This summary is injected into next wave workers' prompts
-    
-    6. Circuit breaker check:
-       - If ALL subtasks in a wave failed → trip
-       - Individual failures within a wave don't trip (other workers may succeed)
-    
-    7. Handle failures:
-       - Failed subtasks: ask user — retry in next wave? skip? abort?
-       - If a failed subtask blocks later subtasks: warn user
-    
-    8. v0.16.0 multi-status wave semantics — process each non-success
-       status per Step 2b rules, then apply the wave-level rules below
-       before advancing to the next wave.
-```
-
-#### Wave-Level Multi-Status Semantics (v0.16.0)
-
-Solo mode processes statuses one subtask at a time (see Step 2b). Team mode
-runs subtasks in parallel within a wave, so the leader must additionally
-decide what happens to *later waves* when a current-wave worker returns one
-of the three new statuses. The rules below are consistent with the solo-mode
-semantics in Step 2b — wave grouping only changes the unit of work, not the
-status meanings.
-
-**`done_with_concerns` in a wave:**
-- The wave **continues normally**. The subtask is marked complete (same as
-  solo mode); the wave does not pause.
-- The worker's `concerns: [...]` list is appended to the wave's discovery
-  relay under a dedicated `## Concerns from Wave {N}` section. Next-wave
-  workers receive these concerns in their dispatch packet alongside
-  `previous_discoveries` so downstream work can react (e.g., a follow-up
-  subtask that touches the same module sees the deprecated-API concern).
-- The `recommend_review = true` flag from Step 2b still triggers the
-  `/athanor:review` recommendation in the Step 6 final summary.
-
-**`needs_context` in a wave:**
-- The current wave **completes** all in-flight workers (do not kill mid-flight
-  — same cancellation rule as solo mode). The leader then **pauses dispatch
-  of any later wave whose subtasks transitively depend on the
-  `needs_context` subtask** until the context is resolved.
-- Other in-flight subtasks in the same wave that complete normally
-  (`done` / `done_with_concerns` / `blocked`) are processed via their own
-  branches and their results are saved.
-- Later waves that do NOT depend on the paused subtask MAY proceed (the
-  leader walks `depends_on` transitively; only the dependent sub-DAG pauses).
-- The user prompt described in Step 2b (`needs_context` handler) is the
-  resolution path. On user response, re-dispatch the paused subtask with
-  injected context; once it completes, the previously-paused dependent
-  waves resume in order.
-- Thin Leader compliance carries through to team mode: the leader still
-  does NOT read project source to resolve the context request.
-
-**`blocked` in a wave:**
-- The blocked subtask is pushed to `blocked_queue[]` (same as solo mode).
-  Only the **downstream subtasks that `depends_on` the blocked subtask**
-  (transitively) are also marked blocked — this matches solo-mode dependent
-  propagation. Other in-flight and later-wave subtasks proceed normally.
-- The wave itself does NOT pause; other workers in the same wave continue
-  to completion. Later waves that have no dependency on the blocked subtask
-  also dispatch normally.
-- The `blocked_queue` is drained at the end of the run in Step 3, exactly
-  the same as solo mode. The user sees all external blockers together at
-  the end rather than per-wave prompts.
-
-### Parallel Dispatch (within a wave)
-
-Dispatch all wave subtasks in a **single message with multiple Agent calls**:
-
-```
-// Single message with N parallel Agent calls
-Agent({ description: "executor: subtask 1", model: "opus", prompt: "..." })
-Agent({ description: "executor: subtask 2", model: "opus", prompt: "..." })
-Agent({ description: "executor: subtask 3", model: "opus", prompt: "..." })
-```
-
-### Discovery Relay
-
-After each wave, compile discoveries into a relay brief:
-
-```markdown
-## Discoveries from Wave {N}
-
-### Subtask {id}: {title}
-- {key discovery or change}
-
-### Subtask {id}: {title}
-- {key discovery or change}
-```
-
-Next wave workers receive this in their dispatch packet under `previous_discoveries`.
-
-### Team Mode Announcement (per wave)
-
-```
-Wave {N}/{total}
-├── Subtask {id}: {title} ── dispatching...
-├── Subtask {id}: {title} ── dispatching...
-└── Subtask {id}: {title} ── dispatching...
-```
-
-After wave completes:
-```
-Wave {N}/{total} complete
-├── Subtask {id}: ✓
-├── Subtask {id}: ✓
-└── Subtask {id}: ✗ (failure reason)
-Discoveries relayed: {count} items
-```
+Router-locked wave invariants: wave grouping respects `depends_on`, capped
+at `waveSize` (default 3); dispatch is **a single message with N parallel
+Agent calls** per wave; `done_with_concerns` in a wave → wave continues
+(concerns relayed); `needs_context` in a wave → in-flight workers complete,
+dependent later waves pause (non-dependent proceed, Thin Leader preserved);
+`blocked` in a wave → push to `blocked_queue[]`, transitively dependent
+subtasks also blocked, drain at Step 3.
 
 ---
 
 ## Cancellation
 
-If the user interrupts or cancels:
-1. Current worker finishes its attempt (don't kill mid-execution)
-2. Save work-log.md with current progress
-3. TodoList reflects completed vs remaining
-4. User can resume later: `/athanor:work --solo` will pick up from last incomplete subtask
+User interrupt/cancel: current worker finishes; save work-log.md; TodoList reflects completed vs remaining; resume via `/athanor:work --solo`.
 
 ---
 
@@ -1145,7 +227,7 @@ If the user interrupts or cancels:
 
 1. You are the **Leader**. Do NOT write code or edit files yourself.
 2. **Solo**: dispatch ONE worker at a time. **Team**: dispatch wave workers in parallel.
-3. Workers get **clean context** — include ALL needed info in the dispatch prompt.
+3. Workers get **clean context** — include ALL needed info in dispatch prompt.
 4. This is **Execution Mode** — workers CAN and SHOULD modify project files.
 5. Track progress via TodoList + work-log.md.
 6. Circuit breaker is mandatory — never let failures cascade silently.

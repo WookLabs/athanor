@@ -28,9 +28,12 @@ Decision flow:
      the block (Claude Code feeds stderr back to the model as continuation
      context so it can choose a safer alternative).
 
-Stdlib-only — same pattern as `stop_verify_claims.py`. No shared runtime
-import (a shared module is deferred to v0.17.0; ship the PreToolUse guard
-as a standalone script first).
+Stdlib-only — same pattern as `stop_verify_claims.py`. As of v0.17.0
+(S06) the input/config helpers below are sourced from the shared
+``_athanor_hook_runtime`` sibling module; the in-script wrappers
+``_read_stdin_payload`` / ``_find_athanor_config`` / ``_read_profile``
+remain as thin delegations so the existing test surface (which
+subprocess-invokes this script) is unchanged.
 
 Cross-platform note: invoked via `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/
 hooks/pretool_kernel_guard.py"` in hooks/hooks.json. The plugin-root
@@ -39,13 +42,18 @@ deployment in non-source-repo projects).
 """
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
 from pathlib import Path
 
-ATHANOR_CONFIG_NAME = "athanor.json"
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+import _athanor_hook_runtime as _runtime  # noqa: E402
+
+ATHANOR_CONFIG_NAME = _runtime.ATHANOR_CONFIG_NAME
 SUPPORTED_PROFILES = {"off", "standard"}
 
 # ---------------------------------------------------------------------------
@@ -150,75 +158,35 @@ def _stderr(msg: str) -> None:
 
 
 def _read_stdin_payload() -> dict | None:
-    """Read the PreToolUse event payload from stdin. Returns parsed dict or
-    None if stdin is unavailable / unreadable / not JSON."""
-    if sys.stdin.isatty():
-        return None
-    try:
-        raw = sys.stdin.read()
-    except (OSError, ValueError):
-        return None
-    if not raw:
-        return None
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(parsed, dict):
-        return None
-    return parsed
+    """Read the PreToolUse event payload from stdin.
+
+    v0.17.0: thin delegation to ``_athanor_hook_runtime.read_stdin_payload``.
+    Behavior preserved exactly — returns parsed dict, or None on TTY,
+    read error, empty body, JSON parse failure, or non-dict.
+    """
+    return _runtime.read_stdin_payload()
 
 
 def _find_athanor_config() -> Path | None:
-    """Locate athanor.json via priority chain (v0.7.9 pattern):
+    """Locate athanor.json via priority chain (v0.7.9 pattern).
 
-    1. ``$CLAUDE_PROJECT_DIR/athanor.json`` if env var set and file exists.
-    2. Walk up from cwd, stopping at any ``.git/`` boundary, $HOME, or depth 8.
+    v0.17.0: thin delegation to
+    ``_athanor_hook_runtime._find_athanor_config_path`` (internal helper,
+    re-exported by name for the pretool guard's exit-2 reporting surface
+    so existing call sites continue to receive a Path or None).
     """
-    env_proj = os.environ.get("CLAUDE_PROJECT_DIR")
-    if env_proj:
-        candidate = Path(env_proj) / ATHANOR_CONFIG_NAME
-        if candidate.is_file():
-            return candidate.resolve()
-
-    try:
-        cur = Path.cwd().resolve()
-    except (OSError, FileNotFoundError):
-        return None
-    try:
-        home = Path.home().resolve()
-    except (OSError, RuntimeError):
-        home = None
-
-    for _ in range(8):
-        candidate = cur / ATHANOR_CONFIG_NAME
-        has_git = (cur / ".git").is_dir()
-        if candidate.is_file():
-            return candidate
-        if has_git:
-            # Don't cross repo root upward (v0.7.8 parent-dir hijack lesson).
-            return None
-        if home is not None and cur == home:
-            break
-        if cur.parent == cur:
-            break
-        cur = cur.parent
-    return None
+    return _runtime._find_athanor_config_path()
 
 
 def _read_profile() -> str:
     """Read `hooks.profile` from athanor.json. Defaults to "standard"."""
-    config_path = _find_athanor_config()
-    if config_path is None:
-        return "standard"
-    try:
-        with open(config_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-        return "standard"
-    if not isinstance(data, dict):
-        return "standard"
-    hooks_section = data.get("hooks", {})
+    config = _runtime.read_athanor_config()
+    if _runtime.is_hook_profile_off(config):
+        return "off"
+    # Defensive on unknown values — the runtime helper treats anything but
+    # "off" as non-off; the v0.16.0 contract additionally rejects unknown
+    # explicit values back to "standard". Re-derive here to preserve that.
+    hooks_section = config.get("hooks", {}) if isinstance(config, dict) else {}
     if not isinstance(hooks_section, dict):
         return "standard"
     profile = hooks_section.get("profile", "standard")

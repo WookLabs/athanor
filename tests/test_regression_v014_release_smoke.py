@@ -31,7 +31,7 @@ VERSION_FILES = {
     ),
 }
 
-TARGET_VERSION = "0.16.0"
+TARGET_VERSION = "0.17.0"
 
 # Regex to extract version from $schema/$id URLs like .../v0.14.0/schemas/...
 _URL_VERSION_RE = re.compile(r"/v?(\d+\.\d+\.\d+)/schemas/")

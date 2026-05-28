@@ -88,6 +88,24 @@ def _codex_command_blocks(body: str) -> list[str]:
     return [b for b in _bash_blocks(body) if _CODEX_INVOCATION_RE.search(b)]
 
 
+def _plan_skill_combined() -> str:
+    """Return skills/plan/SKILL.md spliced with all references/*.md.
+
+    S02 (v0.17.x) split plan/SKILL.md into a thin router (<=300 lines)
+    plus a references/ companion directory; the codex command-shape
+    fenced bash blocks moved to `references/planner-dispatch.md` and
+    `references/reviewer-dispatch.md`. The bash-fence + codex-exec
+    invariants are still locked, but the scan surface is now the
+    concatenation of SKILL.md + every references/*.md file.
+    """
+    text = PLAN_SKILL.read_text(encoding="utf-8")
+    references_dir = PLAN_SKILL.parent / "references"
+    if references_dir.is_dir():
+        for ref in sorted(references_dir.glob("*.md")):
+            text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -102,7 +120,7 @@ def test_all_codex_exec_lines_redirect_stdin():
     on its final non-empty line (or anywhere in the trailing redirect
     chain) so codex can never block waiting on parent stdin.
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -137,7 +155,7 @@ def test_no_deprecated_full_auto_flag():
     0.133.0)") in the skill body explaining the deprecation are NOT
     command-shape and are whitelisted by the fenced-block scoping.
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -178,7 +196,7 @@ def test_codex_flag_order_top_level_before_exec():
     codex versions. This test verifies the order in every codex
     invocation in command-shape lines.
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -270,7 +288,7 @@ def test_shell_timeout_prefix_on_codex_invocations():
       - `timeout ${CODEX_TIMEOUT_S}s codex ...` (shell variable expansion —
         v0.13.1 H1 fix: threads athanor.json `codex.timeoutMs` through Step 0)
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -408,7 +426,7 @@ def test_inline_jq_clamping_matches_schema_bounds():
     schema_max_s = schema_max_ms / 1000  # 600000 ms → 600 s
 
     # --- Inline jq side (from SKILL.md codex command-shape blocks) ---
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
     assert blocks, (
         f"No codex command-shape blocks found in {PLAN_SKILL.name} "
@@ -477,15 +495,15 @@ def test_codex_fallback_after_ms_key_absent():
 
 
 def test_schema_id_v0160_bump():
-    """MUST — `$id` URL contains the `v0.16.0` release-tag token.
+    """MUST — `$id` URL contains the `v0.17.0` release-tag token.
 
     Per CONTRIBUTING.md §Release URL bump, the `$id` is pinned to the
-    release tag. v0.16.0 bumps the URL token away from any prior tag.
+    release tag. v0.17.0 bumps the URL token away from any prior tag.
     """
     schema = _load_schema()
     schema_id = schema.get("$id", "")
-    assert "v0.16.0" in schema_id, (
-        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.16.0' release "
+    assert "v0.17.0" in schema_id, (
+        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.17.0' release "
         f"tag (per CONTRIBUTING.md §Release URL bump); got {schema_id!r}."
     )
 
@@ -528,7 +546,7 @@ def test_step0_reads_timeout_ms_via_jq():
     from athanor.json (with the `// 300000` default applied at the jq
     level rather than in shell).
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     needle = "jq -r '.codex.timeoutMs"
     assert needle in body, (
         f"Step 0 probe in {PLAN_SKILL.name} must read `.codex.timeoutMs` "
@@ -547,7 +565,7 @@ def test_step0_converts_ms_to_seconds():
     fields. The Step 0 probe MUST perform the ms→s conversion via shell
     arithmetic expansion (`$((CODEX_TIMEOUT_MS / 1000))`).
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     needle = "CODEX_TIMEOUT_S=$((CODEX_TIMEOUT_MS"
     assert needle in body, (
         f"Step 0 probe in {PLAN_SKILL.name} must convert ms→s via shell "
@@ -588,7 +606,7 @@ def test_redirect_token_present_in_skill_text():
     fenced ```bash ... ``` block region instead — every block containing a
     codex invocation must contain the redirect token somewhere in its body.
     """
-    text = SKILL_PATH.read_text(encoding="utf-8")
+    text = _plan_skill_combined()  # SKILL_PATH = PLAN_SKILL; combined surface includes references/
     blocks = _codex_command_blocks(text)
 
     assert blocks, (
@@ -633,7 +651,7 @@ def test_shell_timeout_prefix_uses_template_variable():
     """
     import re as _re
 
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -697,7 +715,7 @@ def test_codex_command_blocks_compute_timeout_inline():
     block has the inline computation, and that it appears BEFORE the timeout
     prefix line (ordering matters — the variable must be set before use).
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (
@@ -753,7 +771,7 @@ def test_inline_jq_clamps_timeout_bounds():
     - timeoutMs=0 → `timeout 0s codex ...` (instant kill)
     - timeoutMs=999999999 → `timeout 999999s codex ...` (11+ day hang)
     """
-    body = PLAN_SKILL.read_text(encoding="utf-8")
+    body = _plan_skill_combined()
     blocks = _codex_command_blocks(body)
 
     assert blocks, (

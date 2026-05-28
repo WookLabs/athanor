@@ -27,15 +27,17 @@ A separate v0.11.2 hygiene cut earlier removed 4 lifecycle skills
 original CE 3.8.3 inventory; that subset is documented in
 `docs/plans/2026-05-20-002-feat-v0.11.2-hygiene-plan.md`.
 
-### Retained vendored sub-agents (post-v0.12.0)
+### Retained vendored sub-agents (historical)
 
 Originally 49 sub-agents vendored at v0.10.0 into `agents/vendored/ce/`.
-After the v0.12.0 atomic cut (D12) 2 sub-agents are retained as generic
-discovery dispatch targets:
+After the v0.12.0 atomic cut (D12) 2 sub-agents were retained as generic
+discovery dispatch targets; both were removed in v0.15.x after confirming
+zero live dispatch references:
 
-- `agents/vendored/ce/ce-git-history-analyzer.agent.md`
-- `agents/vendored/ce/ce-repo-research-analyst.agent.md`
+- `agents/vendored/ce/ce-git-history-analyzer.agent.md` (removed v0.15.x)
+- `agents/vendored/ce/ce-repo-research-analyst.agent.md` (removed v0.15.x)
 
+All 49 sub-agents are now removed; `agents/vendored/` no longer exists.
 The other 47 sub-agents were removed at v0.12.0; full enumeration in
 §"Removed in v0.12.0" below.
 
@@ -162,9 +164,10 @@ SOFTWARE.
 
 v0.12.0 atomic cut removed 45 vendored skill directories (5 LIFT-source +
 40 DROP; `ce-test-browser` carved out per D8) and 47 vendored sub-agents
-(2 carved out per D12). The originally absorbed upstreams retain their
-MIT attribution above; this section enumerates which paths were removed
-so the audit trail records what concepts went where.
+(2 carved out per D12, subsequently removed in v0.15.x). The originally
+absorbed upstreams retain their MIT attribution above; this section
+enumerates which paths were removed so the audit trail records what
+concepts went where.
 
 ### Removed compound-engineering skill directories (32 of 33 ce-*)
 
@@ -238,12 +241,12 @@ flows install the upstream superpowers plugin):
 - `skills/sp-writing-plans/`
 - `skills/sp-writing-skills/`
 
-### Removed compound-engineering sub-agents (47 of 49)
+### Removed compound-engineering sub-agents (49 of 49)
 
-Removed under `agents/vendored/ce/` — all 47 dropped for the same reason:
-no athanor-native dispatch target post-cutover relies on them. 2 retained
-per D12 above (`ce-git-history-analyzer`, `ce-repo-research-analyst`).
-Full path list:
+Removed under `agents/vendored/ce/` — all 49 dropped (47 at v0.12.0; the
+remaining 2 D12-retained generics at v0.15.x after confirming zero live
+dispatch references). No athanor-native dispatch target relies on them.
+`agents/vendored/` no longer exists on disk. v0.12.0 full path list (47):
 
 - `agents/vendored/ce/ce-acceptance-criteria-generator.agent.md`
 - `agents/vendored/ce/ce-agent-architecture-designer.agent.md`
@@ -304,42 +307,24 @@ these agents.
 
 The following concepts have been lifted from upstream plugins and integrated
 into athanor-native skills as prose subsections (NOT as vendored skill
-directories). Original copyright + MIT license preserved.
+directories). Original copyright + MIT license preserved. Source URLs:
+compound-engineering — https://github.com/EveryInc/compound-engineering-plugin;
+superpowers — https://github.com/obra/superpowers.
 
 ### 1. Reviewer-persona vocabulary
-- **Source:** `ce-code-review@3.8.3` — https://github.com/EveryInc/compound-engineering-plugin
-- **Copyright:** (c) 2025 Kieran Klaassen / Every Inc
-- **License:** MIT
-- **Target:** `skills/review/SKILL.md` §"Personas" (6-persona vocabulary: correctness/security/performance/testing/maintainability/adversarial)
-- **Inventory:** `concepts/review-personas.md`
+From `ce-code-review@3.8.3` (MIT, (c) 2025 Kieran Klaassen / Every Inc) → `skills/review/SKILL.md` §"Personas" (6-persona vocabulary). Inventory: `concepts/review-personas.md`.
 
 ### 2. Iron Law + Four Phases (debugging discipline)
-- **Source:** `sp-systematic-debugging@5.1.0` — https://github.com/obra/superpowers
-- **Copyright:** (c) 2025 Jesse Vincent
-- **License:** MIT
-- **Target:** `skills/debug/SKILL.md` §"Systematic Debugging Discipline"
-- **Inventory:** `concepts/systematic-debugging.md`
+From `sp-systematic-debugging@5.1.0` (MIT, (c) 2025 Jesse Vincent) → `skills/debug/SKILL.md` §"Systematic Debugging Discipline". Inventory: `concepts/systematic-debugging.md`.
 
 ### 3. Requirements capture (R-ID / A-ID / F-ID / AE-ID)
-- **Source:** `ce-brainstorm@3.8.3` — https://github.com/EveryInc/compound-engineering-plugin
-- **Copyright:** (c) 2025 Kieran Klaassen / Every Inc
-- **License:** MIT
-- **Target:** `skills/discuss/references/requirements-capture.md` (v0.9.0 absorption; v0.12.0 attribution formalized)
-- **Inventory:** `concepts/requirements-capture.md`
+From `ce-brainstorm@3.8.3` (MIT, (c) 2025 Kieran Klaassen / Every Inc) → `skills/discuss/references/requirements-capture.md` (v0.9.0 absorption; v0.12.0 attribution formalized). Inventory: `concepts/requirements-capture.md`.
 
 ### 4. Skill-discovery preamble
-- **Source:** `sp-using-superpowers@5.1.0` — https://github.com/obra/superpowers
-- **Copyright:** (c) 2025 Jesse Vincent
-- **License:** MIT
-- **Target:** `CLAUDE.md` §"using-superpowers boundary (v0.11.1)"; concept formalized v0.11.1, attribution added v0.12.0
-- **Inventory:** `concepts/skill-discovery-preamble.md`
+From `sp-using-superpowers@5.1.0` (MIT, (c) 2025 Jesse Vincent) → `CLAUDE.md` §"using-superpowers boundary (v0.11.1)" (formalized v0.11.1, attribution v0.12.0). Inventory: `concepts/skill-discovery-preamble.md`.
 
 ### 5. Doc-review persona mode
-- **Source:** `ce-doc-review@3.8.3` — https://github.com/EveryInc/compound-engineering-plugin
-- **Copyright:** (c) 2025 Kieran Klaassen / Every Inc
-- **License:** MIT
-- **Target:** `skills/review/SKILL.md` §"Doc review mode" (7-lens doc persona array + `--target docs` CLI flag)
-- **Inventory:** `concepts/doc-review-mode.md`
+From `ce-doc-review@3.8.3` (MIT, (c) 2025 Kieran Klaassen / Every Inc) → `skills/review/SKILL.md` §"Doc review mode" (7-lens doc persona array + `--target docs` CLI flag). Inventory: `concepts/doc-review-mode.md`.
 
 ---
 

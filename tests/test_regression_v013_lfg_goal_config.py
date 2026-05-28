@@ -146,9 +146,13 @@ def test_athanor_json_and_template_parity_for_lfg_goal():
     does not introduce silent drift between dev (root) and user-install
     (template) defaults. The lfgGoal block extends this lock.
 
-    Both keys AND values must match. ``_doc`` strings are part of the
-    parity contract (they are the inline schema and downstream
-    documentation surface).
+    Both keys AND values must match.
+
+    History: pre-S09 ``_doc`` inline-doc strings were also part of the
+    parity contract. S09 (per user decision U3) hard-removed all
+    ``_doc`` fields from both files, so the parity contract now covers
+    only operational keys; documentation moved to the JSON Schema
+    ``description`` fields under ``schemas/athanor-config.schema.json``.
     """
     root = _load_json(ROOT_CONFIG)
     template = _load_json(TEMPLATE_CONFIG)
