@@ -32,10 +32,14 @@ def test_removal_script_exists():
 
 
 def test_removal_script_refuses_to_run_on_post_removal_disk():
-    """Post-Subtask-15: re-running the script aborts cleanly because the
-    disk no longer matches its pre-removal preconditions (33 ce-* + 13
-    sp-*). The defense-in-depth count check exits with non-zero and a
-    clear error message — this is correct behavior, not a regression."""
+    """Post-Subtask-15 / post-v0.15.x: re-running the script aborts cleanly
+    because the disk no longer matches its pre-removal preconditions.
+
+    With vendored/ fully removed (including the 2 D12 sub-agents removed in
+    v0.15.x), the script may exit at the agents-dir guard ("agents dir not
+    found") rather than the D14.2 drift check ("drift" / "expected").
+    Both indicate the script correctly refuses to proceed — this is the
+    intended behavior, not a regression."""
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--dry-run"],
         capture_output=True,
@@ -47,9 +51,15 @@ def test_removal_script_refuses_to_run_on_post_removal_disk():
         f"--dry-run should refuse to run on post-removal disk; got rc=0. "
         f"stdout: {result.stdout[:300]!r}"
     )
-    # Error message must identify drift from the D14.2 plan.
+    # Error message must identify why the script refused (drift from D14.2
+    # plan, or agents/vendored/ce dir no longer present).
     combined = (result.stderr + result.stdout).lower()
-    assert "drift" in combined or "expected" in combined, (
-        f"Drift error message missing; combined output: "
+    assert (
+        "drift" in combined
+        or "expected" in combined
+        or "not found" in combined
+        or "agents dir" in combined
+    ), (
+        f"Refusal message missing; combined output: "
         f"{(result.stderr + result.stdout)[:500]!r}"
     )

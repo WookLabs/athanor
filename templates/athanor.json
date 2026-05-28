@@ -1,44 +1,36 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.16.0/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.17.0/schemas/athanor-config.schema.json",
   "version": "1.0",
-  "_doc": "Athanor runtime configuration template — copied verbatim by /athanor:setup. _doc fields act as inline schema; root athanor.json (dev) and templates/athanor.json (user-install) stay shape-identical. To customize, edit your project root athanor.json after setup creates it.",
   "codex": {
     "enabled": true,
     "fallback": "self-critic",
-    "timeoutMs": 300000,
-    "_doc": "Cross-model planning via Codex CLI. enabled=true makes /athanor:plan deep tier dispatch a Codex Planner B in parallel with Claude Planner A. fallback strategy when codex CLI is unavailable: 'self-critic' (Claude self-reviews) | 'skip' (single-planner only) | 'fail' (abort). See skills/plan/SKILL.md §Step 0 codex_available probe. timeoutMs (v0.13.1): hard wall-clock upper bound for codex exec invocations (default 300000ms / 5min); converted to seconds at dispatch and applied as shell `timeout` prefix. Soft-deadline (fallbackAfterMs) requires leader-side async join, deferred to v0.16+."
+    "timeoutMs": 300000
   },
   "work": {
     "defaultMode": "solo",
     "ralphLoop": {
-      "maxRetries": 5,
-      "_doc": "Max ralph-loop iterations per subtask before circuit breaker engages. Each iteration re-runs the executor with the same subtask plus latest verify output. Increase for fragile verify commands; decrease for fast-fail policy."
+      "maxRetries": 5
     },
     "circuitBreaker": {
       "consecutiveFailures": 3,
-      "action": "ask_user",
-      "_doc": "After N consecutive subtask failures, leader pauses and asks user: action options are 'ask_user' (default), 'continue' (next subtask), 'abort' (stop pipeline)."
+      "action": "ask_user"
     }
   },
   "team": {
     "waveSize": 3,
-    "discoveryRelay": true,
-    "_doc": "/athanor:work --team mode. waveSize is max parallel workers per wave (limited by Claude Code concurrent Task slots). discoveryRelay=true injects previous wave discoveries into next wave's worker prompts."
+    "discoveryRelay": true
   },
   "memory": {
     "decayDays": 7,
     "promotionThreshold": 5,
-    "maxAgeDays": 30,
-    "_doc": "Lessons lifecycle in .athanor/lessons/. Working lessons decay after decayDays unless they reach promotionThreshold reads (then auto-promoted to permanent). Sessions older than maxAgeDays are cleaned by the cleaner agent (permanent lessons preserved)."
+    "maxAgeDays": 30
   },
   "triggers": {
-    "language": "both",
-    "_doc": "Slash-command trigger language: 'ko' (Korean only), 'en' (English only), 'both' (default — both Korean and English keywords trigger skills). See each skill's frontmatter description for trigger keyword lists."
+    "language": "both"
   },
   "hooks": {
     "profile": "standard",
-    "stopLoopThreshold": 3,
-    "_doc": "Stop hook configuration. As of v0.7.8 the Stop hook is registered as `type: command` invoking scripts/hooks/stop_verify_claims.py (per docs/STATE.md §Command-hook Stop blocking spike (2026-05-18)). `profile: \"standard\"` (default) enables full material-claim detection — the script reads stdin, detects English/Korean claim phrases ported verbatim from the v0.7.7 prompt whitelist, and exits 2 to block Stop with stderr fed back to the model as continuation context. `profile: \"off\"` is the per-project opt-out: the script exits 0 silently regardless of message content. Unknown profile values fall back to standard with a stderr warning (fail-open). `lenient` and `strict` profiles are not yet supported (deferred per plan §10). The v0.7.7 `hooks.disabled[]` orphan key has been removed in v0.7.8 — no code consumed it. v0.7.9+ adds `stopLoopThreshold` (integer ≥1, default 3): caps consecutive exit-2 blocks per session; the (threshold+1)th invocation releases (exit 0) with a stderr warning, preventing infinite gate loops when the verification skill misbehaves."
+    "stopLoopThreshold": 3
   },
   "lfgGoal": {
     "maxIterations": 5,
@@ -51,12 +43,10 @@
     "archiveOnComplete": true,
     "goalRetentionDays": 30,
     "goalsDir": ".athanor/goals",
-    "dryRun": false,
-    "_doc": "Goal-driven Ralph loop config for /athanor:lfg-goal v0.13.0. maxIterations: 5 (D8 default — circuit breaker fires at 5 cycles). consolidateCycles: false (D9 default — each cycle ships its own PR + patch release). Tier 3 user ratification BLOCKING by default (D6). See skills/lfg-goal/SKILL.md §Configuration Defaults."
+    "dryRun": false
   },
   "review": {
     "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
-    "minConfidence": 25,
-    "_doc": "/athanor:review skill default lenses dispatched in parallel (file-type filtering may narrow this). minConfidence (0-100 anchored rubric) suppresses findings below threshold during consolidation; raise to reduce noise, lower to surface speculative concerns. See agents/reviewer.md §Confidence Rubric."
+    "minConfidence": 25
   }
 }

@@ -41,13 +41,9 @@ introducing a new invariant. Per D11 (decisions.md 2026-05-22-002),
 lfg-goal is an orchestration layer composed of the existing four; no
 fifth invariant ships with v0.13.0.
 
-### v0.11.1 using-superpowers boundary
+### using-superpowers boundary
 
-Athanor's Thin Leader + planner-classified discipline applies in this
-skill context. `superpowers:using-superpowers` is loaded at SessionStart
-and its "MUST invoke before response" pressure is **advisory here** —
-discovery in athanor-native skills resolves through leader dispatch,
-not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration" for the canonical text.
 
 ## When NOT to invoke
 

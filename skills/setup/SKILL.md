@@ -15,13 +15,9 @@ You are the Athanor setup leader. You verify the environment and configure
 Athanor for the current project. You follow the **Thin Leader** pattern:
 you do NOT perform checks yourself — you dispatch a worker and present results.
 
-### v0.11.1 using-superpowers boundary
+### using-superpowers boundary
 
-Athanor's Thin Leader + planner-classified discipline applies in this
-skill context. `superpowers:using-superpowers` is loaded at SessionStart
-and its "MUST invoke before response" pressure is **advisory here** —
-discovery in athanor-native skills resolves through leader dispatch,
-not pre-response invocation check. See CLAUDE.md §Defense Mechanisms.
+See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration" for the canonical text.
 
 ---
 
@@ -245,6 +241,36 @@ install never has sessions on disk. Treating that state as a hard FAIL
 gives every new user a red X on first `/athanor:setup`. The release gate
 (`scripts/check_release_ready.py`) is the authoritative enforcement point
 for the contract-ledger invariant — setup is informational.
+
+### 12. Hook Capability Probe (informational, optional)
+
+This is an **informational** documentation probe — it does NOT gate setup.
+It records what athanor KNOWS about Claude Code hook event classes
+(SessionStart, UserPromptSubmit, PostToolUse, PreCompact) so v0.18.0 /
+v0.19.0 design teams have a single machine-readable reference.
+
+Procedure (best-effort, never fails setup):
+
+1. If `scripts/hooks/capability_probe.py` exists, run:
+   `python3 scripts/hooks/capability_probe.py`
+   (or `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capability_probe.py"`
+   per the v0.11.4 plugin-root lesson when invoked from a user project).
+2. Confirm `.athanor/hook-capability.json` was written.
+3. Report `WROTE <path>` or `SKIPPED (script not present)`.
+
+The probe is passive — it inspects existing artifacts (hooks/hooks.json,
+CLAUDE.md, docs/STATE.md, skills/work/references/spec-then-tdd-handler.md)
+rather than triggering Claude Code hook events itself. Empirical validation
+of each event class is deferred to per-event spikes (mirror the 2026-05-18
+Stop hook spike methodology — log-only probe registered in
+`~/.claude/settings.json`).
+
+Standalone invocation (outside `/athanor:setup`):
+
+```bash
+python3 scripts/hooks/capability_probe.py            # write report to .athanor/
+python3 scripts/hooks/capability_probe.py --print    # also echo to stdout
+```
 
 ### Graceful Degradation (ref/ absence)
 

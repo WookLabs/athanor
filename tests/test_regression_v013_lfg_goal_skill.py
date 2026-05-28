@@ -156,21 +156,32 @@ def test_skill_body_contains_validated_receipt_ledger_loop():
 
 
 def test_using_superpowers_boundary_subsection_present():
-    """MUST: body contains `### v0.11.1 using-superpowers boundary` heading.
+    """MUST: body contains a `### using-superpowers boundary` pointer
+    heading that cross-references CLAUDE.md.
 
     Per the v0.11.1 boundary lock (see CLAUDE.md §Defense Mechanisms),
-    every athanor-native Thin Leader skill carries an identical
-    `### v0.11.1 using-superpowers boundary` subsection placed
-    immediately after the §Identity heading. `/athanor:lfg-goal` is a
-    Thin Leader skill (it dispatches the receipt-validator + judges +
-    cycles, never executes work directly) and therefore inherits the
-    boundary requirement.
+    every athanor-native Thin Leader skill declares the boundary at the
+    top of its body. `/athanor:lfg-goal` is a Thin Leader skill (it
+    dispatches the receipt-validator + judges + cycles, never executes
+    work directly) and therefore inherits the boundary requirement.
+
+    v0.17.0 / S04 hoist: the boundary text was lifted into a single
+    canonical anchor in CLAUDE.md; each native skill now carries a
+    brief pointer (`### using-superpowers boundary` + 1-line "See
+    CLAUDE.md …" cross-reference) instead of the verbatim 6-line
+    subsection. This test was updated to lock the new shape;
+    canonical-anchor + cross-reference invariants live in
+    `tests/test_regression_v011_1_using_superpowers_boundary.py`.
     """
     text = _read_skill_text()
     _fm, body = _split_frontmatter(text)
-    assert "### v0.11.1 using-superpowers boundary" in body, (
-        "skill body must contain '### v0.11.1 using-superpowers boundary' "
-        "subsection heading (matches the 10-skill native roster lock)"
+    assert "### using-superpowers boundary" in body, (
+        "skill body must contain '### using-superpowers boundary' "
+        "pointer heading (v0.17.0 / S04 post-hoist shape)"
+    )
+    assert "CLAUDE.md" in body, (
+        "skill body must cross-reference CLAUDE.md from the pointer "
+        "subsection — the canonical declaration lives there post-S04"
     )
 
 

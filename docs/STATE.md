@@ -4,7 +4,62 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.16.0 — Multi-Status Executor + PreToolUse Kernel Guard + CLAUDE.md Token Diet
+## Current Phase: v0.17.0 — Surface Cut + Capability Spikes
+
+**v0.17.0** (released 2026-05-28) — A coordinated surface cut + two
+infrastructure spikes landing as a single release:
+
+1. **Big skill splits.** `skills/work/SKILL.md` (1153 → 250 lines
+   router + 5 references files: multi-status, spec-then-tdd-handler,
+   splitter, team-mode, learner-cleaner) and `skills/plan/SKILL.md`
+   (1255 → 300 lines router + 7 references files: planner-dispatch,
+   reviewer-dispatch, critic-variants, codex-availability,
+   critic-rubric, presentation, depth-flag-dispatch). Two of athanor's
+   heaviest skills become navigable routers with companion references.
+2. **Command surface simplification.** `/athanor:deep-plan` and
+   `/athanor:lite-plan` collapse into `/athanor:plan --depth={standard|
+   deep|lite}` plus `/athanor:plan --no-review`. Trigger keywords stay
+   on `/athanor:plan` for muscle memory; migration guide ships at
+   `docs/v0.17.0-migration.md`.
+3. **Documentation hoisting.** using-superpowers boundary moves from
+   11× verbatim copies into CLAUDE.md canonical + 9 pointer refs.
+   Spec-then-TDD discipline canonicalised in CLAUDE.md with brief
+   pointers in plan/work/executor. NOTICE.md LIFT entries compressed
+   to 1-line attributions.
+4. **Vendoring cleanup.** `agents/vendored/ce/*.agent.md` removed —
+   dead vendoring with zero live dispatch.
+5. **Shared hook runtime + capability probe.** New
+   `scripts/hooks/_athanor_hook_runtime.py` shared helpers
+   (read_stdin_payload / read_athanor_config / is_hook_profile_off /
+   resolve_project_root) consumed by `stop_verify_claims.py` and
+   `pretool_kernel_guard.py` (behaviour preserved). New
+   `scripts/hooks/capability_probe.py` passive probe emits
+   `.athanor/hook-capability.json`.
+6. **Config diet.** All `_doc` inline documentation fields hard-removed
+   from `athanor.json` and `templates/athanor.json` (athanor.json
+   4897 → 1153 bytes). Schema `description` fields remain the
+   canonical inline docs.
+
+Test surface grows 644 → 692+ across the cycle (S04 689, S08 692, S09
+682 after the v0.17.0 doc-string honesty test deletion). New regression
+files: `test_regression_v017_work_skill_split`,
+`test_regression_s02_plan_skill_split`,
+`test_regression_v017_hook_runtime`,
+`test_regression_v017_capability_probe`,
+`test_regression_s07_depth_flag_collapse`. Removed:
+`tests/test_regression_doc_string_honesty.py`.
+
+Planning: deep-tier adversarial plan (Planner A Claude + Planner B
+Codex + cross-review + Critic synthesis). REMOVE-first ordering per
+Plan B + Plan A's test-cascade rigor. 3-release roadmap: v0.17.0
+(this) → v0.18.0 (hook additions) → v0.19.0 (evidence-bound
+discipline).
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched.
+
+## Previous Phase: v0.16.0 — Multi-Status Executor + PreToolUse Kernel Guard + CLAUDE.md Token Diet
 
 **v0.16.0** (released 2026-05-28) — Three coordinated changes that
 strengthen the Thin Leader contract surface:

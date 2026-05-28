@@ -24,7 +24,21 @@ PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 
 
 def _load():
-    return PLAN_SKILL.read_text(encoding="utf-8")
+    """Load skills/plan/SKILL.md spliced with all references/*.md.
+
+    S02 (v0.17.x) split the plan skill into a thin router (<=300 lines)
+    + references/ companions. Existing v0.9.0 invariants — Planner A /
+    Codex Planner B / 3-Critic prompts listing requirements.md, plus
+    axis (C) rubric — survive the split by scanning the concatenated
+    surface (SKILL.md + references/{planner-dispatch,reviewer-dispatch,
+    critic-variants,critic-rubric,…}.md in sorted order).
+    """
+    text = PLAN_SKILL.read_text(encoding="utf-8")
+    references_dir = PLAN_SKILL.parent / "references"
+    if references_dir.is_dir():
+        for ref in sorted(references_dir.glob("*.md")):
+            text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
 
 
 # --- U5: Step 1 reads requirements.md ---

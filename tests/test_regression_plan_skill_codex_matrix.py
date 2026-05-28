@@ -23,7 +23,17 @@ DISCUSS_SKILL = REPO_ROOT / "skills" / "discuss" / "SKILL.md"
 
 
 def _load(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    """Load the plan skill body. For PLAN_SKILL, splice in all reference
+    companion files under skills/plan/references/ so prose-level checks
+    survive the S02 thin-router split (skills/plan/SKILL.md + references/).
+    Other paths (e.g., DISCUSS_SKILL) are read as-is."""
+    text = path.read_text(encoding="utf-8")
+    if path == PLAN_SKILL:
+        references_dir = path.parent / "references"
+        if references_dir.is_dir():
+            for ref in sorted(references_dir.glob("*.md")):
+                text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
 
 
 # ---- plan/SKILL.md tests ----

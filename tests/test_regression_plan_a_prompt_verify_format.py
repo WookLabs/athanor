@@ -30,7 +30,19 @@ PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 
 
 def _load():
-    return PLAN_SKILL.read_text(encoding="utf-8")
+    """Load skills/plan/SKILL.md spliced with all references/*.md.
+
+    S02 (v0.17.x) moved the Planner A Agent({prompt: ...}) packet from
+    SKILL.md into `references/planner-dispatch.md`. The prose-level
+    invariants here (MUST/SHOULD Verify format, Planner A heading,
+    Plan Structure heading, etc.) survive the split via concatenation.
+    """
+    text = PLAN_SKILL.read_text(encoding="utf-8")
+    references_dir = PLAN_SKILL.parent / "references"
+    if references_dir.is_dir():
+        for ref in sorted(references_dir.glob("*.md")):
+            text += "\n\n" + ref.read_text(encoding="utf-8")
+    return text
 
 
 def test_planner_a_prompt_instructs_must_should_verify():

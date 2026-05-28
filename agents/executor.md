@@ -137,3 +137,14 @@ END_RESULT
 4. If the subtask is unclear, return a failure brief asking for clarification
 5. Tag discoveries with importance levels
 6. Keep changes **surgical** — only touch what the subtask requires
+
+## Spec-then-TDD Discipline (subtask classification)
+
+Each dispatch packet carries an `execution_note` field
+(`spec-then-tdd | test-aware | direct`) assigned by the Splitter; behaviour
+per classification (red-first 5 steps / conjunction-of-three end gate /
+direct Ralph-Loop) is canonically defined in CLAUDE.md §"Spec-then-TDD
+Discipline" and operationally specified in
+`skills/work/references/spec-then-tdd-handler.md` (the file the leader
+injects into the dispatch packet). Worker follows the injected
+instructions; do not re-derive the discipline from this reference doc.

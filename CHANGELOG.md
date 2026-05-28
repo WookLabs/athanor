@@ -3,6 +3,50 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.17.0] — 2026-05-28
+
+### Changed — Surface Cut + Capability Spikes
+
+**Big skill splits (S01 + S02):**
+- `skills/work/SKILL.md`: 1153 → 250 lines (router) + 5 references files (multi-status, spec-then-tdd-handler, splitter, team-mode, learner-cleaner)
+- `skills/plan/SKILL.md`: 1255 → 300 lines (router) + 7 references files (planner-dispatch, reviewer-dispatch, critic-variants, codex-availability, critic-rubric, presentation, depth-flag-dispatch)
+
+**Command surface simplification (S07):**
+- `/athanor:deep-plan` and `/athanor:lite-plan` collapsed into `/athanor:plan --depth={standard|deep|lite}` and `/athanor:plan --no-review`
+- Trigger keywords preserved on `/athanor:plan` for muscle memory
+- Migration guide: `docs/v0.17.0-migration.md`
+
+**Documentation hoisting (S04 + S05):**
+- using-superpowers boundary: 11× verbatim → CLAUDE.md canonical + 9 pointer refs
+- Spec-then-TDD discipline: 4-location dedup → CLAUDE.md canonical + brief pointers in plan/work/executor
+- NOTICE.md LIFT entries compressed to 1-line attributions
+
+**Vendoring cleanup (S03):**
+- `agents/vendored/ce/*.agent.md` removed (dead vendoring, zero live dispatch)
+
+**Infrastructure (S06 + S08):**
+- NEW: `scripts/hooks/_athanor_hook_runtime.py` shared runtime helpers (read_stdin_payload, read_athanor_config, is_hook_profile_off, resolve_project_root)
+- NEW: `scripts/hooks/capability_probe.py` passive hook capability probe → emits `.athanor/hook-capability.json`
+- stop_verify_claims.py + pretool_kernel_guard.py refactored to use shared runtime (behavior preserved)
+
+**Config diet (S09):**
+- All `_doc` inline documentation fields removed from `athanor.json` and `templates/athanor.json` (athanor.json 4897 → 1153 bytes)
+- Schema description fields remain canonical inline docs
+
+### Tests
+- 644 → 692+ passed (S04 689, S08 692, S09 682 with deletion)
+- NEW: test_regression_v017_work_skill_split, test_regression_s02_plan_skill_split, test_regression_v017_hook_runtime, test_regression_v017_capability_probe, test_regression_s07_depth_flag_collapse
+- REMOVED: tests/test_regression_doc_string_honesty.py (S09)
+
+### Planning
+- Deep-tier adversarial plan: Planner A (Claude) + Planner B (Codex) + cross-review + Critic synthesis
+- REMOVE-first ordering per Plan B + Plan A's test-cascade rigor
+- 3-release roadmap: v0.17.0 (this) → v0.18.0 (hook additions) → v0.19.0 (evidence-bound discipline)
+
+### Identity invariants (unchanged)
+
+Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate. Companion-fix arc 5-layer (v0.11.3 → v0.11.8) untouched.
+
 ## [0.16.0] — 2026-05-28
 
 ### Added — Multi-Status Executor

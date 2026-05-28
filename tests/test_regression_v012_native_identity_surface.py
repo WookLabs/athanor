@@ -14,9 +14,11 @@ but the four athanor identity invariants survive intact:
   4. Stop hook runtime gate — `scripts/hooks/stop_verify_claims.py` fires
      on every Stop event with whitelist + paraphrase + homoglyph detection.
 
-The 10 athanor-native Thin Leader skills must continue to exist at depth
-1 under `skills/` for Claude Code auto-discovery. The companion-fix arc
-(v0.11.3 → v0.11.7) scripts continue to live in `scripts/hooks/`.
+The 9 athanor-native Thin Leader skills (post-v0.17.0 / S07 collapse of
+deep-plan + lite-plan into `/athanor:plan --depth=`) must continue to
+exist at depth 1 under `skills/` for Claude Code auto-discovery. The
+companion-fix arc (v0.11.3 → v0.11.7) scripts continue to live in
+`scripts/hooks/`.
 
 Voice constraint (D7): docstrings here use direct attribution to the
 plan-of-record; no "translated", "interpreted", "we discovered", or
@@ -31,14 +33,16 @@ SKILLS_DIR = REPO_ROOT / "skills"
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 HOOK_SCRIPTS_DIR = REPO_ROOT / "scripts" / "hooks"
 
-# 10 athanor-native Thin Leader skills (per CLAUDE.md §Commands table).
+# 9 athanor-native Thin Leader skills (per CLAUDE.md §Commands table).
+# v0.17.0 / S07 collapsed `deep-plan` + `lite-plan` into `/athanor:plan
+# --depth=<value>` (see `docs/v0.17.0-migration.md`); the tuple shrinks
+# 10 → 9 in lockstep with the directory removal — atomic update per the
+# S07 acceptance contract.
 NATIVE_THIN_LEADER_SKILLS = (
     "analyze",
     "debug",
-    "deep-plan",
     "discuss",
     "lfg",
-    "lite-plan",
     "plan",
     "review",
     "setup",
@@ -47,7 +51,8 @@ NATIVE_THIN_LEADER_SKILLS = (
 
 
 def test_10_thin_leader_skills_present():
-    """MUST: all 10 athanor-native Thin Leader skill directories exist.
+    """MUST: all athanor-native Thin Leader skill directories exist (9 as of
+    v0.17.0; was 10 before the S07 collapse).
 
     Each skill ships at `skills/<name>/SKILL.md` for Claude Code depth-1
     auto-discovery. Missing any one means a regression in the native
@@ -63,8 +68,10 @@ def test_10_thin_leader_skills_present():
         if not (skill_dir / "SKILL.md").is_file():
             no_skill_md.append(name)
     assert not missing, (
-        f"MUST: {len(missing)} of 10 athanor-native Thin Leader skill "
-        f"directories absent: {missing!r}. v0.12.0 preserves all 10."
+        f"MUST: {len(missing)} of {len(NATIVE_THIN_LEADER_SKILLS)} athanor-"
+        f"native Thin Leader skill directories absent: {missing!r}. "
+        f"v0.12.0 preserved all 10; v0.17.0 / S07 collapsed deep-plan + "
+        f"lite-plan into /athanor:plan --depth= leaving 9."
     )
     assert not no_skill_md, (
         f"MUST: athanor-native skill(s) missing SKILL.md: {no_skill_md!r}. "

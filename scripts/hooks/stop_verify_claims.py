@@ -200,6 +200,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 import hook_state  # noqa: E402
+import _athanor_hook_runtime as _runtime  # noqa: E402
 
 # v=2 sentinel: nonce-bound, SHA-256 body hash, TTL-checked.
 # Anchored at first non-whitespace line of last_assistant_message.
@@ -610,20 +611,16 @@ def _stderr(msg: str) -> None:
 
 
 def _read_stdin_payload() -> dict | None:
-    """Read the Stop event payload from stdin. Returns parsed dict or None
-    if stdin is unavailable / unreadable / not JSON."""
-    if sys.stdin.isatty():
-        return None
-    try:
-        raw = sys.stdin.read()
-    except (OSError, ValueError):
-        return None
-    if not raw:
-        return None
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return None
+    """Read the Stop event payload from stdin.
+
+    v0.17.0: thin delegation to ``_athanor_hook_runtime.read_stdin_payload``.
+    Returns the parsed dict, or None on any of: TTY stdin, read error,
+    empty body, JSON parse failure, non-dict JSON. The non-dict guard is
+    new in v0.17.0 — earlier code would have crashed with AttributeError
+    on a list/scalar payload at the first ``payload.get(...)`` call site
+    (no existing test exercised that path, so this is a safer floor).
+    """
+    return _runtime.read_stdin_payload()
 
 
 # v0.11.3 input-layer fix — see also script docstring "v0.11.3 input-layer fix

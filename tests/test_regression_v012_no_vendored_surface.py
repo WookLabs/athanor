@@ -3,16 +3,17 @@
 Plan reference: docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
 §Subtask 15 (Phase 5 — Execute removal + rewrite/delete stale regression tests).
 
-Post-v0.12.0 invariants (D8 / D9 / D14.2):
+Post-v0.15.x invariants (D8 / D9 / D14.2):
 
 - Exactly 1 vendored CE skill survives: `ce-test-browser` (D8 KEEP carve-out).
 - Zero vendored superpowers skills survive (all 13 sp-* dirs removed).
 - No THIN-ADAPTER stubs for `ce-plan` / `ce-work` / `ce-lfg` exist (D9 FULL
   DROP — users migrate to athanor-native `/athanor:plan`, `/athanor:work`,
   `/athanor:lfg`).
-- Exactly 2 vendored sub-agent files remain: `ce-git-history-analyzer.agent.md`
-  and `ce-repo-research-analyst.agent.md` (D12 retained generic discovery
-  dispatch targets).
+- Zero vendored sub-agent files remain: the 2 D12-retained generics
+  (`ce-git-history-analyzer.agent.md`, `ce-repo-research-analyst.agent.md`)
+  were removed in v0.15.x (no live dispatch references). `agents/vendored/`
+  does not exist on disk.
 - The 45 removed skill directories enumerated below MUST NOT exist on disk
   (LIFT-source + DROP).
 
@@ -31,13 +32,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
-AGENTS_DIR = REPO_ROOT / "agents" / "vendored" / "ce"
+AGENTS_VENDORED_DIR = REPO_ROOT / "agents" / "vendored"
 
 KEEP_SKILL = "ce-test-browser"
-KEEP_AGENTS = (
-    "ce-git-history-analyzer.agent.md",
-    "ce-repo-research-analyst.agent.md",
-)
 
 # The 45 skill directories removed by `scripts/v012_remove_vendored.py`
 # (5 LIFT-source + 40 DROP). Order: 5 LIFT-source first (sorted),
@@ -139,25 +136,19 @@ def test_no_thin_adapter_stubs():
     )
 
 
-def test_exactly_2_keep_sub_agents():
-    """MUST 2 / D12: only 2 vendored sub-agents remain post-removal.
+def test_no_vendored_sub_agents_remain():
+    """MUST: agents/vendored/ does not exist on disk (v0.15.x removal).
 
-    Pre-removal disk: 49 *.agent.md files (RED).
-    Post-removal disk: 2 *.agent.md files (GREEN):
-      - ce-git-history-analyzer.agent.md
-      - ce-repo-research-analyst.agent.md
+    v0.12.0 retained 2 D12 sub-agents (ce-git-history-analyzer,
+    ce-repo-research-analyst); v0.15.x confirmed zero live dispatch
+    references and removed both. The agents/vendored/ directory must
+    not exist.
     """
-    if not AGENTS_DIR.is_dir():
-        # Acceptable post-v0.13.0 if the dir itself is removed; for now
-        # v0.12.0 keeps the dir with the 2 retained agents.
-        survivors = []
-    else:
-        survivors = sorted(
-            p.name for p in AGENTS_DIR.glob("*.agent.md") if p.is_file()
-        )
-    assert survivors == list(KEEP_AGENTS), (
-        f"MUST 2 / D12: exactly 2 sub-agents must survive {KEEP_AGENTS!r}; "
-        f"found {survivors!r}. Pre-removal disk had 49 vendored sub-agents."
+    assert not AGENTS_VENDORED_DIR.exists(), (
+        f"MUST: agents/vendored/ must not exist post-v0.15.x; "
+        f"found it at {AGENTS_VENDORED_DIR}. "
+        f"All 49 vendored sub-agents are removed (47 at v0.12.0, "
+        f"2 D12-retained at v0.15.x)."
     )
 
 
