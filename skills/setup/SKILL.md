@@ -272,6 +272,32 @@ python3 scripts/hooks/capability_probe.py            # write report to .athanor/
 python3 scripts/hooks/capability_probe.py --print    # also echo to stdout
 ```
 
+### 13. Freeze Health Check (informational, v0.18.0)
+
+This is an **informational** read of the `hooks.freeze` config block —
+it does NOT gate setup. The Freeze infrastructure (v0.18.0) is opt-in;
+default `hooks.freeze.mode = "off"` is the supported posture for users
+who have not yet enabled scope-locked editing.
+
+Procedure (best-effort, never fails setup):
+
+1. Read `athanor.json` `hooks.freeze.mode`. Valid values: `"off"`
+   (default) or `"session"`.
+2. If `mode == "session"`, additionally:
+   - Confirm `scripts/work/build_freeze_allowlist.py` exists.
+   - Confirm `scripts/hooks/pretool_dispatcher.py` exists.
+   - Confirm `scripts/hooks/freeze_guard.py` exists.
+3. Report `freeze_mode: <off|session>` and `freeze_scripts: <present|missing>`.
+
+The probe is passive — it does not invoke the dispatcher or build an
+allowlist. Full mechanism details: `skills/work/references/freeze.md`.
+User-facing config + migration: `docs/v0.18.0-migration.md`.
+
+**Brief:** v0.18.0: `hooks.freeze.mode = {off | session}`. Capability
+probe at `scripts/hooks/capability_probe.py`. Freeze is a Claude
+file-tool allowlist (Edit/Write/MultiEdit + conservative Bash
+patterns); Codex subprocess writes are NOT gated (D2 residual).
+
 ### Graceful Degradation (ref/ absence)
 
 User-project installs of athanor do NOT ship the `ref/` directory (it is a

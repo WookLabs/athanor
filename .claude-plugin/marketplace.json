@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Athanor v0.17.0 — Thin Leader orchestrator plugin for Claude Code. Cross-model adversarial planning (/athanor:plan with --depth={standard|deep|lite} and --no-review flags), Spec-then-TDD discipline with multi-status executor (done / done_with_concerns / needs_context / blocked + blocked_queue) (/athanor:work), parallel multi-lens review (/athanor:review), Stop hook runtime gate + PreToolUse Kernel Guard (3-class safety: destructive shell / force-push / credentials), goal-driven validated Ralph loop (/athanor:lfg-goal), and (v0.14.0) 3 native agent definitions (releaser, codex-dispatcher, ci-watcher) as reference documents for Leader dispatch.",
-      "version": "0.17.0",
+      "description": "Athanor v0.18.0 — Thin Leader orchestrator plugin for Claude Code. Cross-model adversarial planning (/athanor:plan with --depth={standard|deep|lite} and --no-review flags), Spec-then-TDD discipline with multi-status executor (done / done_with_concerns / needs_context / blocked + blocked_queue) (/athanor:work), parallel multi-lens review (/athanor:review), Stop hook runtime gate + PreToolUse Kernel Guard (3-class safety: destructive shell / force-push / credentials), v0.18.0 opt-in Freeze infrastructure (Claude file-tool allowlist + conservative Bash gate via pretool_dispatcher + freeze_guard), goal-driven validated Ralph loop (/athanor:lfg-goal), and (v0.14.0) 3 native agent definitions (releaser, codex-dispatcher, ci-watcher) as reference documents for Leader dispatch.",
+      "version": "0.18.0",
       "source": "./",
       "author": {
         "name": "WookLabs"

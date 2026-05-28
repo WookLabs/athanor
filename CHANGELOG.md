@@ -3,6 +3,39 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.0] — 2026-05-29
+
+### Added — Freeze-First (Plan B base)
+
+**Freeze infrastructure (Phase 1-2):**
+- `scripts/work/build_freeze_allowlist.py` — per-session allowlist builder from Splitter `files:` declarations
+- `scripts/hooks/pretool_dispatcher.py` — single-outer-entry PreToolUse dispatcher
+- `scripts/hooks/freeze_guard.py` — Claude file-tool allowlist (Edit/Write/MultiEdit + conservative Bash patterns)
+- `hooks.freeze` config block in athanor.json + schema (default `mode = "off"`, opt-in)
+
+**Architecture decisions (per Critic synthesis):**
+- Kernel guard runs FIRST in dispatcher (v0.16.0 catastrophic class never over-ruled)
+- Kernel guard fail-CLOSED on missing config preserved (v0.16.0 default unchanged)
+- Freeze guard fail-open on missing allowlist (opt-in semantics)
+
+### Honesty Residuals (intentional scope limits)
+
+- **D2: Codex stage uneven enforcement** — `/athanor:lfg` Codex subprocess writes are NOT gated by Freeze. Freeze is documented as "Claude file-tool allowlist", not a comprehensive editing envelope.
+- **Bash subprocess writes ungated** — `python -c "open('foo', 'w')..."`, `make build`, `codex exec`, etc. NOT detected. Documented in `skills/work/references/freeze.md`.
+
+### Deferred (per Critic synthesis, both reviewers converged)
+
+- **v0.18.1 — git-worktree isolation** — admission criteria: (a) freeze-violations.jsonl >= 10 across >= 5 sessions, OR (b) 1 user-reported issue with repro, OR (c) `/athanor:work --team` same-file collision documented
+- **v0.18.2 — UserPromptSubmit injection** — design precondition: live spike capturing real payload shape (v0.17.0 capability_probe shows UPS supported=false passively)
+
+### Tests
+- 692 -> 872 (+180 new)
+- 11 new regression tests: builder, schema, splitter contract, kernel evaluate_payload, dispatcher, freeze_guard, Phase 2 integration, static dedup preservation
+
+### Planning
+- Deep-tier adversarial plan: Planner A (Claude) + Planner B (Codex) + cross-review + Critic synthesis
+- Plan B base (Freeze-First) + Plan A Phase 2 architecture (corrected per Codex review) + reviewer convergence on stage shipping
+
 ## [0.17.0] — 2026-05-28
 
 ### Changed — Surface Cut + Capability Spikes

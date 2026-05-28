@@ -24,6 +24,9 @@ classes:
 Decision flow:
   1. Parse stdin (PreToolUse event JSON). Fail-open on missing/unparseable.
   2. Read `hooks.profile` from athanor.json. If `"off"`, exit 0 silently.
+     **NOTE (v0.18.0 invariant):** missing athanor.json keeps the default
+     ``profile="standard"`` — kernel guard is fail-CLOSED on missing config.
+     ``rm -rf /`` is still blocked even when no athanor.json exists.
   3. Dispatch by `tool_name`. If a rule matches, exit 2 with stderr explaining
      the block (Claude Code feeds stderr back to the model as continuation
      context so it can choose a safer alternative).
@@ -34,6 +37,15 @@ Stdlib-only — same pattern as `stop_verify_claims.py`. As of v0.17.0
 ``_read_stdin_payload`` / ``_find_athanor_config`` / ``_read_profile``
 remain as thin delegations so the existing test surface (which
 subprocess-invokes this script) is unchanged.
+
+v0.18.0 (S?): the rule-evaluation core is extracted into
+``evaluate_payload(payload, project_root=None) -> (exit_code, stderr_message)``
+so the upcoming PreToolUse dispatcher can invoke kernel-guard logic
+in-process without re-shelling. ``main()`` remains the CLI entry point
+and now delegates to ``evaluate_payload`` after reading stdin/profile;
+all v0.16.0 behavior (including fail-closed on missing config) is
+preserved bit-for-bit. The 23 existing subprocess-driven regression
+tests continue to pass unchanged.
 
 Cross-platform note: invoked via `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/
 hooks/pretool_kernel_guard.py"` in hooks/hooks.json. The plugin-root
@@ -46,6 +58,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
@@ -255,57 +268,100 @@ def _bash_extract_read_paths(command: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Public dispatcher entry point
 # ---------------------------------------------------------------------------
 
-def main() -> int:
-    payload = _read_stdin_payload()
-    if payload is None:
-        _stderr("stdin missing or unparseable; passing (fail-open)")
-        return 0
+def evaluate_payload(
+    payload: dict,
+    project_root: Optional[Path] = None,
+) -> tuple[int, str]:
+    """Evaluate a PreToolUse payload against the kernel-guard rules.
+
+    Pure function — no global state, no stdin/stdout I/O. Designed to be
+    called both from this script's ``main()`` (CLI entry) and from the
+    v0.18.0 in-process PreToolUse dispatcher.
+
+    Parameters
+    ----------
+    payload : dict
+        The parsed PreToolUse event JSON. Must already be a dict (callers
+        handle the stdin-parse fail-open path themselves; passing a
+        malformed shape here yields a fail-open ``(0, "")``).
+    project_root : Optional[Path]
+        Reserved for the dispatcher: when supplied, callers may use it to
+        scope config lookup. The current implementation reads the profile
+        via the shared runtime helper (which honors ``$CLAUDE_PROJECT_DIR``
+        and walk-up from cwd); ``project_root`` is accepted to lock the
+        signature for the dispatcher but does NOT override the runtime
+        resolution path — that path already covers the dispatcher's
+        in-process case. Reserved for future per-call overrides.
+
+    Returns
+    -------
+    (exit_code, stderr_message) : tuple[int, str]
+        ``exit_code`` is 0 (allow) or 2 (block). ``stderr_message`` is the
+        single-line block reason (without the ``athanor (pretool guard):``
+        prefix — the caller is responsible for prefixing if writing to
+        stderr). On allow, ``stderr_message`` is an empty string.
+
+    Behavior invariants (v0.16.0, preserved by v0.18.0 refactor)
+    -----------------------------------------------------------
+    1. Missing athanor.json yields ``profile="standard"`` (fail-CLOSED).
+       ``rm -rf /`` is still blocked even when no athanor.json exists.
+    2. ``hooks.profile == "off"`` yields exit 0 (opt-out), same semantics
+       as the Stop hook.
+    3. Unknown/malformed ``tool_name`` or ``tool_input`` shape yields
+       fail-open ``(0, "")`` — matches the v0.16.0 CLI behavior.
+    """
+    # project_root reserved for future use — currently the runtime helper
+    # owns config resolution (env var + walk-up).
+    del project_root
 
     profile = _read_profile()
     if profile == "off":
-        return 0  # opt-out; same semantics as Stop hook
+        return (0, "")  # opt-out; same semantics as Stop hook
+
+    if not isinstance(payload, dict):
+        return (0, "")
 
     tool_name = payload.get("tool_name")
     tool_input = payload.get("tool_input")
     if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
         # Unknown/malformed shape — fail-open.
-        return 0
+        return (0, "")
 
     # ---- Bash tool ----
     if tool_name == "Bash":
         command = tool_input.get("command", "")
         if not isinstance(command, str) or not command:
-            return 0
+            return (0, "")
 
         # Rule 1: destructive shell
         destructive = _check_destructive_shell(command)
         if destructive is not None:
-            _stderr(
+            return (
+                2,
                 f"BLOCKED: destructive command detected ({destructive}). "
-                f"Narrow the scope or use a safer alternative."
+                f"Narrow the scope or use a safer alternative.",
             )
-            return 2
 
         # Rule 2: force-push to protected branches
         if _check_force_push(command):
-            _stderr(
-                "BLOCKED: force-push to main/master. Use a feature branch."
+            return (
+                2,
+                "BLOCKED: force-push to main/master. Use a feature branch.",
             )
-            return 2
 
         # Rule 3: sensitive credential file access via cat/less/head/tail
         for path in _bash_extract_read_paths(command):
             if _path_is_sensitive(path):
-                _stderr(
-                    f"BLOCKED: accessing sensitive credential file ({path}). "
-                    f"Use environment variables instead."
+                return (
+                    2,
+                    f"BLOCKED: accessing sensitive credential file "
+                    f"({path}). Use environment variables instead.",
                 )
-                return 2
 
-        return 0
+        return (0, "")
 
     # ---- Read / Write / Edit tools ----
     if tool_name in ("Read", "Write", "Edit"):
@@ -313,17 +369,40 @@ def main() -> int:
         # (per Claude Code tool schemas).
         path = tool_input.get("file_path", "")
         if not isinstance(path, str) or not path:
-            return 0
+            return (0, "")
         if _path_is_sensitive(path):
-            _stderr(
+            return (
+                2,
                 f"BLOCKED: accessing sensitive credential file ({path}). "
-                f"Use environment variables instead."
+                f"Use environment variables instead.",
             )
-            return 2
-        return 0
+        return (0, "")
 
     # Other tools — pass through.
-    return 0
+    return (0, "")
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point (subprocess-invoked by Claude Code PreToolUse hook)
+# ---------------------------------------------------------------------------
+
+def main() -> int:
+    """CLI entry: read stdin, evaluate, emit stderr on block, return exit code.
+
+    v0.18.0: delegates the rule evaluation to :func:`evaluate_payload`. The
+    stdin-parse fail-open path stays here because it requires direct stdin
+    I/O (and a distinct stderr message); the rest of the decision flow is
+    pure-function and tested via both CLI subprocess and direct call.
+    """
+    payload = _read_stdin_payload()
+    if payload is None:
+        _stderr("stdin missing or unparseable; passing (fail-open)")
+        return 0
+
+    exit_code, stderr_message = evaluate_payload(payload)
+    if exit_code == 2 and stderr_message:
+        _stderr(stderr_message)
+    return exit_code
 
 
 if __name__ == "__main__":
