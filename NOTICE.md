@@ -326,6 +326,12 @@ From `sp-using-superpowers@5.1.0` (MIT, (c) 2025 Jesse Vincent) → `CLAUDE.md` 
 ### 5. Doc-review persona mode
 From `ce-doc-review@3.8.3` (MIT, (c) 2025 Kieran Klaassen / Every Inc) → `skills/review/SKILL.md` §"Doc review mode" (7-lens doc persona array + `--target docs` CLI flag). Inventory: `concepts/doc-review-mode.md`.
 
+### 6. Silent-failure heuristic (reviewer quality lens)
+From `silent-failure-hunter` (ECC, MIT) → `skills/review/SKILL.md` §"Persona: maintainability" + `agents/reviewer.md` quality lens. Flags swallowed errors (empty catch blocks, bare `except: pass`, error-ignoring fallbacks, discarded Promise rejections). Absorbed as prose heuristic; no agent vendored (Goal 36470e54 C002, "no ref agent adoption justified" decision).
+
+### 7. Project-standards heuristic (reviewer quality lens)
+From `project-standards-reviewer` (CE, MIT) → `skills/review/SKILL.md` §"Persona: maintainability" + `agents/reviewer.md` quality lens. Audits changes against the repo's own `CLAUDE.md` / `AGENTS.md` conventions (frontmatter rules, naming, cross-platform portability). Absorbed as prose heuristic; no agent vendored (Goal 36470e54 C002).
+
 ---
 
 ## Native syntheses (not lifted)

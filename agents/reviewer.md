@@ -26,6 +26,13 @@ The lens is supplied by the dispatcher (`lens:` field). It is one of:
   analysis on dependent components.
 - **quality** — readability, naming conventions, complexity, DRY, code smells,
   refactoring opportunities, consistency with existing patterns in the codebase.
+  Additionally apply two heuristics:
+  - **silent-failure** — flag swallowed errors: empty catch blocks, bare
+    `except: pass`, error-ignoring fallbacks, discarded Promise rejections,
+    `.catch(() => {})`. (concept from ECC silent-failure-hunter, MIT)
+  - **project-standards** — audit changes against the repo's own
+    `CLAUDE.md` / `AGENTS.md` conventions (frontmatter rules, naming,
+    cross-platform portability). (concept from CE project-standards-reviewer, MIT)
 - **security** — input validation, injection vectors, authn/authz, secrets handling,
   dependency vulnerabilities, supply-chain risks. Consider alternative attack vectors
   beyond the obvious (what assumptions could be violated?).

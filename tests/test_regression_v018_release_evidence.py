@@ -24,7 +24,10 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-TARGET_VERSION = "0.18.0"
+# Five-file version parity tracks the live release. Bumped to 0.18.1 by the
+# v0.18.1 patch ceremony (Goal 36470e54). The CHANGELOG/STATE/migration prose
+# locks below still assert the v0.18.0 ceremony evidence, which remains present.
+TARGET_VERSION = "0.18.1"
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"

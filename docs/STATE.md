@@ -4,7 +4,30 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.0 — Freeze-First (Plan B base)
+## Current Phase: v0.18.1 — Agent Inventory Audit + Concept Absorption
+
+**v0.18.1** (released 2026-05-31) — Cleanup + concept-absorption patch
+(Goal 36470e54). No new feature, no new agent.
+
+1. **Reference-agent evaluation.** Systematic audit of external agent
+   inventories (ECC 259/68, CE 43, autoresearch 1, gstack/superpowers 0)
+   → **0 wholesale adoptions**. Every candidate was subsumed by the
+   existing reviewer 6-lens / critic / researcher / learner surface, out
+   of scope, or Thin-Leader-incompatible. Consistent with the v0.12.0
+   concept-absorption policy. Matrix: `docs/agent-evaluation-matrix.md`.
+2. **Concept absorption (prose, not new agents).** Reviewer quality lens
+   gains two heuristics: silent-failure (swallowed-error / empty-catch,
+   ex-ECC) + project-standards (repo CLAUDE.md audit, ex-CE).
+   `agents/reviewer.md` + `skills/review/SKILL.md`. NOTICE.md ledger +2.
+3. **Agent inventory clarified.** Dual-nature framing (inline-dispatch
+   reference docs + @-mention registered types) + COLLISION GUARD
+   rationale documented (CLAUDE.md + `docs/archive/agent-dual-nature.md`).
+   All 11 agents KEPT, 0 removed.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.0 — Freeze-First (Plan B base)
 
 **v0.18.0** (released 2026-05-29) — Introduces the **Freeze
 infrastructure** stage shipping the first scope-locked editing envelope

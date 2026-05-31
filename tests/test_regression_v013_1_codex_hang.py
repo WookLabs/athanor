@@ -495,15 +495,15 @@ def test_codex_fallback_after_ms_key_absent():
 
 
 def test_schema_id_v0160_bump():
-    """MUST — `$id` URL contains the `v0.18.0` release-tag token.
+    """MUST — `$id` URL contains the `v0.18.1` release-tag token.
 
     Per CONTRIBUTING.md §Release URL bump, the `$id` is pinned to the
-    release tag. v0.18.0 bumps the URL token away from the v0.17.0 tag.
+    release tag. v0.18.1 bumps the URL token away from the v0.18.0 tag.
     """
     schema = _load_schema()
     schema_id = schema.get("$id", "")
-    assert "v0.18.0" in schema_id, (
-        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.18.0' release "
+    assert "v0.18.1" in schema_id, (
+        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.18.1' release "
         f"tag (per CONTRIBUTING.md §Release URL bump); got {schema_id!r}."
     )
 

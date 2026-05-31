@@ -340,6 +340,15 @@ complexity that doesn't pay rent
 **Voice:** future-reader oriented ("a maintainer 6 months from now will read
 `process()` and not know whether it mutates state — rename or document the
 side effect"). Optimizes for the second reader, not the first writer.
+**Heuristics (quality lens):**
+- **silent-failure** — flag swallowed errors: empty catch blocks, bare
+  `except: pass`, error-ignoring fallbacks, discarded Promise rejections,
+  `.catch(() => {})`. A failure that vanishes silently is worse than one that
+  crashes loudly. (concept from ECC silent-failure-hunter, MIT)
+- **project-standards** — audit changes against the repo's own `CLAUDE.md` /
+  `AGENTS.md` conventions: frontmatter rules, naming, and cross-platform
+  portability. Flag deviations from documented house style. (concept from CE
+  project-standards-reviewer, MIT)
 
 ### Persona: adversarial
 **Selection:** conditional — fires when the diff has ≥50 changed non-test
