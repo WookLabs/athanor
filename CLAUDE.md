@@ -15,7 +15,7 @@ Documented infrastructure/output exceptions:
 
 ## Native Agent Inventory
 
-Agent definitions live in `agents/` as `.md` reference documents. The Leader reads these when dispatching via `Agent()`. They describe purpose, tools, and dispatch contract but are NOT full implementations — canonical code remains in the respective skills.
+Agent definitions live in `agents/` as `.md` files with a **dual nature**: (1) reference documents for the inline-dispatched pipeline roles — each carries `name: athanor-*` frontmatter and documents purpose/tools/dispatch contract, but is NOT the full implementation (canonical code stays in skills); (2) ALSO live registered agent types for standalone `@-mention` use. **COLLISION GUARD:** skills never dispatch the 8 pipeline roles via `subagent_type` — they use an INLINE `Agent()` prompt. For planner/critic this is explicitly WRONG to do via the registered agent, because the inline prompt carries session-specific file paths (`.athanor/sessions/{id}/...`) the standalone agent lacks. All 11 agents + frontmatter are KEPT (Goal 36470e54 C002; 0 ref-agent adoptions per `docs/agent-evaluation-matrix.md`). Full detail: `docs/archive/agent-dual-nature.md`.
 
 | Agent | Purpose | Since |
 |-------|---------|-------|

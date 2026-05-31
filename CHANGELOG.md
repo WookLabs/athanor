@@ -3,6 +3,14 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.1] — 2026-05-31
+
+### Changed — Agent inventory audit + concept absorption (Goal 36470e54)
+
+- ref agent evaluation (ECC 259/68, CE 43, autoresearch 1, gstack/superpowers 0): **0 wholesale adoptions** — all subsumed by reviewer 6-lens/critic/researcher/learner, out of scope, or Thin-Leader-incompatible. Consistent with v0.12.0 concept-absorption policy. See docs/agent-evaluation-matrix.md.
+- Concept absorption (prose, not new agents): reviewer quality lens gains silent-failure (swallowed-error/empty-catch, ex-ECC) + project-standards (repo CLAUDE.md audit, ex-CE) heuristics.
+- Agent inventory clarified: dual-nature (inline-dispatch reference docs + @-mention registered types) + COLLISION GUARD rationale documented (CLAUDE.md + docs/archive/agent-dual-nature.md). All 11 agents KEPT, 0 removed.
+
 ## [0.18.0] — 2026-05-29
 
 ### Added — Freeze-First (Plan B base)
