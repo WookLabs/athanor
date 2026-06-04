@@ -66,16 +66,18 @@ After Learner completes, apply memory decay rules.
 ```
 Agent({
   description: "Athanor cleaner: decay + cleanup",
-  model: "sonnet",
+  model: "haiku",
   prompt: "You are the Athanor Cleaner agent.
 
 ## Task
-Apply memory decay rules and clean old sessions.
+Apply memory decay rules, clean old sessions, and age out stale goals.
 
 ## Config
 - memory.decayDays: {from athanor.json, default 7}
 - memory.promotionThreshold: {default 5}
 - memory.maxAgeDays: {default 30}
+- lfgGoal.goalRetentionDays: {default 30}
+- lfgGoal.goalsDir: {default .athanor/goals}
 
 ## Instructions
 1. Scan .athanor/sessions/{session-id}/discoveries/ for permanent tags
@@ -89,7 +91,13 @@ Apply memory decay rules and clean old sessions.
 3. Clean old sessions (older than maxAgeDays days)
    - NEVER delete today's sessions
    - Promote permanent discoveries before deleting
-4. Report your results as:
+4. Clean stale goals in lfgGoal.goalsDir (default .athanor/goals/)
+   - Candidate ONLY if non-completing terminal status (goal.md status == abandoned
+     OR state.json cycle_state == aborted) AND age > goalRetentionDays
+   - Promote permanent discoveries/receipts before deleting the goal dir
+   - NEVER clean a complete goal (archived to docs/goals-completed/; user action
+     to delete its live tree) or an active goal
+5. Report your results as:
 
 ATHANOR_RESULT
 status: success
@@ -97,6 +105,7 @@ summary: {1-2 sentence cleanup summary}
 promoted: {count}
 deleted_lessons: {count}
 deleted_sessions: {count}
+deleted_goals: {count}
 retained: {count}
 END_RESULT
 

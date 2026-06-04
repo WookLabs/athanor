@@ -63,6 +63,20 @@ Read `docs/STATE.md`. Find the `## Current Phase` section and rotate it:
 - Rename the existing `## Current Phase` to `## Previous Phase` (or append to existing Previous)
 - Create a new `## Current Phase` section with the new version information
 
+**Trim rule (bounded history).** STATE.md rotation is append-only, so the
+file grows monotonically. After rotating, count the `## Previous Phase`
+sections. If the count exceeds the cap of **5** retained Previous Phase
+sections, MOVE the oldest surplus sections — verbatim, no content loss —
+to `docs/archive/STATE-history.md`, appending them under a dated
+`## Archived from STATE.md ({ship_date})` heading, then delete them from
+`docs/STATE.md`. Keep the newest 5 Previous Phase sections plus the
+current one. Archival is a **move, not a delete** (never drop a phase
+section outright); create `docs/archive/STATE-history.md` if it is absent.
+A large pre-existing backlog (the v0.18.2 doc-lifecycle audit found 28
+sections) is trimmed **progressively** over subsequent releases rather than
+in one disruptive sweep — the cap is a steady-state target, not a
+retroactive mandate.
+
 ### Step 4: Test Pin Updates
 
 Find and update version assertions in the test suite:
@@ -83,6 +97,20 @@ python3 scripts/check_release_ready.py --ci
 ```
 
 If exit code is 0, the release is ready. If non-zero, report the failures.
+
+### Step 6: Learner-on-Release Dispatch (leader follow-up)
+
+The `learner-on-release` contract (`agents/learner.md` §On Release) makes
+Learner invocation a release-time invariant: every release tag must trigger a
+Learner run. This worker has no Agent tool and cannot dispatch the Learner
+itself — so after the readiness check passes and the release is tagged, the
+**leader** dispatches the Learner agent to: analyze the release diff
+(`git diff <prev-tag>..<new-tag>`) + commit log, emit ≥1 lesson at
+`.athanor/lessons/{skill}-{date}-{NNN}.md` for the release window, and
+cross-link any `regression-rca.md` in the window. Surface
+`learner_on_release: pending-leader-dispatch` in the result brief so the
+leader honors the contract (audit: `git tag -l` count ≈ release-tagged lesson
+count). This trigger is advisory (prose-driven, like other ceremony steps).
 
 ## Result Brief Format
 

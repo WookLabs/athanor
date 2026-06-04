@@ -367,3 +367,30 @@ with the release cadence.
   `learner-on-release` contract violation and must be backfilled.
 - **Reference:** see `agents/learner.md` §"On Release" for the full
   Learner-side protocol.
+
+---
+
+## 7. Documentation Lifecycle
+
+### Migration Guide Staleness
+
+Migration guides (`docs/vX.Y.Z-migration.md`) accumulate across releases.
+Each carries staleness frontmatter so readers and tooling can tell which
+are live:
+
+```yaml
+---
+status: historical | current   # current = applies to the current minor
+migration-to: vX.Y.Z           # the version this guide migrates *to*
+superseded-by: vA.B.C          # (historical only) the current guidance
+---
+```
+
+**Aging rule.** A guide whose minor is older than the current plugin minor
+(`.claude-plugin/plugin.json` `version`) MUST be marked `status:
+historical` and name a `superseded-by:` target. Historical guides are
+**archive candidates**: move them (verbatim, non-destructive) to
+`docs/archive/` at release time. The rule is enforced by
+`tests/test_regression_migration_guide_staleness.py` — a stale guide left
+as `current` fails CI, which is the automatic "ager". Archival is a move,
+never a delete.

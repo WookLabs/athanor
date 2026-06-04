@@ -4,7 +4,33 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.1 — Agent Inventory Audit + Concept Absorption
+## Current Phase: v0.18.2 — lfg/lfg-goal Doc-Lifecycle Audit + Cleanup
+
+**v0.18.2** (released 2026-06-04) — Patch closing the lfg/lfg-goal
+documentation-lifecycle audit (3 concerns: read→execute, execute→document,
+cleanup of stale docs). No identity-invariant change.
+
+1. **Cleanup layer (concern ③, the weakest).** `agents/cleaner.md` gains a
+   "Clean Old Goals" step that ages out non-completing (`aborted`/
+   `abandoned`) goals past `goalRetentionDays` — closing the **D13 broken
+   cross-reference** (lfg-goal claimed the cleaner does this; no step
+   existed). `complete` goals excluded (user action). Dispatch synced.
+2. **Drift + dormancy fixes.** Cleaner dispatch tier `sonnet`→`haiku`
+   (matches frontmatter + CLAUDE.md "minimal effort"); `learner-on-release`
+   wired into the release ceremony (`agents/releaser.md` Step 6).
+3. **Documentation lifecycle (new).** Migration-guide staleness frontmatter
+   (`status`/`superseded-by`) + `CONVENTIONS.md §7` + regression-test ager;
+   STATE.md bounded-history trim rule (progressive); completed-goal
+   `receipts/` archival; lfg PR-body work-log/review persistence slots.
+
+16 new regression tests (7 files), all RED→GREEN. Cleanup/trigger layers
+are advisory (prose-driven), consistent with athanor defense-mechanism
+honesty labels.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.1 — Agent Inventory Audit + Concept Absorption
 
 **v0.18.1** (released 2026-05-31) — Cleanup + concept-absorption patch
 (Goal 36470e54). No new feature, no new agent.
@@ -1245,7 +1271,7 @@ Splitter가 분류 책임 짐. Executor가 분류에 따라 분기 실행. RED �
 | `_doc-honesty` (v0.7.7+v0.7.8) | ✅ enforced | `tests/test_regression_doc_string_honesty.py` (models deprecated; hooks working contract) |
 | `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
 | `contract-ledger` presence | ⚠️ user-install 환경에서 항상 fail | `/athanor:setup` Check #11. fresh-checkout 분기 필요 (개선 후보) |
-| `learner-on-release` | ⚠️ contract만 있음 | `agents/learner.md` §On Release. 자동 트리거 없음 |
+| `learner-on-release` | ✅ ceremony 단계 (advisory) | `agents/releaser.md` Step 6 — release tag 후 leader가 Learner dispatch (`learner_on_release: pending-leader-dispatch` 신호). `agents/learner.md` §On Release |
 | `agent-frontmatter-consistency` | ❌ 회귀 0건 | v0.6.2 클래스 재발 시 잡지 못함 (개선 후보) |
 | `stop-phrase-detection` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 | `read-before-edit` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
