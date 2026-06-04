@@ -112,7 +112,31 @@ Scan `.athanor/sessions/` directories:
 
 **NEVER delete today's sessions.**
 
-### Step 5: Report
+### Step 5: Clean Old Goals
+
+Scan the goal ledger directory (`lfgGoal.goalsDir`, default `.athanor/goals/`):
+- For each `.athanor/goals/<goal_id>/`, read `state.json` (`cycle_state`) and
+  `goal.md` (the `status:` field).
+- A goal is a **cleanup candidate** only when BOTH hold:
+  1. **Non-completing terminal status** — `goal.md status == abandoned`, or
+     `state.json cycle_state == aborted` (the enum value that covers user
+     abort, max-iterations cap hit, and unrecoverable/blocked errors per
+     `skills/lfg-goal/references/state-shape.md`).
+  2. **Aged past retention** — older than `lfgGoal.goalRetentionDays` (default
+     30), measured from the most recent receipt / `state.json` timestamp, or
+     the goal directory mtime when no timestamp is recorded.
+- For each candidate:
+  - Promote any `<!-- importance: permanent -->` discoveries/receipts to
+    `.athanor/lessons/` first (mirror Step 1).
+  - Then delete the `.athanor/goals/<goal_id>/` directory.
+
+**NEVER** clean a goal whose `status == complete` — completed goals are archived
+to `docs/goals-completed/<goal_id>/` by the lfg-goal completion path, and
+deleting the live tree of a completed goal requires explicit user action
+(athanor convention). **NEVER** clean an `active` / in-progress goal, and
+**NEVER** clean a goal younger than `goalRetentionDays`.
+
+### Step 6: Report
 
 Return:
 ```
@@ -140,6 +164,11 @@ Sessions:
   - Cleaned: {count} (older than {maxAgeDays} days)
   - Kept: {count}
 
+Goals:
+  - Total: {count}
+  - Cleaned: {count} (non-completing, older than {goalRetentionDays} days)
+  - Kept: {count} (active / complete / within retention)
+
 Discoveries promoted: {count}
 
 END_RESULT
@@ -152,3 +181,4 @@ END_RESULT
 3. **ALWAYS** promote permanent discoveries before deleting their sessions
 4. When in doubt, **keep** — false retention is better than lost knowledge
 5. Log every deletion for auditability
+6. **NEVER** clean a `complete` goal (archived to `docs/goals-completed/`; deleting its live tree is a user action) or an `active` goal

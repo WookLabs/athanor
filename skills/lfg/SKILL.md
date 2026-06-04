@@ -204,6 +204,11 @@ push any uncommitted changes.
 Use a value-first PR title and a description that summarizes:
 - What changed (high-level — link to the plan file from step 1)
 - Why it changed (problem frame from plan)
+- Work summary (subtask counts — completed / failed / skipped — from
+  `.athanor/sessions/<id>/work-log.md`; the session tree is gitignored, so
+  the PR body is how the work record survives in git)
+- Review summary (per-lens scores + any residual findings from
+  `.athanor/sessions/<id>/review.md`)
 - Test plan (verification steps)
 - Migration / breaking-change notes (if any)
 

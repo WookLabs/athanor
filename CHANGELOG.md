@@ -3,6 +3,25 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.2] — 2026-06-04
+
+### Fixed — lfg/lfg-goal doc-lifecycle audit (read→exec / exec→doc / cleanup)
+
+- **D13 broken cross-reference (High):** `agents/cleaner.md` gains a "Clean Old Goals" step — `skills/lfg-goal/SKILL.md` claimed the cleaner ages out stale `.athanor/goals/` per D13, but no such step existed (Step 4 cleaned only sessions). It now ages out non-completing (`aborted`/`abandoned`) goals past `goalRetentionDays`; `complete` goals are excluded (deleting their live tree stays a user action). Dispatch prompt in `learner-cleaner.md` synced.
+- **Cleaner model drift:** dispatch tier `sonnet` → `haiku` to match `agents/cleaner.md` frontmatter + CLAUDE.md "Cleaner: minimal effort".
+- **Completion archival:** completed-goal `receipts/` now archived to `docs/goals-completed/<id>/` alongside `goal.md` + `goal-completion.md` (the externally-verifiable evidence trail survives).
+- **learner-on-release:** wired into the release ceremony (`agents/releaser.md` Step 6, leader-follow-up dispatch) — previously a dormant, never-triggered contract.
+
+### Added — documentation lifecycle
+
+- **Migration-guide staleness:** `status: historical|current` + `superseded-by:` frontmatter on `docs/v*-migration.md`; `docs/CONVENTIONS.md §7` rule; a regression test is the automatic ager (a guide older than the current plugin minor left `current` fails CI). v0.12.0 / v0.17.0 marked historical.
+- **STATE.md bounded-history trim:** `agents/releaser.md` Step 3 caps retained `## Previous Phase` sections (5), moving surplus non-destructively to `docs/archive/STATE-history.md` — progressive, not retroactive.
+- **lfg PR-body persistence:** Step 7 PR template carries work-log + review summary slots so the work record survives in git after the gitignored session tree is cleaned.
+
+### Notes
+
+- 16 new regression tests (7 files); every defect implemented RED→GREEN. Cleanup/trigger layers are advisory (prose-driven), matching athanor's defense-mechanism honesty labels. The pre-existing STATE.md 28-section backlog is trimmed progressively, not in this release.
+
 ## [0.18.1] — 2026-05-31
 
 ### Changed — Agent inventory audit + concept absorption (Goal 36470e54)

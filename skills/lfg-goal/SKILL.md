@@ -373,10 +373,13 @@ discipline.
 
 - Default: `.athanor/goals/` is **gitignored** (mirrors the
   `.athanor/sessions/` convention).
-- Completed goals: on `mark_goal_complete()`, leader copies `goal.md`
-  + `goal-completion.md` to `docs/goals-completed/<id>/` (gitted) before
-  ledger closure. Controlled by `lfgGoal.archiveOnComplete: true`
-  (default).
+- Completed goals: on `mark_goal_complete()`, leader copies `goal.md`,
+  `goal-completion.md`, AND the `receipts/` directory (every
+  `CNNN-*-receipt.md` validator receipt) to `docs/goals-completed/<id>/`
+  (gitted) before ledger closure — the receipts are the externally-
+  verifiable evidence trail and must survive with the completion record,
+  since the gitignored `.athanor/goals/<id>/` tree may later be aged out by
+  the cleaner. Controlled by `lfgGoal.archiveOnComplete: true` (default).
 - `abandoned | blocked | max_iterations_exceeded` goals: stay in
   `.athanor/goals/` for `lfgGoal.goalRetentionDays` (default 30) then
   cleaner agent ages them out per D13.

@@ -193,7 +193,7 @@ Full prompt in `references/learner-cleaner.md`.
 
 ### Step 5: Cleanup (automatic, after Learner)
 
-Dispatch Cleaner agent (sonnet) — memory decay + old-session cleanup. Full
+Dispatch Cleaner agent (haiku) — memory decay + old-session cleanup. Full
 prompt in `references/learner-cleaner.md`.
 
 ### Step 6: Final Summary
