@@ -3,6 +3,25 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.3] — 2026-06-06
+
+### Fixed — plugin hygiene cleanup (ref-update audit)
+
+- README `/athanor:deep-plan` / `/athanor:lite-plan` → `/athanor:plan --depth=` (v0.17.0 folded them; README lagged).
+- discuss dropped the `--new-session` flag broken-promise (reclassified v0.11.7) from the stale-session announcement.
+- agent model drift: CLAUDE.md §Effort Level now maps all 11 agents to their actual frontmatter tier (executor=opus etc.); a regression locks frontmatter ↔ §Effort + the v0.6.2 frontmatter-consistency class.
+- STATE.md bloat: trimmed 28→5 Previous Phase sections; v0.15.0…v0.7.9 moved verbatim to `docs/archive/STATE-history.md` (first application of the v0.18.2 bounded-history trim rule); 1362→~360 lines.
+- Memory 2-tier honesty: §Rules 5 labels mem-search permanent persistence as unimplemented (scripts make zero mem-search calls; STATE.md Known gaps).
+
+### Added — ref-pattern adoption
+
+- **Approach-altitude gate** (from compound-engineering v3.11.1): `/athanor:plan` Step 1 recognizes "plan the approach / 방법부터 계획" requests before deliverable planning; detail + proactive gating in `skills/plan/references/approach-altitude.md`.
+- **Review section carving** (from gstack v1.56 STOP-Read): `/athanor:review` lens personas + doc-review mode carved to `skills/review/references/review-sections.md`, loaded on demand after lens selection; SKILL 418→311 lines, decision-brief format preserved.
+
+### Notes
+
+- 16 new regression tests; full suite 932 passed, 0 failed. B-6 (concepts orphan) and B-8 (defense label) were verified **false positives** — no change. autoresearch dangerous-cmd / privacy-block found **already covered** by the existing PreToolUse kernel guard. A-4 (kernel-guard extension) + B-7/B-9 deferred to ROADMAP.
+
 ## [0.18.2] — 2026-06-04
 
 ### Fixed — lfg/lfg-goal doc-lifecycle audit (read→exec / exec→doc / cleanup)
