@@ -1,0 +1,86 @@
+name: Bug report
+description: Something in Athanor misbehaves — wrong dispatch, broken hook, skill error, regression after upgrade.
+title: "bug: <short description>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: verify on the latest release and check open issues for duplicates.
+
+  - type: input
+    id: version
+    attributes:
+      label: Athanor version
+      description: From `.claude-plugin/plugin.json` or `/athanor:setup` output.
+      placeholder: "0.7.6"
+    validations:
+      required: true
+
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: From `claude --version`.
+      placeholder: "2.1.x"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      multiple: true
+      options:
+        - skill (/athanor:plan, /athanor:work, etc.)
+        - agent dispatch (planner, executor, reviewer, etc.)
+        - hook (Stop verification, etc.)
+        - codex CLI integration
+        - .athanor/sessions or lessons artifacts
+        - install / setup
+        - documentation
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Exact slash command(s), prompt, and project state needed to reproduce.
+      placeholder: |
+        1. Fresh `claude` session in <repo>
+        2. Run `/athanor:plan "<prompt>"`
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages and the relevant section from `.athanor/sessions/<id>/work-log.md` if available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config
+      description: |
+        Non-default settings from `athanor.json` (memory, codex, work, team, models, hooks, review).
+        Redact anything sensitive.
+      render: json
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Codex CLI availability, custom hooks, vendored skills overrides, anything else.
