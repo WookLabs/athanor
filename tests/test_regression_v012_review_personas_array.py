@@ -32,6 +32,7 @@ jsonschema = pytest.importorskip("jsonschema")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REVIEW_SKILL = REPO_ROOT / "skills" / "review" / "SKILL.md"
+REVIEW_SECTIONS = REPO_ROOT / "skills" / "review" / "references" / "review-sections.md"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "athanor-config.schema.json"
 
 CODE_PERSONAS = [
@@ -55,8 +56,14 @@ DOC_PERSONAS = [
 
 
 def _read_skill() -> str:
-    with open(REVIEW_SKILL, encoding="utf-8") as f:
-        return f.read()
+    # v0.18.3: §Personas + §Doc review mode were carved to
+    # references/review-sections.md (gstack-style STOP-Read). The persona
+    # contract is preserved across the skill router + carved section, so this
+    # regression reads both as the logical review surface.
+    body = REVIEW_SKILL.read_text(encoding="utf-8")
+    if REVIEW_SECTIONS.is_file():
+        body += "\n" + REVIEW_SECTIONS.read_text(encoding="utf-8")
+    return body
 
 
 def _read_schema() -> dict:

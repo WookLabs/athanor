@@ -56,6 +56,7 @@ code, rubric text, and templates live under `skills/plan/references/`:
   former `/athanor:deep-plan` + `/athanor:lite-plan` skills into this
   one unified `/athanor:plan` invocation with flag dispatch (see
   `docs/v0.17.0-migration.md`).
+- `references/approach-altitude.md` — Step 1 approach-altitude gate (plan-the-approach vs plan-the-deliverable recognition).
 
 ---
 
@@ -141,6 +142,10 @@ A-IDs / F-IDs / AE-IDs in phase `Verify:` MUST/SHOULD bullets — compounds
 with v0.8.0 Spec-then-TDD discipline. Downstream Critic axis (C) R-ID
 traceback rubric (Step 4 + `references/critic-rubric.md`) verifies
 cite-back.
+
+**Approach-altitude gate:** recognize explicit "plan the approach / 방법부터
+계획 / don't build yet" → method-level plan (`references/approach-altitude.md`);
+else deliverable plan. Proactive offer only on high method-uncertainty.
 
 Parse the user's planning request, then announce:
 

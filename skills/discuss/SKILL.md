@@ -45,7 +45,7 @@ Bash reference there. Lex-max selection — no "today" semantics.
    - If `<LATEST>` exists AND it has no `work-log.md` → **reuse** `<LATEST>` (same pipeline in progress).
    - Otherwise (no matching session, or `<LATEST>` already has `work-log.md` from a completed pipeline) → **create new** session named `{today}-{max_NNN + 1}` (where `max_NNN` is the highest `NNN` already used under the current `YYYY-MM-DD` prefix, or `001` if none).
 4. **Stale-session announcement:** If reusing `<LATEST>` and its date prefix (`YYYY-MM-DD`) does not equal the current date, announce:
-   > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually or wait for the --new-session flag (v0.8.0).`
+   > `Reusing session <LATEST> (created on <YYYY-MM-DD>). To start fresh, create a new session manually.`
 5. Ensure session directory exists: `.athanor/sessions/{id}/`
 
 ### Step 1: Mode dispatch + dilemma restate (v0.9.0 dual mode)

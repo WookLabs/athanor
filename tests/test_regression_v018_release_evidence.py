@@ -24,10 +24,10 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Five-file version parity tracks the live release. Bumped to 0.18.2 by the
-# v0.18.2 doc-lifecycle ceremony. The CHANGELOG/STATE/migration prose locks
+# Five-file version parity tracks the live release. Bumped to 0.18.3 by the
+# v0.18.3 cleanup+adoption ceremony. The CHANGELOG/STATE/migration prose locks
 # below still assert the v0.18.0 ceremony evidence, which remains present.
-TARGET_VERSION = "0.18.2"
+TARGET_VERSION = "0.18.3"
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"

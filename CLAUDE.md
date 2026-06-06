@@ -58,7 +58,7 @@ Agent definitions live in `agents/` as `.md` files with a **dual nature**: (1) r
 2. Leader는 dispatch + 결과 수집만 한다
 3. Worker는 항상 깨끗한 컨텍스트에서 시작한다
 4. 세션 간 통신은 `.athanor/sessions/{id}/` 의 .md 파일을 통한다
-5. 작업 완료 시 자동으로 메모리를 저장한다 (2-tier: permanent + working)
+5. 작업 완료 시 lessons를 2-tier(permanent/working)로 추출·저장한다 (`.athanor/lessons/` frontmatter `importance`; mem-search 영구저장은 미구현 — STATE.md Known gaps)
 
 ## Session Directory
 
@@ -154,9 +154,9 @@ Four athanor identity commitments survive intact, upheld by native skill prose +
 4. **Stop hook runtime gate.** `scripts/hooks/stop_verify_claims.py` fires on every Stop event (v0.10.0 vendor-aware whitelist scope; D11 preserved as general defensive coverage).
 
 ### Effort Level
-- Planner / Critic: highest reasoning effort
-- Executor / Analyst: standard effort
-- Cleaner: minimal effort
+- Planner / Critic / Executor / Reviewer / Releaser / CI-watcher: highest (opus)
+- Analyst / Researcher / Learner / Codex-dispatcher: standard (sonnet)
+- Cleaner: minimal (haiku)
 
 ## Lessons System
 

@@ -86,8 +86,8 @@ You:     /athanor:work --team
          All 6 subtasks complete. 2 lessons saved for next time.
 ```
 
-> Need deeper analysis? Try `/athanor:deep-plan` for full adversarial planning.
-> In a hurry? `/athanor:lite-plan` skips the review step.
+> Need deeper analysis? Try `/athanor:plan --depth=deep` for full adversarial planning.
+> In a hurry? `/athanor:plan --depth=lite` skips the review step.
 
 ## Commands
 
@@ -97,9 +97,7 @@ You:     /athanor:work --team
 | `/athanor:discuss` | Plan | Decision brainstorming (researcher + devil's advocate + critic) |
 | `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers simultaneously) |
 | `/athanor:debug` | Plan | Triage-first parallel failure diagnosis |
-| `/athanor:deep-plan` | Plan | Full adversarial planning (Claude + Codex cross-review) |
-| `/athanor:plan` | Plan | Standard planning + review + task splitting (default) |
-| `/athanor:lite-plan` | Plan | Lightweight planning (Claude only, no review) |
+| `/athanor:plan` | Plan | Tiered planning via `--depth=standard`(default)`/deep/lite` (+ `--no-review`) |
 | `/athanor:work` | Execute | Grinding through every subtask until done |
 | `/athanor:review` | Plan | Parallel 6-lens code review (architecture, quality, security, performance, testing, docs) |
 
@@ -107,7 +105,7 @@ You:     /athanor:work --team
 /athanor:discuss  →  /athanor:analyze  →  /athanor:debug (optional)
    "What?"              "Where?"              "Why broken?"
 
-                  →  /athanor:plan (or deep-plan / lite-plan)  →  /athanor:work
+                  →  /athanor:plan (--depth=standard/deep/lite)  →  /athanor:work
                         "How?"                                       "Do it."
 ```
 
@@ -116,7 +114,7 @@ Everything before `/athanor:work` is **Plan Mode** — no files are modified.
 ## Key Feature: 3-Tier Planning Pipeline
 
 ```
-Deep (/athanor:deep-plan):
+Deep (--depth=deep):
          ┌── Planner A ──→ Reviewer B ──┐
 Input ───┤                               ├── Critic → Final Plan
          └── Planner B ──→ Reviewer A ──┘
@@ -124,7 +122,7 @@ Input ───┤                               ├── Critic → Final Plan
 Standard (/athanor:plan, default):
 Input ── Planner ──→ Reviewer ──→ Refinement → Final Plan
 
-Lite (/athanor:lite-plan):
+Lite (--depth=lite):
 Input ── Planner ──→ Final Plan
 ```
 
