@@ -4,7 +4,29 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.3 — Cleanup Audit + ref Adoption
+## Current Phase: v0.18.4 — Engineering-Quality Principle (complexity + fail-loud)
+
+**v0.18.4** (released 2026-06-06) — Codifies the "Engineering quality"
+principle (low complexity + fail-loud over silent fallback) across athanor's
+advisory + gate surfaces. No identity-invariant change.
+
+1. **Principle (CLAUDE.md §Core Principle)**: works is the floor; minimize
+   complexity; **no indiscriminate fallback** — surface errors, don't swallow
+   them into a fallback. band 175→178.
+2. **Advisory wiring (user code)**: plan Critic axis (D) simplicity & fail-loud
+   (synced across rubric + all variants + SKILL.md four-axis); review
+   maintainability silent-failure lens strengthened (fail-loud explicit).
+3. **Gate (athanor's own code)**: pretool_dispatcher fail-loud breadcrumb on
+   unparseable stdin (was silent).
+
+4 new regression tests; full suite 939 passed, 0 failed. An adversarial
+Workflow review (4 lenses) caught + fixed a SKILL.md three→four-axis sync miss
+pre-release.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.3 — Cleanup Audit + ref Adoption
 
 **v0.18.3** (released 2026-06-06) — Plugin-hygiene cleanup + 2 ref-pattern
 adoptions, from the ref-update audit. No identity-invariant change.
@@ -196,36 +218,6 @@ Codex + cross-review + Critic synthesis). REMOVE-first ordering per
 Plan B + Plan A's test-cascade rigor. 3-release roadmap: v0.17.0
 (this) → v0.18.0 (hook additions) → v0.19.0 (evidence-bound
 discipline).
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
-v0.11.8) untouched.
-
-## Previous Phase: v0.16.0 — Multi-Status Executor + PreToolUse Kernel Guard + CLAUDE.md Token Diet
-
-**v0.16.0** (released 2026-05-28) — Three coordinated changes that
-strengthen the Thin Leader contract surface:
-
-1. **Multi-status executor.** `/athanor:work` now emits four worker
-   completion statuses — `done`, `done_with_concerns`, `needs_context`,
-   `blocked` — plus a `blocked_queue` so the leader can route partial
-   completions without flattening them to binary success/failure.
-2. **PreToolUse Kernel Guard.** A new PreToolUse hook enforces 3-class
-   safety (destructive shell / force-push / credentials) before any
-   tool invocation reaches the runtime. Sits alongside the existing
-   Stop hook gate; both are command-based and honour
-   `hooks.profile: "off"` per-project opt-out.
-3. **CLAUDE.md token diet.** The contract index slimmed from ~534
-   lines down to ~175 (navigation + 4 identity invariants + Status
-   table). Heavyweight prose moved to `docs/archive/`:
-   `stop-hook-postmortem.md`, `concept-absorption-surface.md`,
-   `defense-mechanisms-detail.md`. Pinned by
-   `tests/test_regression_v016_claude_md_contract.py` (line count
-   band 145-175 + 4 contract anchors + 3 archive files).
-
-Test surface grows from 639 → 644 (+5 ST16) plus additional coverage
-shipped alongside the executor and kernel-guard work landed earlier in
-the cycle.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →

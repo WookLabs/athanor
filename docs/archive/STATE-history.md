@@ -1029,3 +1029,36 @@ Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
 v0.11.8) untouched.
 
+
+## Archived from STATE.md (2026-06-06, v0.18.4 rotation)
+
+## Previous Phase: v0.16.0 — Multi-Status Executor + PreToolUse Kernel Guard + CLAUDE.md Token Diet
+
+**v0.16.0** (released 2026-05-28) — Three coordinated changes that
+strengthen the Thin Leader contract surface:
+
+1. **Multi-status executor.** `/athanor:work` now emits four worker
+   completion statuses — `done`, `done_with_concerns`, `needs_context`,
+   `blocked` — plus a `blocked_queue` so the leader can route partial
+   completions without flattening them to binary success/failure.
+2. **PreToolUse Kernel Guard.** A new PreToolUse hook enforces 3-class
+   safety (destructive shell / force-push / credentials) before any
+   tool invocation reaches the runtime. Sits alongside the existing
+   Stop hook gate; both are command-based and honour
+   `hooks.profile: "off"` per-project opt-out.
+3. **CLAUDE.md token diet.** The contract index slimmed from ~534
+   lines down to ~175 (navigation + 4 identity invariants + Status
+   table). Heavyweight prose moved to `docs/archive/`:
+   `stop-hook-postmortem.md`, `concept-absorption-surface.md`,
+   `defense-mechanisms-detail.md`. Pinned by
+   `tests/test_regression_v016_claude_md_contract.py` (line count
+   band 145-175 + 4 contract anchors + 3 archive files).
+
+Test surface grows from 639 → 644 (+5 ST16) plus additional coverage
+shipped alongside the executor and kernel-guard work landed earlier in
+the cycle.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
+v0.11.8) untouched.
+

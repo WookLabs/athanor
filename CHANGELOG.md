@@ -3,6 +3,20 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.4] — 2026-06-06
+
+### Added — engineering-quality principle (low complexity + fail-loud)
+
+- **CLAUDE.md §Core Principle** codifies "Engineering quality": works is the floor — keep complexity low + maintainable; **no indiscriminate fallback (fail-loud over silent fallback)** — surface errors, don't swallow them into a fallback that makes them hard to find. User code = advisory (Critic/review); athanor's own code = gate. (band 175→178.)
+- **plan Critic axis (D) "Simplicity & fail-loud readiness"** (advisory) — flags unjustified complexity/scope + fallback designs that swallow should-be-fixed errors. Synced across `critic-rubric.md`, all `critic-variants.md` injections, and the `plan/SKILL.md` dispatch enumeration (three → four axes).
+- **review maintainability lens** — silent-failure heuristic strengthened to name fail-loud + indiscriminate fallbacks explicitly.
+- **athanor self fail-loud** — `scripts/hooks/pretool_dispatcher.py` now emits a stderr breadcrumb on the unparseable-stdin fail-open path (was silent — a guard that no-ops invisibly is the exact anti-pattern the principle warns against).
+
+### Verification
+
+- 4 new regression tests (engineering principle, critic axis (D) incl. SKILL.md sync, dispatcher fail-loud); full suite **939 passed, 0 failed**.
+- An adversarial multi-lens Workflow review (4 lenses → refute-default verify) caught a self-consistency miss — `plan/SKILL.md` left at "three axes" while rubric/variants moved to four — fixed before release and the regression extended to lock SKILL.md.
+
 ## [0.18.3] — 2026-06-06
 
 ### Fixed — plugin hygiene cleanup (ref-update audit)

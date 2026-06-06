@@ -134,7 +134,11 @@ def main() -> int:
     """Entry: read stdin, run kernel FIRST, then freeze if opted in."""
     payload = _runtime.read_stdin_payload()
     if payload is None:
-        return 0  # fail-open on missing/unparseable stdin
+        # fail-open on missing/unparseable stdin — but fail-LOUD: a guard that
+        # silently no-ops hides the failure (§Core Principle: fail-loud over
+        # silent fallback). Other hooks emit the same breadcrumb here.
+        _stderr("stdin missing or unparseable; passing (fail-open)")
+        return 0
 
     # Step 1: kernel guard FIRST. Reads its own profile internally
     # (fail-CLOSED "standard" default on missing config), so catastrophic

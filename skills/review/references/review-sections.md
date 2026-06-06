@@ -51,15 +51,20 @@ tests that pass even when the SUT is broken (no observed-vs-asserted gap).
 ### Persona: maintainability
 **Selection:** always-on
 **Focus:** premature abstraction, dead code, naming clarity, coupling,
-complexity that doesn't pay rent
+complexity that doesn't pay rent, unjustified complexity/scope (works is the
+floor — prefer the simplest approach that meets acceptance)
 **Voice:** future-reader oriented ("a maintainer 6 months from now will read
 `process()` and not know whether it mutates state — rename or document the
 side effect"). Optimizes for the second reader, not the first writer.
 **Heuristics (quality lens):**
-- **silent-failure** — flag swallowed errors: empty catch blocks, bare
-  `except: pass`, error-ignoring fallbacks, discarded Promise rejections,
-  `.catch(() => {})`. A failure that vanishes silently is worse than one that
-  crashes loudly. (concept from ECC silent-failure-hunter, MIT)
+- **silent-failure (fail-loud over silent fallback)** — flag swallowed errors:
+  empty catch blocks, bare `except: pass`, error-ignoring fallbacks, silent
+  degrade, discarded Promise rejections, `.catch(() => {})`, and **indiscriminate
+  fallbacks that route a should-be-fixed error into a default path** (hard to
+  find later). A failure that vanishes silently is worse than one that crashes
+  loudly — prefer fail-loud (surface the error). Raise to ≥ medium unless the
+  fallback is deliberate + logged/announced. (concept from ECC
+  silent-failure-hunter, MIT; athanor §Core Principle "Engineering quality")
 - **project-standards** — audit changes against the repo's own `CLAUDE.md` /
   `AGENTS.md` conventions: frontmatter rules, naming, and cross-platform
   portability. Flag deviations from documented house style. (concept from CE

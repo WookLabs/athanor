@@ -48,7 +48,7 @@ code, rubric text, and templates live under `skills/plan/references/`:
 - `references/critic-variants.md` — Step 4 Critic packets (4-input deep,
   2-input deep review-skipped, 2-input standard refinement, pass-through).
 - `references/critic-rubric.md` — v0.8.0 Critic Rubric (Spec-then-TDD
-  Readiness, three axes A/B/C).
+  Readiness, four axes A/B/C/D).
 - `references/presentation.md` — Step 5 presentation template + UNRESOLVED
   conflict handler.
 - `references/depth-flag-dispatch.md` — v0.17.0 **active** handler for
@@ -255,13 +255,14 @@ Critic dispatch: model=opus, inline-prompt mode, tier={deep|standard}, review_st
 Every Critic dispatch — **Deep tier 4-input**, **Deep tier 2-input
 review-skipped**, **Standard tier 2-input refinement**, **standard tier
 self-critic / claude-self-review fallback** — MUST apply the v0.8.0
-Critic Rubric (three axes A/B/C; full text in
+Critic Rubric (four axes A/B/C/D; full text in
 `references/critic-rubric.md`; each `Agent({prompt: ...})` packet in
 `references/critic-variants.md` references it inline by axis labels):
 (A) acceptance_criteria coverage (MUST/SHOULD bullets per behavior-bearing
 phase); (B) classification appropriateness (predict `execution_note`,
 flag over-classification / under-classification); (C) R-ID traceback
-coverage (v0.9.0, gated on requirements.md). Reformulate prose Verify;
+coverage (v0.9.0, gated on requirements.md); (D) simplicity & fail-loud
+(v0.18.4, advisory). Reformulate prose Verify;
 Adjust phase scope or Verify formality where classification mismatched.
 Rubric is **advisory** — Codex-driven and Claude self-review fallback
 dispatches apply the same rubric.
