@@ -15,8 +15,8 @@ criteria (clarity, completeness, risk treatment).
 
 **v0.9.0 NOTE:** the rubric below is referenced from each Critic
 Agent({prompt: ...}) block via the inline injection added in v0.9.0. The
-injection text now lists three axes (A, B, C — axis C added in v0.9.0 for
-R-ID traceback coverage). See
+injection text now lists four axes (A, B, C, D — axis C added in v0.9.0 for
+R-ID traceback coverage; axis D simplicity/fail-loud added in v0.18.4). See
 `docs/plans/2026-05-19-002-feat-v0.9.0-discuss-clarify-mode-plan.md` §U5.
 
 ## (A) Acceptance criteria coverage (`acceptance_criteria coverage`)
@@ -59,6 +59,21 @@ R-ID traceback coverage). See
 - Flag any phase where the planner's stated intent contradicts the file-set
   signal (e.g., "Add new feature X" but the `files:` list only touches
   CHANGELOG.md or `_doc` strings).
+
+## (D) Simplicity & fail-loud readiness (v0.18.4, advisory)
+
+Applies CLAUDE.md §Core Principle "Engineering quality" to the plan:
+
+- **Unjustified complexity / scope** — does a phase add complexity or scope
+  beyond what its acceptance criteria require? If a simpler approach meets the
+  same MUST bullets, flag it (premature abstraction, needless generalization,
+  "and also..." scope-creep). Works is the floor, not the goal.
+- **Fail-loud over silent fallback** — does the design swallow a
+  should-be-fixed error into a fallback / silent-degrade path (hard to find
+  later)? Prefer surfacing the error (fail-loud). Flag fallbacks that mask real
+  failures; deliberate fallbacks must be logged/announced.
+- **Advisory** — like (A)/(B)/(C), no runtime gate; surface as a plan-body
+  note ("SIMPLICITY/FAIL-LOUD — …") for the Splitter/executor to weigh.
 
 ## Corrective behavior when violations are found
 

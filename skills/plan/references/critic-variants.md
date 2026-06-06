@@ -119,9 +119,10 @@ Conditional v0.9.0 input — also read if present:
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-In addition to the general rules above, apply the three-axis Spec-then-TDD
+In addition to the general rules above, apply the four-axis Spec-then-TDD
 readiness rubric to the synthesized plan (acceptance_criteria coverage +
-execution_note classification appropriateness + R-ID traceback coverage) —
+execution_note classification appropriateness + R-ID traceback coverage +
+simplicity & fail-loud readiness) —
 full text in `skills/plan/references/critic-rubric.md` (also referenced from
 `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric — Spec-then-TDD
 Readiness\").
@@ -143,6 +144,12 @@ verify that each phase's MUST/SHOULD Verify bullets cite-back the relevant
 origin R-IDs / A-IDs / F-IDs / AE-IDs. Flag any behavior-bearing phase that
 silently fails to trace back to a stated requirement. When requirements.md
 is absent, axis (C) is skipped (backwards compat).
+
+Axis (D) — simplicity & fail-loud readiness (v0.18.4): flag phases that add
+unjustified complexity/scope beyond their acceptance criteria (a simpler
+approach meeting the same MUST bullets is preferred), and fallback designs
+that swallow a should-be-fixed error into a silent-degrade path. Prefer
+fail-loud (surface the error). Advisory — surface as a plan-body note.
 
 Save to: .athanor/sessions/{session-id}/plan.md
 
@@ -218,7 +225,7 @@ Begin the output file with this exact line (so /athanor:work detects the skipped
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-Apply the same three-axis Spec-then-TDD readiness rubric as the 4-input
+Apply the same four-axis Spec-then-TDD readiness rubric as the 4-input
 variant: (A) acceptance_criteria coverage — every behavior-bearing phase's
 Verify field must be MUST/SHOULD observable assertions; reformulate prose
 Verify fields where needed. (B) classification appropriateness — predict
@@ -227,6 +234,8 @@ each phase's likely execution_note value and flag over-/under-classification.
 when `.athanor/sessions/{id}/requirements.md` exists, verify each phase's
 MUST/SHOULD Verify bullets cite-back the origin R-IDs / A-IDs / F-IDs /
 AE-IDs. Skip axis (C) when requirements.md is absent (backwards compat).
+(D) simplicity & fail-loud — flag unjustified complexity/scope and fallback
+designs that swallow should-be-fixed errors (prefer fail-loud). Advisory.
 Full rubric text in `skills/plan/references/critic-rubric.md` (also
 referenced from `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
 Spec-then-TDD Readiness\").
@@ -295,7 +304,7 @@ Conditional v0.9.0 input — also read if present:
 
 ## v0.8.0 Critic Rubric — Spec-then-TDD Readiness (REQUIRED)
 
-In addition to the rules above, apply the three-axis Spec-then-TDD readiness
+In addition to the rules above, apply the four-axis Spec-then-TDD readiness
 rubric to the refined plan: (A) acceptance_criteria coverage — every
 behavior-bearing phase's Verify field must be MUST/SHOULD observable
 assertions; reformulate prose Verify fields where needed. (B) classification
@@ -306,6 +315,8 @@ traceback coverage (v0.9.0; gated on requirements.md presence) — when
 `.athanor/sessions/{id}/requirements.md` exists, verify each phase's
 MUST/SHOULD Verify bullets cite-back the origin R-IDs / A-IDs / F-IDs /
 AE-IDs. Skip axis (C) when requirements.md is absent (backwards compat).
+(D) simplicity & fail-loud — flag unjustified complexity/scope and fallback
+designs that swallow should-be-fixed errors (prefer fail-loud). Advisory.
 Full rubric text in `skills/plan/references/critic-rubric.md` (also
 referenced from `skills/plan/SKILL.md` §\"v0.8.0 Critic Rubric —
 Spec-then-TDD Readiness\"). This rubric applies whether the upstream review

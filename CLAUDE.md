@@ -13,6 +13,8 @@ Documented infrastructure/output exceptions:
 - In `/athanor:discuss` clarify mode, after explicit user confirmation, the leader may write `.athanor/sessions/{id}/requirements.md` as a captured dialogue artifact.
 - These exceptions do not permit editing project source files or performing implementation work before `/athanor:work`.
 
+**Engineering quality**: 동작은 최소 요건일 뿐 — 복잡도는 낮게, 유지보수는 쉽게 유지한다. **무분별한 fallback 금지 (fail-loud over silent fallback)**: 정정해야 할 오류를 폴백으로 삼켜 숨기지 말고 표면화한다(에러를 폴백으로 넘겨 찾기 어렵게 만들지 않는다). 정당화되지 않은 복잡도·scope는 줄인다. 사용자 코드엔 Critic/review로 권고(advisory), athanor 자체 코드엔 test/gate로 강제.
+
 ## Native Agent Inventory
 
 Agent definitions live in `agents/` as `.md` files with a **dual nature**: (1) reference documents for the inline-dispatched pipeline roles — each carries `name: athanor-*` frontmatter and documents purpose/tools/dispatch contract, but is NOT the full implementation (canonical code stays in skills); (2) ALSO live registered agent types for standalone `@-mention` use. **COLLISION GUARD:** skills never dispatch the 8 pipeline roles via `subagent_type` — they use an INLINE `Agent()` prompt. For planner/critic this is explicitly WRONG to do via the registered agent, because the inline prompt carries session-specific file paths (`.athanor/sessions/{id}/...`) the standalone agent lacks. All 11 agents + frontmatter are KEPT (Goal 36470e54 C002; 0 ref-agent adoptions per `docs/agent-evaluation-matrix.md`). Full detail: `docs/archive/agent-dual-nature.md`.

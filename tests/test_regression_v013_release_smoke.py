@@ -31,7 +31,7 @@ def test_v013_release_surface_intact():
     assert template["lfgGoal"] == config["lfgGoal"], "athanor.json + templates/athanor.json lfgGoal parity violated"
     # version bump
     plugin = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
-    assert plugin["version"] == "0.18.3", f"plugin.json version not bumped: {plugin['version']}"
+    assert plugin["version"] == "0.18.4", f"plugin.json version not bumped: {plugin['version']}"
 
 
 def test_companion_fix_arc_scripts_present():

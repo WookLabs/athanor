@@ -39,7 +39,11 @@ CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 ARCHIVE_DIR = REPO_ROOT / "docs" / "archive"
 
 LINE_COUNT_MIN = 145
-LINE_COUNT_MAX = 175
+# v0.18.4: raised 175 → 178 for the §Core Principle "Engineering quality"
+# (fail-loud / low-complexity) addition. Still a navigational index, not a
+# prose dump — the band guards re-bloat, and +3 for a first-class principle
+# is a deliberate contract update, not drift.
+LINE_COUNT_MAX = 178
 
 
 def _read_claude_md() -> str:
