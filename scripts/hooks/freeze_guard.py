@@ -104,6 +104,7 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import posixpath
 import re
 import sys
 import tempfile
@@ -242,6 +243,14 @@ def _path_in_allowlist(path: str, allowed_paths: list[str]) -> bool:
     normalized = _normalize_path(path)
     if not normalized:
         return False
+    # v0.18.6 (bug hunt F1): collapse `.`/`..` segments before matching. Without
+    # this, a path-traversal candidate (`.athanor/sessions/<id>/../../../x.py`)
+    # keeps its `..` and matches a session glob because fnmatch `*` crosses `/`
+    # — letting an out-of-scope edit slip the freeze. normpath canonicalizes so
+    # an escaping path resolves to its real (out-of-allowlist) location, and a
+    # candidate that escapes above the tree keeps a leading `..` that matches no
+    # normal allowlist prefix (fail-closed).
+    normalized = posixpath.normpath(normalized)
     for entry in allowed_paths:
         if not isinstance(entry, str):
             continue

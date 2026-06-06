@@ -3,6 +3,35 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.6] — 2026-06-07
+
+### Fixed — 11 bugs from a deep bug-hunt (Kernel Guard security hardening)
+
+A deep adversarial bug-hunt Workflow (4 specialized lenses → refute-default reproduce-to-confirm) found **11 real bugs** in athanor's own executable code — all reproduced, all fixed RED→GREEN. Headline: athanor's PreToolUse **Kernel Guard** (the safety gate that blocks catastrophic commands) was bypassable by the most common real-world forms. Honest scope: 5 are pre-existing v0.16.0 regex flaws; only **1 (D1)** is a v0.18.5 regression.
+
+**Critical — Kernel Guard root-wipe bypasses (`scripts/hooks/pretool_kernel_guard.py`):**
+- **G1** `rm -rf /*` (shell-glob root wipe) and `rm -rf ~/*` slipped the guard — only literal `/` was blocked.
+- **G2** `rm -rf --no-preserve-root /` (the GNU-canonical root wipe; bare `rm -rf /` is refused by GNU rm) slipped via the intervening option.
+
+The `rm` family is now detected by a flag-detection + target-detection split: flag-order independent, intervening options allowed, shell-glob root/home forms matched — while keeping false-positives out (`rm -rf /tmp/build`, `./build/`, `~/projects/old`, `rm -f file.txt`).
+
+**High — more destructive-command bypasses (same file):**
+- **G3** `rm -fr /` (flag order f-before-r; POSIX bundled flags are order-independent).
+- **G4** `git clean --force` (long form) — only `-f` short bundles were blocked.
+- **R1** `head -n 5 .env` — a value-taking option's separate-token value (`5`) shadowed the path, so the credential-read guard inspected `5` instead of `.env`. Reader path extraction is now token-based with value-option skipping.
+
+**Medium:**
+- **D1** *(v0.18.5 regression)* `scripts/work/build_freeze_allowlist.py` — the DF1 drift WARN was silently suppressed by any stray `#### Subtask N` heading in prose; suppression now keys off a recognized subtask BLOCK (header + fields), not a lenient regex hit.
+- **F1** `scripts/hooks/freeze_guard.py` — `..` was not collapsed, so a path-traversal candidate matched a session allowlist glob (fnmatch `*` crosses `/`) and an out-of-scope edit slipped the freeze. Candidates are now `posixpath.normpath`-canonicalized before matching (fail-closed on escape).
+- **R3** `scripts/check_release_ready.py` — the Unreleased-changelog regex matched a substring-prefix version (`0.18.5` matched `0.18.50`); added a right boundary.
+
+**Low:**
+- **F3** `build_freeze_allowlist.py` — a non-bracketed inline backtick list of files kept only the first path; now comma-split like the bracketed branch.
+- **R2** `scripts/gates/manifest_checks.py` — crashed with an uncaught TypeError on a non-string plugin.json `hooks` field; now fails-loud with a clean `(False, reason)`.
+- **R4** `check_release_ready.py` — coerced a `None` version to `""`, making any `## ` header satisfy the evidence anchor and masking the real cause; now fails-loud.
+
+19 new regression tests (each security fix pairs bypass-blocked + legitimate-allowed guards), RED→GREEN; full suite **965 passed, 0 failed**. No identity-invariant change; STATE rotation/trim (v0.18.0 → `docs/archive/STATE-history.md`, Previous cap 5) applied.
+
 ## [0.18.5] — 2026-06-06
 
 ### Fixed — self-dogfood fail-loud fixes (adversarial enforcement audit)

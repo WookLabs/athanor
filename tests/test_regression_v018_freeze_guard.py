@@ -125,6 +125,35 @@ def test_evaluate_payload_exists(freeze_guard):
     assert callable(freeze_guard.evaluate_payload)
 
 
+def test_path_traversal_escapes_allowlist(freeze_guard):
+    """F1 (v0.18.6) — a `..` path-traversal candidate must NOT match a session
+    allowlist glob.
+
+    `_normalize_path` collapsed quotes/`./`/backslash but NOT `..`, and fnmatch
+    `*` crosses `/`, so `.athanor/sessions/<id>/../../../scripts/x.py` matched
+    the session glob and an out-of-scope edit slipped the freeze (bug hunt F1).
+    """
+    escaped = (
+        ".athanor/sessions/2026-06-06-001/../../../scripts/hooks/freeze_guard.py"
+    )
+    allowed = [".athanor/sessions/2026-06-06-001/**"]
+    assert freeze_guard._path_in_allowlist(escaped, allowed) is False, (
+        "a path escaping the session dir via `..` must not match the session "
+        "allowlist glob (path-traversal, F1)."
+    )
+
+
+def test_clean_session_path_still_in_allowlist(freeze_guard):
+    """F1 guard — a clean in-session path still matches after the `..` collapse
+    (the fix must not over-reject legitimate edits)."""
+    inside = ".athanor/sessions/2026-06-06-001/work-log.md"
+    allowed = [".athanor/sessions/2026-06-06-001/**"]
+    assert freeze_guard._path_in_allowlist(inside, allowed) is True
+    # A harmless `./` + intra-path `a/b/../c` still resolves inside.
+    tidy = ".athanor/sessions/2026-06-06-001/sub/../work-log.md"
+    assert freeze_guard._path_in_allowlist(tidy, allowed) is True
+
+
 def test_evaluate_payload_returns_tuple(freeze_guard, tmp_path):
     """Return contract: (exit_code: int, stderr_message: str)."""
     al = _allowlist(["src/foo.py"], session_dir=tmp_path)

@@ -457,6 +457,75 @@ def test_no_subtasks_section_does_not_warn(tmp_path: Path, capsys):
     )
 
 
+# `## Subtasks` present, real subtasks in an unrecognized TABLE format, PLUS a
+# stray `#### Subtask N` reference heading in prose (no block fields under it).
+# D1 (v0.18.6): the stray heading must NOT suppress the drift WARN.
+PLAN_DRIFT_WITH_STRAY_SUBTASK_HEADING = """\
+# Plan
+
+## Subtasks
+
+#### Subtask 1.2 acceptance criteria (back-reference, not a real block)
+
+| ID | Title | Files |
+|----|-------|-------|
+| 1.1 | Build X | src/x.py |
+| 1.2 | Test X | tests/test_x.py |
+"""
+
+
+def test_stray_subtask_heading_does_not_suppress_drift_warn(tmp_path: Path, capsys):
+    """D1 (v0.18.6) — a lone `#### Subtask N` heading in prose (no block fields)
+    must NOT suppress the format-drift WARN when the real subtasks are in an
+    unrecognized format (here a table).
+
+    The v0.18.5 DF1 guard keyed suppression off a bare `_HDR_A.search(body)`,
+    so any stray Shape-A-looking heading silently re-swallowed the breadcrumb —
+    the exact silent mis-scope DF1 was meant to surface (bug hunt D1).
+    """
+    plan = tmp_path / "plan.md"
+    plan.write_text(PLAN_DRIFT_WITH_STRAY_SUBTASK_HEADING, encoding="utf-8")
+    mod = _import_builder()
+    parsed = mod.parse_subtask_files(str(plan))
+    assert parsed == []  # table rows are not a recognized shape → no entries
+    err = capsys.readouterr().err
+    assert "WARN" in err and "Subtasks" in err, (
+        f"a stray '#### Subtask' heading must not suppress the drift WARN "
+        f"(D1); got stderr={err!r}"
+    )
+
+
+# Non-bracketed inline list of backtick paths (F3 v0.18.6): must keep ALL paths.
+PLAN_INLINE_BACKTICK_NO_BRACKET = """\
+# Plan
+
+## Subtasks
+
+#### Subtask 8.1 — Inline backtick list without brackets
+
+**files**: `scripts/work/build_freeze_allowlist.py`, `tests/test_regression_v018_build_freeze_allowlist.py`
+"""
+
+
+def test_inline_backtick_list_without_brackets_keeps_all(tmp_path: Path):
+    """F3 (v0.18.6) — a non-bracketed inline list of backtick-wrapped paths must
+    keep ALL paths, not silently drop everything after the first.
+
+    The old `raw = [inline]` single-element branch passed the whole string to
+    `_normalize_path`, which extracted only the first backtick token and dropped
+    the rest (bug hunt F3 — silent data loss).
+    """
+    plan = tmp_path / "plan.md"
+    plan.write_text(PLAN_INLINE_BACKTICK_NO_BRACKET, encoding="utf-8")
+    mod = _import_builder()
+    parsed = mod.parse_subtask_files(str(plan))
+    all_files = [f for e in parsed for f in e["files"]]
+    assert "scripts/work/build_freeze_allowlist.py" in all_files
+    assert "tests/test_regression_v018_build_freeze_allowlist.py" in all_files, (
+        f"second inline path was silently dropped (F3); got {all_files}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Missing plan.md handling
 # ---------------------------------------------------------------------------

@@ -38,6 +38,13 @@ _HDR_B = re.compile(
     r"^[ \t]*-[ \t]*\[\s*[ xX]?\s*\][ \t]+\*\*Subtask[ \t]+([\w\.\-]+)[ \t]*:.*?\*\*[ \t]*$"
 )
 _FILES_B = re.compile(r"^[ \t]{2,4}-[ \t]+files[ \t]*:[ \t]*(.*?)[ \t]*$")
+# A recognized subtask FIELD marker — distinguishes a real Shape A subtask
+# block from a lone `#### Subtask N` reference heading in prose (v0.18.6 D1).
+_SUBTASK_FIELD_RE = re.compile(
+    r"^[ \t]*(?:\*\*(?:files|execution_note|acceptance_criteria)\*\*[ \t]*:"
+    r"|-[ \t]+files[ \t]*:)",
+    re.MULTILINE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -100,20 +107,46 @@ def parse_subtask_files(plan_md_path: str) -> list[dict]:
     body = text[anchor.end():]
     entries_b = _parse_shape_b(body)
     entries = entries_b if entries_b else _parse_shape_a(body)
-    # Fail-loud: a `## Subtasks` section IS present but no subtask header matched
-    # either shape (heading drift / future Splitter format). Returning [] here
-    # silently mis-scopes the freeze allowlist to defaults-only, which then
-    # over-blocks (or, if defaults were ever empty, allow-alls) downstream with
-    # no signal pointing at the real cause. Surface it instead of swallowing it.
-    # NOT warned: a matched header with no `**files**:` (legitimate doc-only
-    # subtask) — that is recognized structure, not drift.
-    if not entries and not _HDR_A.search(body) and not _HDR_B.search(body):
+    # Fail-loud: a `## Subtasks` section IS present but no *recognized subtask
+    # block* was found (heading drift / future Splitter format). Returning []
+    # here silently mis-scopes the freeze allowlist to defaults-only, which
+    # then over-blocks downstream with no signal pointing at the real cause —
+    # surface it instead of swallowing it.
+    # v0.18.6 (bug hunt D1): suppression keys off a *recognized block*, not a
+    # bare `_HDR_A.search` hit — a lone `#### Subtask N` reference heading in
+    # prose no longer suppresses the warning, while a legitimate doc-only
+    # subtask (header + execution_note/acceptance_criteria fields, no files)
+    # still counts as recognized → no warn.
+    if not entries and not _has_recognized_subtask_block(body):
         sys.stderr.write(
             "[build_freeze_allowlist] WARN: '## Subtasks' section present but no "
-            "Subtask header matched Shape A or Shape B — allowlist will contain "
-            "defaults only; check plan.md Subtask formatting.\n"
+            "recognized Subtask block matched Shape A or Shape B — allowlist "
+            "will contain defaults only; check plan.md Subtask formatting.\n"
         )
     return entries
+
+
+def _has_recognized_subtask_block(body: str) -> bool:
+    """True if `body` (after the `## Subtasks` anchor) contains a *recognized*
+    subtask block — real Splitter structure, not just any heading.
+
+    - Shape B records every header it sees, so a non-empty Shape B parse is a
+      real block.
+    - Shape A: a `#### Subtask N` header counts only if its block carries a
+      subtask FIELD (`**files**` / `**execution_note**` / `**acceptance_criteria**`
+      / `- files:`). A lone reference heading in prose (no following fields)
+      does NOT count — that lenient match is what made the DF1 warning misfire
+      (bug hunt D1).
+    """
+    if _parse_shape_b(body):
+        return True
+    headers = list(_HDR_A.finditer(body))
+    for idx, m in enumerate(headers):
+        start = m.end()
+        end = headers[idx + 1].start() if idx + 1 < len(headers) else len(body)
+        if _SUBTASK_FIELD_RE.search(body[start:end]):
+            return True
+    return False
 
 
 def _parse_shape_a(body: str) -> list[dict]:
@@ -144,7 +177,10 @@ def _extract_files_a(block: str) -> list[str] | None:
                 return []
             raw = [p.strip() for p in inner.split(",")]
         else:
-            raw = [inline]
+            # Non-bracketed inline list — comma-split too, so a list like
+            # "`a.py`, `b.py`" keeps BOTH paths instead of only the first
+            # backtick token (v0.18.6 bug hunt F3, mirrors the bracket branch).
+            raw = [p.strip() for p in inline.split(",")]
         return [n for n in (_normalize_path(p) for p in raw) if n]
     # Bullet form: walk lines until boundary.
     bullets: list[str] = []

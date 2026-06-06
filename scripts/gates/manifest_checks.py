@@ -52,6 +52,15 @@ def duplicate_hooks_path_check(manifest_path: Path, repo_root: Path) -> tuple[bo
     explicit = manifest.get("hooks")
     if explicit is None:
         return True, "no explicit hooks field in plugin.json"
+    # v0.18.6 (bug hunt R2): a non-string `hooks` (object/array/number) would
+    # crash `repo_root / explicit` with an uncaught TypeError (the except below
+    # only catches OSError), violating the (bool, str) contract. Fail-loud with
+    # a clean reason instead. Mirrors hook_uniqueness_check's isinstance guard.
+    if not isinstance(explicit, str):
+        return False, (
+            f"plugin.json `hooks` must be a string path; got "
+            f"{type(explicit).__name__}"
+        )
 
     auto_path = repo_root / "hooks" / "hooks.json"
     if not auto_path.is_file():
