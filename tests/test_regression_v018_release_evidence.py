@@ -24,10 +24,11 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Five-file version parity tracks the live release. Bumped to 0.18.4 by the
-# v0.18.4 engineering-quality ceremony. The CHANGELOG/STATE/migration prose locks
+# Five-file version parity tracks the live release. Bumped to 0.18.5 by the
+# v0.18.5 self-dogfood ceremony (fail-loud fixes the adversarial enforcement
+# audit found in athanor's own code). The CHANGELOG/STATE/migration prose locks
 # below still assert the v0.18.0 ceremony evidence, which remains present.
-TARGET_VERSION = "0.18.4"
+TARGET_VERSION = "0.18.5"
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"

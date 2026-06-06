@@ -328,3 +328,50 @@ def test_build_capability_report_is_importable(tmp_path):
     assert isinstance(report, dict)
     assert report["schema_version"] == 1
     assert report["probe_mode"] == "passive"
+
+
+# ---------------------------------------------------------------------------
+# DF2 (v0.18.5) — runtime-resolver fail-loud: unexpected errors must propagate
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_project_root_propagates_unexpected_runtime_error(monkeypatch):
+    """DF2 — an UNEXPECTED exception from the shared runtime resolver must
+    propagate (fail-loud), not be swallowed by a catch-all `except Exception:
+    pass` that silently falls through to the walk-up and masks the regression.
+
+    Found by the v0.18.5 adversarial enforcement audit: `_resolve_project_root`
+    caught *all* exceptions at the runtime call site, so a programming error
+    introduced by a future runtime refactor (e.g. AttributeError) would be
+    invisible — the walk-up almost always succeeds, so the probe keeps emitting
+    a report as if nothing broke. That is exactly the silent-fallback class
+    CLAUDE.md §Core Principle forbids.
+    """
+    import capability_probe as cp
+    if not cp._HAS_RUNTIME:
+        pytest.skip("runtime module not importable in this test layout")
+
+    def _boom():
+        raise AttributeError("simulated runtime resolver regression")
+
+    monkeypatch.setattr(cp._runtime, "resolve_project_root", _boom)
+    with pytest.raises(AttributeError):
+        cp._resolve_project_root()
+
+
+def test_resolve_project_root_still_degrades_on_expected_oserror(monkeypatch):
+    """DF2 guard — an EXPECTED OSError from the resolver is still caught and the
+    function falls through to the walk-up (graceful degrade preserved; the fix
+    narrows the except, it does not over-correct into propagating expected
+    filesystem errors)."""
+    import capability_probe as cp
+    if not cp._HAS_RUNTIME:
+        pytest.skip("runtime module not importable in this test layout")
+
+    def _raise_os():
+        raise OSError("simulated expected filesystem error")
+
+    monkeypatch.setattr(cp._runtime, "resolve_project_root", _raise_os)
+    # Must NOT raise — the narrowed except still catches OSError and walks up.
+    result = cp._resolve_project_root()
+    assert result is None or isinstance(result, Path)

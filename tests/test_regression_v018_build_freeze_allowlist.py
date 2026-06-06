@@ -164,6 +164,23 @@ PLAN_EMPTY_FILES_LIST = """\
 """
 
 
+# `## Subtasks` present, but the block heading matches NEITHER Shape A
+# (`_HDR_A` wants `#### Subtask N`) NOR Shape B (checkbox bullet). This is the
+# format-drift case DF1 (v0.18.5) makes fail-loud instead of silently
+# returning [] and mis-scoping the freeze allowlist to defaults-only.
+PLAN_SUBTASKS_HEADER_DRIFT = """\
+# Plan
+
+## Subtasks
+
+### Step One — heading drift (no 'Subtask N' token; matches neither shape)
+
+**files**:
+- `src/app.py`
+- `tests/test_app.py`
+"""
+
+
 # ---------------------------------------------------------------------------
 # Module import
 # ---------------------------------------------------------------------------
@@ -377,6 +394,67 @@ def test_empty_files_list_yields_no_subtask_files(tmp_path: Path):
     # Either 1 subtask with empty files OR 0 subtasks — both acceptable
     all_files = [f for e in parsed for f in e["files"]]
     assert all_files == []
+
+
+# ---------------------------------------------------------------------------
+# DF1 (v0.18.5) — fail-loud on Subtasks-present-but-no-header-matches drift
+# ---------------------------------------------------------------------------
+
+
+def test_subtasks_present_but_header_drift_emits_warn(tmp_path: Path, capsys):
+    """DF1 — `## Subtasks` present but NO header matches Shape A/B → stderr WARN.
+
+    Found by the v0.18.5 adversarial enforcement audit: the parser silently
+    returned [] when a `## Subtasks` section existed but its blocks matched
+    neither shape (heading drift / future Splitter format), so downstream
+    freeze mis-scoped to defaults-only and BLOCKED legitimate edits with no
+    signal pointing at the real cause (the unparsed plan.md format). This is
+    the 'it ran but you cannot tell WHERE it broke' class CLAUDE.md §Core
+    Principle forbids — make it fail-loud.
+    """
+    plan = tmp_path / "plan.md"
+    plan.write_text(PLAN_SUBTASKS_HEADER_DRIFT, encoding="utf-8")
+    mod = _import_builder()
+    parsed = mod.parse_subtask_files(str(plan))
+    # Behavior preserved — still returns [] (no fabricated entries).
+    assert parsed == []
+    err = capsys.readouterr().err
+    assert "WARN" in err and "Subtasks" in err, (
+        "format drift under '## Subtasks' must emit a stderr WARN breadcrumb "
+        f"(fail-loud), not silently return []; got stderr={err!r}"
+    )
+
+
+def test_no_false_warn_when_header_matches_without_files(tmp_path: Path, capsys):
+    """DF1 guard — a legitimate doc-only subtask (Shape A header matches, but no
+    `**files**:` marker) must NOT trigger the drift WARN (no false positives).
+
+    Distinguishes 'parser did not recognize the structure' (warn) from 'parser
+    recognized it; this subtask simply scopes no files' (silent, correct).
+    """
+    plan = tmp_path / "plan.md"
+    plan.write_text(PLAN_NO_FILES_FIELD, encoding="utf-8")
+    mod = _import_builder()
+    mod.parse_subtask_files(str(plan))
+    err = capsys.readouterr().err
+    assert "WARN" not in err, (
+        "a matched header with no files is a legitimate doc-only subtask — "
+        f"must not false-fire the drift WARN; got stderr={err!r}"
+    )
+
+
+def test_no_subtasks_section_does_not_warn(tmp_path: Path, capsys):
+    """DF1 guard — no `## Subtasks` anchor at all is intended control flow
+    (a plan with no Subtasks section scopes nothing) — must stay silent."""
+    plan = tmp_path / "plan.md"
+    plan.write_text(PLAN_NO_SUBTASKS_SECTION, encoding="utf-8")
+    mod = _import_builder()
+    parsed = mod.parse_subtask_files(str(plan))
+    assert parsed == []
+    err = capsys.readouterr().err
+    assert "WARN" not in err, (
+        f"no '## Subtasks' anchor must not warn (intended); got stderr={err!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
