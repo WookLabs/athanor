@@ -131,6 +131,11 @@ def check_a_evidence(session: Path | None, version: str | None) -> tuple[bool, s
     check phase we only verify the session directory is writable
     and that work-log.md contains a structured '## v<version>' anchor.
     The actual evidence file is produced at the end on success."""
+    # v0.18.6 (bug hunt R4): fail-loud on an unreadable version instead of
+    # coercing to "" below — an empty version turns the anchor regex into
+    # `^##\s*v?\b`, which any `## ` header satisfies, masking the real cause.
+    if version is None:
+        return False, "could not read version from plugin.json (version is None)"
     if session is None:
         return False, "no session directory found under .athanor/sessions/"
     if not session.is_dir():
@@ -162,8 +167,11 @@ def check_b_changelog(version: str | None) -> tuple[bool, str]:
     # "## [Unreleased — v0.7.0]" style. Either counts as an entry for
     # the current version.
     released = re.compile(rf"^##\s*\[\s*{re.escape(version)}\s*\]", re.MULTILINE)
+    # v0.18.6 (bug hunt R3): `(?![0-9.])` right-boundary so v0.18.5 does not
+    # match an Unreleased entry for v0.18.50 (the trailing `[^\]]*` previously
+    # swallowed the extra digit). Mirrors the released matcher's `\s*\]` tightness.
     unreleased = re.compile(
-        rf"^##\s*\[\s*Unreleased[^\]]*v?{re.escape(version)}[^\]]*\]",
+        rf"^##\s*\[\s*Unreleased[^\]]*v?{re.escape(version)}(?![0-9.])[^\]]*\]",
         re.MULTILINE,
     )
     if released.search(text) or unreleased.search(text):

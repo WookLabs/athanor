@@ -1119,3 +1119,77 @@ discipline).
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 →
 v0.11.8) untouched.
+
+## Archived from STATE.md (2026-06-07, v0.18.6 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.0 — Freeze-First (Plan B base)
+
+**v0.18.0** (released 2026-05-29) — Introduces the **Freeze
+infrastructure** stage shipping the first scope-locked editing envelope
+for Claude file tools:
+
+1. **Builder: `scripts/work/build_freeze_allowlist.py`** — per-session
+   allowlist builder. Parses the `## Subtasks` block of `plan.md`,
+   unions each subtask's `files:` declaration with session-local
+   defaults + `athanor.json` `hooks.freeze.extraAllowedPaths`, writes
+   `.athanor/sessions/<id>/freeze-allowlist.json`. Stdlib-only (same
+   constraint as `scripts/hooks/*.py`).
+2. **PreToolUse dispatcher: `scripts/hooks/pretool_dispatcher.py`** —
+   single outer entry for PreToolUse events. Runs the v0.16.0 Kernel
+   Guard FIRST (catastrophic class — destructive shell / force-push /
+   credentials — is never over-ruled), then evaluates the freeze guard
+   if `hooks.freeze.mode != "off"`. Kernel guard fail-CLOSED on missing
+   config preserved (v0.16.0 default unchanged); freeze guard fail-open
+   on missing allowlist (opt-in semantics).
+3. **Freeze guard: `scripts/hooks/freeze_guard.py`** — Claude file-tool
+   allowlist. Edit / Write / MultiEdit destination paths plus
+   conservative Bash write patterns (`>`, `>>`, `tee`, `cp`, `mv`,
+   `mkdir`, `touch`) are gated against
+   `.athanor/sessions/<id>/freeze-allowlist.json`. Exit 2 on rejection.
+4. **Config block: `hooks.freeze`** — new athanor.json key under
+   `hooks.freeze` with `mode` ("off" default, "session" opt-in) and
+   `extraAllowedPaths`. Schema entry shipped at the same time.
+
+**Honesty residuals** (intentional scope limits):
+
+- **D2 — Codex stage uneven enforcement.** `/athanor:lfg` Codex subprocess
+  writes are NOT gated by Freeze. Freeze is documented as "Claude
+  file-tool allowlist", not a comprehensive editing envelope.
+- **Bash subprocess writes ungated.** `python -c "open('foo', 'w')..."`,
+  `make build`, `codex exec`, etc. NOT detected. The conservative Bash
+  pattern set covers visible-destination writes only.
+
+**Deferred** (per Critic synthesis, both reviewers converged):
+
+- **v0.18.1 — git-worktree isolation.** Admission criteria documented
+  in `docs/ROADMAP.md`: freeze-violations.jsonl >= 10 across >= 5
+  sessions, OR 1 user-reported issue with repro, OR `/athanor:work
+  --team` same-file collision.
+- **v0.18.2 — UserPromptSubmit injection.** Design precondition: live
+  spike capturing real payload shape (v0.17.0 capability_probe shows
+  UPS supported=false passively).
+
+Test surface grows 692 -> 872+ across the cycle (+180 new). 11 new
+regression files: `test_regression_v018_build_freeze_allowlist`,
+`test_regression_v018_hooks_freeze_schema`,
+`test_regression_v018_splitter_files_contract`,
+`test_regression_v018_kernel_evaluate_payload`,
+`test_regression_v018_pretool_dispatcher`,
+`test_regression_v018_freeze_guard`,
+`test_regression_v018_phase2_integration`,
+`test_regression_v018_static_dedup_preservation`,
+`test_regression_v018_freeze_step_06`,
+`test_regression_v018_release_evidence` (4.2),
+schema-coverage extensions across existing release-smoke tests.
+
+Planning: deep-tier adversarial plan (Planner A Claude + Planner B
+Codex + cross-review + Critic synthesis). Plan B base (Freeze-First) +
+Plan A Phase 2 architecture (corrected per Codex review) + reviewer
+convergence on stage shipping. Architectural choices: kernel-FIRST
+dispatch ordering, kernel fail-CLOSED, freeze fail-open on missing
+allowlist.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 ->
+v0.11.8) untouched. PreToolUse Kernel Guard (v0.16.0) untouched —
+dispatcher runs kernel FIRST.

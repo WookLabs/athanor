@@ -4,7 +4,36 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.5 — Self-Dogfood: fail-loud fixes from enforcement audit
+## Current Phase: v0.18.6 — Deep Bug-Hunt: Kernel Guard security hardening
+
+**v0.18.6** (released 2026-06-07) — A deep adversarial bug-hunt Workflow (4
+specialized lenses → refute-default reproduce-to-confirm) found and fixed 11
+real bugs in athanor's own executable code. No identity-invariant change.
+
+1. **Kernel Guard root-wipe bypasses (CRITICAL, pre-existing v0.16.0).**
+   `rm -rf /*`, `rm -rf --no-preserve-root /`, `rm -fr /` and `git clean
+   --force` all slipped the PreToolUse safety gate; `head -n 5 .env` evaded the
+   credential-read guard. The `rm` family is now a flag-detection +
+   target-detection split (order-independent, intervening-option-tolerant,
+   glob-aware) with false-positive guards (`/tmp/build`, `~/proj`, `rm -f`).
+2. **Freeze + parser fixes.** freeze_guard now `posixpath.normpath`-collapses
+   `..` before allowlist matching (F1 path-traversal); build_freeze_allowlist's
+   DF1 drift WARN keys off a recognized subtask BLOCK, not a stray heading (D1,
+   a v0.18.5 regression); non-bracketed inline file lists keep all paths (F3).
+3. **Release-gate hardening.** manifest_checks fails-loud on a non-string
+   `hooks` field (R2, was an uncaught TypeError); check_release_ready adds a
+   version right-boundary (R3, `0.18.5`≠`0.18.50`) and fails-loud on an
+   unreadable version (R4).
+
+19 new regression tests (each security fix pairs bypass-blocked +
+legitimate-allowed guards), RED→GREEN; full suite 965 passed, 0 failed. Honest
+scope: 5 bugs are pre-existing v0.16.0 regex flaws, only 1 (D1) is a v0.18.5
+regression — found by dogfooding the bug review on athanor itself.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.5 — Self-Dogfood: fail-loud fixes from enforcement audit
 
 **v0.18.5** (released 2026-06-06) — An adversarial enforcement audit (4-lens
 Workflow, refute-default verify) of athanor's own complexity + no-silent-fallback
@@ -121,78 +150,6 @@ Spec-then-TDD / Stop hook gate.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.0 — Freeze-First (Plan B base)
-
-**v0.18.0** (released 2026-05-29) — Introduces the **Freeze
-infrastructure** stage shipping the first scope-locked editing envelope
-for Claude file tools:
-
-1. **Builder: `scripts/work/build_freeze_allowlist.py`** — per-session
-   allowlist builder. Parses the `## Subtasks` block of `plan.md`,
-   unions each subtask's `files:` declaration with session-local
-   defaults + `athanor.json` `hooks.freeze.extraAllowedPaths`, writes
-   `.athanor/sessions/<id>/freeze-allowlist.json`. Stdlib-only (same
-   constraint as `scripts/hooks/*.py`).
-2. **PreToolUse dispatcher: `scripts/hooks/pretool_dispatcher.py`** —
-   single outer entry for PreToolUse events. Runs the v0.16.0 Kernel
-   Guard FIRST (catastrophic class — destructive shell / force-push /
-   credentials — is never over-ruled), then evaluates the freeze guard
-   if `hooks.freeze.mode != "off"`. Kernel guard fail-CLOSED on missing
-   config preserved (v0.16.0 default unchanged); freeze guard fail-open
-   on missing allowlist (opt-in semantics).
-3. **Freeze guard: `scripts/hooks/freeze_guard.py`** — Claude file-tool
-   allowlist. Edit / Write / MultiEdit destination paths plus
-   conservative Bash write patterns (`>`, `>>`, `tee`, `cp`, `mv`,
-   `mkdir`, `touch`) are gated against
-   `.athanor/sessions/<id>/freeze-allowlist.json`. Exit 2 on rejection.
-4. **Config block: `hooks.freeze`** — new athanor.json key under
-   `hooks.freeze` with `mode` ("off" default, "session" opt-in) and
-   `extraAllowedPaths`. Schema entry shipped at the same time.
-
-**Honesty residuals** (intentional scope limits):
-
-- **D2 — Codex stage uneven enforcement.** `/athanor:lfg` Codex subprocess
-  writes are NOT gated by Freeze. Freeze is documented as "Claude
-  file-tool allowlist", not a comprehensive editing envelope.
-- **Bash subprocess writes ungated.** `python -c "open('foo', 'w')..."`,
-  `make build`, `codex exec`, etc. NOT detected. The conservative Bash
-  pattern set covers visible-destination writes only.
-
-**Deferred** (per Critic synthesis, both reviewers converged):
-
-- **v0.18.1 — git-worktree isolation.** Admission criteria documented
-  in `docs/ROADMAP.md`: freeze-violations.jsonl >= 10 across >= 5
-  sessions, OR 1 user-reported issue with repro, OR `/athanor:work
-  --team` same-file collision.
-- **v0.18.2 — UserPromptSubmit injection.** Design precondition: live
-  spike capturing real payload shape (v0.17.0 capability_probe shows
-  UPS supported=false passively).
-
-Test surface grows 692 -> 872+ across the cycle (+180 new). 11 new
-regression files: `test_regression_v018_build_freeze_allowlist`,
-`test_regression_v018_hooks_freeze_schema`,
-`test_regression_v018_splitter_files_contract`,
-`test_regression_v018_kernel_evaluate_payload`,
-`test_regression_v018_pretool_dispatcher`,
-`test_regression_v018_freeze_guard`,
-`test_regression_v018_phase2_integration`,
-`test_regression_v018_static_dedup_preservation`,
-`test_regression_v018_freeze_step_06`,
-`test_regression_v018_release_evidence` (4.2),
-schema-coverage extensions across existing release-smoke tests.
-
-Planning: deep-tier adversarial plan (Planner A Claude + Planner B
-Codex + cross-review + Critic synthesis). Plan B base (Freeze-First) +
-Plan A Phase 2 architecture (corrected per Codex review) + reviewer
-convergence on stage shipping. Architectural choices: kernel-FIRST
-dispatch ordering, kernel fail-CLOSED, freeze fail-open on missing
-allowlist.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 ->
-v0.11.8) untouched. PreToolUse Kernel Guard (v0.16.0) untouched —
-dispatcher runs kernel FIRST.
 
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 

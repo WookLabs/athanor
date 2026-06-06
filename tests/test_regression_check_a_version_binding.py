@@ -60,6 +60,54 @@ def test_negative_missing_file():
     assert _work_log_has_version_anchor(Path("/definitely/does/not/exist.md"), "0.7.1") is False
 
 
+def test_check_b_changelog_rejects_version_prefix(monkeypatch, tmp_path):
+    """R3 (v0.18.6) — an Unreleased entry for v0.18.50 must NOT satisfy the
+    changelog gate for v0.18.5. The unreleased regex's `[^\\]]*` after the
+    version allowed a trailing digit (substring-prefix false-pass); a right
+    boundary fixes it."""
+    import scripts.check_release_ready as crr
+    fake = tmp_path / "CHANGELOG.md"
+    fake.write_text(
+        "# Changelog\n\n## [Unreleased — v0.18.50]\n\nstuff\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(crr, "CHANGELOG", fake)
+    ok, reason = crr.check_b_changelog("0.18.5")
+    assert ok is False, (
+        f"a v0.18.50 Unreleased entry must not satisfy the v0.18.5 gate; got {reason!r}"
+    )
+
+
+def test_check_b_changelog_accepts_exact_unreleased(monkeypatch, tmp_path):
+    """R3 guard — the exact-version Unreleased entry still satisfies the gate
+    (the boundary fix must not reject the legitimate case)."""
+    import scripts.check_release_ready as crr
+    fake = tmp_path / "CHANGELOG.md"
+    fake.write_text(
+        "# Changelog\n\n## [Unreleased — v0.18.5]\n\nstuff\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(crr, "CHANGELOG", fake)
+    ok, _ = crr.check_b_changelog("0.18.5")
+    assert ok is True
+
+
+def test_check_a_evidence_fails_loud_on_missing_version(tmp_path):
+    """R4 (v0.18.6) — version=None must fail-loud with the real cause, not be
+    coerced to '' (which makes any '## ' header satisfy the anchor and masks the
+    unreadable-version root cause)."""
+    import scripts.check_release_ready as crr
+    session = tmp_path / "2026-06-07-001"
+    session.mkdir()
+    (session / "work-log.md").write_text("## Some Heading\n\nbody\n", encoding="utf-8")
+    ok, reason = crr.check_a_evidence(session, None)
+    assert ok is False, (
+        f"version=None must not pass evidence on a '## '-only work-log; got {reason!r}"
+    )
+    assert "version" in reason.lower(), (
+        f"the reason must name the unreadable-version cause, not a generic "
+        f"anchor miss; got {reason!r}"
+    )
+
+
 def test_session_missing_gives_clean_error():
     """--session <nonexistent> should exit non-zero with clean stderr, no traceback."""
     result = subprocess.run(

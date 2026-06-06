@@ -72,35 +72,66 @@ SUPPORTED_PROFILES = {"off", "standard"}
 # ---------------------------------------------------------------------------
 # Rule 1: Destructive shell commands
 # ---------------------------------------------------------------------------
-# `rm -rf /` — match `/` followed by whitespace, quote, or end-of-string
-# to avoid false-positives like `rm -rf /tmp/build` (Codex review finding:
-# Plan A's bare `\s+/` would have matched legitimate absolute subdir paths).
-# Also covers quoted root: `rm -rf "/"` and `rm -rf '/'` where the quote
-# appears BEFORE the slash; the inner slash is the lone path component.
-RM_RF_ROOT_PATTERN = re.compile(
-    r"\brm\s+(?:-[a-zA-Z]*r[a-zA-Z]*f|--recursive)\s+"
-    r"(?:"
-    r"/(?=\s)|/(?=\")|/(?=')|/$"          # bare /, then boundary
-    r"|\"/\""                              # "/"
-    r"|'/'"                                # '/'
-    r")"
+# `rm -rf` targeting filesystem root or home. v0.18.6 (deep bug hunt G1-G3)
+# replaced a single rigid regex with a flag-detection + target-detection split
+# so equally-destructive variants no longer slip through:
+#   - flag order independent (`-rf` AND `-fr`)
+#   - intervening options allowed (`rm -rf --no-preserve-root /`)
+#   - shell-glob root/home forms (`/*`, `~/*`)
+# while keeping false-positives out (`rm -rf /tmp/build`, `./build/`,
+# `~/projects/old`, `rm -f file.txt`). A catastrophic target is an argument
+# that is filesystem root or home with NOTHING after the first separator
+# except glob/dot wildcards — `/tmp` has a path component, so it is NOT one.
+_RM_ROOT_OR_HOME_TARGET = re.compile(
+    r"""(?:^|\s)            # arg boundary
+        ['"]?               # optional opening quote
+        (?:
+            /(?:\*|\.\*?)?         # / , /* , /. , /.*
+          | ~(?:/(?:\*|\.\*?)?)?   # ~ , ~/ , ~/* , ~/. , ~/.*
+        )
+        ['"]?               # optional closing quote
+        (?=\s|$|;|&|\|)     # arg end
+    """,
+    re.VERBOSE,
 )
-# `rm -rf ~/` — homedir wipe. Trailing whitespace required to avoid matching
-# paths like `~/projects/build`.
-RM_RF_HOME_PATTERN = re.compile(
-    r"\brm\s+(?:-[a-zA-Z]*r[a-zA-Z]*f|--recursive)\s+~/?(?=\s|$)"
-)
+
+
+def _is_destructive_rm(command: str) -> bool:
+    """True if `command` has an `rm` invocation that is recursive AND force AND
+    targets filesystem root or home — any flag order, with optional intervening
+    options, including shell-glob forms (`/*`, `~/*`)."""
+    for m in re.finditer(r"\brm\b([^\n;]*)", command):
+        # Bound the arg span at a command-chain separator so a later command's
+        # tokens don't bleed into this rm's analysis.
+        args = re.split(r"&&|\|\||\|", m.group(1))[0]
+        has_recursive = (
+            "--recursive" in args
+            or re.search(r"(?:^|\s)-[a-zA-Z]*r[a-zA-Z]*(?=\s|$)", args) is not None
+        )
+        has_force = (
+            "--force" in args
+            or re.search(r"(?:^|\s)-[a-zA-Z]*f[a-zA-Z]*(?=\s|$)", args) is not None
+        )
+        if has_recursive and has_force and _RM_ROOT_OR_HOME_TARGET.search(args):
+            return True
+    return False
+
+
 GIT_RESET_HARD_PATTERN = re.compile(r"\bgit\s+reset\s+--hard\b")
-GIT_CLEAN_F_PATTERN = re.compile(r"\bgit\s+clean\s+-[a-zA-Z]*f")
+# `git clean` with force — short bundle (`-f`/`-fd`/`-xdf`) OR long `--force`
+# (v0.18.6 bug hunt G4: the long form previously slipped through).
+GIT_CLEAN_F_PATTERN = re.compile(
+    r"\bgit\s+clean\b(?=.*?(?:\s-[a-zA-Z]*f|\s--force\b))"
+)
 # `git checkout .` — restore all. Trailing $ or whitespace so we don't match
 # `git checkout ./path` or `git checkout .foo`.
 GIT_CHECKOUT_DOT_PATTERN = re.compile(r"\bgit\s+checkout\s+\.(?:\s*$|\s+--?)")
 
+# Regex-driven destructive patterns (the rm family is handled by
+# _is_destructive_rm above; included in _check_destructive_shell).
 DESTRUCTIVE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (RM_RF_ROOT_PATTERN, "rm -rf targeting filesystem root"),
-    (RM_RF_HOME_PATTERN, "rm -rf targeting home directory"),
     (GIT_RESET_HARD_PATTERN, "git reset --hard"),
-    (GIT_CLEAN_F_PATTERN, "git clean -f"),
+    (GIT_CLEAN_F_PATTERN, "git clean -f / --force"),
     (GIT_CHECKOUT_DOT_PATTERN, "git checkout . (restore all)"),
 ]
 
@@ -153,11 +184,12 @@ SENSITIVE_EXCEPTIONS = (
     # caught by `tests/` segment, but standalone `test_foo.env` should be
     # allowed because it's a fixture name).
 )
-# `cat`/`less`/`head`/`tail` command-path extraction for Bash. Captures the
-# first non-flag positional argument.
-BASH_READ_COMMAND_PATTERN = re.compile(
-    r"\b(?:cat|less|more|head|tail|bat)\s+(?:-[a-zA-Z0-9]+\s+)*([^\s|;&<>]+)"
-)
+# `cat`/`less`/`head`/`tail`/`more`/`bat` credential-read detection for Bash.
+_BASH_READER_KEYWORDS = ("cat", "less", "more", "head", "tail", "bat")
+# Options that consume a SEPARATE-token value (`head -n 5 file`). Their value
+# must be skipped so the path candidate isn't mistaken for the value itself
+# (v0.18.6 bug hunt R1: `head -n 5 .env` previously captured `5`, not `.env`).
+_BASH_READER_VALUE_OPTS = frozenset({"-n", "-c", "--lines", "--bytes"})
 
 
 # ---------------------------------------------------------------------------
@@ -214,6 +246,8 @@ def _read_profile() -> str:
 
 def _check_destructive_shell(command: str) -> str | None:
     """Return matched description if the command is destructive, else None."""
+    if _is_destructive_rm(command):
+        return "rm -rf targeting filesystem root or home"
     for pattern, description in DESTRUCTIVE_PATTERNS:
         if pattern.search(command):
             return description
@@ -259,12 +293,27 @@ def _path_is_sensitive(path: str) -> bool:
 
 def _bash_extract_read_paths(command: str) -> list[str]:
     """Extract candidate file paths from `cat`/`less`/`head`/`tail`/`more`/
-    `bat` commands in a bash command string. Returns all positional matches
-    so a pipeline like `cat .env | grep PASS` is still inspected."""
-    matches: list[str] = []
-    for m in BASH_READ_COMMAND_PATTERN.finditer(command):
-        matches.append(m.group(1))
-    return matches
+    `bat` commands. Returns the first positional path per pipeline/chain
+    segment so `cat .env | grep PASS` is still inspected, and value-taking
+    options (`head -n 5 .env`) don't shadow the real path (v0.18.6 R1)."""
+    paths: list[str] = []
+    for segment in re.split(r"[|;&\n]", command):
+        tokens = segment.split()
+        reader_idx = next(
+            (i for i, t in enumerate(tokens) if t in _BASH_READER_KEYWORDS), None
+        )
+        if reader_idx is None:
+            continue
+        j = reader_idx + 1
+        while j < len(tokens):
+            tok = tokens[j]
+            if tok.startswith("-"):
+                # Skip the option; for separate-value options skip its value too.
+                j += 2 if tok in _BASH_READER_VALUE_OPTS else 1
+                continue
+            paths.append(tok)
+            break
+    return paths
 
 
 # ---------------------------------------------------------------------------

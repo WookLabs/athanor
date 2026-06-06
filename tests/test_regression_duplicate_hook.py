@@ -27,3 +27,23 @@ def test_current_manifest_passes():
     manifest = REPO_ROOT / ".claude-plugin" / "plugin.json"
     ok, reason = duplicate_hooks_path_check(manifest, REPO_ROOT)
     assert ok, f"Current manifest should pass but failed: {reason}"
+
+
+def test_non_string_hooks_field_does_not_crash(tmp_path):
+    """R2 (v0.18.6) — a non-string `hooks` field (object/array/number) must
+    yield a clean (False, reason), NOT an uncaught TypeError that crashes the
+    release gate.
+
+    Found by the deep bug hunt: `repo_root / explicit` raised TypeError when
+    `explicit` was a dict, and the `except` clause only caught OSError, so the
+    (bool, str) contract was violated and the gate exited with a traceback.
+    """
+    manifest = tmp_path / "plugin.json"
+    manifest.write_text('{"hooks": {"PreToolUse": []}}', encoding="utf-8")
+    # REPO_ROOT/hooks/hooks.json exists, so the check reaches the path-resolve
+    # line that previously crashed on the dict value.
+    ok, reason = duplicate_hooks_path_check(manifest, REPO_ROOT)
+    assert ok is False, f"non-string hooks must fail cleanly; got ok={ok}"
+    assert "string" in reason.lower() or "hooks" in reason.lower(), (
+        f"reason must explain the non-string hooks field; got {reason!r}"
+    )
