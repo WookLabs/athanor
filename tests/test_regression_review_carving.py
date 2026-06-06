@@ -73,3 +73,21 @@ def test_review_skill_personas_not_duplicated_inline() -> None:
         f"{inline} persona rubric headers still inline in SKILL.md; they "
         f"should be carved to references/review-sections.md."
     )
+
+
+def test_review_skill_router_line_cap() -> None:
+    """MUST (CG2, v0.18.5) — review/SKILL.md stays a thin router under a hard cap.
+
+    The v0.18.5 adversarial enforcement audit found a complexity-gate gap:
+    work/SKILL.md (≤250) and plan/SKILL.md (≤300) are line-capped by regression
+    tests, but review/SKILL.md had NO cap and had already drifted to 311 lines.
+    Ceiling 320 locks the current size against re-bloat; ratchet toward plan's
+    300 budget as lens/persona prose carves into references/review-sections.md
+    (the spill target already exists). Closes the gap the audit confirmed.
+    """
+    n = len(REVIEW_SKILL.read_text(encoding="utf-8").splitlines())
+    assert n <= 320, (
+        f"skills/review/SKILL.md is {n} lines (cap 320) — carve lens/persona "
+        f"prose into references/review-sections.md to keep it a thin router "
+        f"(matches the work≤250 / plan≤300 complexity gates)."
+    )

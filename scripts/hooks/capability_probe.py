@@ -83,7 +83,12 @@ def _resolve_project_root(explicit: Path | None = None) -> Path | None:
             root = _runtime.resolve_project_root()
             if root is not None:
                 return root
-        except Exception:
+        except (OSError, FileNotFoundError):
+            # Expected filesystem errors → degrade to the walk-up below.
+            # Narrowed from a catch-all `except Exception` (fail-loud): an
+            # UNEXPECTED error (e.g. an AttributeError from a future runtime
+            # refactor) must propagate, not be masked by the walk-up — matches
+            # the narrow-except discipline used elsewhere in this module.
             pass
     for start in (SCRIPTS_DIR, Path.cwd()):
         try:

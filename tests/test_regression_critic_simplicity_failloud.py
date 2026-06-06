@@ -22,6 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CRITIC_RUBRIC = REPO_ROOT / "skills" / "plan" / "references" / "critic-rubric.md"
 CRITIC_VARIANTS = REPO_ROOT / "skills" / "plan" / "references" / "critic-variants.md"
 REVIEW_SECTIONS = REPO_ROOT / "skills" / "review" / "references" / "review-sections.md"
+REVIEW_SKILL = REPO_ROOT / "skills" / "review" / "SKILL.md"
 PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 
 
@@ -87,4 +88,31 @@ def test_plan_skill_axis_count_synced_to_four() -> None:
     assert "(d)" in low, (
         "the SKILL.md dispatch enumeration must include axis (D) "
         "(simplicity & fail-loud), matching critic-rubric/variants."
+    )
+
+
+def test_review_surface_carries_advisory_not_merge_gate_label() -> None:
+    """MUST (HL1, v0.18.5) — the /athanor:review surface carries an explicit
+    advisory / not-a-merge-gate honesty label, mirroring critic-rubric.md:3.
+
+    §Core Principle pairs Critic AND review as advisory-on-user-code. The Critic
+    surface labels itself ('This rubric is advisory — there is no runtime gate');
+    review had NO such label while emitting 'must fix before merge' severity
+    prose — an under-label the v0.18.5 enforcement audit flagged. A reader could
+    mistake review for a CI gate, which is itself a fail-loud honesty violation
+    (a false enforcement impression hides the real advisory boundary).
+    """
+    body = (
+        REVIEW_SKILL.read_text(encoding="utf-8")
+        + "\n"
+        + REVIEW_SECTIONS.read_text(encoding="utf-8")
+    ).lower()
+    assert "advisory" in body, (
+        "the /athanor:review surface must carry an 'advisory' label "
+        "(mirror critic-rubric.md line 3)."
+    )
+    assert "not a merge gate" in body, (
+        "the /athanor:review surface must state it is NOT a merge gate / does "
+        "not block CI (CLAUDE.md §Core Principle: review is advisory on user "
+        "code — athanor is not the user's CI)."
     )

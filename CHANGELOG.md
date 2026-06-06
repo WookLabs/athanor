@@ -3,6 +3,19 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.5] — 2026-06-06
+
+### Fixed — self-dogfood fail-loud fixes (adversarial enforcement audit)
+
+An adversarial enforcement audit (4-lens Workflow, refute-default verify) of athanor's **own** complexity + no-silent-fallback discipline found and fixed 4 athanor-own-code defects. Honest framing: **user code = advisory** (Critic/review are leader-dispatched, not merge gates); **athanor's own code = gate**. This audit **refutes the prior "zero risky-silent fallback patterns" self-assessment** — the runtime gate scripts were clean, but two v0.17/v0.18 surfaces had drifted.
+
+- **DF1 — `scripts/work/build_freeze_allowlist.py` silent mis-scope → fail-loud.** When a `## Subtasks` section was present but no subtask header matched either Splitter shape (heading drift / future format), the parser returned `[]` with no breadcrumb, silently mis-scoping the freeze allowlist to defaults-only and over-blocking downstream with no signal at the real cause. Now emits a stderr WARN on that drift path — false-positive-guarded: a matched header with no `files:` (a legitimate doc-only subtask) stays silent.
+- **DF2 — `scripts/hooks/capability_probe.py` catch-all swallow → fail-loud.** A catch-all `except Exception: pass` around the runtime project-root resolver masked *all* errors (including a programming-error class a future refactor could introduce) behind the walk-up fallback. Narrowed to `except (OSError, FileNotFoundError)` so unexpected errors propagate, matching the module's existing narrow-except discipline.
+- **CG2 — review/SKILL.md complexity-gate gap.** `skills/review/SKILL.md` (311 lines) had drifted past the thin-router budget while `work/SKILL.md` (≤250) and `plan/SKILL.md` (≤300) were line-capped. Added a ≤320 line-cap regression to lock against re-bloat (ratchets toward 300 as prose carves to `references/review-sections.md`).
+- **HL1 — `/athanor:review` honesty under-label.** The review surface emitted "must fix before merge" severity prose with no advisory label, while the paired Critic surface carries "This rubric is advisory." Added a mirroring "advisory — not a merge gate" banner so a reader cannot mistake review for a CI gate (a false enforcement impression is itself a fail-loud honesty violation).
+
+7 new regression tests (RED→GREEN); full suite **946 passed, 0 failed**. No identity-invariant change; release ceremony version-parity + STATE rotation/trim (v0.17.0 → `docs/archive/STATE-history.md`, Previous cap 5) applied.
+
 ## [0.18.4] — 2026-06-06
 
 ### Added — engineering-quality principle (low complexity + fail-loud)

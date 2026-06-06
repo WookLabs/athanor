@@ -99,7 +99,21 @@ def parse_subtask_files(plan_md_path: str) -> list[dict]:
         return []
     body = text[anchor.end():]
     entries_b = _parse_shape_b(body)
-    return entries_b if entries_b else _parse_shape_a(body)
+    entries = entries_b if entries_b else _parse_shape_a(body)
+    # Fail-loud: a `## Subtasks` section IS present but no subtask header matched
+    # either shape (heading drift / future Splitter format). Returning [] here
+    # silently mis-scopes the freeze allowlist to defaults-only, which then
+    # over-blocks (or, if defaults were ever empty, allow-alls) downstream with
+    # no signal pointing at the real cause. Surface it instead of swallowing it.
+    # NOT warned: a matched header with no `**files**:` (legitimate doc-only
+    # subtask) — that is recognized structure, not drift.
+    if not entries and not _HDR_A.search(body) and not _HDR_B.search(body):
+        sys.stderr.write(
+            "[build_freeze_allowlist] WARN: '## Subtasks' section present but no "
+            "Subtask header matched Shape A or Shape B — allowlist will contain "
+            "defaults only; check plan.md Subtask formatting.\n"
+        )
+    return entries
 
 
 def _parse_shape_a(body: str) -> list[dict]:

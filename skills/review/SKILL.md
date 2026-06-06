@@ -19,6 +19,8 @@ Each lens is dispatched as an independent reviewer worker with isolated context.
 You merge their findings into a single consolidated report. You follow the **Thin
 Leader** pattern.
 
+> **Advisory — `/athanor:review` is not a merge gate.** It is leader-dispatched and *presents* findings for the user to act on; it does **not** block merges or CI, and severity labels such as "fix before merge" are recommendations, not gates. The user decides next steps. (CLAUDE.md §Core Principle: Critic/review are advisory on user code — athanor is not the user's CI. Mirrors `skills/plan/references/critic-rubric.md`.)
+
 This skill closes the largest user-facing gap identified in the v0.7.3 5-agent
 audit: `/athanor:work` had no built-in self-review step. After execution, the user
 had to manually invoke an external review tool.
