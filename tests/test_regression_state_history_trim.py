@@ -51,8 +51,7 @@ def test_state_md_keeps_recent_phases() -> None:
     """MUST — the newest phases stay live in STATE.md."""
     body = STATE_MD.read_text(encoding="utf-8")
     assert "## Current Phase: v0.18" in body, "STATE.md must keep the Current Phase."
-    # The pinned set slides with the trim window: v0.18.6 archived the v0.18.0
-    # section (and v0.18.0 was the last surface carrying v0.17.0 / v0.16.0
-    # prose), so the live recent phases are now v0.18.5 … v0.18.1.
-    for v in ("v0.18.5", "v0.18.2", "v0.18.1"):
+    # The pinned set slides with the trim window: v0.18.7 archived the v0.18.1
+    # section, so the live Previous phases are now v0.18.6 … v0.18.2.
+    for v in ("v0.18.6", "v0.18.4", "v0.18.2"):
         assert v in body, f"STATE.md must keep the recent phase {v}."

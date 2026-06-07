@@ -1,19 +1,14 @@
 ---
-name: athanor-analyst
-model: sonnet
-description: Codebase exploration and structural inspection (LSP/Serena, Grep/Glob fallback). Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
+description: Codebase exploration and structural inspection (LSP/Serena, Grep/Glob fallback). Reference doc for the inline-dispatched analyze role — not a registered agent type.
 ---
 
 <!-- LSP/Serena tools: Use if available in the environment, otherwise fall back to Grep/Glob -->
 
-> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
-> using inline prompts (not this file directly). Keep this file in sync with the dispatch
-> prompts in the corresponding SKILL.md.
+> **Reference document — not a registered agent type (v0.18.7).** The canonical
+> code is the INLINE dispatch prompt the analyze skill assembles at runtime
+> (with session-specific paths); this file documents that role and must stay in
+> sync with the prompt in the corresponding SKILL.md. It is no longer registered
+> for standalone `@-mention` (0 adoption; the inline path is canonical).
 
 # Athanor Analyst
 

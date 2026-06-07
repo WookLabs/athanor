@@ -25,9 +25,7 @@ Leader (thin router) ── 파일 안 읽음, 분석 안 함, 코드 안 씀
   ├── /athanor:discuss ──→ worker(들) ──→ 결과 brief
   ├── /athanor:analyze ──→ worker(들) ──→ 결과 brief
   ├── /athanor:debug      ──→ worker(들) ──→ 결과 brief
-  ├── /athanor:deep-plan  ──→ worker(들) ──→ 결과 brief
-  ├── /athanor:plan       ──→ worker(들) ──→ 결과 brief
-  ├── /athanor:lite-plan  ──→ worker(들) ──→ 결과 brief
+  ├── /athanor:plan       ──→ worker(들) ──→ 결과 brief   (--depth={deep|standard|lite})
   ├── /athanor:work       ──→ worker(들) ──→ 결과 brief
   └── /athanor:setup   ──→ worker      ──→ 결과 brief
 ```
@@ -44,7 +42,7 @@ Leader 컨텍스트에는 dispatch 기록 + 결과 brief만 쌓이므로,
 ┌─────────── Plan Mode (읽기/생각만) ──────────────────────┐
 │                                                          │
 │  /athanor:discuss → /athanor:analyze → /athanor:debug    │
-│  → /athanor:deep-plan | /athanor:plan | /athanor:lite-plan │
+│  → /athanor:plan --depth={deep|standard|lite}            │
 │  → 사용자 확정                                            │
 │                                                          │
 └────────────────────────┬─────────────────────────────────┘
@@ -152,9 +150,9 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 
 | Tier | Command | Planner A | Planner B / Review | Use Case |
 |------|---------|-----------|-------------------|----------|
-| Deep | `/athanor:deep-plan` | Claude (standard) | Codex CLI (contrarian) + 교차 리뷰 | 대규모 아키텍처, 위험한 변경 |
+| Deep | `/athanor:plan --depth=deep` | Claude (standard) | Codex CLI (contrarian) + 교차 리뷰 | 대규모 아키텍처, 위험한 변경 |
 | Standard | `/athanor:plan` | Claude (standard) | Codex CLI review (단방향) | 일반적인 기능 구현 (default) |
-| Lite | `/athanor:lite-plan` | Claude (standard) | 없음 (리뷰 스킵) | 소규모 변경, 빠른 작업 |
+| Lite | `/athanor:plan --depth=lite` | Claude (standard) | 없음 (리뷰 스킵) | 소규모 변경, 빠른 작업 |
 
 **Deep Tier 흐름:**
 ```

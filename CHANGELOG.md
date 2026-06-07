@@ -3,6 +3,18 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.7] — 2026-06-07
+
+### Changed — plugin diet (de-register 7 reference-only agents; honesty cleanup)
+
+An evidence-based plugin-diet audit (3 parallel Explore agents + direct verification). Honest finding: athanor is **already lean** (v0.12.0 atomic cut + v0.18.3 cleanup), so the genuine wins are modest and several audit "candidates" were refuted on verification — `ROADMAP.md` is test-locked, `DESIGN.md` is cross-referenced, `scope-change-critic.md` is an active worker, the dead one-shot scripts are inert + test-entangled. One audit "orphan" finding (lfg-goal `judge-rubric`/`goal-md-template`) was refuted by the existing v0.13.0 contract tests and **dropped** — the test net working as intended.
+
+- **Agents: 11 → 4 registered.** The 7 inline-only pipeline roles (`analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`) are **de-registered to pure reference docs** — frontmatter `name:`/`tools:`/`model:` removed, `description:` kept. They had 0 standalone `@-mention` adoption and the registered type contradicted the collision guard (skills dispatch them INLINE with session-specific paths). Only `learner`, `releaser`, `ci-watcher`, `codex-dispatcher` stay registered (the leader / release ceremony / lfg dispatch them as types). Verified `claude plugin validate` clean, no new load warnings. CLAUDE.md §Native Agent Inventory + §Effort Level + COLLISION GUARD prose simplified.
+- **DESIGN.md stale-command fix.** `docs/DESIGN.md` diagrams + tier table dropped the v0.17.0-removed `/athanor:deep-plan` / `/athanor:lite-plan` for the `/athanor:plan --depth=` form. Locked by an extended `test_regression_stale_command_refs.py`.
+- **Config honesty labels.** `schemas/athanor-config.schema.json` now flags the genuinely-unimplemented surface — `memory.promotionThreshold` (permanent→mem-search promotion not wired) and `triggers.language` (advisory; not enforced at dispatch) — so the schema no longer over-claims behavior it doesn't ship.
+
+5 new/updated regression tests (DESIGN stale-refs, 2 schema honesty labels, agent reference-doc partition, effort-level registered-only). Full suite **970 passed, 0 failed**; `claude plugin validate` + `lint_checks agent-descriptions` green. No identity-invariant change; STATE rotation/trim (v0.18.1 → `docs/archive/STATE-history.md`, Previous cap 5) applied.
+
 ## [0.18.6] — 2026-06-07
 
 ### Fixed — 11 bugs from a deep bug-hunt (Kernel Guard security hardening)

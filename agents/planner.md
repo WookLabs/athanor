@@ -1,13 +1,5 @@
 ---
-name: athanor-planner
-model: opus
-description: Ad-hoc task breakdowns outside the Athanor pipeline. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Write
-  - Grep
-  - Glob
-  - Bash
+description: Ad-hoc task breakdowns outside the Athanor pipeline. Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

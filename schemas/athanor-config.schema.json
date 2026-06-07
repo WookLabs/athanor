@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.18.6/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.18.7/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
@@ -112,7 +112,7 @@
         "promotionThreshold": {
           "type": "integer",
           "minimum": 0,
-          "description": "Access count required to auto-promote a working lesson to permanent."
+          "description": "Access count required to auto-promote a working lesson to permanent. NOT YET IMPLEMENTED — the permanent->mem-search promotion is not wired; only frontmatter 'importance' marking + .athanor/lessons/ files exist (see docs/STATE.md Known gaps)."
         },
         "maxAgeDays": {
           "type": "integer",
@@ -129,7 +129,7 @@
         "language": {
           "type": "string",
           "enum": ["ko", "en", "both"],
-          "description": "Slash-command trigger language."
+          "description": "Slash-command trigger language. Advisory — NOT enforced at dispatch; skills declare both ko+en triggers regardless of this value."
         }
       }
     },

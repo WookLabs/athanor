@@ -1,9 +1,19 @@
 # Native Agent Dual Nature + COLLISION GUARD
 
+> **Update (v0.18.7 plugin-diet):** The 7 inline-only pipeline roles (analyst,
+> cleaner, critic, executor, planner, researcher, reviewer) were **de-registered
+> to pure reference docs** — frontmatter `name:`/`tools:`/`model:` removed,
+> `description:` kept. With 0 standalone `@-mention` adoption the registered type
+> was a never-usable contradiction with the COLLISION GUARD below. Only **4
+> agents stay registered** (learner, releaser, ci-watcher, codex-dispatcher —
+> actually dispatched as types by the leader / release ceremony / lfg). The
+> dual-nature below now applies to those 4; the 7 are reference-only. Canonical:
+> `CLAUDE.md` §Native Agent Inventory. Historical rationale retained for context.
+
 Companion doc for `CLAUDE.md` §"Native Agent Inventory". Detailed rationale for
-why all 11 `agents/*.md` files and their `name: athanor-*` frontmatter are
-retained, and why skills must dispatch pipeline roles via inline `Agent()`
-prompts rather than the registered agent types.
+why all 11 `agents/*.md` files and their `name: athanor-*` frontmatter were
+originally retained (pre-v0.18.7), and why skills must dispatch pipeline roles
+via inline `Agent()` prompts rather than the registered agent types.
 
 Decided in Goal 36470e54 Cycle C002 (G3). See
 `.athanor/goals/36470e54/decisions.md` D-C002-3.
@@ -25,8 +35,10 @@ Each file in `agents/` serves two distinct purposes:
 
 2. **Live registered agent type for standalone `@-mention` use.** Because each
    file carries `name: athanor-*` frontmatter, Claude Code registers it as an
-   addressable agent type. A user can invoke e.g. `@athanor-reviewer` directly,
-   outside any skill pipeline, for ad-hoc standalone use.
+   addressable agent type. A user can invoke a registered agent (post-v0.18.7:
+   `@athanor-releaser`, `@athanor-learner`, `@athanor-ci-watcher`,
+   `@athanor-codex-dispatcher`) directly, outside any skill pipeline, for ad-hoc
+   standalone use. (Pre-v0.18.7 the 7 pipeline roles were also addressable.)
 
 ## COLLISION GUARD
 

@@ -61,26 +61,25 @@ def _skill_line_model(role: str) -> str | None:
 
 
 def test_cleaner_model_consistency() -> None:
-    """MUST — Cleaner tier agrees across frontmatter, dispatch, and skill line.
+    """MUST — Cleaner dispatched tier agrees between inline dispatch and skill line.
 
-    CLAUDE.md §Effort Level pins Cleaner to minimal effort (haiku). The
-    reference frontmatter, the inline dispatch prompt, and the work-skill
-    Step-5 line must all declare the same tier.
+    v0.18.7 plugin-diet: `agents/cleaner.md` is now a de-registered reference
+    doc with NO frontmatter `model:` (skills dispatch Cleaner inline). The
+    consistency lock is therefore between the two INLINE dispatch sources —
+    `learner-cleaner.md` Step 5 and `work/SKILL.md` 'Cleaner agent (...)' — which
+    is what actually runs. (Cleaner's reasoning tier is haiku — set by the
+    inline dispatch, not frontmatter, now that the reference doc carries none.)
     """
-    fm = _frontmatter_model("agents/cleaner.md")
     disp = _dispatch_model("## Step 5 — Cleaner Dispatch")
     skill = _skill_line_model("Cleaner")
-    assert fm is not None and disp is not None and skill is not None, (
+    assert disp is not None and skill is not None, (
         f"Could not parse a model tier for Cleaner "
-        f"(frontmatter={fm!r}, dispatch={disp!r}, skill_line={skill!r})."
+        f"(dispatch={disp!r}, skill_line={skill!r})."
     )
-    assert fm == disp == skill, (
-        f"Cleaner model tier drift: agents/cleaner.md frontmatter='{fm}', "
-        f"learner-cleaner.md Step 5 dispatch='{disp}', "
-        f"work/SKILL.md 'Cleaner agent (...)'='{skill}'. All three must "
-        f"agree — the reference agent file warns to keep the dispatch "
-        f"prompt in sync, and CLAUDE.md §Effort Level pins Cleaner to "
-        f"minimal effort (haiku)."
+    assert disp == skill, (
+        f"Cleaner dispatched tier drift: learner-cleaner.md Step 5 dispatch="
+        f"'{disp}', work/SKILL.md 'Cleaner agent (...)'='{skill}'. The two inline "
+        f"dispatch sources must agree."
     )
 
 

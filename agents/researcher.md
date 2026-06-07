@@ -1,13 +1,5 @@
 ---
-name: athanor-researcher
-model: sonnet
-description: Option investigation and evidence gathering for decision dilemmas. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Write
-  - Grep
-  - Glob
-  - Bash
+description: Option investigation and evidence gathering for decision dilemmas. Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

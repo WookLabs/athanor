@@ -4,7 +4,33 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.6 — Deep Bug-Hunt: Kernel Guard security hardening
+## Current Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
+
+**v0.18.7** (released 2026-06-07) — An evidence-based plugin-diet audit (3
+Explore agents + direct verification). Honest finding: athanor is already lean;
+most audit "candidates" were refuted (ROADMAP test-locked, DESIGN
+cross-referenced, dead one-shot scripts inert + test-entangled), and one
+"orphan" finding was refuted by the existing v0.13.0 contract tests and dropped
+(the test net working). No identity-invariant change.
+
+1. **Agents 11 → 4 registered.** The 7 inline-only pipeline roles (analyst,
+   cleaner, critic, executor, planner, researcher, reviewer) de-registered to
+   pure reference docs (name/tools/model frontmatter removed, description kept) —
+   0 @-mention adoption; the registered type contradicted the collision guard
+   (skills dispatch them INLINE with session paths). learner / releaser /
+   ci-watcher / codex-dispatcher stay registered. `claude plugin validate` clean.
+2. **Honesty + staleness.** DESIGN.md dropped the v0.17.0-removed deep-plan /
+   lite-plan for `--depth=`; schema labels memory.promotionThreshold +
+   triggers.language as unimplemented / advisory (no over-claim).
+
+5 new/updated regression tests; full suite 970 passed, 0 failed. CLAUDE.md
+§Native Agent Inventory + §Effort Level + COLLISION GUARD simplified to the
+4-registered reality.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.6 — Deep Bug-Hunt: Kernel Guard security hardening
 
 **v0.18.6** (released 2026-06-07) — A deep adversarial bug-hunt Workflow (4
 specialized lenses → refute-default reproduce-to-confirm) found and fixed 11
@@ -128,29 +154,6 @@ honesty labels.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
-## Previous Phase: v0.18.1 — Agent Inventory Audit + Concept Absorption
-
-**v0.18.1** (released 2026-05-31) — Cleanup + concept-absorption patch
-(Goal 36470e54). No new feature, no new agent.
-
-1. **Reference-agent evaluation.** Systematic audit of external agent
-   inventories (ECC 259/68, CE 43, autoresearch 1, gstack/superpowers 0)
-   → **0 wholesale adoptions**. Every candidate was subsumed by the
-   existing reviewer 6-lens / critic / researcher / learner surface, out
-   of scope, or Thin-Leader-incompatible. Consistent with the v0.12.0
-   concept-absorption policy. Matrix: `docs/agent-evaluation-matrix.md`.
-2. **Concept absorption (prose, not new agents).** Reviewer quality lens
-   gains two heuristics: silent-failure (swallowed-error / empty-catch,
-   ex-ECC) + project-standards (repo CLAUDE.md audit, ex-CE).
-   `agents/reviewer.md` + `skills/review/SKILL.md`. NOTICE.md ledger +2.
-3. **Agent inventory clarified.** Dual-nature framing (inline-dispatch
-   reference docs + @-mention registered types) + COLLISION GUARD
-   rationale documented (CLAUDE.md + `docs/archive/agent-dual-nature.md`).
-   All 11 agents KEPT, 0 removed.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 
 ### Foundation — v0.1.0 ~ v0.5.x (2026-04-08 ~ 2026-04-14)
@@ -174,6 +177,10 @@ Spec-then-TDD / Stop hook gate.
 - **v0.7.6 (2026-05-02)**: 5-agent ref deep-dive + Codex cross-validation. 최우선 contract-default `athanor.json` 파일 신설. `agents/reviewer.md` confidence-anchored review findings (CE persona reviewer pattern).
 - **v0.7.7 (2026-05-18)**: Truth-in-documentation release. Stop hook 라벨을 `enforced` → `advisory (prompt-based)`로 정직하게 demote, schema/template/config `_doc` 거짓 claim 시정, `schemas/athanor-config.schema.json` (draft-07) 신설 + `$schema` URL을 release tag pin, `templates/athanor.json` 추출 + setup이 읽도록 변경, 6개 session-touching skill을 CLAUDE.md §Session Lookup Convention canonical rule로 정렬, `plan/SKILL.md` Step 3/4 intro tier-aware 재작성, `plan/discuss` skill에 `codex.enabled` + `codex.fallback` matrix 도입. 41 regression test 추가. PR #10 dual review (Opus + Codex)로 `_doc` 거짓 claim 잔존 catch + commit 6fdbd05로 시정.
 - **v0.7.8 (2026-05-18)**: 스파이크-약속 enforcement upgrade. Stop hook이 `type: prompt` → `type: command`로 전환, `scripts/hooks/stop_verify_claims.py`가 stdin payload를 읽어 material-claim detection 수행 (English + Korean whitelist v0.7.7 prompt에서 verbatim 포팅) + exit 2로 Stop 차단, stderr가 모델 컨텍스트로 피드백. `verification-before-completion` skill에 §Emission Sentinel 추가 (`<!-- athanor:verification-emission v=1 -->` 응답 prefix로 hook이 re-entry 방지). `hooks.profile`의 `off`/`standard` 값만 honoured (`lenient`/`strict`는 deferred), `hooks.disabled[]` orphan 키 삭제. CLAUDE.md 라벨 `advisory (prompt-based)` → `enforced (command-based)`로 재승급. PR #10 dual-review에서 catch한 Major 4건 (Step 2 tier prose, Deep-tier 2-input Critic, /work review-skipped marker, analyze:301 today residual) 함께 처리.
+
+### Concept absorption → atomic cut — v0.10.x ~ v0.12.0 (2026-05-19 ~ 2026-05-22)
+
+- **v0.10.0 → v0.12.0**: v0.10.0 absorbed compound-engineering + superpowers as vendored skills; the v0.12.0 **atomic cut** corrected the scope (95 vendored items → 1 KEEP `ce-test-browser` + 5 concepts absorbed as prose). The 4 identity invariants survived the cutover. Detail: `docs/archive/concept-absorption-surface.md`.
 
 ## Live invariants (현 시점 contract status)
 
