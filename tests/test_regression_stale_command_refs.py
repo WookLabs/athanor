@@ -24,6 +24,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 README = REPO_ROOT / "README.md"
 DISCUSS = REPO_ROOT / "skills" / "discuss" / "SKILL.md"
+DESIGN = REPO_ROOT / "docs" / "DESIGN.md"
 
 
 def test_readme_no_dead_plan_commands() -> None:
@@ -36,6 +37,24 @@ def test_readme_no_dead_plan_commands() -> None:
         )
     assert "--depth=" in body, (
         "README.md must document the '--depth=' flag form of /athanor:plan."
+    )
+
+
+def test_design_no_dead_plan_commands() -> None:
+    """MUST — docs/DESIGN.md uses the --depth= flag form, not deep-plan/lite-plan.
+
+    v0.18.7 plugin-diet: DESIGN.md (referenced by README/STATE/ROADMAP) still
+    showed the v0.17.0-removed `/athanor:deep-plan` / `/athanor:lite-plan`
+    commands in its pipeline diagrams + tier table. Lock the dead forms out.
+    """
+    body = DESIGN.read_text(encoding="utf-8")
+    for dead in ("/athanor:deep-plan", "/athanor:lite-plan"):
+        assert dead not in body, (
+            f"docs/DESIGN.md references the dead command {dead!r}; v0.17.0 (S07) "
+            f"folded it into '/athanor:plan --depth='. Use the flag form."
+        )
+    assert "--depth=" in body, (
+        "docs/DESIGN.md must document the '--depth=' flag form of /athanor:plan."
     )
 
 

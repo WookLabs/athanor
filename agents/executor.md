@@ -1,14 +1,5 @@
 ---
-name: athanor-executor
-model: opus
-description: Implementing individual code changes with ralph-loop verification. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Write
-  - Edit
-  - Grep
-  - Glob
-  - Bash
+description: Implementing individual code changes with ralph-loop verification. Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

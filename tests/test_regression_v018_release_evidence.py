@@ -24,11 +24,11 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Five-file version parity tracks the live release. Bumped to 0.18.6 by the
-# v0.18.6 self-dogfood ceremony (fail-loud fixes the adversarial enforcement
-# audit found in athanor's own code). The CHANGELOG/STATE/migration prose locks
-# below still assert the v0.18.0 ceremony evidence, which remains present.
-TARGET_VERSION = "0.18.6"
+# Five-file version parity tracks the live release. Bumped to 0.18.7 by the
+# v0.18.7 plugin-diet ceremony (de-register 7 inline-only pipeline agents,
+# DESIGN stale-command fix, config honesty labels). The CHANGELOG/STATE/migration
+# prose locks below still assert the v0.18.0 ceremony evidence, which remains present.
+TARGET_VERSION = "0.18.7"
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"

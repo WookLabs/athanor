@@ -1,12 +1,5 @@
 ---
-name: athanor-reviewer
-model: opus
-description: Multi-lens code review (architecture, quality, security, performance, testing, documentation). Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
+description: Multi-lens code review (architecture, quality, security, performance, testing, documentation). Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

@@ -1,13 +1,5 @@
 ---
-name: athanor-cleaner
-model: haiku
-description: Housekeeping old sessions, lesson decay/promotion, and stale data. Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Write
-  - Glob
-  - Grep
-  - Bash
+description: Housekeeping old sessions, lesson decay/promotion, and stale data. Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

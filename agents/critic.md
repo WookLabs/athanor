@@ -1,12 +1,5 @@
 ---
-name: athanor-critic
-model: opus
-description: Document merging and trade-off evaluation (discussion synthesis, plan synthesis). Dispatched by Athanor skills via inline prompt; also available standalone via @-mention.
-tools:
-  - Read
-  - Write
-  - Grep
-  - Glob
+description: Document merging and trade-off evaluation (discussion synthesis, plan synthesis). Reference doc for the inline-dispatched role — not a registered agent type.
 ---
 
 > **Note:** This agent definition serves as reference documentation. Skills dispatch workers

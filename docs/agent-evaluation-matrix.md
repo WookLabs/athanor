@@ -3,6 +3,14 @@
 평가일: 2026-05-31
 방법: 3개 병렬 평가 에이전트 (ECC / CE+autoresearch / athanor 자체 감사)
 
+> **Follow-on (v0.18.7 plugin-diet):** The "0 standalone adoption" finding for
+> the inline-only pipeline roles led to **de-registering 7 of them** (analyst,
+> cleaner, critic, executor, planner, researcher, reviewer) to pure reference
+> docs — removing the never-usable registered-type surface. `learner` stays
+> registered (the leader dispatches it as a type for learner-on-release), as do
+> `releaser` / `ci-watcher` / `codex-dispatcher`. Net: 11 → 4 registered. See
+> `CLAUDE.md` §Native Agent Inventory + `docs/archive/agent-dual-nature.md`.
+
 ## 1. ref 에이전트 채택 평가
 
 ### ECC (259 files → 68 unique, i18n/중복 제외)

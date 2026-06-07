@@ -17,21 +17,21 @@ Documented infrastructure/output exceptions:
 
 ## Native Agent Inventory
 
-Agent definitions live in `agents/` as `.md` files with a **dual nature**: (1) reference documents for the inline-dispatched pipeline roles — each carries `name: athanor-*` frontmatter and documents purpose/tools/dispatch contract, but is NOT the full implementation (canonical code stays in skills); (2) ALSO live registered agent types for standalone `@-mention` use. **COLLISION GUARD:** skills never dispatch the 8 pipeline roles via `subagent_type` — they use an INLINE `Agent()` prompt. For planner/critic this is explicitly WRONG to do via the registered agent, because the inline prompt carries session-specific file paths (`.athanor/sessions/{id}/...`) the standalone agent lacks. All 11 agents + frontmatter are KEPT (Goal 36470e54 C002; 0 ref-agent adoptions per `docs/agent-evaluation-matrix.md`). Full detail: `docs/archive/agent-dual-nature.md`.
+Agent definitions live in `agents/` as `.md` files in **two kinds**. **4 registered agent types** (`learner`, `releaser`, `ci-watcher`, `codex-dispatcher`) carry `name:`/`tools:` frontmatter and ARE dispatched as types by the leader / release ceremony / lfg. **7 reference documents** (`analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`) are `description:`-only and NOT registered: skills dispatch these pipeline roles via an INLINE `Agent()` prompt carrying session-specific paths (`.athanor/sessions/{id}/...`) a standalone agent lacks — registering them would be a never-usable contradiction. v0.18.7 de-registered the 7 (0 standalone adoption per `docs/agent-evaluation-matrix.md`; inline is canonical), collapsing the former 11-agent dual-nature (Goal 36470e54 C002) to 4. Full detail: `docs/archive/agent-dual-nature.md`.
 
-| Agent | Purpose | Since |
-|-------|---------|-------|
-| `analyst.md` | Analysis dispatch target | v0.7.x |
-| `cleaner.md` | Session/memory lifecycle | v0.7.x |
-| `critic.md` | Adversarial plan review | v0.7.x |
-| `executor.md` | Subtask execution (Ralph loop) | v0.7.x |
-| `learner.md` | Lessons extraction | v0.7.x |
-| `planner.md` | Plan generation | v0.7.x |
-| `researcher.md` | Research/discovery dispatch | v0.7.x |
-| `reviewer.md` | Multi-lens code review | v0.7.x |
-| `releaser.md` | Release ceremony automation (version bump, CHANGELOG, STATE.md, test pins) | v0.14.0 |
-| `codex-dispatcher.md` | Codex CLI dispatch wrapper (timeout clamping, stdin redirect, exit-code handling) | v0.14.0 |
-| `ci-watcher.md` | CI watch + autofix loop (gh pr checks, failure log analysis, fix dispatch) | v0.14.0 |
+| Agent | Kind | Purpose | Since |
+|-------|------|---------|-------|
+| `analyst.md` | reference | Analysis dispatch target | v0.7.x |
+| `cleaner.md` | reference | Session/memory lifecycle | v0.7.x |
+| `critic.md` | reference | Adversarial plan review | v0.7.x |
+| `executor.md` | reference | Subtask execution (Ralph loop) | v0.7.x |
+| `learner.md` | registered | Lessons extraction | v0.7.x |
+| `planner.md` | reference | Plan generation | v0.7.x |
+| `researcher.md` | reference | Research/discovery dispatch | v0.7.x |
+| `reviewer.md` | reference | Multi-lens code review | v0.7.x |
+| `releaser.md` | registered | Release ceremony automation (version bump, CHANGELOG, STATE.md, test pins) | v0.14.0 |
+| `codex-dispatcher.md` | registered | Codex CLI dispatch wrapper (timeout clamping, stdin redirect, exit-code handling) | v0.14.0 |
+| `ci-watcher.md` | registered | CI watch + autofix loop (gh pr checks, failure log analysis, fix dispatch) | v0.14.0 |
 
 ## Commands
 
@@ -156,9 +156,9 @@ Four athanor identity commitments survive intact, upheld by native skill prose +
 4. **Stop hook runtime gate.** `scripts/hooks/stop_verify_claims.py` fires on every Stop event (v0.10.0 vendor-aware whitelist scope; D11 preserved as general defensive coverage).
 
 ### Effort Level
-- Planner / Critic / Executor / Reviewer / Releaser / CI-watcher: highest (opus)
-- Analyst / Researcher / Learner / Codex-dispatcher: standard (sonnet)
-- Cleaner: minimal (haiku)
+Registered agents only — the 7 reference-doc roles set their tier in the skill's INLINE dispatch (e.g. Cleaner haiku), not frontmatter:
+- Releaser / CI-watcher: highest (opus)
+- Learner / Codex-dispatcher: standard (sonnet)
 
 ## Lessons System
 

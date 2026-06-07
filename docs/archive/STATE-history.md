@@ -1193,3 +1193,28 @@ Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate. Companion-fix arc 5 layer (v0.11.3 ->
 v0.11.8) untouched. PreToolUse Kernel Guard (v0.16.0) untouched —
 dispatcher runs kernel FIRST.
+
+## Archived from STATE.md (2026-06-07, v0.18.7 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.1 — Agent Inventory Audit + Concept Absorption
+
+**v0.18.1** (released 2026-05-31) — Cleanup + concept-absorption patch
+(Goal 36470e54). No new feature, no new agent.
+
+1. **Reference-agent evaluation.** Systematic audit of external agent
+   inventories (ECC 259/68, CE 43, autoresearch 1, gstack/superpowers 0)
+   → **0 wholesale adoptions**. Every candidate was subsumed by the
+   existing reviewer 6-lens / critic / researcher / learner surface, out
+   of scope, or Thin-Leader-incompatible. Consistent with the v0.12.0
+   concept-absorption policy. Matrix: `docs/agent-evaluation-matrix.md`.
+2. **Concept absorption (prose, not new agents).** Reviewer quality lens
+   gains two heuristics: silent-failure (swallowed-error / empty-catch,
+   ex-ECC) + project-standards (repo CLAUDE.md audit, ex-CE).
+   `agents/reviewer.md` + `skills/review/SKILL.md`. NOTICE.md ledger +2.
+3. **Agent inventory clarified.** Dual-nature framing (inline-dispatch
+   reference docs + @-mention registered types) + COLLISION GUARD
+   rationale documented (CLAUDE.md + `docs/archive/agent-dual-nature.md`).
+   All 11 agents KEPT, 0 removed.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
