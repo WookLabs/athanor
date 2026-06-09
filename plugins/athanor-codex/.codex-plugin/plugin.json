@@ -1,0 +1,33 @@
+{
+  "name": "athanor-codex",
+  "version": "0.1.0+codex.20260602023109",
+  "description": "Codex-native companion skills for Athanor discuss, analyze, planning, work execution, LFG pipelines, release ceremony, CI watching, review, debugging, scope drift checks, verification, and setup diagnostics.",
+  "author": {
+    "name": "WookLabs"
+  },
+  "homepage": "https://github.com/WookLabs/athanor",
+  "repository": "https://github.com/WookLabs/athanor",
+  "license": "MIT",
+  "keywords": [
+    "athanor",
+    "codex",
+    "planning",
+    "code-review",
+    "debugging",
+    "scope-drift"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Athanor Codex",
+    "shortDescription": "Codex-native companion workflows for Athanor.",
+    "longDescription": "Athanor Codex brings the practical parts of Athanor to Codex: discuss, analyze, implementation planning, work execution guidance, LFG and LFG-goal orchestration, release ceremony, CI watch and autofix guidance, structured review, triage-first debugging, scope drift checks, verify-before-completion discipline, and setup diagnostics. It is a companion plugin, not a port of Claude Code hooks or Task dispatch.",
+    "developerName": "WookLabs",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use Athanor Codex to discuss, analyze, plan, work, run LFG, release, watch CI, review, debug, verify, or scope-check this task."
+  }
+}
