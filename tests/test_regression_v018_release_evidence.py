@@ -22,13 +22,15 @@ from pathlib import Path
 
 import pytest
 
+from tests._version import _plugin_version
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Five-file version parity tracks the live release. Bumped to 0.18.7 by the
-# v0.18.7 plugin-diet ceremony (de-register 7 inline-only pipeline agents,
-# DESIGN stale-command fix, config honesty labels). The CHANGELOG/STATE/migration
-# prose locks below still assert the v0.18.0 ceremony evidence, which remains present.
-TARGET_VERSION = "0.18.7"
+# Five-file version parity tracks the live release, derived from plugin.json via
+# tests._version._plugin_version() so it follows every release bump without edits.
+# The CHANGELOG/STATE/migration prose locks below still assert the v0.18.0 ceremony
+# evidence (the [0.18.0] heading, Freeze headline, D2 residual), which remains present.
+TARGET_VERSION = _plugin_version()
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"

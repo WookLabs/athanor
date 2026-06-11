@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests._version import _plugin_version
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -31,7 +33,7 @@ def test_v013_release_surface_intact():
     assert template["lfgGoal"] == config["lfgGoal"], "athanor.json + templates/athanor.json lfgGoal parity violated"
     # version bump
     plugin = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
-    assert plugin["version"] == "0.18.7", f"plugin.json version not bumped: {plugin['version']}"
+    assert plugin["version"] == _plugin_version(), f"plugin.json version not bumped: {plugin['version']}"
 
 
 def test_companion_fix_arc_scripts_present():
