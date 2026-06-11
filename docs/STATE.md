@@ -6,7 +6,7 @@
 
 ## Unreleased (post-v0.18.7)
 
-**athanor-codex companion** (`plugins/athanor-codex/`) — a second-runtime mirror of the athanor native skill set for the Codex CLI (13 skills, no Claude hooks). Fable 5 audit round 1: P2 freeze DOA fix, P13/P16 Kernel Guard coverage, P14 Stop-gate bypass removal, P15 hook-state opt-in lifecycle. See `CHANGELOG.md ## [Unreleased]`.
+**athanor-codex companion** (`plugins/athanor-codex/`) — a second-runtime mirror of the athanor native skill set for the Codex CLI (13 skills, no Claude hooks). Fable 5 audit rounds 1–2 (043244c + 65d0136–b35965c, P2/P5–P11/P13–P20): install docs corrected, doc-contract parity, guard hardening, hook-state opt-in lifecycle, ledger cleanup. See `CHANGELOG.md ## [Unreleased]` for the full P-enumeration.
 
 ## Current Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
 

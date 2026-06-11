@@ -334,6 +334,13 @@ def test_extract_target_path_missing_key_returns_none():
     assert runtime.extract_target_path("NotebookEdit", {}) is None
 
 
+@pytest.mark.parametrize("bad_input", [None, ["x"], 123])
+def test_extract_target_path_non_dict_returns_none(bad_input):
+    """Non-mapping tool_input yields None (the `not isinstance(.., dict)`
+    fail-open branch). Covers None / list / int — review finding R2 (C)."""
+    assert runtime.extract_target_path("Edit", bad_input) is None
+
+
 # ---------------------------------------------------------------------------
 # Integration smoke: existing hooks still work after refactor.
 # ---------------------------------------------------------------------------

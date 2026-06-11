@@ -297,12 +297,60 @@ def _check_destructive_shell(command: str) -> str | None:
     return None
 
 
-# A force-push segment's command word is `git push` (optionally `git -C <dir>
-# push`, env-prefixed, etc. are NOT honored — best-effort). Anchoring to the
-# segment's leading command keeps the force-push literal appearing only as
-# QUOTED DATA to another command (e.g. `echo 'git push --force origin main'`)
-# from tripping the gate: there the segment's command is `echo`, not git push.
+# A force-push segment's command word is `git push`, optionally behind a small
+# safe wrapper-prefix set (`sudo [-flags]`, `env [VAR=val] [-flags]`) stripped
+# by `_strip_force_push_wrappers` before this anchor is applied. Anchoring to
+# the segment's (post-strip) leading command keeps the force-push literal
+# appearing only as QUOTED DATA to another command (e.g.
+# `echo 'git push --force origin main'`) from tripping the gate: there the
+# segment's command is `echo`, not git push.
+#
+# Accepted false-negative CLASS (still slips, by design — this is a fat-finger
+# guardrail, NOT a security boundary, see module docstring): any segment whose
+# effective head after stripping the sudo/env wrapper set is not literally
+# `git` — e.g. `xargs`/`time`/`nice` wrappers, `sudo -u <user>` option-argument
+# forms (the non-flag `<user>` token stops the strip), and shell aliases.
 _SEGMENT_IS_GIT_PUSH = re.compile(r"^git\s+push\b")
+
+
+def _strip_force_push_wrappers(segment: str) -> str:
+    """Strip a small, safe wrapper-prefix set from a command segment's head so
+    `sudo git push …` / `env VAR=v git push …` are recognised as git-push
+    invocations by the `^git\\s+push` anchor.
+
+    Stripped (simple whitespace tokenization — deliberately NOT shlex/a real
+    shell parser, to stay consistent with this file's best-effort textual
+    idiom):
+      * leading `sudo` token(s), plus any immediately following BARE option
+        tokens (tokens starting with `-`, e.g. `sudo -E`),
+      * leading `env` token, plus any following `VAR=value` assignment tokens
+        and bare option tokens (e.g. `env GIT_DIR=/tmp/x`).
+
+    Known honest residual (ACCEPTED): an option-with-argument form like
+    `sudo -u alice git push …` stops at the non-flag `alice` token — the strip
+    leaves `-u alice git push …`, which the anchor rejects, so it slips. We do
+    NOT build argument-aware option parsing (see module docstring).
+    """
+    tokens = segment.split()
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok == "sudo":
+            i += 1
+            # Consume immediately-following bare option flags (e.g. `-E`).
+            while i < len(tokens) and tokens[i].startswith("-"):
+                i += 1
+            continue
+        if tok == "env":
+            i += 1
+            # Consume following `VAR=value` assignments and bare option flags.
+            while i < len(tokens) and (
+                tokens[i].startswith("-") or "=" in tokens[i]
+            ):
+                i += 1
+            continue
+        break
+    return " ".join(tokens[i:])
 
 
 def _check_force_push(command: str) -> bool:
@@ -310,24 +358,29 @@ def _check_force_push(command: str) -> bool:
 
     Segment-scoped (P13): the `git push`, a force flag, and the `main`/`master`
     token must all co-occur within a SINGLE command segment (split on `&&`,
-    `||`, `|`, `;`, newline), AND that segment's leading command must itself be
-    `git push`. Two false-positives are thereby avoided:
+    `||`, `|`, `;`, newline). Before the leading-command anchor is applied, a
+    small safe wrapper-prefix set (`sudo [-flags]`, `env [VAR=val] [-flags]`)
+    is stripped from the segment head (`_strip_force_push_wrappers`) so a
+    privileged/env-wrapped push is still recognised; the force-push checks then
+    run against the STRIPPED segment. Two false-positives are thereby avoided:
 
       * cross-segment — `git push --force origin feat && git switch main`: the
         force flag and `main` live in different segments, so no single segment
         satisfies all three tokens.
       * quoted data — `echo 'git push --force origin main' >> notes.txt`: the
         force-push spelling is only an argument to `echo`; the segment's
-        command word is not `git push`, so it is ignored.
+        command word (after stripping) is not `git push`, so it is ignored.
 
-    Conservative (false-NEGATIVE) bias: an env-prefixed or `git -C <dir> push`
-    form whose leading token isn't literally `git push` would slip the gate —
-    acceptable for a fat-finger guardrail (see module docstring).
+    Accepted false-NEGATIVE class: any segment whose effective head after
+    stripping the sudo/env wrapper set is not literally `git` slips — e.g.
+    `xargs`/`time`/`nice` wrappers, `sudo -u <user>` option-argument forms,
+    shell aliases. Acceptable for a fat-finger guardrail (see module docstring).
     """
     for segment in _command_segments(command):
-        if not _SEGMENT_IS_GIT_PUSH.match(segment):
+        stripped = _strip_force_push_wrappers(segment)
+        if not _SEGMENT_IS_GIT_PUSH.match(stripped):
             continue
-        if any(pattern.search(segment) for pattern in FORCE_PUSH_PATTERNS):
+        if any(pattern.search(stripped) for pattern in FORCE_PUSH_PATTERNS):
             return True
     return False
 

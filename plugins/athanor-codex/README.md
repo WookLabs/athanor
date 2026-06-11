@@ -9,7 +9,7 @@ separate.
 From this repository:
 
 ```bash
-codex plugin marketplace add /home/wook/work/03_athanor
+codex plugin marketplace add <path-to-athanor>/.agents/plugins/marketplace.json
 codex plugin add athanor-codex@athanor
 ```
 
@@ -20,7 +20,7 @@ The selector is `athanor-codex@athanor`.
 After changing plugin files, refresh the Codex cache version and reinstall:
 
 ```bash
-python3 ~/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py /home/wook/work/03_athanor/plugins/athanor-codex
+python3 ~/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py <path-to-athanor>/plugins/athanor-codex
 codex plugin add athanor-codex@athanor
 ```
 

@@ -238,6 +238,119 @@ def test_force_push_main_update_segment_allowed():
     )
 
 
+# --- chore/fable5-audit R1: wrapper-prefix stripping (sudo/env) -----------
+# The P13 segment-scoping anchored `^git\s+push` against the segment's RAW
+# leading token, so privileged/env-wrapped pushes (`sudo git push …`,
+# `env VAR=v git push …`) slipped the gate — and `sudo` is the canonical
+# fat-finger prefix for a privileged force-push, exactly this guard's accident
+# class. `_strip_force_push_wrappers` now peels a small safe wrapper set
+# (`sudo [-flags]`, `env [VAR=val] [-flags]`) off the segment head BEFORE the
+# anchor, so the force-push checks run against the stripped segment.
+
+
+def test_force_push_sudo_main_blocked():
+    """`sudo git push --force origin main` must be BLOCKED.
+
+    Before R1 this slipped (the raw segment head was `sudo`, not `git`). The
+    sudo-prefix strip exposes `git push …` to the anchor.
+    """
+    rc, _, err = _run(_bash("sudo git push --force origin main"))
+    assert rc == 2, (
+        f"sudo git push --force origin main must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_sudo_dash_E_main_blocked():
+    """`sudo -E git push -f origin main` must be BLOCKED.
+
+    The strip consumes the leading `sudo` token plus its immediately-following
+    bare option flag (`-E`), then the `-f` short force flag on `git push` is
+    matched.
+    """
+    rc, _, err = _run(_bash("sudo -E git push -f origin main"))
+    assert rc == 2, (
+        f"sudo -E git push -f origin main must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_env_var_main_blocked():
+    """`env GIT_DIR=/tmp/x git push --force origin main` must be BLOCKED.
+
+    The strip consumes the leading `env` token plus the `VAR=value`
+    assignment, exposing `git push --force …` to the anchor.
+    """
+    rc, _, err = _run(_bash("env GIT_DIR=/tmp/x git push --force origin main"))
+    assert rc == 2, (
+        f"env GIT_DIR=/tmp/x git push --force origin main must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_sudo_in_later_segment_blocked():
+    """`cd /repo && sudo git push --force origin main` must be BLOCKED.
+
+    The wrapper sits inside a LATER chained segment; segment scoping isolates
+    `sudo git push --force origin main` as its own segment, and the wrapper
+    strip then exposes the git-push head.
+    """
+    rc, _, err = _run(_bash("cd /repo && sudo git push --force origin main"))
+    assert rc == 2, (
+        f"cd /repo && sudo git push --force origin main must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_sudo_dash_u_alice_allowed_accepted_residual():
+    """`sudo -u alice git push --force origin main` is NOT blocked — this PINS
+    the documented ACCEPTED residual so a future flip is visible.
+
+    The simple strip stops at the non-flag `alice` token (option-with-argument
+    form), leaving `-u alice git push …`, which the `^git\\s+push` anchor
+    rejects. We deliberately do NOT build argument-aware option parsing (this
+    is a fat-finger guardrail, not a security boundary — see the guard's module
+    docstring). If a future change makes this BLOCK, update this pin and the
+    docstring together.
+    """
+    rc, _, err = _run(_bash("sudo -u alice git push --force origin main"))
+    assert rc == 0, (
+        f"sudo -u alice git push --force origin main is the documented accepted "
+        f"residual and must stay ALLOWED until argument-aware parsing is added; "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_sudo_literal_in_commit_message_allowed():
+    """`git commit -m "see: sudo git push --force origin main"` must NOT be
+    blocked (false-positive guard).
+
+    The force-push spelling (with a `sudo` prefix) appears only as quoted data
+    in a commit message; the segment's command word is `git commit`, not
+    `git push`, so the wrapper strip and anchor correctly ignore it.
+    """
+    rc, _, err = _run(
+        _bash('git commit -m "see: sudo git push --force origin main"')
+    )
+    assert rc == 0, (
+        f"sudo-prefixed force-push literal inside a commit message must be "
+        f"allowed (false-positive guard), got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_sudo_no_force_flag_allowed():
+    """`sudo git push origin main` (no force flag) must NOT be blocked.
+
+    The wrapper strip exposes `git push origin main`, but with no force flag
+    none of the FORCE_PUSH_PATTERNS match — a normal privileged push is fine.
+    """
+    rc, _, err = _run(_bash("sudo git push origin main"))
+    assert rc == 0, (
+        f"sudo git push origin main (no force) must be allowed, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
 # --- Rule 3: Sensitive credential file access ----------------------------
 
 

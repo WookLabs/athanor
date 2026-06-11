@@ -92,12 +92,46 @@ def test_get_state_dir_no_athanor_json_returns_none_and_creates_nothing(tmp_path
 
 
 def test_get_state_dir_with_athanor_json_creates_and_returns_path(tmp_path):
-    """S16 AC: athanor.json present + create=True → dir created, path returned."""
+    """S16 AC: athanor.json present + create=True → dir created, path returned.
+
+    Doubles as the positive control for the .git-boundary test below:
+    athanor.json AT the repo root IS honored.
+    """
     (tmp_path / "athanor.json").write_text("{}", encoding="utf-8")
     state_dir = hook_state.get_state_dir("s1", project_root=tmp_path, create=True)
     assert state_dir is not None
     assert state_dir == tmp_path / ".athanor" / "sessions" / "s1" / ".hook-state"
     assert state_dir.is_dir()
+
+
+def test_get_state_dir_opt_in_stops_at_git_boundary(tmp_path):
+    """Review finding R2 (A): _athanor_opt_in must NOT honor an athanor.json
+    ABOVE a .git repo root from inside the repo (v0.7.9 parent-dir hijack
+    guard). Untested direction — a regression here re-materializes the P15
+    `/tmp/.athanor` debris incident.
+
+    Mirrors test_read_athanor_config_stops_at_git_boundary in
+    tests/test_regression_v017_hook_runtime.py for the hook_state copy of
+    the walk-up.
+    """
+    outer = tmp_path
+    (outer / "athanor.json").write_text("{}", encoding="utf-8")
+    repo = outer / "repo"
+    (repo / ".git").mkdir(parents=True)  # boundary
+
+    result = hook_state.get_state_dir("2026-06-11-001", project_root=repo, create=True)
+
+    assert result is None, (
+        "opt-in crossed the .git boundary upward and honored the outer "
+        f"athanor.json: {result}"
+    )
+    assert not (repo / ".athanor").exists(), (
+        "no .athanor/ may be materialized inside the repo when only an "
+        "ancestor (above .git) carries athanor.json"
+    )
+    assert not (outer / ".athanor").exists(), (
+        "no .athanor/ may be materialized in the outer dir either"
+    )
 
 
 def test_get_state_dir_create_false_returns_none_when_absent(tmp_path):

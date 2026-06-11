@@ -1,8 +1,8 @@
 # Stop-Phrase Whitelist (canonical)
 
 Single source of truth for the **leader-side worker-output stop-phrase whitelist**.
-Previously this 5-phrase list was duplicated verbatim across ~7 skill/reference
-files and partially embedded in `agents/reviewer.md`; the copies began to drift
+Previously this 5-phrase list was duplicated verbatim across 8 files (7 skill/reference
+files + `agents/reviewer.md`); the copies began to drift
 (P10 finding). All embeddings now point here instead of restating the list.
 
 ## Where this applies

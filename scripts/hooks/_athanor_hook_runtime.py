@@ -229,7 +229,7 @@ def is_hook_profile_off(config) -> bool:
 WRITE_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
 
 
-def extract_target_path(tool_name, tool_input) -> str:
+def extract_target_path(tool_name, tool_input) -> str | None:
     """Return the filesystem path a tool invocation targets.
 
     ``NotebookEdit`` carries its target under ``notebook_path``; every other

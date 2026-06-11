@@ -524,6 +524,11 @@ Inventory):
 v0.18.7 de-registered the 7 (0 standalone adoption; inline is canonical), collapsing the
 former 11-agent dual-nature roster to 4 registered.
 
+Note on naming: CLAUDE.md's inventory table lists bare file stems (`learner`, `releaser`, …)
+while this section uses the registered `name:` frontmatter values (`athanor-learner`, …);
+both are correct — the `athanor-` prefix lives in frontmatter and is the Claude Code
+dispatch handle, while the bare stem is the filename without `.md`.
+
 ### Invariant: No-Collision
 
 All **registered** agents under `agents/` MUST have a **unique `name:` frontmatter value**.
