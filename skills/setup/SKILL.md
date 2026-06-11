@@ -411,7 +411,7 @@ Based on the Codex check result, announce tier impact:
 
 **If Codex AVAILABLE:**
 ```
-✓ Codex 사용 가능 — deep-plan은 cross-model 교차 검증, plan은 Codex review 사용
+✓ Codex 사용 가능 — /athanor:plan --depth=deep는 cross-model 교차 검증, 표준 plan은 Codex review 사용
 ```
 
 **If Codex UNAVAILABLE:**

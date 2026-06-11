@@ -107,16 +107,26 @@ def test_codex_companion_documents_install_and_refresh_flow():
     readme = CODEX_PLUGIN_ROOT / "README.md"
     text = readme.read_text(encoding="utf-8")
 
+    # Structural tokens only — do NOT pin a machine-specific absolute path.
+    # (v0.18.7 regression: the README and this test had hardcoded the wrong
+    # repo dir `06_athanor`; locking an absolute path made fixing it break
+    # the test. Assert the command *shape* instead.)
     required_tokens = [
-        "codex plugin marketplace add /home/wook/work/06_athanor",
+        "codex plugin marketplace add ",
         "codex plugin add athanor-codex@athanor",
-        "python3 /home/wook/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py",
+        "update_plugin_cachebuster.py",
         "Claude Stop hook",
         "Claude PreToolUse",
         "Claude Task",
     ]
     for token in required_tokens:
         assert token in text, f"README missing required token: {token!r}"
+
+    # Fail loud if the known-wrong dev path ever returns.
+    assert "06_athanor" not in text, (
+        "README references the stale wrong repo path '06_athanor'; "
+        "the repository lives at .../03_athanor."
+    )
 
 
 def test_codex_work_skill_absorbs_execution_contract_without_hooks():

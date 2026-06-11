@@ -138,19 +138,23 @@ DESTRUCTIVE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 # ---------------------------------------------------------------------------
 # Rule 2: Force-push to protected branches
 # ---------------------------------------------------------------------------
-# The `(main|master)` token must appear as a standalone word (\b boundary)
-# anywhere on the same `git push` invocation as a force flag. Feature
-# branches like `feature/x` or `release/main-fix` must NOT match
-# (`release/main-fix` would match `\bmain\b` — but the leading slash + dash
-# inside the branch name means `\b` does fire at the `main` boundary).
-# Trade-off: branch names that literally end in `main` as a slash-segment
-# (e.g. `feature/main`) are conservatively blocked. Acceptable for v0.16.0;
-# users push `feature/main` via `--force-with-lease` to a non-main remote
-# rarely, and the block is easily worked around (rename branch).
+# The `(main|master)` token must appear as a standalone word on the same
+# `git push` invocation as a force flag. The trailing boundary is
+# `(?![\w-])` rather than a bare `\b`: a plain `\b` fires at the `n`→`-`
+# transition inside `feature/main-update`, so `\bmain\b` false-positived on
+# any branch whose name merely STARTS with `main`/`master` (e.g.
+# `feature/main-update`, `release/master-rework`). `(?![\w-])` requires the
+# token to be followed by neither a word char nor a hyphen, so those branch
+# names are correctly ALLOWED while `origin main` / `origin master` (token
+# followed by space or end-of-string) stay BLOCKED.
+# Residual conservative case: a slash-segment that is EXACTLY `main`/`master`
+# (e.g. `feature/main`) is still blocked — the leading `\b` fires at `/`→`m`
+# and the trailing boundary passes at end-of-arg. Rare; rename to work around.
+# This is a best-effort textual gate, not a parser — see module docstring.
 FORCE_PUSH_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\bgit\s+push\b(?=.*--force\b)(?=.*\b(?:main|master)\b)"),
-    re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)-f\b)(?=.*\b(?:main|master)\b)"),
-    re.compile(r"\bgit\s+push\b(?=.*--force-with-lease\b)(?=.*\b(?:main|master)\b)"),
+    re.compile(r"\bgit\s+push\b(?=.*--force\b)(?=.*\b(?:main|master)(?![\w-]))"),
+    re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)-f\b)(?=.*\b(?:main|master)(?![\w-]))"),
+    re.compile(r"\bgit\s+push\b(?=.*--force-with-lease\b)(?=.*\b(?:main|master)(?![\w-]))"),
 ]
 
 # ---------------------------------------------------------------------------

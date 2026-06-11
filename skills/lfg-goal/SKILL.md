@@ -49,8 +49,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 - For a single feature ship without goal-level iteration —
   use `/athanor:lfg` directly.
-- For one-off planning without execution — use `/athanor:plan` or
-  `/athanor:lite-plan`.
+- For one-off planning without execution — use `/athanor:plan`
+  (optionally `--depth=lite`).
 - For casual conversation or exploratory questions —
   use `/athanor:discuss`.
 - For a one-shot review without commit/push — use `/athanor:review`.

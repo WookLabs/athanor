@@ -36,8 +36,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 - For casual conversation or exploratory questions — use `/athanor:discuss`
   instead.
-- For one-off planning without execution — use `/athanor:plan` or
-  `/athanor:lite-plan` directly.
+- For one-off planning without execution — use `/athanor:plan`
+  (optionally `--depth=lite`) directly.
 - For one-off review without commit/push/PR — use `/athanor:review`
   directly.
 

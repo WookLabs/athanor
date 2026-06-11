@@ -143,6 +143,25 @@ def test_normal_push_main_allowed():
     )
 
 
+def test_force_push_main_prefixed_branch_allowed():
+    """Guard — force-push to a branch whose name merely STARTS with
+    `main`/`master` must be allowed. A bare `\\bmain\\b` boundary false-
+    positived here (the `n`->`-` transition fires `\\b`); the trailing
+    `(?![\\w-])` lookahead fixes it. Tokens followed by `-` or a word char
+    are no longer treated as the protected branch.
+    """
+    for cmd in (
+        "git push --force origin feature/main-update",
+        "git push --force-with-lease origin release/master-rework",
+        "git push -f origin main-fix",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 0, (
+            f"{cmd!r} targets a branch only prefixed with main/master and "
+            f"must be allowed, got rc={rc} stderr={err!r}"
+        )
+
+
 # --- Rule 3: Sensitive credential file access ----------------------------
 
 

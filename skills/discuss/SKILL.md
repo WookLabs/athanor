@@ -536,10 +536,10 @@ Files:   research-a.md, research-b.md, discuss.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:analyze    — 관련 코드/시스템 분석
-  /athanor:deep-plan  — 심층 계획 (교차 검증)
-  /athanor:plan       — 표준 계획 (기본값)
-  /athanor:lite-plan  — 빠른 계획 (리뷰 없음)
+  /athanor:analyze            — 관련 코드/시스템 분석
+  /athanor:plan --depth=deep  — 심층 계획 (교차 검증)
+  /athanor:plan               — 표준 계획 (기본값)
+  /athanor:plan --depth=lite  — 빠른 계획 (리뷰 없음)
 ```
 
 ---

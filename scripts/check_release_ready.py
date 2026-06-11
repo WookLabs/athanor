@@ -212,15 +212,17 @@ def check_e_vendored_skill_count() -> tuple[bool, str]:
 
 
 def check_f_marketplace_skill_count() -> tuple[bool, str]:
-    """(f) marketplace.json parses cleanly and the implied skill surface
-    matches the on-disk inventory.
+    """(f) marketplace.json parses cleanly, declares the athanor plugin,
+    and the on-disk skill surface is reported for honesty.
 
     marketplace.json currently lists a single 'plugins' entry (athanor
     itself, not per-skill rows). The gate's job is to (1) prove the file
-    parses, and (2) compare the on-disk product surface count (10 native
-    + 2 internal + 1 vendored KEEP = 13) against itself for honesty —
-    any future per-skill expansion of marketplace.json will be cross-
-    checked here.
+    parses, (2) assert plugins[0].name == 'athanor' (the marketplace points
+    at THIS plugin — a real structural invariant), and (3) report the
+    on-disk product surface count (9 native + 2 internal + 1 vendored KEEP
+    = 12). The count is reported, not hard-pinned, so adding/removing a
+    skill does not require touching a brittle magic number here; a future
+    per-skill expansion of marketplace.json will be cross-checked against it.
     """
     if not MARKETPLACE_JSON.is_file():
         return False, f"{MARKETPLACE_JSON.relative_to(REPO_ROOT)} missing"
@@ -240,11 +242,18 @@ def check_f_marketplace_skill_count() -> tuple[bool, str]:
         if p.is_dir() and (p / "SKILL.md").is_file()
     ]
     on_disk_count = len(on_disk_skill_dirs)
+    # Real structural assertion: the marketplace's first plugin must be
+    # athanor itself. A no-op gate that always returned True (pre-v0.18.8)
+    # could not catch a misnamed/empty marketplace entry.
+    mkt_name = plugins[0].get("name") if isinstance(plugins[0], dict) else None
+    if mkt_name != "athanor":
+        return False, (
+            f"marketplace.json plugins[0].name must be 'athanor'; got {mkt_name!r}"
+        )
     # The marketplace surface is computed from disk; if the JSON ever grows
-    # a per-skill listing, that listing must match this count. Until then,
-    # the gate's job is to (a) ensure JSON parses and (b) report on-disk.
+    # a per-skill listing, that listing must match this count.
     return True, (
-        f"marketplace-skill-count: plugins[0].name={plugins[0].get('name')!r} "
+        f"marketplace-skill-count: plugins[0].name={mkt_name!r} "
         f"disk-skill-dirs={on_disk_count}"
     )
 

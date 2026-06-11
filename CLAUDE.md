@@ -35,7 +35,7 @@ Agent definitions live in `agents/` as `.md` files in **two kinds**. **4 registe
 
 ## Commands
 
-### Athanor-native (11 user-invocable + 2 internal)
+### Athanor-native (9 user-invocable + 2 internal: scope-drift, verification-before-completion)
 
 | Command | Mode | Purpose |
 |---------|------|---------|
@@ -124,7 +124,7 @@ Canonical rule for finding "the active session"; per-skill prose should referenc
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
 | Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` Planner A 출력의 Verify 필드를 MUST/SHOULD bullets로 받고, `/athanor:work` Task Splitter가 각 subtask에 `execution_note` (spec-then-tdd / test-aware / direct) + `acceptance_criteria` 자동 할당. Executor가 분류에 따라 red-first 5단계 / 종료 게이트 (`tests/**` 수정 + `full_suite_passed: true` 자가보고 + verification line 일관성, 세 조건 conjunction) / 그대로 분기. **v0.10.0 scope:** discipline applies to athanor-native `/athanor:work` only. See `docs/archive/defense-mechanisms-detail.md` for full pipeline. |
 | using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 매 세션 시작 시 Claude Code platform이 제공하는 SessionStart system reminder channel로 로드된다 (athanor의 hooks.json 등록 결과 아님). 그 skill의 "ABSOLUTELY MUST invoke before response" 톤은 athanor-native **9 Thin Leader skill** (analyze, debug, discuss, lfg, lfg-goal, plan, review, setup, work — v0.17.0 / S07에서 deep-plan + lite-plan은 `/athanor:plan --depth=` 로 흡수됨) 호출 context에서는 **advisory here**다 — discovery가 leader dispatch로 해소되며, pre-response invocation check은 native context에서 안내일 뿐 강제 아님 (planner-classified discipline). 본 boundary는 9 skill 각각의 §Identity 직후 `### using-superpowers boundary` 2-line pointer로 선언되고 canonical 텍스트는 §"using-superpowers boundary (v0.11.1) — canonical declaration" 에 집약됨 (v0.17.0 / S04 hoist); 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. Cross-reference: CLAUDE.md §Defense Mechanisms. Concept adopted from superpowers v5.1.0 sp-using-superpowers (MIT, Jesse Vincent). |
-| PreToolUse Kernel Guard | **enforced (command-based)** — `hooks/hooks.json` PreToolUse event. Blocks 3 catastrophic classes: destructive shell (rm -rf /, git reset --hard), force-push to main/master, credential file access (.env, private keys). `.env.example`/`.env.test` allowed. `hooks.profile: "off"` opt-out. |
+| PreToolUse Kernel Guard | **enforced (command-based), best-effort coverage** — `hooks/hooks.json` PreToolUse event; the hook genuinely fires and exits 2 to block. Targets 3 accident-class patterns: destructive shell (rm -rf /, git reset --hard), force-push to main/master, credential file access (.env, private keys). `.env.example`/`.env.test` allowed. `hooks.profile: "off"` opt-out. **Honest scope:** this is a textual regex guard, NOT a command parser or security boundary — it catches obvious literal forms but is bypassable by obfuscation (command substitution `$(...)`, variable indirection, base64/eval, reordered flags). Treat it as a guardrail against fat-finger accidents, not containment against an adversary. The force-push matcher uses a `(?![\w-])` trailing boundary so branches merely prefixed with `main`/`master` (e.g. `feature/main-update`) are allowed; an exact `main`/`master` slash-segment stays conservatively blocked. |
 
 ### Completion-Claim Verification (Stop hook — enforced, command-based)
 

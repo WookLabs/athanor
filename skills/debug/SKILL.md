@@ -460,9 +460,9 @@ Workers: 1 triage + {N} parallel
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:plan       — 디버그 결과 기반 수정 계획 (복잡한 수정)
-  /athanor:lite-plan  — 빠른 수정 계획 (단순 버그)
-  /athanor:work       — 바로 수정 실행
+  /athanor:plan              — 디버그 결과 기반 수정 계획 (복잡한 수정)
+  /athanor:plan --depth=lite — 빠른 수정 계획 (단순 버그)
+  /athanor:work              — 바로 수정 실행
 ```
 
 ---

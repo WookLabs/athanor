@@ -288,9 +288,9 @@ Workers: {N} parallel analysts
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:deep-plan  — 분석 결과 기반 심층 계획
-  /athanor:plan       — 분석 결과 기반 구현 계획 (기본값)
-  /athanor:lite-plan  — 빠른 계획
+  /athanor:plan --depth=deep  — 분석 결과 기반 심층 계획
+  /athanor:plan               — 분석 결과 기반 구현 계획 (기본값)
+  /athanor:plan --depth=lite  — 빠른 계획
 ```
 
 ---
