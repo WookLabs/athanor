@@ -19,10 +19,12 @@ proposed Claude tool invocation may proceed.
 What is gated
 =============
 
-1. **Claude file-tool writes** — `Edit`, `Write`, `MultiEdit`. The
-   destination is the `tool_input.file_path` field. If it does not match
-   any entry in the loaded allowlist, the guard logs and (depending on
-   `mode`) blocks.
+1. **Claude file-tool writes** — `Edit`, `Write`, `MultiEdit`,
+   `NotebookEdit`. The destination is resolved via `extract_target_path`:
+   `tool_input.file_path` for Edit/Write/MultiEdit, and
+   `tool_input.notebook_path` for NotebookEdit. If the resolved path does
+   not match any entry in the loaded allowlist, the guard logs and
+   (depending on `mode`) blocks.
 2. **Bash conservative write patterns** — the guard scans the
    `tool_input.command` string for these shapes:
      - ``> FILE``     redirect overwrite
@@ -111,6 +113,12 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+import _athanor_hook_runtime as _runtime  # noqa: E402
 
 __all__ = ["evaluate_payload"]
 
@@ -471,9 +479,13 @@ def evaluate_payload(
     if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
         return (0, "")
 
-    # ---- Edit / Write / MultiEdit ----
-    if tool_name in ("Edit", "Write", "MultiEdit"):
-        target = tool_input.get("file_path", "")
+    # ---- File-write tools (Edit / Write / MultiEdit / NotebookEdit) ----
+    # Sourced from the shared WRITE_TOOLS tuple so NotebookEdit is gated like
+    # the rest. `extract_target_path` resolves the destination — `notebook_path`
+    # for NotebookEdit, `file_path` for the others. Freeze gates writes only;
+    # reads are never freeze-gated (handled by the pass-through tail below).
+    if tool_name in _runtime.WRITE_TOOLS:
+        target = _runtime.extract_target_path(tool_name, tool_input)
         if not isinstance(target, str) or not target:
             return (0, "")
         if _path_in_allowlist(target, allowed_paths):

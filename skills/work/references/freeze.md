@@ -155,8 +155,9 @@ missing config only for kernel, fail-open on missing config for freeze**
 
 ## Bash write-pattern gating (conservative)
 
-Freeze gates the Claude `Edit` / `Write` / `MultiEdit` tools fully (the
-destination `file_path` is the gated path). For `Bash`, freeze applies
+Freeze gates the Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit`
+tools fully (the destination path is the gated path — `file_path` for
+Edit/Write/MultiEdit, `notebook_path` for NotebookEdit). For `Bash`, freeze applies
 a **conservative pattern match** against the command string. Gated
 patterns:
 
@@ -213,8 +214,8 @@ Enforcement (planned)"). Not promised in v0.18.0.
 
 - `mode`: one of `"off"` (default — gate is silent, freeze evaluator
   never runs) or `"session"` (freeze evaluator runs on every
-  PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / scoped
-  `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
+  PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit` /
+  scoped `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
   v0.18.x and v0.19.0.
 - `extraAllowedPaths`: list of project-relative paths or globs to
   union into every session's allowlist. Useful for project-wide

@@ -215,3 +215,31 @@ def is_hook_profile_off(config) -> bool:
     if not isinstance(profile, str):
         return False
     return profile == "off"
+
+
+# ---------------------------------------------------------------------------
+# 5. WRITE_TOOLS / extract_target_path
+# ---------------------------------------------------------------------------
+
+# The mutating tool names a hook may want to treat uniformly when it inspects
+# the file a tool is about to write. ``Read`` is deliberately EXCLUDED — it is
+# not a write tool; callers that also care about reads (e.g. the kernel-guard
+# credential check) keep ``Read`` as a separate, explicit reference rather than
+# folding it in here.
+WRITE_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
+
+
+def extract_target_path(tool_name, tool_input) -> str:
+    """Return the filesystem path a tool invocation targets.
+
+    ``NotebookEdit`` carries its target under ``notebook_path``; every other
+    tool (``Write``/``Edit``/``MultiEdit``/``Read``/…) uses ``file_path``.
+
+    Returns the raw value from ``tool_input`` (a ``str`` when present). When
+    the expected key is absent — or ``tool_input`` is not a mapping — returns
+    ``None``, leaving the fail-open decision to the caller.
+    """
+    if not isinstance(tool_input, dict):
+        return None
+    key = "notebook_path" if tool_name == "NotebookEdit" else "file_path"
+    return tool_input.get(key)

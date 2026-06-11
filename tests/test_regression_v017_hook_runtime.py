@@ -287,6 +287,54 @@ def test_resolve_project_root_returns_none_when_nothing(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# WRITE_TOOLS constant + extract_target_path() helper (Subtask 7 / P16)
+# ---------------------------------------------------------------------------
+
+
+def test_write_tools_includes_notebook_edit_and_multiedit():
+    """WRITE_TOOLS must include NotebookEdit and MultiEdit."""
+    assert "NotebookEdit" in runtime.WRITE_TOOLS
+    assert "MultiEdit" in runtime.WRITE_TOOLS
+
+
+def test_write_tools_excludes_read():
+    """Read is NOT a write tool — it must stay out of WRITE_TOOLS."""
+    assert "Read" not in runtime.WRITE_TOOLS
+
+
+def test_write_tools_contains_core_writers():
+    """WRITE_TOOLS covers the four mutating tools."""
+    assert "Write" in runtime.WRITE_TOOLS
+    assert "Edit" in runtime.WRITE_TOOLS
+
+
+def test_extract_target_path_notebook_edit_uses_notebook_path():
+    """NotebookEdit reads the notebook_path key, not file_path."""
+    result = runtime.extract_target_path(
+        "NotebookEdit", {"notebook_path": "foo.ipynb"}
+    )
+    assert result == "foo.ipynb"
+
+
+def test_extract_target_path_edit_uses_file_path():
+    """Non-NotebookEdit tools read the file_path key."""
+    result = runtime.extract_target_path("Edit", {"file_path": "bar.py"})
+    assert result == "bar.py"
+
+
+def test_extract_target_path_write_uses_file_path():
+    """Write also reads file_path."""
+    result = runtime.extract_target_path("Write", {"file_path": "baz.txt"})
+    assert result == "baz.txt"
+
+
+def test_extract_target_path_missing_key_returns_none():
+    """Absent target key yields None (caller decides fail-open)."""
+    assert runtime.extract_target_path("Edit", {}) is None
+    assert runtime.extract_target_path("NotebookEdit", {}) is None
+
+
+# ---------------------------------------------------------------------------
 # Integration smoke: existing hooks still work after refactor.
 # ---------------------------------------------------------------------------
 

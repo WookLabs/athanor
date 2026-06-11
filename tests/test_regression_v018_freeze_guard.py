@@ -81,6 +81,11 @@ def _multiedit(path: str) -> dict:
     return {"tool_name": "MultiEdit", "tool_input": {"file_path": path}}
 
 
+def _notebookedit(path: str) -> dict:
+    """NotebookEdit carries its target under `notebook_path`, not `file_path`."""
+    return {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": path}}
+
+
 def _bash(command: str) -> dict:
     return {"tool_name": "Bash", "tool_input": {"command": command}}
 
@@ -217,6 +222,31 @@ def test_multiedit_path_outside_allowlist_blocked(freeze_guard, tmp_path):
         _multiedit("src/secret.py"), al, mode="session"
     )
     assert exit_code == 2
+
+
+def test_notebookedit_path_outside_allowlist_blocked(freeze_guard, tmp_path):
+    """Subtask 8 — NotebookEdit (via `notebook_path`) is gated like the other
+    file-write tools. A notebook write outside the session allowlist must be
+    blocked in session mode. extract_target_path resolves `notebook_path` so
+    the allowlist check applies to notebook destinations too.
+    """
+    al = _allowlist(["src/foo.ipynb"], session_dir=tmp_path)
+    exit_code, stderr = freeze_guard.evaluate_payload(
+        _notebookedit("src/secret.ipynb"), al, mode="session"
+    )
+    assert exit_code == 2
+    assert "BLOCKED" in stderr
+    assert "src/secret.ipynb" in stderr
+
+
+def test_notebookedit_path_in_allowlist_allowed(freeze_guard, tmp_path):
+    """Guard — a NotebookEdit whose `notebook_path` IS in the allowlist is
+    allowed (the widening must not over-block legitimate notebook edits)."""
+    al = _allowlist(["src/foo.ipynb"], session_dir=tmp_path)
+    exit_code, _ = freeze_guard.evaluate_payload(
+        _notebookedit("src/foo.ipynb"), al, mode="session"
+    )
+    assert exit_code == 0
 
 
 def test_write_into_session_dir_allowed_via_default(freeze_guard, tmp_path):

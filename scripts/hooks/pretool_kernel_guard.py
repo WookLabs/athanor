@@ -14,7 +14,7 @@ classes:
      - `git checkout .` (restore all)
   2. **Force-push to protected branches** (Bash):
      - `git push --force` / `-f` / `--force-with-lease` to main/master
-  3. **Sensitive credential file access** (Bash, Read, Write, Edit):
+  3. **Sensitive credential file access** (Bash, Read, Write, Edit, MultiEdit, NotebookEdit):
      - `.env`, `.env.local`, `.env.production`, `.env.secret`
      - `credentials.json`, `credentials.yaml`, `private_key`, `.ssh/`,
        `.aws/credentials`
@@ -100,10 +100,14 @@ def _is_destructive_rm(command: str) -> bool:
     """True if `command` has an `rm` invocation that is recursive AND force AND
     targets filesystem root or home — any flag order, with optional intervening
     options, including shell-glob forms (`/*`, `~/*`)."""
-    for m in re.finditer(r"\brm\b([^\n;]*)", command):
-        # Bound the arg span at a command-chain separator so a later command's
-        # tokens don't bleed into this rm's analysis.
-        args = re.split(r"&&|\|\||\|", m.group(1))[0]
+    # Reason per command segment (P13 shared splitter) so a later command's
+    # tokens don't bleed into this rm's analysis; within a segment, take the
+    # text after the `rm` token as its argument span.
+    for segment in _command_segments(command):
+        m = re.search(r"\brm\b(.*)", segment)
+        if m is None:
+            continue
+        args = m.group(1)
         has_recursive = (
             "--recursive" in args
             or re.search(r"(?:^|\s)-[a-zA-Z]*r[a-zA-Z]*(?=\s|$)", args) is not None
@@ -206,6 +210,41 @@ def _stderr(msg: str) -> None:
     print(f"athanor (pretool guard): {msg}", file=sys.stderr)
 
 
+# Command-chain separators: `&&`, `||`, single `|`, `;`, and newline. Kept as
+# one shared splitter (P13) so the force-push and destructive-rm checks agree
+# on what "a single command segment" means. This is deliberately NOT a shell
+# tokenizer — it does not honor quoting, here-docs, `$(...)`, or backslash
+# continuations. The bias is false-NEGATIVE: when the split is ambiguous we
+# would rather UNDER-block than over-block, because this guard is a fat-finger
+# guardrail, not a security boundary (see module docstring).
+_SEGMENT_SPLIT = re.compile(r"&&|\|\||\||;|\n")
+# A trailing `#` comment is stripped only when the `#` sits at a token boundary
+# (start-of-segment or after whitespace). Mid-token `#` (e.g. `url#frag`,
+# `issue-#5`) is left intact so we never silently drop a real argument.
+_TRAILING_COMMENT = re.compile(r"(?:^|\s)#.*$")
+
+
+def _command_segments(command: str) -> list[str]:
+    """Split a shell command string into best-effort command segments.
+
+    Splits on `&&`, `||`, `|`, `;`, and newline, then conservatively strips a
+    trailing `#`-comment from each segment (only when the `#` is at a token
+    boundary). Empty/whitespace-only segments are dropped. Shared by the
+    force-push and destructive-rm checks so both reason over the SAME notion of
+    a single command (P13).
+
+    Intentionally not a shell parser: quoting/here-docs/`$(...)` are not
+    honored. False-NEGATIVE bias — an ambiguous case under-blocks rather than
+    over-blocks (fat-finger guardrail, not a security boundary).
+    """
+    segments: list[str] = []
+    for raw in _SEGMENT_SPLIT.split(command):
+        seg = _TRAILING_COMMENT.sub("", raw).strip()
+        if seg:
+            segments.append(seg)
+    return segments
+
+
 def _read_stdin_payload() -> dict | None:
     """Read the PreToolUse event payload from stdin.
 
@@ -258,9 +297,39 @@ def _check_destructive_shell(command: str) -> str | None:
     return None
 
 
+# A force-push segment's command word is `git push` (optionally `git -C <dir>
+# push`, env-prefixed, etc. are NOT honored — best-effort). Anchoring to the
+# segment's leading command keeps the force-push literal appearing only as
+# QUOTED DATA to another command (e.g. `echo 'git push --force origin main'`)
+# from tripping the gate: there the segment's command is `echo`, not git push.
+_SEGMENT_IS_GIT_PUSH = re.compile(r"^git\s+push\b")
+
+
 def _check_force_push(command: str) -> bool:
-    """Return True if the command is a force-push to a protected branch."""
-    return any(pattern.search(command) for pattern in FORCE_PUSH_PATTERNS)
+    """Return True if the command force-pushes to a protected branch.
+
+    Segment-scoped (P13): the `git push`, a force flag, and the `main`/`master`
+    token must all co-occur within a SINGLE command segment (split on `&&`,
+    `||`, `|`, `;`, newline), AND that segment's leading command must itself be
+    `git push`. Two false-positives are thereby avoided:
+
+      * cross-segment — `git push --force origin feat && git switch main`: the
+        force flag and `main` live in different segments, so no single segment
+        satisfies all three tokens.
+      * quoted data — `echo 'git push --force origin main' >> notes.txt`: the
+        force-push spelling is only an argument to `echo`; the segment's
+        command word is not `git push`, so it is ignored.
+
+    Conservative (false-NEGATIVE) bias: an env-prefixed or `git -C <dir> push`
+    form whose leading token isn't literally `git push` would slip the gate —
+    acceptable for a fat-finger guardrail (see module docstring).
+    """
+    for segment in _command_segments(command):
+        if not _SEGMENT_IS_GIT_PUSH.match(segment):
+            continue
+        if any(pattern.search(segment) for pattern in FORCE_PUSH_PATTERNS):
+            return True
+    return False
 
 
 def _path_is_sensitive(path: str) -> bool:
@@ -416,11 +485,15 @@ def evaluate_payload(
 
         return (0, "")
 
-    # ---- Read / Write / Edit tools ----
-    if tool_name in ("Read", "Write", "Edit"):
-        # All three tools use `file_path` as the canonical input key
-        # (per Claude Code tool schemas).
-        path = tool_input.get("file_path", "")
+    # ---- Read + write-class file tools ----
+    # `Read` is kept as an EXPLICIT, separate reference rather than folded
+    # into WRITE_TOOLS (it is not a write tool — see _athanor_hook_runtime).
+    # The write-class tools (Write/Edit/MultiEdit/NotebookEdit) come from the
+    # shared WRITE_TOOLS tuple so the credential gate covers all of them; the
+    # target path is resolved via `extract_target_path` so NotebookEdit's
+    # `notebook_path` key is honored (every other tool uses `file_path`).
+    if tool_name in ({"Read"} | set(_runtime.WRITE_TOOLS)):
+        path = _runtime.extract_target_path(tool_name, tool_input)
         if not isinstance(path, str) or not path:
             return (0, "")
         if _path_is_sensitive(path):

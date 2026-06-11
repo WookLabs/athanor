@@ -57,6 +57,11 @@ def _file_tool(tool: str, path: str) -> dict:
     return {"tool_name": tool, "tool_input": {"file_path": path}}
 
 
+def _notebook(path: str) -> dict:
+    """NotebookEdit carries its target under `notebook_path`, not `file_path`."""
+    return {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": path}}
+
+
 # --- Rule 1: Destructive shell commands ----------------------------------
 
 
@@ -162,6 +167,77 @@ def test_force_push_main_prefixed_branch_allowed():
         )
 
 
+# --- v0.18.x: force-push segment-scoping (P13) ---------------------------
+# The force-push gate must require the force flag AND the protected-branch
+# token AND `git push` to co-occur within a SINGLE command segment (split on
+# &&, ||, |, ;, newline). A whole-command-blob lookahead false-positived when
+# a force-push to a feature branch was chained with a later command that
+# merely mentions `main`/`master`.
+
+
+def test_force_push_cross_segment_allowed():
+    """Force flag and `main` live in DIFFERENT chained segments — ALLOWED.
+
+    `git push --force origin feat && git switch main`: segment 1 is a
+    force-push to `feat` (not protected); segment 2 switches to `main`
+    (not a push). Neither segment satisfies all three tokens, so the
+    whole command must be allowed. A single-blob lookahead over the full
+    string false-positives here (force in seg1, `main` in seg2).
+    """
+    rc, _, err = _run(_bash("git push --force origin feat && git switch main"))
+    assert rc == 0, (
+        f"force-push to feat chained with `git switch main` must be allowed "
+        f"(tokens in different segments), got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_same_segment_blocked():
+    """Regression — force flag and `main` in the SAME segment stay BLOCKED.
+
+    The segment-scoping refactor must not weaken the canonical hazard:
+    `git push --force origin main` is a single segment satisfying all three
+    tokens and must remain blocked.
+    """
+    rc, _, err = _run(_bash("git push --force origin main"))
+    assert rc == 2, (
+        f"git push --force origin main (same segment) must stay blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_heredoc_data_allowed():
+    """Quoted/heredoc data containing the force-push literal in a LATER
+    segment must not trip the gate — ALLOWED.
+
+    The real action (segment 1) is a benign `echo`; the force-push spelling
+    appears only as quoted data after a `;`. Conservative segment splitting
+    keeps the literal isolated to its own segment, and that segment is not a
+    `git push` invocation, so the command is allowed (false-positive guard).
+    """
+    rc, _, err = _run(
+        _bash("echo building ; echo 'git push --force origin main' >> notes.txt")
+    )
+    assert rc == 0, (
+        f"force-push literal as echoed data in a later segment must be "
+        f"allowed (no false-positive), got rc={rc} stderr={err!r}"
+    )
+
+
+def test_force_push_main_update_segment_allowed():
+    """Round-1 boundary preserved under segment scoping — `feature/main-update`
+    force-push stays ALLOWED.
+
+    `feature/main-update` is a single segment with a force flag, but the
+    `(?![\\w-])` trailing boundary means `main` is not the protected token
+    (it is followed by `-`). The segment refactor must not regress this.
+    """
+    rc, _, err = _run(_bash("git push --force origin feature/main-update"))
+    assert rc == 0, (
+        f"git push --force origin feature/main-update must stay allowed "
+        f"(round-1 boundary), got rc={rc} stderr={err!r}"
+    )
+
+
 # --- Rule 3: Sensitive credential file access ----------------------------
 
 
@@ -216,6 +292,47 @@ def test_bash_cat_env_blocked():
     rc, _, err = _run(_bash("cat .env"))
     assert rc == 2, (
         f"Bash `cat .env` must be blocked, got rc={rc} stderr={err!r}"
+    )
+
+
+# --- Subtask 8: write-tool coverage widening (WRITE_TOOLS) ----------------
+# The credential gate previously covered only Read/Write/Edit, leaving
+# MultiEdit and NotebookEdit able to touch a credential file. Both are now
+# gated via the shared WRITE_TOOLS tuple + extract_target_path (NotebookEdit
+# uses `notebook_path`). Read stays an explicit, separate reference.
+
+
+def test_notebook_edit_env_blocked():
+    """NotebookEdit targeting `.env` (via notebook_path) must be blocked.
+
+    NotebookEdit was not in the gated tool set before Subtask 8, so a
+    notebook write to a credential file slipped through. extract_target_path
+    reads `notebook_path` for NotebookEdit so the credential check applies.
+    """
+    rc, _, err = _run(_notebook(".env"))
+    assert rc == 2, (
+        f"NotebookEdit notebook_path=.env must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_multiedit_credential_blocked():
+    """MultiEdit to a credential path must be blocked (was ungated)."""
+    rc, _, err = _run(_file_tool("MultiEdit", "credentials.json"))
+    assert rc == 2, (
+        f"MultiEdit credentials.json must be blocked, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_read_credential_still_blocked():
+    """Regression guard — Read of a credential path stays blocked after the
+    WRITE_TOOLS widening (Read must NOT be folded into WRITE_TOOLS, but it
+    must remain an explicit gated reference)."""
+    rc, _, err = _run(_file_tool("Read", ".env"))
+    assert rc == 2, (
+        f"Read .env must STAY blocked after WRITE_TOOLS widening, "
+        f"got rc={rc} stderr={err!r}"
     )
 
 
