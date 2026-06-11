@@ -16,6 +16,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CODEX_PLUGIN_ROOT = REPO_ROOT / "plugins" / "athanor-codex"
 CODEX_MANIFEST = CODEX_PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
 CODEX_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
+PARENT_RECEIPT_VALIDATOR = (
+    REPO_ROOT / "skills" / "lfg-goal" / "references" / "receipt-validator.md"
+)
+CODEX_LFG_GOAL_SKILL = (
+    CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-goal" / "SKILL.md"
+)
 EXPECTED_SKILLS = {
     "athanor-analyze",
     "athanor-debug",
@@ -275,6 +281,68 @@ def test_codex_lfg_goal_skill_includes_receipt_validator_table():
     ]
     for token in required_tokens:
         assert token in text, f"athanor-lfg-goal missing validator token: {token!r}"
+
+
+def _normalize_ws(text: str) -> str:
+    """Collapse all runs of whitespace (incl. newlines) to single spaces.
+
+    The parent rule spans multiple lines because of markdown reflow; the
+    companion mirror may wrap differently. Whitespace-insensitive comparison
+    lets us assert the *semantics* survive without pinning line breaks.
+    """
+    return " ".join(text.split())
+
+
+def test_codex_lfg_goal_undetermined_rule_matches_parent():
+    """Two-way parity: the companion's UNDETERMINED aggregate semantics must
+    match the parent receipt-validator's non-blocking rule.
+
+    The expected tokens are DERIVED from the parent
+    `skills/lfg-goal/references/receipt-validator.md` (not hardcoded in
+    isolation): we first assert the parent still carries the canonical rule
+    (a derivation guard — if the parent rule is reworded or removed, this
+    fails and forces re-derivation), then assert the companion mirrors the
+    same non-blocking semantics. A change to *either* side breaks the test.
+    """
+    parent_text = PARENT_RECEIPT_VALIDATOR.read_text(encoding="utf-8")
+    companion_text = CODEX_LFG_GOAL_SKILL.read_text(encoding="utf-8")
+
+    parent_norm = _normalize_ws(parent_text)
+    companion_norm = _normalize_ws(companion_text)
+
+    # The parent's canonical UNDETERMINED non-blocking rule. These tokens are
+    # the stable contract surface; we re-assert them against the parent first
+    # so the derivation source is verified, then carry them to the companion.
+    canonical_rule_tokens = [
+        # The headline non-blocking semantics phrase.
+        "8 `VALID` + 1 `UNDETERMINED` still aggregates as `all_valid`",
+        # The blocking guard — UNDETERMINED is tolerated only with no INVALID.
+        "provided no step is `INVALID`",
+        # The explicit non-blocking label.
+        "non-blocking",
+    ]
+
+    # Derivation guard: the parent MUST still contain the rule we derive from.
+    for token in canonical_rule_tokens:
+        assert token in parent_norm, (
+            "parent receipt-validator.md no longer carries the canonical "
+            f"UNDETERMINED rule token {token!r}; re-derive parity expectations."
+        )
+
+    # Parity assertion: the companion mirror MUST carry the same semantics.
+    for token in canonical_rule_tokens:
+        assert token in companion_norm, (
+            "companion athanor-lfg-goal SKILL.md is out of parity with the "
+            f"parent UNDETERMINED non-blocking rule; missing token {token!r}."
+        )
+
+    # Stronger semantic check: the companion's `all_valid` bucket must NOT
+    # define itself as a bare "every/all row VALID" with no UNDETERMINED
+    # tolerance. Confirm the non-blocking carve-out co-occurs with `all_valid`.
+    assert "non-blocking for aggregate" in companion_norm, (
+        "companion must state UNDETERMINED is non-blocking for aggregate, "
+        "matching parent receipt-validator.md semantics."
+    )
 
 
 def test_codex_release_skill_absorbs_release_ceremony_contract():

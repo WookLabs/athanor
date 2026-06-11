@@ -136,7 +136,7 @@ Input ── Planner ──→ Final Plan
 
 ## Design Philosophy
 
-**8 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
+**9 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
 
 **Thin leader.** The main session never reads files, analyzes code, or writes code. It dispatches and collects. Your context stays clean regardless of session length.
 
@@ -152,18 +152,11 @@ Input ── Planner ──→ Final Plan
 
 **Thin leader** dispatches to **clean-context workers**:
 
-| Agent | Model | Role |
-|-------|-------|------|
-| researcher | sonnet | Objective research + Devil's Advocate |
-| analyst | sonnet | Fast parallel analysis |
-| planner | opus | Implementation planning |
-| critic | opus | Plan synthesis and review |
-| executor | opus | Code execution with verification loop |
-| learner | sonnet | Session learning extraction |
-| task splitter | sonnet | Plan → subtask decomposition |
-| cleaner | haiku | Memory decay and cleanup |
+**4 registered agent types** (dispatched as named types): `learner`, `releaser`, `ci-watcher`, `codex-dispatcher`.
 
-When Codex is available, it serves as Planner B (deep tier) or Reviewer (standard tier).
+**7 reference docs** (inline-dispatched via session-specific paths — not standalone registered types): `analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`.
+
+When Codex is available, it serves as Planner B (deep tier) or Reviewer (standard tier). See [CLAUDE.md §Native Agent Inventory](CLAUDE.md#native-agent-inventory) for full detail.
 
 **Session communication** via `.md` files — workers read and write to `.athanor/sessions/{id}/`. No shared state in the leader's context.
 
@@ -224,7 +217,7 @@ Solo developers who want structured planning. Tech leads who want reproducible q
 
 ## Companion Plugins
 
-Athanor recommends (does not require) the following companion plugin:
+Athanor recommends (does not require) the following companion plugins:
 
 **superpowers** — provides foundational skills like `verification-before-completion`. Athanor vendors a copy of this skill for guaranteed Stop hook behavior, but having superpowers installed adds the rest of its skill catalog (TDD, debugging, collaboration patterns).
 
@@ -236,6 +229,15 @@ Athanor recommends (does not require) the following companion plugin:
 /plugin marketplace add obra/superpowers-marketplace
 /plugin install superpowers@superpowers-marketplace
 ```
+
+**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 13 skills (`athanor-analyze`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
+
+```
+codex plugin marketplace add <path-to-athanor>/.agents/plugins/marketplace.json
+codex plugin add athanor-codex@athanor
+```
+
+See [`plugins/athanor-codex/README.md`](plugins/athanor-codex/README.md) for the full install and refresh flow.
 
 Run `/athanor:setup` to audit installed companions. If superpowers is absent, athanor remains fully functional — its vendored skill ensures the Stop hook works regardless. See [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the full policy.
 

@@ -66,7 +66,12 @@ Each row receives one status:
 
 After all rows, compute `aggregate_status`:
 
-- `all_valid`: all 9 rows are `VALID`.
+- `all_valid`: every row is `VALID`, or `VALID` with `UNDETERMINED` rows mixed
+  in, provided no row is `INVALID`. `UNDETERMINED` is **non-blocking for
+  aggregate**: a cycle with 8 `VALID` + 1 `UNDETERMINED` still aggregates as
+  `all_valid` provided no step is `INVALID`. Environmental failures (missing
+  `gh`, no network) must not force a re-cycle on an otherwise honest receipt;
+  the `undetermined_count` is surfaced separately, not treated as a blocker.
 - `completed_with_residuals`: no row is `INVALID`, but durable residuals such
   as review findings or unresolved CI are present.
 - `invalid_steps_present`: at least one row is `INVALID`.

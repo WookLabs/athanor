@@ -368,7 +368,7 @@ Also validate that each finding contains a well-formed `ATHANOR_RESULT ... END_R
 ## Systematic Debugging Discipline
 
 Concept adopted from superpowers@5.1.0 `sp-systematic-debugging` (MIT, Copyright (c) 2025 Jesse Vincent; upstream: https://github.com/obra/superpowers).
-See NOTICE.md §Concepts adopted from upstream and `concepts/debug-discipline.md` (Subtask 11) for full attribution.
+See NOTICE.md §Concepts adopted from upstream and `concepts/systematic-debugging.md` for full attribution.
 
 This discipline binds every `/athanor:debug` worker (Triage, Error Analyst, Git History, Code Tracer). Workers MUST hold to the Iron Law and proceed phase-by-phase; the Leader MUST reject any finding that proposes a fix before Phase 1 evidence is on the table.
 
@@ -469,4 +469,4 @@ Workers: 1 triage + {N} parallel
 3. Leader가 결과를 직접 merge — merge agent 불필요.
 4. **Depth over speed** — 철저한 조사 우선. 단, tool call 제한으로 범위 통제.
 5. Plan Mode — 프로젝트 파일 수정 금지. `.athanor/sessions/`에만 쓰기.
-6. 기존 세션 재사용 (discuss/analyze 실행 후 같은 날이면).
+6. 세션 재사용 — LATEST 세션 사용 (날짜 무관; CLAUDE.md §Session Lookup Convention 참조).

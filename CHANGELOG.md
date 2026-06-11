@@ -3,6 +3,24 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **athanor-codex companion plugin** (`plugins/athanor-codex/`). A second-runtime mirror of the athanor native skill set for the Codex CLI — 13 skills (`athanor-analyze`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`). Prefix-safe, no Claude hooks, repo-local marketplace entry. See `plugins/athanor-codex/README.md`.
+
+### Fixed
+
+- **P14 — Stop-gate carve-out removed (security).** Dead `DEPRECATION_SENTINEL` path in `scripts/hooks/stop_verify_claims.py` provided a permanent Stop-gate bypass that could never be triggered legitimately; removed entirely. The bypass was a dead code path, not a runtime opt-out — its removal closes the hole with no functional regression.
+- **P2 — Freeze allowlist dead-on-arrival fix.** `scripts/work/build_freeze_allowlist.py` failed silently for absolute paths (the v0.18.0 freeze allowlist was DOA for absolute-path entries). Adds absolute-path relativization and unifies `allowedPaths`/`extraAllowedPaths` key naming.
+- **P13 — Force-push guard segment-scoped.** `scripts/hooks/pretool_kernel_guard.py` force-push matcher now uses a `(?![\w-])` word-boundary so `feature/main-update` and similar branches are no longer false-positived; exact `main`/`master` slash-segments stay blocked.
+- **P16 — NotebookEdit/MultiEdit added to Kernel Guard coverage.** Both tool names added to the PreToolUse guard so notebook and multi-edit destructive patterns are subject to the same checks as Bash/Edit.
+- **P15 — Hook-state opt-in lifecycle.** Hooks no longer `mkdir .athanor/state` as a side effect in repos that have never opted in. The `.athanor/` directory is now created only after `athanor.json` is detected (opt-in gate), preventing filesystem debris in non-athanor repos.
+
+### Changed
+
+- **Fable 5 audit round 1** — Tier 1+2+3 corrections across docs, guards, and tests (doc-contract parity P5/P6/P7/P17; stop-phrase whitelist canonicalized with pointers P10; plugin version literal centralized via `tests/_version.py` P18).
+
 ## [0.18.7] — 2026-06-07
 
 ### Changed — plugin diet (de-register 7 reference-only agents; honesty cleanup)

@@ -7,6 +7,7 @@ description: >
   clarify 모드 (single-Claude gap-probe dialog → requirements.md):
   '의도 명확화', '요구사항이 헷갈려', '무엇을 만들지 헷갈려',
   '뭘 해야할지 모르겠어', '명확히 정리해줘'.
+  English triggers: 'discuss', 'brainstorm'.
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, Task, AskUserQuestion, ToolSearch, Skill
 ---

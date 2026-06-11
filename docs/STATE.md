@@ -4,6 +4,10 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
+## Unreleased (post-v0.18.7)
+
+**athanor-codex companion** (`plugins/athanor-codex/`) — a second-runtime mirror of the athanor native skill set for the Codex CLI (13 skills, no Claude hooks). Fable 5 audit round 1: P2 freeze DOA fix, P13/P16 Kernel Guard coverage, P14 Stop-gate bypass removal, P15 hook-state opt-in lifecycle. See `CHANGELOG.md ## [Unreleased]`.
+
 ## Current Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
 
 **v0.18.7** (released 2026-06-07) — An evidence-based plugin-diet audit (3
@@ -195,19 +199,16 @@ Spec-then-TDD / Stop hook gate.
 | `session-lookup-convention` (v0.7.7) | ✅ enforced | `tests/test_regression_session_lookup_convention.py` |
 | `_doc-honesty` (v0.7.7+v0.7.8) | ✅ enforced | `tests/test_regression_doc_string_honesty.py` (models deprecated; hooks working contract) |
 | `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
-| `contract-ledger` presence | ⚠️ user-install 환경에서 항상 fail | `/athanor:setup` Check #11. fresh-checkout 분기 필요 (개선 후보) |
+| `contract-ledger` presence | ✅ fixed (v0.18.x) | `/athanor:setup` Check #11 — fresh-checkout fast-path implemented: no sessions → PASS (info), not a hard FAIL. See `skills/setup/SKILL.md` §11 fast-path. |
 | `learner-on-release` | ✅ ceremony 단계 (advisory) | `agents/releaser.md` Step 6 — release tag 후 leader가 Learner dispatch (`learner_on_release: pending-leader-dispatch` 신호). `agents/learner.md` §On Release |
-| `agent-frontmatter-consistency` | ❌ 회귀 0건 | v0.6.2 클래스 재발 시 잡지 못함 (개선 후보) |
+| `agent-frontmatter-consistency` | ✅ enforced | `tests/test_regression_agent_effort_level.py` (registered-agent model tier + 7/4 partition lock), `tests/test_regression_v014_agent_definitions.py`, `tests/test_regression_codex_companion.py` |
 | `stop-phrase-detection` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 | `read-before-edit` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 
 ## Known gaps (다음 작업 후보)
 
-- 신규 user 환경에서 `/athanor:setup` Check #11이 항상 빨간 X (`.athanor/sessions/`이 gitignored이므로 fresh checkout에 ledger 없음). `--ci` 모드처럼 user-install fresh 환경 분기 필요.
 - Memory 2-tier (`permanent → mem-search`)이 디자인 문서에는 있으나 실제 구현은 frontmatter `importance` 마킹뿐 — mem-search MCP에 영구 저장하는 코드 부재.
-- agent / skill frontmatter 회귀 테스트 부재 (v0.6.2 클래스 재발 시 잡지 못함).
 - CI matrix는 ubuntu-latest 단일 — Windows-specific 회귀(case-insensitive FS 등) 자동 검증 부재.
-- Stop hook이 모델 자기-식별에 100% 의존 (false-negative 위험). 외부 transcript-parser 마이그레이션 후보. **(2026-05-18 spike: PASS — 아래 §Command-hook Stop blocking spike 참조)**
 
 ## Command-hook Stop blocking spike (2026-05-18)
 
