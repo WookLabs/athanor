@@ -1218,3 +1218,31 @@ dispatcher runs kernel FIRST.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
+
+## Archived from STATE.md (2026-06-12, v0.18.8 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.2 — lfg/lfg-goal Doc-Lifecycle Audit + Cleanup
+
+**v0.18.2** (released 2026-06-04) — Patch closing the lfg/lfg-goal
+documentation-lifecycle audit (3 concerns: read→execute, execute→document,
+cleanup of stale docs). No identity-invariant change.
+
+1. **Cleanup layer (concern ③, the weakest).** `agents/cleaner.md` gains a
+   "Clean Old Goals" step that ages out non-completing (`aborted`/
+   `abandoned`) goals past `goalRetentionDays` — closing the **D13 broken
+   cross-reference** (lfg-goal claimed the cleaner does this; no step
+   existed). `complete` goals excluded (user action). Dispatch synced.
+2. **Drift + dormancy fixes.** Cleaner dispatch tier `sonnet`→`haiku`
+   (matches frontmatter + CLAUDE.md "minimal effort"); `learner-on-release`
+   wired into the release ceremony (`agents/releaser.md` Step 6).
+3. **Documentation lifecycle (new).** Migration-guide staleness frontmatter
+   (`status`/`superseded-by`) + `CONVENTIONS.md §7` + regression-test ager;
+   STATE.md bounded-history trim rule (progressive); completed-goal
+   `receipts/` archival; lfg PR-body work-log/review persistence slots.
+
+16 new regression tests (7 files), all RED→GREEN. Cleanup/trigger layers
+are advisory (prose-driven), consistent with athanor defense-mechanism
+honesty labels.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.

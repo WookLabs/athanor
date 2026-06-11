@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.8] — 2026-06-12
+
 ### Added
 
 - **athanor-codex companion plugin** (`plugins/athanor-codex/`). A second-runtime mirror of the athanor native skill set for the Codex CLI — 13 skills (`athanor-analyze`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`). Prefix-safe, no Claude hooks, repo-local marketplace entry. See `plugins/athanor-codex/README.md`. (P8: top-level ledger entries — CHANGELOG, README, STATE.md, DEPENDENCIES.md — now document the companion.)
