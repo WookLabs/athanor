@@ -215,19 +215,6 @@ LEGACY_V1_PATTERN = re.compile(
     re.IGNORECASE,
 )
 # v0.11.8 deprecation sentinel: marks vendored skill output emitted from a
-# DROP/LIFT-class skill scheduled for removal at v0.12.0. The carve-out
-# pattern is anchored at the first non-whitespace line of the response (same
-# anchoring as SENTINEL_PATTERN above). When matched, main() exits 0
-# silently — the response body is documentation prose about a deprecated
-# skill and material-claim detection should not fire on it. Distinct from
-# the v=2 verification-emission sentinel: no nonce, no body-hash binding;
-# this is a static literal carve-out, NOT an evidence proof. Pattern source:
-# skills/{ce|sp}-*/SKILL.md preamble block (4 lines: sentinel + DEPRECATION
-# warning + Rationale + Migration).
-DEPRECATION_SENTINEL_PATTERN = re.compile(
-    r"^\s*<!--\s*athanor:deprecated\s+v=1\s+since=0\.11\.8\s+removal=0\.12\.0\s*-->",
-    re.IGNORECASE,
-)
 ACTIVE_SESSION = hook_state.__dict__.get("ACTIVE_SESSION", "active")
 
 # Material-claim phrase whitelist — ported verbatim from the v0.7.7 prompt
@@ -1120,16 +1107,6 @@ def main() -> int:
         # v=2 sentinel validated — verification skill output. Reset counter.
         hook_state.reset_stop_counter(ACTIVE_SESSION)
         return 0  # silent re-entry skip
-
-    # v0.11.8 carve-out: response from a deprecated skill (DROP/LIFT class).
-    # Static literal sentinel (no nonce, no body-hash). Exit 0 silently so
-    # the surrounding deprecation prose does not retrigger material-claim
-    # detection. Placed before is_material_claim so the carve-out fires
-    # even when the body contains a phrase like "tests pass" inside the
-    # migration narrative.
-    if DEPRECATION_SENTINEL_PATTERN.match(last_msg):
-        hook_state.reset_stop_counter(ACTIVE_SESSION)
-        return 0
 
     if not is_material_claim(last_msg):
         return 0  # no material claim; nothing to gate
