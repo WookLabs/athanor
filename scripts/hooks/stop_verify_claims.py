@@ -1112,6 +1112,15 @@ def main() -> int:
         return 0  # no material claim; nothing to gate
 
     # Material claim present → check circuit breaker before blocking.
+    #
+    # v0.18.x Phase 4: state persistence is opt-in (athanor.json). In an
+    # opted-out checkout (config_path is None) `read_stop_counter` always
+    # returns 0 and `write_stop_counter` is a no-op — the gate still fires
+    # fail-open, but the circuit breaker cannot accumulate across turns.
+    # That is acceptable (a repo with the hook installed but no athanor.json
+    # is misconfigured; the stderr below already points at the off switch).
+    # We only emit a breadcrumb on a GENUINE persistence failure (opted-in
+    # repo where the write nonetheless failed), never on routine opt-out.
     threshold = _read_stop_loop_threshold()
     counter = hook_state.read_stop_counter(ACTIVE_SESSION)
     if counter >= threshold:
@@ -1127,7 +1136,16 @@ def main() -> int:
         hook_state.reset_stop_counter(ACTIVE_SESSION)
         return 0
 
-    hook_state.write_stop_counter(ACTIVE_SESSION, counter + 1)
+    counter_persisted = hook_state.write_stop_counter(ACTIVE_SESSION, counter + 1)
+    if not counter_persisted and config_path is not None:
+        # Opted-in repo but the counter write failed — genuine error worth a
+        # breadcrumb (the circuit breaker won't accumulate this turn). Routine
+        # opt-out (config_path is None) is silent.
+        _stderr(
+            "could not persist circuit-breaker counter despite athanor.json "
+            f"at {config_path}; the stop-loop breaker may not accumulate "
+            "(gate still fail-open). Check .athanor/ write permissions."
+        )
     _stderr(
         "material claim detected in last response without fresh verification "
         "evidence. Invoke the `verification-before-completion` skill NOW to "
