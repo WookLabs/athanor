@@ -552,6 +552,27 @@ def test_m7_lfg_allowed_tools_includes_write():
 
 
 # ---------------------------------------------------------------------------
+# P17: lfg SKILL.md allowed-tools must include Task
+# ---------------------------------------------------------------------------
+def test_p17_lfg_allowed_tools_includes_task():
+    """P17 lock: lfg/SKILL.md frontmatter ``allowed-tools`` must include
+    ``Task``.
+
+    The LFG pipeline dispatches workers (review fixes, CI autofix via the
+    ci-watcher agent, /athanor:work subtasks) — a Thin Leader that delegates
+    needs the Task tool to spawn those workers. The grant was previously
+    under-specified (``Bash, Read, Write, Skill``), forcing dispatch through
+    Skill alone.
+    """
+    text = _read(LFG_SKILL)
+    fm, _body = _split_frontmatter(text)
+    allowed = fm.get("allowed-tools", "")
+    assert "Task" in allowed, (
+        f"lfg SKILL.md allowed-tools must include 'Task'; got: '{allowed}'"
+    )
+
+
+# ---------------------------------------------------------------------------
 # M8: CLAUDE.md lfg row must not reference ce-lfg
 # ---------------------------------------------------------------------------
 def test_m8_claude_md_lfg_row_no_ce_lfg():

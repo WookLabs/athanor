@@ -26,6 +26,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
+DESIGN_MD = REPO_ROOT / "docs" / "DESIGN.md"
 AGENTS_DIR = REPO_ROOT / "agents"
 VALID_TIERS = {"opus", "sonnet", "haiku"}
 
@@ -147,3 +148,46 @@ def test_all_registered_agent_models_are_valid_tiers() -> None:
         assert fm in VALID_TIERS, (
             f"agents/{agent}.md model='{fm}' is not one of {sorted(VALID_TIERS)}."
         )
+
+
+def _design_agent_registration_section() -> str:
+    """Return the text of DESIGN.md §Agent Registration (up to the next H1/H2)."""
+    body = DESIGN_MD.read_text(encoding="utf-8")
+    m = re.search(r"\n##\s+Agent Registration\s*\n(.*?)(?=\n##\s|\Z)", body, re.S)
+    assert m, "docs/DESIGN.md must contain a '## Agent Registration' section"
+    return m.group(1)
+
+
+def test_design_agent_registration_two_kind_roster() -> None:
+    """MUST (v0.18.7 / S30) — DESIGN.md §Agent Registration names exactly the 4
+    registered agents and does NOT carry the stale 7-only roster as 'registered'.
+
+    Before S30, the section listed analyst/cleaner/critic/executor/learner/planner/
+    researcher as 'Current registered agents' — a roster the v0.18.7 plugin-diet
+    invalidated (those 7 became reference docs; the registered set is now learner/
+    releaser/ci-watcher/codex-dispatcher). This lock fails if S30 is reverted.
+    """
+    section = _design_agent_registration_section()
+
+    # All 4 real registered types must be named (athanor- prefixed) in the section.
+    for name in REGISTERED_AGENTS:
+        assert f"athanor-{name}" in section, (
+            f"DESIGN.md §Agent Registration must name the registered type "
+            f"'athanor-{name}' under its two-kind model."
+        )
+
+    # The stale roster signature: the three pipeline roles that the OLD list
+    # presented as 'registered' but never were leader-dispatchable types. They
+    # must NOT appear as registered `athanor-<role>` handles (they have no name:).
+    for stale in ("athanor-analyst", "athanor-executor", "athanor-planner"):
+        assert stale not in section, (
+            f"DESIGN.md §Agent Registration lists '{stale}' as a registered "
+            f"handle — that role is a reference doc (no name:) since v0.18.7. "
+            f"The stale 7-only 'registered' roster must not recur (S30 revert?)."
+        )
+
+    # And the literal stale heading must be gone.
+    assert "Current registered agents" not in section, (
+        "DESIGN.md §Agent Registration still has the stale 'Current registered "
+        "agents' list (the pre-S30 7-name roster). Use the two-kind model."
+    )

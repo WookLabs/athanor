@@ -505,31 +505,45 @@ Athanor agents are **auto-discovered** by Claude Code from the `agents/*.md` dir
 `.claude-plugin/plugin.json` does NOT enumerate individual agents — each `.md` file with a
 valid frontmatter `name:` is registered automatically at plugin load time.
 
+### Two-kind agent model (v0.18.7)
+
+Files under `agents/` come in **two kinds** (canonical source: CLAUDE.md §Native Agent
+Inventory):
+
+- **4 registered agent types** carry `name:`/`tools:` frontmatter and ARE dispatched as
+  types by the leader / release ceremony / lfg (also reachable standalone via @-mention):
+  - `athanor-learner`
+  - `athanor-releaser`
+  - `athanor-ci-watcher`
+  - `athanor-codex-dispatcher`
+- **7 reference documents** are `description:`-only (no `name:`) and are NOT registered —
+  skills dispatch these pipeline roles via an INLINE `Agent()` prompt carrying
+  session-specific paths a standalone agent lacks:
+  `analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`.
+
+v0.18.7 de-registered the 7 (0 standalone adoption; inline is canonical), collapsing the
+former 11-agent dual-nature roster to 4 registered.
+
 ### Invariant: No-Collision
 
-All agents under `agents/` MUST have a **unique `name:` frontmatter value**. Duplicate names
-cause Claude Code to silently shadow one agent with another, leading to non-deterministic
-dispatch behavior from the Leader.
-
-Current registered agents (all prefixed `athanor-` for namespace isolation):
-
-- `athanor-analyst`
-- `athanor-cleaner`
-- `athanor-critic`
-- `athanor-executor`
-- `athanor-learner`
-- `athanor-planner`
-- `athanor-researcher`
+All **registered** agents under `agents/` MUST have a **unique `name:` frontmatter value**.
+Duplicate names cause Claude Code to silently shadow one agent with another, leading to
+non-deterministic dispatch behavior from the Leader. (Reference docs have no `name:`, so
+they cannot collide.)
 
 ### Verification
 
-CI / pre-commit should enforce the invariant:
+CI / pre-commit should enforce the two-kind partition — exactly the 4 registered types carry
+a `name:`, the 7 reference docs do not:
 
 ```bash
-python -c "import os,re; names=[re.search(r'^name:\s*(.+)$',open(f,encoding='utf-8').read(),re.M).group(1).strip() for f in [os.path.join('agents',n) for n in os.listdir('agents') if n.endswith('.md')]]; assert len(names)==len(set(names)), names"
+python -c "import re,pathlib; reg={p.stem for p in pathlib.Path('agents').glob('*.md') if re.search(r'^name:\s*\S+', p.read_text(encoding='utf-8'), re.M)}; ref={p.stem for p in pathlib.Path('agents').glob('*.md')} - reg; assert reg=={'learner','releaser','ci-watcher','codex-dispatcher'}, reg; assert ref=={'analyst','cleaner','critic','executor','planner','researcher','reviewer'}, ref"
 ```
 
-Exit code 0 = unique; non-zero = collision (AssertionError lists the colliding names).
+Exit code 0 = correct 4-registered / 7-reference partition; non-zero = drift (AssertionError
+prints the offending set). The registered-name uniqueness check is subsumed: the 4 names are
+distinct by construction. See `tests/test_regression_agent_effort_level.py` for the locked
+partition assertion.
 
 ### Adding a New Agent
 
