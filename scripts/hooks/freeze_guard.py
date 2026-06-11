@@ -63,7 +63,7 @@ Allowlist matching
 
 The allowlist is the dict produced by the builder; the guard reads
 the ``allowed_paths`` key. User-extension paths from
-``config.hooks.freeze.extraAllowedPaths`` are unioned at evaluation
+``config.hooks.freeze.allowedPaths`` are unioned at evaluation
 time so a user can extend the allowlist without re-running the builder.
 
 D2 honesty residual — subprocess writes NOT gated
@@ -399,7 +399,7 @@ def _merged_allowed_paths(
     Union of:
       1. `allowlist["allowed_paths"]` (already includes builder-side
          defaults + subtask paths + builder-side extras).
-      2. `config["hooks"]["freeze"]["extraAllowedPaths"]` if config is
+      2. `config["hooks"]["freeze"]["allowedPaths"]` if config is
          provided — runtime extension so users can add paths without
          re-running the builder.
     """
@@ -415,12 +415,45 @@ def _merged_allowed_paths(
         if isinstance(hooks, dict):
             freeze = hooks.get("freeze", {})
             if isinstance(freeze, dict):
-                extras = freeze.get("extraAllowedPaths", [])
+                extras = freeze.get("allowedPaths", [])
                 if isinstance(extras, list):
                     for p in extras:
                         if isinstance(p, str):
                             paths.append(p)
     return paths
+
+
+# ---------------------------------------------------------------------------
+# Absolute-path relativization
+# ---------------------------------------------------------------------------
+
+
+def _relativize_target(target: str, root: Optional[Path]) -> str:
+    """Convert an ABSOLUTE `target` to its project-relative POSIX form.
+
+    The allowlist stores project-relative paths, but real Claude Code
+    payloads send absolute ``file_path`` values. When ``target`` is
+    absolute and lies under ``root``, return the ``root``-relative POSIX
+    path so the allowlist match can succeed.
+
+    Fail-closed boundary (plan §3.2 / rubric D): if ``target`` is NOT
+    absolute, ``root`` is ``None``, or ``target`` lies OUTSIDE ``root``,
+    return it UNCHANGED. The caller then runs it through ``normpath``,
+    which keeps a leading ``..`` for an escaping absolute path so it
+    matches no allowlist prefix — BLOCKED, never silently allowed. We
+    never auto-allow an out-of-root path here.
+    """
+    if not target or not os.path.isabs(target):
+        return target
+    if root is None:
+        return target
+    try:
+        rel = Path(target).relative_to(root)
+    except ValueError:
+        # Outside root — leave absolute so normpath keeps it out of the
+        # allowlist (fail-closed). Do NOT silently allow.
+        return target
+    return rel.as_posix()
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +466,8 @@ def evaluate_payload(
     allowlist: Optional[dict],
     mode: str = "session",
     config: Optional[dict] = None,
+    *,
+    project_root: Optional[Path] = None,
 ) -> tuple[int, str]:
     """Evaluate a PreToolUse payload against the freeze allowlist.
 
@@ -451,7 +486,23 @@ def evaluate_payload(
         ``"session"`` (log + block). Default is ``"session"``.
     config : Optional[dict]
         Parsed ``athanor.json``. Used to union
-        ``hooks.freeze.extraAllowedPaths`` into the matching set.
+        ``hooks.freeze.allowedPaths`` into the matching set.
+    project_root : Optional[Path], keyword-only
+        Project root used to relativize ABSOLUTE tool-target paths before
+        the allowlist match. Real Claude Code payloads send absolute
+        ``file_path`` values while the allowlist stores project-relative
+        POSIX paths — without this the guard would block every real edit.
+        Keyword-only so the existing positional
+        ``evaluate_payload(payload, allowlist, mode=...)`` call sites stay
+        unbroken. When ``None``, resolves via
+        ``_athanor_hook_runtime.resolve_project_root()`` (today's
+        cwd-coupled behavior); the dispatcher passes its already-resolved
+        root to avoid ambient-cwd dependence. Mirrors the sibling
+        ``pretool_kernel_guard.evaluate_payload(payload, project_root=...)``
+        signature. An absolute path OUTSIDE the resolved root fails the
+        relativization and falls through to ``normpath`` (keeping a leading
+        ``..``) so it matches no allowlist prefix — fail-closed, never
+        silently allowed.
 
     Returns
     -------
@@ -479,6 +530,11 @@ def evaluate_payload(
     if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
         return (0, "")
 
+    # Resolve the project root used to relativize ABSOLUTE target paths.
+    # `None` → today's cwd-coupled behavior via the shared runtime helper;
+    # the dispatcher passes its already-resolved root explicitly.
+    root = project_root if project_root is not None else _runtime.resolve_project_root()
+
     # ---- File-write tools (Edit / Write / MultiEdit / NotebookEdit) ----
     # Sourced from the shared WRITE_TOOLS tuple so NotebookEdit is gated like
     # the rest. `extract_target_path` resolves the destination — `notebook_path`
@@ -488,7 +544,11 @@ def evaluate_payload(
         target = _runtime.extract_target_path(tool_name, tool_input)
         if not isinstance(target, str) or not target:
             return (0, "")
-        if _path_in_allowlist(target, allowed_paths):
+        # Real payloads send absolute paths; relativize against root before the
+        # allowlist match. Out-of-root absolute paths stay absolute and fail
+        # the match below (fail-closed).
+        match_target = _relativize_target(target, root)
+        if _path_in_allowlist(match_target, allowed_paths):
             return (0, "")
         # Violation
         _log_violation(allowlist, tool_name, _normalize_path(target), mode)
@@ -508,7 +568,11 @@ def evaluate_payload(
             return (0, "")
         targets = _extract_bash_write_targets(command)
         for t in targets:
-            if _path_in_allowlist(t, allowed_paths):
+            # Same absolute→relative relativization as the file-tool branch so
+            # Bash redirects to absolute in-allowlist paths are allowed and
+            # out-of-root absolute paths fail-closed.
+            match_t = _relativize_target(t, root)
+            if _path_in_allowlist(match_t, allowed_paths):
                 continue
             # Violation
             _log_violation(allowlist, "Bash", t, mode)

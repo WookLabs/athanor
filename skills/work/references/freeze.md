@@ -46,15 +46,16 @@ entry points:
   - `allowed_paths`: union of (a) all subtask `files:` entries (deduped,
     normalized to project-relative POSIX paths), (b) session defaults
     (see below), (c) user extras from
-    `athanor.json` `hooks.freeze.extraAllowedPaths`.
+    `athanor.json` `hooks.freeze.allowedPaths`.
   - `session_id`: the session identifier (used by the guard for
     cross-checks against `transcript_path` ancestor).
   - `built_at`: ISO-8601 UTC timestamp.
   - `source`: dict noting which plan generated the allowlist
     (`plan_md_sha256`, subtask count).
 - `write_allowlist(allowlist: dict, output_path: str) -> None` —
-  atomic write via tempfile + rename (mirrors `oneshot/_io.py` style).
-  Target path is `.athanor/sessions/<id>/freeze-allowlist.json`.
+  atomic write via tempfile + rename (write to a sibling temp file,
+  then `os.replace` into place). Target path is
+  `.athanor/sessions/<id>/freeze-allowlist.json`.
 
 ### Default-included paths
 
@@ -71,7 +72,7 @@ write session artifacts):
 
 ### User extension
 
-`athanor.json` `hooks.freeze.extraAllowedPaths: list[str]` is unioned
+`athanor.json` `hooks.freeze.allowedPaths: list[str]` is unioned
 into `allowed_paths` at build time. **Extras extend, never replace,**
 the dynamic allowlist. This is the supported mechanism for users to
 allow project-wide tooling paths (e.g., `CHANGELOG.md`, `STATE.md`)
@@ -206,7 +207,7 @@ Enforcement (planned)"). Not promised in v0.18.0.
   "hooks": {
     "freeze": {
       "mode": "off",
-      "extraAllowedPaths": []
+      "allowedPaths": []
     }
   }
 }
@@ -217,7 +218,7 @@ Enforcement (planned)"). Not promised in v0.18.0.
   PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit` /
   scoped `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
   v0.18.x and v0.19.0.
-- `extraAllowedPaths`: list of project-relative paths or globs to
+- `allowedPaths`: list of project-relative paths or globs to
   union into every session's allowlist. Useful for project-wide
   artifacts the plan doesn't always re-declare (`CHANGELOG.md`,
   `docs/STATE.md`).

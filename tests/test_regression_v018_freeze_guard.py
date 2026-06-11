@@ -28,7 +28,7 @@ Behavior invariants under test:
      callers).
   7. Allowlist matching supports exact path, fnmatch glob, and the
      default-included `.athanor/sessions/<id>/**` shape.
-  8. User-extension paths from `config.hooks.freeze.extraAllowedPaths`
+  8. User-extension paths from `config.hooks.freeze.allowedPaths`
      are merged into the matching set.
   9. Violation log appended atomically (JSONL — one JSON object per line;
      subsequent appends preserve prior lines).
@@ -44,6 +44,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -544,18 +545,18 @@ def test_violation_log_record_has_timestamp(freeze_guard, tmp_path, monkeypatch)
 
 
 # ---------------------------------------------------------------------------
-# User-extension paths (extraAllowedPaths) via config
+# User-extension paths (allowedPaths) via config
 # ---------------------------------------------------------------------------
 
 
 def test_config_extra_allowed_paths_merged(freeze_guard, tmp_path):
-    """`config.hooks.freeze.extraAllowedPaths` extends the allowlist."""
+    """`config.hooks.freeze.allowedPaths` extends the allowlist."""
     al = _allowlist(["src/foo.py"], session_dir=tmp_path)
     config = {
         "hooks": {
             "freeze": {
                 "mode": "session",
-                "extraAllowedPaths": ["CHANGELOG.md"],
+                "allowedPaths": ["CHANGELOG.md"],
             }
         }
     }
@@ -564,6 +565,50 @@ def test_config_extra_allowed_paths_merged(freeze_guard, tmp_path):
         _edit("CHANGELOG.md"), al, mode="session", config=config
     )
     assert exit_code == 0
+
+
+def test_freeze_md_extra_paths_key_matches_builder_source():
+    """S14 doc/source parity GUARD — the user-extension config key DOCUMENTED in
+    `skills/work/references/freeze.md` must equal the key the builder
+    `scripts/work/build_freeze_allowlist.py` actually reads. After the v0.18
+    key unification both are `allowedPaths`; a future rename in only one place
+    must trip this test rather than silently drift (a documented key the builder
+    never reads is a dead config surface for users).
+    """
+    builder_src = (
+        REPO_ROOT / "scripts" / "work" / "build_freeze_allowlist.py"
+    ).read_text(encoding="utf-8")
+    freeze_md = (
+        REPO_ROOT / "skills" / "work" / "references" / "freeze.md"
+    ).read_text(encoding="utf-8")
+
+    # Key the builder reads: the final `.get("<key>")` of the
+    # data.get("hooks").get("freeze").get("<key>") chain.
+    src_match = re.search(
+        r"""\.get\(\s*['"]hooks['"]\s*,\s*\{\}\s*\)"""
+        r"""\s*\.get\(\s*['"]freeze['"]\s*,\s*\{\}\s*\)"""
+        r"""\s*\.get\(\s*['"](?P<key>[A-Za-z_]+)['"]""",
+        builder_src,
+    )
+    assert src_match is not None, (
+        "could not locate the hooks.freeze.<key> read in build_freeze_allowlist.py "
+        "— the chained .get(...) shape changed; update this parity guard"
+    )
+    builder_key = src_match.group("key")
+
+    # Key documented in freeze.md: the `hooks.freeze.<key>` dotted reference.
+    doc_keys = set(re.findall(r"hooks\.freeze\.([A-Za-z_]+)", freeze_md))
+    # `mode` is also documented under hooks.freeze; the user-extension key is
+    # whatever the builder reads — assert freeze.md documents exactly that one.
+    assert builder_key in doc_keys, (
+        f"freeze.md documents hooks.freeze keys {sorted(doc_keys)} but the builder "
+        f"reads `hooks.freeze.{builder_key}` — config key drift between doc and source"
+    )
+    # Pin the post-unification value so a rename can't pass by mutating both
+    # to a new but mismatched-against-the-guard string unnoticed.
+    assert builder_key == "allowedPaths", (
+        f"expected the unified user-extension key `allowedPaths`, got `{builder_key}`"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -589,3 +634,108 @@ def test_default_mode_is_session(freeze_guard, tmp_path):
         _edit("src/secret.py"), al
     )
     assert exit_code == 2
+
+
+# ---------------------------------------------------------------------------
+# Subtask 11/12 — project_root param + absolute-path relativization
+# ---------------------------------------------------------------------------
+#
+# Real Claude Code payloads send ABSOLUTE `file_path` values; the allowlist
+# stores project-RELATIVE POSIX paths. Without relativization the freeze
+# guard in session mode blocks every real edit (DOA). The keyword-only
+# `project_root` param lets tests exercise relativization against a tmp
+# root without chdir; the dispatcher passes its already-resolved root.
+#
+# Fail-closed boundary: an absolute path OUTSIDE project root must NOT be
+# silently allowed — it falls through to normpath (keeps a leading `..`)
+# and fails the allowlist match, i.e. BLOCKED in session mode.
+
+
+def test_project_root_keyword_only_existing_positional_unbroken(freeze_guard, tmp_path):
+    """S11 — the ~40 existing positional `evaluate_payload(payload, al, mode=...)`
+    call sites stay unbroken: `project_root` is keyword-only, so positional
+    invocation is unaffected (this mirrors the pre-S11 calls above)."""
+    al = _allowlist(["src/foo.py"], session_dir=tmp_path)
+    exit_code, _ = freeze_guard.evaluate_payload(_edit("src/foo.py"), al, mode="session")
+    assert exit_code == 0
+
+
+def test_project_root_none_falls_back_to_today_behavior(freeze_guard, tmp_path):
+    """S11 MUST — `project_root=None` preserves today's behavior: a relative
+    in-allowlist path is ALLOWED; a relative out-of-allowlist path is BLOCKED.
+    Passing the kwarg explicitly as None must behave identically to omitting it."""
+    al = _allowlist(["src/foo.py"], session_dir=tmp_path)
+    ok, _ = freeze_guard.evaluate_payload(
+        _edit("src/foo.py"), al, mode="session", project_root=None
+    )
+    assert ok == 0
+    blocked, stderr = freeze_guard.evaluate_payload(
+        _edit("src/secret.py"), al, mode="session", project_root=None
+    )
+    assert blocked == 2
+    assert "BLOCKED" in stderr
+
+
+def test_absolute_path_in_allowlist_allowed_with_project_root(freeze_guard, tmp_path):
+    """S12 MUST — `Edit` with an ABSOLUTE `file_path` INSIDE project root and
+    whose project-relative form is IN the allowlist returns exit-code 0
+    (ALLOWED). Proves absolute→relative relativization against `project_root`."""
+    al = _allowlist(["src/foo.py"], session_dir=tmp_path)
+    abs_in = str(tmp_path / "src" / "foo.py")
+    assert os.path.isabs(abs_in)
+    exit_code, _ = freeze_guard.evaluate_payload(
+        _edit(abs_in), al, mode="session", project_root=tmp_path
+    )
+    assert exit_code == 0
+
+
+def test_absolute_path_not_in_allowlist_blocked_with_project_root(freeze_guard, tmp_path):
+    """S12 MUST — an absolute `file_path` inside root but whose relative form is
+    NOT in the allowlist returns exit-code 2 in session mode (BLOCKED)."""
+    al = _allowlist(["src/foo.py"], session_dir=tmp_path)
+    abs_out = str(tmp_path / "src" / "secret.py")
+    assert os.path.isabs(abs_out)
+    exit_code, stderr = freeze_guard.evaluate_payload(
+        _edit(abs_out), al, mode="session", project_root=tmp_path
+    )
+    assert exit_code == 2
+    assert "BLOCKED" in stderr
+
+
+def test_absolute_path_outside_project_root_blocked_failclosed(freeze_guard, tmp_path):
+    """S12 MUST — an absolute path OUTSIDE project root must NOT be silently
+    allowed. It fails the `relative_to(root)` relativization, falls through to
+    normpath (which keeps a leading `..`), and matches no allowlist prefix →
+    BLOCKED (fail-closed) in session mode."""
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    outside = tmp_path / "elsewhere" / "src" / "foo.py"
+    al = _allowlist(["src/foo.py"], session_dir=project_root)
+    abs_outside = str(outside)
+    assert os.path.isabs(abs_outside)
+    exit_code, stderr = freeze_guard.evaluate_payload(
+        _edit(abs_outside), al, mode="session", project_root=project_root
+    )
+    assert exit_code == 2, (
+        "an absolute path outside project root must fail-closed (BLOCKED), "
+        "never be silently allowed"
+    )
+    assert "BLOCKED" in stderr
+
+
+def test_absolute_bash_redirect_relativized_with_project_root(freeze_guard, tmp_path):
+    """S12 — relativization also applies to `_extract_bash_write_targets` results.
+    A Bash redirect to an ABSOLUTE in-allowlist path is ALLOWED; to an absolute
+    out-of-allowlist path is BLOCKED — proving the same relativization runs on
+    Bash-extracted targets."""
+    al = _allowlist(["src/foo.py"], session_dir=tmp_path)
+    abs_in = str(tmp_path / "src" / "foo.py")
+    ok, _ = freeze_guard.evaluate_payload(
+        _bash(f"echo 'x' > {abs_in}"), al, mode="session", project_root=tmp_path
+    )
+    assert ok == 0
+    abs_out = str(tmp_path / "src" / "secret.py")
+    blocked, _ = freeze_guard.evaluate_payload(
+        _bash(f"echo 'x' > {abs_out}"), al, mode="session", project_root=tmp_path
+    )
+    assert blocked == 2
