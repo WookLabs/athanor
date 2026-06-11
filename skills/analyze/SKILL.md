@@ -225,12 +225,7 @@ Keep under 300 words."
 
 Before merging, the Leader MUST check every worker brief for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a brief — re-dispatch that worker with the same prompt prefixed by `"Complete the analysis fully. Do not stop early. Cover the full scope you were assigned."`.
 
-Patterns enforced (English alias in parentheses):
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 Also validate that each brief contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
 

@@ -137,7 +137,7 @@ On every `Stop` event, Claude Code invokes `scripts/hooks/stop_verify_claims.py`
 - **`test-aware`**: source code + refactor → 종료 게이트 (세 조건 conjunction): (1) `tests/**` path 수정 1개 이상, (2) `full_suite_passed: true` 자가보고, (3) `verification:` prose 일관성.
 - **`direct`**: prose-only (`.md`, CHANGELOG) → doc/config-only edits.
 
-**What it does NOT catch:** Splitter의 오분류, worker가 evidence를 fabricate하는 adversarial forgery (leader는 evidence *shape*만 검증). 메커니즘은 advisory — runtime 강제 없음. **v0.10.0 scope:** athanor-native `/athanor:work` only. See `docs/archive/defense-mechanisms-detail.md` for full pipeline, stop-phrase list, scope-drift trigger glob, and Critic rubric.
+**What it does NOT catch:** Splitter의 오분류, worker가 evidence를 fabricate하는 adversarial forgery (leader는 evidence *shape*만 검증). 메커니즘은 advisory — runtime 강제 없음. **v0.10.0 scope:** athanor-native `/athanor:work` only. See `docs/archive/defense-mechanisms-detail.md` for full pipeline, scope-drift trigger glob, and Critic rubric; the canonical stop-phrase whitelist lives in `docs/stop-phrase-whitelist.md`.
 
 ### using-superpowers boundary (v0.11.1) — canonical declaration
 

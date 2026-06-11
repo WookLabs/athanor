@@ -359,12 +359,7 @@ Max 15 tool calls. Keep under 400 words."
 
 Before merging, the Leader MUST check every worker finding for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a finding — re-dispatch that worker with the same prompt prefixed by `"Diagnose to root cause. Do not stop early or dismiss as a pre-existing issue without evidence."`.
 
-Patterns enforced (English alias in parentheses):
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 `debug` is especially sensitive to "기존 이슈입니다 / This is a pre-existing issue" — if this phrase appears, reject the finding unless it is paired with a git blame line + a session id where the issue was first observed.
 
