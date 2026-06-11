@@ -43,5 +43,5 @@ jobs:
       - name: Regression fixtures (pytest)
         shell: bash
         run: |
-          pip install pytest jsonschema
+          pip install pytest jsonschema pyyaml
           pytest tests/ -v

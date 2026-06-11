@@ -11,8 +11,9 @@ Personas refine *voice* and *focus area* — they are not parallel lenses. When
 both `review.lenses` and `review.personas` are configured, each lens reviewer
 receives the persona descriptor as a voice instruction in its dispatch prompt.
 
-The 6 athanor-native personas form a vocabulary-compressed subset of CE's 18
-reviewer personas (full catalog at `skills/ce-code-review/references/persona-catalog.md`).
+The 6 athanor-native personas (correctness, security, performance, testing,
+maintainability, adversarial) are a vocabulary-compressed set absorbed from CE's
+multi-lens review concept (see `concepts/review-personas.md`).
 Each persona definition follows the same shape: a selection rule (always-on vs
 conditional), the bug class it hunts, and the voice it uses to phrase findings.
 
@@ -96,8 +97,7 @@ Doc mode classifies the target by **doc-type**:
 | `spec` | `docs/specs/*.md`, RFC-shaped docs | coherence, feasibility, security-lens, design-lens |
 | `architecture` | `docs/architecture/*.md`, ADRs | coherence, design-lens, security-lens, adversarial-document |
 
-Persona set inherited from CE's `ce-doc-review` (catalog at
-`skills/ce-doc-review/SKILL.md`):
+Persona set absorbed from CE's doc-review concept (see `concepts/doc-review-mode.md`):
 
 - **coherence** — internal consistency, definition-vs-use alignment, claim
   chains that close without contradiction

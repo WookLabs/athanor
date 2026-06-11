@@ -7,6 +7,7 @@ description: >
   clarify 모드 (single-Claude gap-probe dialog → requirements.md):
   '의도 명확화', '요구사항이 헷갈려', '무엇을 만들지 헷갈려',
   '뭘 해야할지 모르겠어', '명확히 정리해줘'.
+  English triggers: 'discuss', 'brainstorm'.
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, Task, AskUserQuestion, ToolSearch, Skill
 ---
@@ -421,12 +422,7 @@ Then thread `codex_available` into the Worker B dispatch:
 
 Before dispatching the Critic, the Leader MUST check both worker results for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a worker's `details:` body — re-dispatch that worker with the same prompt prefixed by `"Complete the task fully. Do not stop early. Address every part of the dilemma."`.
 
-Patterns enforced (English alias in parentheses):
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 Also validate that each worker's output contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
 
@@ -536,10 +532,10 @@ Files:   research-a.md, research-b.md, discuss.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:analyze    — 관련 코드/시스템 분석
-  /athanor:deep-plan  — 심층 계획 (교차 검증)
-  /athanor:plan       — 표준 계획 (기본값)
-  /athanor:lite-plan  — 빠른 계획 (리뷰 없음)
+  /athanor:analyze            — 관련 코드/시스템 분석
+  /athanor:plan --depth=deep  — 심층 계획 (교차 검증)
+  /athanor:plan               — 표준 계획 (기본값)
+  /athanor:plan --depth=lite  — 빠른 계획 (리뷰 없음)
 ```
 
 ---

@@ -119,14 +119,8 @@ across turns and asks the next sub-question on the next turn.
 
 ## Stop-phrase guard (athanor-local v0.9.0 addition)
 
-The leader's own dialog turns must NEVER use the early-stop phrases
-listed in `skills/discuss/SKILL.md` §Step 2.5 (Worker Output Defense):
-
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+The leader's own dialog turns must NEVER use the early-stop phrases.
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 These phrases were originally designed to detect workers (Researchers /
 Devil's Advocate / Critic) giving up mid-task; in clarify mode, the

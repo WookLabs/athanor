@@ -96,11 +96,61 @@ def _validate_session_id(session_id: str) -> bool:
     return bool(SESSION_ID_PATTERN.match(session_id))
 
 
-def get_state_dir(session_id: str, project_root: Path | None = None) -> Path | None:
-    """Return `.athanor/sessions/<session_id>/.hook-state/`, creating it if absent.
+def _athanor_opt_in(root: Path) -> bool:
+    """Return True iff this project has opted into athanor via `athanor.json`.
 
-    Returns None if `session_id` fails validation or no project root can be
-    found. Caller treats None as "no state available" and falls open.
+    Walks up from `root` looking for `athanor.json`, stopping at a `.git/`
+    boundary (the v0.7.9 parent-dir hijack guard: an `athanor.json` above
+    the repo root is NOT honoured from inside the repo). Mirrors the
+    walk-up/.git-boundary logic in
+    `_athanor_hook_runtime._find_athanor_config_path()`, but is parametrized
+    by an explicit start dir (that helper resolves from cwd / env only).
+
+    Opt-in is the v0.18.x Phase 4 gate: state-dir creation is a no-op in
+    repos that never opted in, so a stray hook never materializes a
+    `.athanor/` tree as a side effect (closes the P15 `/tmp/.athanor`
+    debris incident).
+    """
+    try:
+        cur = root.resolve()
+    except (OSError, RuntimeError):
+        return False
+    for _ in range(8):
+        if (cur / "athanor.json").is_file():
+            return True
+        if (cur / ".git").is_dir():
+            # .git boundary upward — do not cross repo root looking for an
+            # ancestor athanor.json (hijack guard).
+            return False
+        if cur.parent == cur:
+            break
+        cur = cur.parent
+    return False
+
+
+def get_state_dir(
+    session_id: str,
+    project_root: Path | None = None,
+    *,
+    create: bool = True,
+) -> Path | None:
+    """Return `.athanor/sessions/<session_id>/.hook-state/`.
+
+    Opt-in gate (v0.18.x Phase 4): the directory is only ever created in a
+    project that has opted into athanor via `athanor.json` (resolved by
+    walking up from the project root, stopping at the `.git` boundary). In a
+    repo with no `athanor.json`, this returns None and creates nothing — a
+    hook running in a non-athanor checkout leaves no `.athanor/` debris.
+
+    `create` (keyword-only):
+      - True (default): create the directory if absent (and opted in), then
+        return it. Write helpers use this.
+      - False: never create. Return the path only if it already exists, else
+        None. Read helpers use this so a pure read materializes nothing.
+
+    Returns None if `session_id` fails validation, no project root can be
+    found, the project has not opted in, or (`create=False`) the dir does
+    not yet exist. Caller treats None as "no state available" and falls open.
     """
     if not _validate_session_id(session_id):
         _stderr(f"invalid session_id {session_id!r}; refusing to create state dir")
@@ -108,7 +158,15 @@ def get_state_dir(session_id: str, project_root: Path | None = None) -> Path | N
     root = project_root if project_root is not None else _project_dir()
     if root is None:
         return None
+    if not _athanor_opt_in(root):
+        # No athanor.json resolves from this root — project has not opted in.
+        # Create nothing; fall open. (Not an error: routine for non-athanor
+        # checkouts, so no stderr breadcrumb.)
+        return None
     state_dir = root / ".athanor" / "sessions" / session_id / ".hook-state"
+    if not create:
+        # Read path: never materialize. Return the dir only if it exists.
+        return state_dir if state_dir.is_dir() else None
     try:
         state_dir.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -190,7 +248,7 @@ def read_nonce_state(
     session_id: str, project_root: Path | None = None
 ) -> dict | None:
     """Read the nonce state for `session_id` or None if absent/corrupt."""
-    state_dir = get_state_dir(session_id, project_root)
+    state_dir = get_state_dir(session_id, project_root, create=False)
     if state_dir is None:
         return None
     return _read_json_safe(state_dir / "nonce.json")
@@ -200,7 +258,7 @@ def delete_nonce_state(
     session_id: str, project_root: Path | None = None
 ) -> None:
     """Delete the nonce state (one-shot consumption). Silent on missing file."""
-    state_dir = get_state_dir(session_id, project_root)
+    state_dir = get_state_dir(session_id, project_root, create=False)
     if state_dir is None:
         return
     try:
@@ -227,7 +285,7 @@ def read_stop_counter(
     session_id: str, project_root: Path | None = None
 ) -> int:
     """Read consecutive-blocks count. Returns 0 if absent or corrupt."""
-    state_dir = get_state_dir(session_id, project_root)
+    state_dir = get_state_dir(session_id, project_root, create=False)
     if state_dir is None:
         return 0
     data = _read_json_safe(state_dir / "stop-counter.json")
@@ -280,7 +338,7 @@ def read_profile_snapshot(
     session_id: str, project_root: Path | None = None
 ) -> dict | None:
     """Read the profile-snapshot state for `session_id` or None if absent."""
-    state_dir = get_state_dir(session_id, project_root)
+    state_dir = get_state_dir(session_id, project_root, create=False)
     if state_dir is None:
         return None
     return _read_json_safe(state_dir / "profile-snapshot.json")

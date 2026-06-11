@@ -215,19 +215,6 @@ LEGACY_V1_PATTERN = re.compile(
     re.IGNORECASE,
 )
 # v0.11.8 deprecation sentinel: marks vendored skill output emitted from a
-# DROP/LIFT-class skill scheduled for removal at v0.12.0. The carve-out
-# pattern is anchored at the first non-whitespace line of the response (same
-# anchoring as SENTINEL_PATTERN above). When matched, main() exits 0
-# silently — the response body is documentation prose about a deprecated
-# skill and material-claim detection should not fire on it. Distinct from
-# the v=2 verification-emission sentinel: no nonce, no body-hash binding;
-# this is a static literal carve-out, NOT an evidence proof. Pattern source:
-# skills/{ce|sp}-*/SKILL.md preamble block (4 lines: sentinel + DEPRECATION
-# warning + Rationale + Migration).
-DEPRECATION_SENTINEL_PATTERN = re.compile(
-    r"^\s*<!--\s*athanor:deprecated\s+v=1\s+since=0\.11\.8\s+removal=0\.12\.0\s*-->",
-    re.IGNORECASE,
-)
 ACTIVE_SESSION = hook_state.__dict__.get("ACTIVE_SESSION", "active")
 
 # Material-claim phrase whitelist — ported verbatim from the v0.7.7 prompt
@@ -1121,20 +1108,19 @@ def main() -> int:
         hook_state.reset_stop_counter(ACTIVE_SESSION)
         return 0  # silent re-entry skip
 
-    # v0.11.8 carve-out: response from a deprecated skill (DROP/LIFT class).
-    # Static literal sentinel (no nonce, no body-hash). Exit 0 silently so
-    # the surrounding deprecation prose does not retrigger material-claim
-    # detection. Placed before is_material_claim so the carve-out fires
-    # even when the body contains a phrase like "tests pass" inside the
-    # migration narrative.
-    if DEPRECATION_SENTINEL_PATTERN.match(last_msg):
-        hook_state.reset_stop_counter(ACTIVE_SESSION)
-        return 0
-
     if not is_material_claim(last_msg):
         return 0  # no material claim; nothing to gate
 
     # Material claim present → check circuit breaker before blocking.
+    #
+    # v0.18.x Phase 4: state persistence is opt-in (athanor.json). In an
+    # opted-out checkout (config_path is None) `read_stop_counter` always
+    # returns 0 and `write_stop_counter` is a no-op — the gate still fires
+    # fail-open, but the circuit breaker cannot accumulate across turns.
+    # That is acceptable (a repo with the hook installed but no athanor.json
+    # is misconfigured; the stderr below already points at the off switch).
+    # We only emit a breadcrumb on a GENUINE persistence failure (opted-in
+    # repo where the write nonetheless failed), never on routine opt-out.
     threshold = _read_stop_loop_threshold()
     counter = hook_state.read_stop_counter(ACTIVE_SESSION)
     if counter >= threshold:
@@ -1150,7 +1136,16 @@ def main() -> int:
         hook_state.reset_stop_counter(ACTIVE_SESSION)
         return 0
 
-    hook_state.write_stop_counter(ACTIVE_SESSION, counter + 1)
+    counter_persisted = hook_state.write_stop_counter(ACTIVE_SESSION, counter + 1)
+    if not counter_persisted and config_path is not None:
+        # Opted-in repo but the counter write failed — genuine error worth a
+        # breadcrumb (the circuit breaker won't accumulate this turn). Routine
+        # opt-out (config_path is None) is silent.
+        _stderr(
+            "could not persist circuit-breaker counter despite athanor.json "
+            f"at {config_path}; the stop-loop breaker may not accumulate "
+            "(gate still fail-open). Check .athanor/ write permissions."
+        )
     _stderr(
         "material claim detected in last response without fresh verification "
         "evidence. Invoke the `verification-before-completion` skill NOW to "

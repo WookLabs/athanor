@@ -368,7 +368,7 @@ Phase 7은 6 완료 후.
 - [x] Honesty residuals documented (D2 Codex stage + Bash subprocess)
 - [x] Migration guide: `docs/v0.18.0-migration.md`
 
-### v0.18.1 — git-worktree isolation per subtask (DEFERRED)
+### Deferred: git-worktree isolation per subtask
 
 **Status: deferred behind admission criteria.** Both deep-tier
 reviewers (Planner A Claude, Planner B Codex) converged on shipping
@@ -388,11 +388,12 @@ in-process scope locks are insufficient.
    prevented. Single instance suffices because team-mode collisions
    compound across waves.
 
-Until at least one trigger fires, v0.18.1 stays scoped and is not on
-the active development path. `docs/v0.18.0-migration.md` describes the
-Freeze stage as load-bearing on its own.
+Until at least one trigger fires, the git-worktree isolation work
+stays scoped and is not on the active development path.
+`docs/v0.18.0-migration.md` describes the Freeze stage as load-bearing
+on its own.
 
-### v0.18.2 — UserPromptSubmit injection (DEFERRED)
+### Deferred: UserPromptSubmit injection
 
 **Status: deferred behind a design precondition.**
 
@@ -409,9 +410,9 @@ log-only probe in `~/.claude/settings.json`, trigger a real prompt
 submission, capture the JSON payload to `.athanor/spikes/ups-payload-*.json`,
 and only then begin design work on the injection contract.
 
-Until the spike completes, v0.18.2 stays unscoped. Premature design
-work would replay the v0.7.8 -> v0.11.2 input-layer fail-open pattern
-(payload shape assumed wrong).
+Until the spike completes, the UserPromptSubmit injection work stays
+unscoped. Premature design work would replay the v0.7.8 -> v0.11.2
+input-layer fail-open pattern (payload shape assumed wrong).
 
 ### v0.19.0 — PostToolUse evidence sniffer (placeholder)
 
@@ -431,5 +432,5 @@ fields via transcript-event introspection rather than self-report
 trust.
 
 This entry is a placeholder — full Plan B planning kicks off when
-v0.18.0 stabilises and v0.18.1 / v0.18.2 admission criteria are
-re-evaluated.
+v0.18.0 stabilises and the git-worktree / UserPromptSubmit deferral
+admission criteria are re-evaluated.

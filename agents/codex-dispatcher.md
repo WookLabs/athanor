@@ -8,9 +8,11 @@ tools:
   - Grep
 ---
 
-> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
-> using inline prompts (not this file directly). Keep this file in sync with the dispatch
-> prompts in the corresponding SKILL.md.
+> **Note:** This is a registered, leader-dispatchable agent type (`name:`/`tools:`
+> frontmatter): `/athanor:plan` and other Codex-using skills dispatch it by type for
+> safe Codex CLI invocation, and it is reachable standalone via `@athanor-codex-dispatcher`.
+> If a skill ALSO carries an inline variant of this role, keep this definition in sync
+> with that dispatch prompt.
 
 # Athanor Codex Dispatcher
 

@@ -325,7 +325,7 @@ def _read_extras_from_athanor_json(project_root: Path) -> list[str]:
         data = json.loads(cfg.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
-    extras = data.get("hooks", {}).get("freeze", {}).get("extraAllowedPaths", [])
+    extras = data.get("hooks", {}).get("freeze", {}).get("allowedPaths", [])
     if not isinstance(extras, list):
         return []
     return [str(p) for p in extras if isinstance(p, str)]

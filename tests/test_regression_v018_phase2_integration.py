@@ -99,7 +99,7 @@ def _setup_project(
     if freeze_mode != "off" or extra_paths is not None:
         cfg["hooks"]["freeze"] = {"mode": freeze_mode}
         if extra_paths is not None:
-            cfg["hooks"]["freeze"]["extraAllowedPaths"] = list(extra_paths)
+            cfg["hooks"]["freeze"]["allowedPaths"] = list(extra_paths)
     (tmp_path / "athanor.json").write_text(
         json.dumps(cfg), encoding="utf-8"
     )

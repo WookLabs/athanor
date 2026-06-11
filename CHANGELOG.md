@@ -3,6 +3,29 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **athanor-codex companion plugin** (`plugins/athanor-codex/`). A second-runtime mirror of the athanor native skill set for the Codex CLI — 13 skills (`athanor-analyze`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`). Prefix-safe, no Claude hooks, repo-local marketplace entry. See `plugins/athanor-codex/README.md`. (P8: top-level ledger entries — CHANGELOG, README, STATE.md, DEPENDENCIES.md — now document the companion.)
+- **P9 — athanor-lfg-goal companion parity.** The companion's `athanor-lfg-goal` skill now matches the parent's UNDETERMINED non-blocking rule (`8 VALID + 1 UNDETERMINED` → passes); a two-way derived test pins both sides so either drifting breaks the suite.
+
+### Fixed
+
+- **CI — pyyaml added to pip install in `validate-plugin.yml`.** The codex-companion regression test (`test_regression_codex_companion.py`) imports `yaml` at module level; CI's fresh Python env had no PyYAML, causing collection failure on both ubuntu and windows runners.
+- **P14 — Stop-gate carve-out removed (security).** Dead `DEPRECATION_SENTINEL` path in `scripts/hooks/stop_verify_claims.py` provided a permanent Stop-gate bypass that could never be triggered legitimately; removed entirely. The bypass was a dead code path, not a runtime opt-out — its removal closes the hole with no functional regression.
+- **P2 — Freeze allowlist dead-on-arrival fix.** `scripts/work/build_freeze_allowlist.py` failed silently for absolute paths (the v0.18.0 freeze allowlist was DOA for absolute-path entries). Adds absolute-path relativization and unifies `allowedPaths`/`extraAllowedPaths` key naming.
+- **P13 — Force-push guard segment-scoped.** `scripts/hooks/pretool_kernel_guard.py` force-push matcher now uses a `(?![\w-])` word-boundary so `feature/main-update` and similar branches are no longer false-positived; exact `main`/`master` slash-segments stay blocked. Force-push guard now also strips `sudo`/`env` wrapper prefixes before segment matching, re-blocking `sudo git push --force origin main`; remaining wrapper class (`xargs`/`time`/`nice`/option-argument forms) is documented as accepted scope.
+- **P16 — NotebookEdit/MultiEdit added to Kernel Guard coverage.** Both tool names added to the PreToolUse guard so notebook and multi-edit destructive patterns are subject to the same checks as Bash/Edit.
+- **P15 — Hook-state opt-in lifecycle.** Hooks no longer create `.athanor/sessions/<id>/.hook-state/` as a side effect in repos that have never opted in. The directory is now created only after `athanor.json` is detected (opt-in gate), preventing filesystem debris in non-athanor repos.
+- **P19 — STATE.md stale ledger rows corrected.** Contract-ledger and agent-frontmatter rows updated to reflect current enforcement status; refuted known-gaps (frontmatter tests "absent", transcript-parser contingency) deleted.
+- **`extract_target_path` return annotation corrected to `str | None`.** Test coverage added for hook-state opt-in `.git`-boundary and `tests/_version.py` fail-loud raises.
+
+### Changed
+
+- **Fable 5 audit rounds 1–2.** Round 1 (043244c): Tier 1+2+3 corrections — athanor-codex install docs, guard fixes, test pins. Round 2 (65d0136–b35965c, 8 commits, P2/P5–P11/P13–P20): doc-contract parity P5/P6/P7/P17; stop-phrase whitelist canonicalized with pointers P10; plugin version literal centralized via `tests/_version.py` P18; setup dead `models` config block deleted and triggers de-scoped P11; English triggers added to analyze/work/discuss skills P11; ROADMAP deferred headings re-keyed to stable codenames P20.
+- **P20 — ROADMAP deferred headings re-keyed.** Headings previously keyed as `v0.18.1`/`v0.18.2` (colliding with shipped versions) replaced with stable codenames (`git-worktree isolation` / `UserPromptSubmit injection`); release-evidence test re-pointed to codename anchors.
+
 ## [0.18.7] — 2026-06-07
 
 ### Changed — plugin diet (de-register 7 reference-only agents; honesty cleanup)

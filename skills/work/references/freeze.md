@@ -46,15 +46,16 @@ entry points:
   - `allowed_paths`: union of (a) all subtask `files:` entries (deduped,
     normalized to project-relative POSIX paths), (b) session defaults
     (see below), (c) user extras from
-    `athanor.json` `hooks.freeze.extraAllowedPaths`.
+    `athanor.json` `hooks.freeze.allowedPaths`.
   - `session_id`: the session identifier (used by the guard for
     cross-checks against `transcript_path` ancestor).
   - `built_at`: ISO-8601 UTC timestamp.
   - `source`: dict noting which plan generated the allowlist
     (`plan_md_sha256`, subtask count).
 - `write_allowlist(allowlist: dict, output_path: str) -> None` —
-  atomic write via tempfile + rename (mirrors `oneshot/_io.py` style).
-  Target path is `.athanor/sessions/<id>/freeze-allowlist.json`.
+  atomic write via tempfile + rename (write to a sibling temp file,
+  then `os.replace` into place). Target path is
+  `.athanor/sessions/<id>/freeze-allowlist.json`.
 
 ### Default-included paths
 
@@ -71,7 +72,7 @@ write session artifacts):
 
 ### User extension
 
-`athanor.json` `hooks.freeze.extraAllowedPaths: list[str]` is unioned
+`athanor.json` `hooks.freeze.allowedPaths: list[str]` is unioned
 into `allowed_paths` at build time. **Extras extend, never replace,**
 the dynamic allowlist. This is the supported mechanism for users to
 allow project-wide tooling paths (e.g., `CHANGELOG.md`, `STATE.md`)
@@ -155,8 +156,9 @@ missing config only for kernel, fail-open on missing config for freeze**
 
 ## Bash write-pattern gating (conservative)
 
-Freeze gates the Claude `Edit` / `Write` / `MultiEdit` tools fully (the
-destination `file_path` is the gated path). For `Bash`, freeze applies
+Freeze gates the Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit`
+tools fully (the destination path is the gated path — `file_path` for
+Edit/Write/MultiEdit, `notebook_path` for NotebookEdit). For `Bash`, freeze applies
 a **conservative pattern match** against the command string. Gated
 patterns:
 
@@ -205,7 +207,7 @@ Enforcement (planned)"). Not promised in v0.18.0.
   "hooks": {
     "freeze": {
       "mode": "off",
-      "extraAllowedPaths": []
+      "allowedPaths": []
     }
   }
 }
@@ -213,10 +215,10 @@ Enforcement (planned)"). Not promised in v0.18.0.
 
 - `mode`: one of `"off"` (default — gate is silent, freeze evaluator
   never runs) or `"session"` (freeze evaluator runs on every
-  PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / scoped
-  `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
+  PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit` /
+  scoped `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
   v0.18.x and v0.19.0.
-- `extraAllowedPaths`: list of project-relative paths or globs to
+- `allowedPaths`: list of project-relative paths or globs to
   union into every session's allowlist. Useful for project-wide
   artifacts the plan doesn't always re-declare (`CHANGELOG.md`,
   `docs/STATE.md`).

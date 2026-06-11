@@ -45,16 +45,14 @@ The canonical intent source is the latest athanor session plan. Full contract in
 
 ```
 .athanor/sessions/<LATEST>/plan.md
-.athanor/sessions/<LATEST>/deep-plan.md
-.athanor/sessions/<LATEST>/lite-plan.md
 ```
 
 ### Resolution rules
 
 1. **Latest-session selection.** Let `S` be the immediate child directories of `.athanor/sessions/` whose names match `^\d{4}-\d{2}-\d{2}-\d{3}$`. Sort `S` lexicographically descending; take the first element as `<LATEST>`. Names that do not match are ignored. Directory mtime and git-tracked status do not influence selection.
-2. **Precedence (existence-based).** Within `<LATEST>`, try the three filenames in strict order: `plan.md` > `deep-plan.md` > `lite-plan.md`. The first that exists wins. No mtime comparison, no content merging, no fallback to older sessions.
-3. **Plan-revision rule.** Read the winning file as it exists on disk at invocation time (mtime is the tie-breaker only across revisions of the same file). If the file begins with a YAML frontmatter block containing `canonical: true`, honor that as pinned-canonical regardless of mtime. Absence, `canonical: false`, or malformed frontmatter all resolve to "latest mtime wins".
-4. **Abort behavior.** If `.athanor/sessions/` does not exist, OR no directory in `S` matches the id pattern, OR `<LATEST>` contains none of the three filenames — abort with an error naming the missing path(s). Do NOT fall back to an older session, an untracked plan file elsewhere, or `decisions.md`.
+2. **Plan file (single canonical name).** Within `<LATEST>`, the intent source is `plan.md`. (Pre-v0.17.0 `/athanor:plan` could emit `deep-plan.md` / `lite-plan.md`; since the S07 `--depth=` collapse all three tiers converge to `plan.md`, so it is the only name checked.) No content merging, no fallback to older sessions.
+3. **Plan-revision rule.** Read `plan.md` as it exists on disk at invocation time (mtime is the tie-breaker only across revisions of the same file). If the file begins with a YAML frontmatter block containing `canonical: true`, honor that as pinned-canonical regardless of mtime. Absence, `canonical: false`, or malformed frontmatter all resolve to "latest mtime wins".
+4. **Abort behavior.** If `.athanor/sessions/` does not exist, OR no directory in `S` matches the id pattern, OR `<LATEST>` lacks `plan.md` — abort with an error naming the missing path. Do NOT fall back to an older session, an untracked plan file elsewhere, or `decisions.md`.
 
 `decisions.md` is intentionally out of scope for this contract: it is a locked-choice ledger, not a scope statement.
 
@@ -84,10 +82,8 @@ if [[ -d ".athanor/sessions" ]]; then
     | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$' \
     | sort -r | head -n1)
   if [[ -n "$LATEST" ]]; then
-    for candidate in plan.md deep-plan.md lite-plan.md; do
-      [[ -f ".athanor/sessions/$LATEST/$candidate" ]] \
-        && PLAN_FILE=".athanor/sessions/$LATEST/$candidate" && break
-    done
+    [[ -f ".athanor/sessions/$LATEST/plan.md" ]] \
+      && PLAN_FILE=".athanor/sessions/$LATEST/plan.md"
   fi
 fi
 
@@ -95,7 +91,7 @@ fi
 # Per Mandatory Compliance, must NOT fall back to commit messages alone.
 if [[ -z "$PLAN_FILE" ]]; then
   echo "ABORT: no intent source in latest session (${LATEST:-<none>})"
-  echo "Looked for: .athanor/sessions/${LATEST:-<none>}/{plan.md,deep-plan.md,lite-plan.md}"
+  echo "Looked for: .athanor/sessions/${LATEST:-<none>}/plan.md"
   echo "Remediation: run /athanor:plan to create a plan, or verify .athanor/sessions/ contains a session dir matching YYYY-MM-DD-NNN with a plan file."
   exit 1
 fi

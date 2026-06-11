@@ -27,14 +27,12 @@ Leader (SKILL.md)                 Worker (Agent tool)
 ```
 Agent({
   description: "간결한 작업 설명 (3-5 단어)",
-  model: "{athanor.json models 설정에 따라}",
   prompt: "{dispatch packet — 아래 포맷 참조}"
 })
 ```
 
 - **병렬 dispatch**: 독립적인 worker는 하나의 메시지에 여러 Agent 호출로 병렬 실행
 - **순차 dispatch**: 의존성 있으면 이전 worker 결과 수신 후 다음 dispatch
-- **model 선택**: athanor.json의 `models` 설정 참조. 미지정 시 기본 모델 사용
 
 ### 에러 핸들링
 

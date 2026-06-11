@@ -22,13 +22,15 @@ from pathlib import Path
 
 import pytest
 
+from tests._version import _plugin_version
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Five-file version parity tracks the live release. Bumped to 0.18.7 by the
-# v0.18.7 plugin-diet ceremony (de-register 7 inline-only pipeline agents,
-# DESIGN stale-command fix, config honesty labels). The CHANGELOG/STATE/migration
-# prose locks below still assert the v0.18.0 ceremony evidence, which remains present.
-TARGET_VERSION = "0.18.7"
+# Five-file version parity tracks the live release, derived from plugin.json via
+# tests._version._plugin_version() so it follows every release bump without edits.
+# The CHANGELOG/STATE/migration prose locks below still assert the v0.18.0 ceremony
+# evidence (the [0.18.0] heading, Freeze headline, D2 residual), which remains present.
+TARGET_VERSION = _plugin_version()
 
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"
@@ -103,20 +105,34 @@ def test_migration_doc_exists():
 
 
 def test_roadmap_documents_v018_deferrals():
-    """MUST — docs/ROADMAP.md documents v0.18.1 and v0.18.2 deferrals."""
+    """MUST — docs/ROADMAP.md durably documents both Freeze-era deferrals.
+
+    The deferred entries are keyed by stable codename ("Deferred:
+    git-worktree isolation per subtask" / "Deferred: UserPromptSubmit
+    injection"), NOT by version number — the v0.18.1/v0.18.2 numbers were
+    consumed by real SHIPPED releases for different content, so keying the
+    deferrals off them would collide with the CHANGELOG.
+    """
     body = ROADMAP_MD.read_text(encoding="utf-8")
-    assert "v0.18.1" in body, "ROADMAP must reference v0.18.1"
-    assert "v0.18.2" in body, "ROADMAP must reference v0.18.2"
-    # v0.18.1 admission criteria must be present (one of three trigger words).
+    # Both deferrals must be present under stable codename headings.
+    assert "Deferred: git-worktree isolation per subtask" in body, (
+        "ROADMAP must carry the 'Deferred: git-worktree isolation per "
+        "subtask' codename heading"
+    )
+    assert "Deferred: UserPromptSubmit injection" in body, (
+        "ROADMAP must carry the 'Deferred: UserPromptSubmit injection' "
+        "codename heading"
+    )
+    # git-worktree deferral admission criteria must be present (stable tokens).
     assert (
         "freeze-violations.jsonl" in body
         or "git-worktree" in body
-    ), "ROADMAP v0.18.1 must document admission criteria"
-    # v0.18.2 design precondition must mention UPS / UserPromptSubmit.
+    ), "ROADMAP git-worktree deferral must document admission criteria"
+    # UserPromptSubmit deferral design precondition must mention UPS / UPS spike.
     assert (
         "UserPromptSubmit" in body
         or "UPS" in body
-    ), "ROADMAP v0.18.2 must reference UserPromptSubmit precondition"
+    ), "ROADMAP UserPromptSubmit deferral must reference its precondition"
 
 
 # --- B. Version parity across 5-file manifest ---

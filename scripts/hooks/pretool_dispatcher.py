@@ -176,9 +176,15 @@ def main() -> int:
     if allowlist is None:
         return 0
 
+    # Resolve the project root so freeze_guard can relativize ABSOLUTE
+    # tool-target paths (real Claude Code payloads send absolute file_path
+    # values; the allowlist stores project-relative POSIX paths). None is
+    # tolerated — freeze_guard falls back to its own cwd-coupled resolver.
+    root = _runtime.resolve_project_root()
+
     try:
         freeze_exit, freeze_msg = freeze_evaluate(
-            payload, allowlist, mode=mode, config=config
+            payload, allowlist, mode=mode, config=config, project_root=root
         )
     except Exception as exc:  # noqa: BLE001 — defensive: never brick PreToolUse
         _stderr(f"freeze_guard raised {type(exc).__name__}; passing (fail-open)")

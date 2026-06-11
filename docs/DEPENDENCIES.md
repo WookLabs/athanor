@@ -10,21 +10,23 @@ Athanor's general policy is to **prefer installable companions over vendoring** 
 |-------|--------|-----------|-------------------|
 | `verification-before-completion` | superpowers v5.0.7 | Stop hook must have a guaranteed local target. Skill is small (~140 lines); drift cost minimal. (Decision #5, plan synthesis 2026-04-14) | **Permanent** |
 | `scope-drift` | claude-octopus (SHA `3c260845...`) | Source repo (claude-octopus) is T3 — no marketplace presence. Vendor is the only path. (Pilot PR1b 2026-04-14) | **Permanent** |
+| `ce-test-browser` | compound-engineering v3.8.3 (MIT) | Sole CE skill retained after v0.12.0 atomic cut (D8 KEEP). Browser automation capability with no equivalent in athanor-native skills; removing it would eliminate a distinct workflow category. | **Permanent** |
 
 ## Recommended Companion Plugins
 
 | Plugin | Source | Tested version | Required? |
 |--------|--------|----------------|-----------|
 | superpowers | `claude-plugins-official` marketplace | 5.0.7 | No (recommended) |
+| athanor-codex | repo-local (`plugins/athanor-codex/`) | bundled | No (Codex CLI users) |
 
-Install via `/plugin install superpowers@claude-plugins-official`. Run `/athanor:setup` to audit.
+Install superpowers via `/plugin install superpowers@claude-plugins-official`. Install athanor-codex via `codex plugin marketplace add <repo>/.agents/plugins/marketplace.json && codex plugin add athanor-codex@athanor`. See `plugins/athanor-codex/README.md` for install and refresh details. The athanor-codex companion requires the Codex CLI; it has no Claude hooks and does not affect the Claude Code plugin runtime. Run `/athanor:setup` to audit installed companions.
 
 ## Intent-Source Contract (scope-drift skill)
 
 The `scope-drift` skill compares working-tree changes against the canonical plan-of-record. The plan-of-record is determined by:
 
 1. **Latest session selection**: lexicographic-descending sort of `.athanor/sessions/{YYYY-MM-DD}-{NNN}/` directories; pick first.
-2. **File precedence**: within selected session, try `plan.md > deep-plan.md > lite-plan.md`; first match wins.
+2. **Plan file**: within the selected session, the intent source is `plan.md` (single canonical name since v0.17.0/S07 collapsed `deep-plan.md`/`lite-plan.md` into `/athanor:plan --depth=`).
 3. **Plan-revision rule**: latest mtime of the chosen file wins. Override: `canonical: true` YAML frontmatter pins a specific revision.
 4. **Self-reference exclusion** (excluded from drift scan):
    - `.athanor/sessions/**/*`

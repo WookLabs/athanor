@@ -208,6 +208,7 @@ class TestG3AtomicWriteRaceFix:
     def test_concurrent_writes_no_leftover_tempfiles(self, tmp_path):
         """Multiple rapid writes to the same target should not leave
         orphaned tempfiles behind."""
+        (tmp_path / "athanor.json").write_text("{}", encoding="utf-8")
         (tmp_path / ".athanor").mkdir()
         session = "concurrent-test"
         for i in range(20):
@@ -224,6 +225,7 @@ class TestG3AtomicWriteRaceFix:
     def test_atomic_write_functional_correctness(self, tmp_path):
         """Verify _atomic_write_json still works correctly after the
         suffix change (functional smoke test)."""
+        (tmp_path / "athanor.json").write_text("{}", encoding="utf-8")
         (tmp_path / ".athanor").mkdir()
         hook_state.write_nonce_state("s1", "abc", "def", project_root=tmp_path)
         state = hook_state.read_nonce_state("s1", project_root=tmp_path)

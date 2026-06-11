@@ -13,7 +13,7 @@ description: >
   '목표 달성까지 돌려', 'ralph loop', 'goal-driven ship',
   '/athanor:lfg-goal', 'athanor lfg-goal', 'iterate until goal met'.
 user-invocable: true
-allowed-tools: Bash, Read, Write, Skill
+allowed-tools: Bash, Read, Write, Task, AskUserQuestion, Skill
 ---
 
 # /athanor:lfg-goal — Athanor-native Goal-Driven Validated Ralph Loop
@@ -49,8 +49,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 - For a single feature ship without goal-level iteration —
   use `/athanor:lfg` directly.
-- For one-off planning without execution — use `/athanor:plan` or
-  `/athanor:lite-plan`.
+- For one-off planning without execution — use `/athanor:plan`
+  (optionally `--depth=lite`).
 - For casual conversation or exploratory questions —
   use `/athanor:discuss`.
 - For a one-shot review without commit/push — use `/athanor:review`.
@@ -694,11 +694,12 @@ invariant is introduced (D11):
    awaiting user confirmation). Per-cycle receipts are validator-
    authored.
 2. **Cross-model adversarial planning** — preserved at two layers:
-   (a) each cycle's `/athanor:plan` still runs Planner A Claude +
-   Planner B Codex + Critic; (b) Tier-2 goal-check ALSO runs
-   cross-model judge-A (Claude) + judge-B (Codex). The goal-loop
-   EXTENDS cross-model adversarial coverage to goal-level judgment,
-   not just per-cycle planning.
+   (a) each cycle's `/athanor:plan` runs whichever tier its `--depth=`
+   selects per the Tier Dispatch Table (`skills/plan/SKILL.md`), with
+   `codex.enabled` gating only the in-tier Codex fallback; (b) Tier-2
+   goal-check ALSO runs cross-model judge-A (Claude) + judge-B (Codex).
+   The goal-loop EXTENDS cross-model adversarial coverage to goal-level
+   judgment, not just per-cycle planning.
 3. **Spec-then-TDD discipline** — each cycle's `/athanor:work`
    invocation continues to apply Splitter `execution_note`
    classification + conjunction-of-three Phase 3 gate. The goal-loop

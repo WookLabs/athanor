@@ -35,13 +35,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 After every reviewer (one per lens) returns, the Leader MUST check the result for
 **stop-phrase patterns** before consolidating. See `CLAUDE.md` §"Defense Mechanisms /
-Stop-Phrase Detection". If any pattern appears in a reviewer's output:
-
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-Phrase Detection". Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
+If any pattern appears in a reviewer's output:
 
 → Re-dispatch that reviewer once with the same prompt prefixed by `"Complete the lens
 review fully. Do not stop early. Cite evidence (file:line) for every finding."`.
