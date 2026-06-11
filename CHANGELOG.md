@@ -12,6 +12,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **CI — pyyaml added to pip install in `validate-plugin.yml`.** The codex-companion regression test (`test_regression_codex_companion.py`) imports `yaml` at module level; CI's fresh Python env had no PyYAML, causing collection failure on both ubuntu and windows runners.
 - **P14 — Stop-gate carve-out removed (security).** Dead `DEPRECATION_SENTINEL` path in `scripts/hooks/stop_verify_claims.py` provided a permanent Stop-gate bypass that could never be triggered legitimately; removed entirely. The bypass was a dead code path, not a runtime opt-out — its removal closes the hole with no functional regression.
 - **P2 — Freeze allowlist dead-on-arrival fix.** `scripts/work/build_freeze_allowlist.py` failed silently for absolute paths (the v0.18.0 freeze allowlist was DOA for absolute-path entries). Adds absolute-path relativization and unifies `allowedPaths`/`extraAllowedPaths` key naming.
 - **P13 — Force-push guard segment-scoped.** `scripts/hooks/pretool_kernel_guard.py` force-push matcher now uses a `(?![\w-])` word-boundary so `feature/main-update` and similar branches are no longer false-positived; exact `main`/`master` slash-segments stay blocked. Force-push guard now also strips `sudo`/`env` wrapper prefixes before segment matching, re-blocking `sudo git push --force origin main`; remaining wrapper class (`xargs`/`time`/`nice`/option-argument forms) is documented as accepted scope.
