@@ -659,3 +659,33 @@ def test_freeze_guard_raise_fail_open_with_traceback(monkeypatch, tmp_path, caps
         "stderr must include the raised exception's message via the traceback; "
         f"stderr={captured.err!r}"
     )
+
+
+def test_main_threads_resolved_root_into_freeze_evaluate(monkeypatch, tmp_path):
+    """The FINAL hop of the M6 root-threading chain: the same root ``main()``
+    resolved must arrive at ``freeze_guard.evaluate_payload`` as the
+    ``project_root`` kwarg. ``test_main_resolves_root_once_and_threads_it``
+    pins the ``_read_freeze_allowlist`` hop but short-circuits (allowlist →
+    None) before ``freeze_evaluate``; this sibling drives main() into the
+    freeze branch with a valid allowlist and inspects the kwarg itself."""
+    import freeze_guard
+
+    captured = {}
+
+    def _capturing_evaluate(payload, allowlist, **kwargs):
+        captured["called"] = True
+        captured["project_root"] = kwargs.get("project_root")
+        return 0, None
+
+    monkeypatch.setattr(freeze_guard, "evaluate_payload", _capturing_evaluate)
+    _drive_main_into_freeze_branch(monkeypatch, tmp_path)
+
+    rc = dispatcher.main()
+    assert rc == 0
+    assert captured.get("called"), (
+        "main() never reached freeze_evaluate despite a valid allowlist"
+    )
+    assert captured["project_root"] == tmp_path, (
+        "main() must thread the SAME resolved root into freeze_evaluate as "
+        f"project_root; got {captured['project_root']!r}, expected {tmp_path!r}"
+    )

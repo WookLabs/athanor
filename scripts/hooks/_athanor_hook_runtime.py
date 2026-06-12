@@ -3,7 +3,8 @@
 Athanor v0.17.0 shared hook runtime — minimalist helpers used by both
 `stop_verify_claims.py` and `pretool_kernel_guard.py`.
 
-Per S06 scope (minimalist, Plan B-adopted):
+Surface (items 1–4 are the original S06 scope, minimalist, Plan B-adopted;
+5–6 were added by later audit rounds):
   1. `read_stdin_payload()` — parse PreToolUse/Stop event JSON from stdin.
      Fail-open on malformed. Returns dict or None.
   2. `read_athanor_config()` — walk up from cwd to find athanor.json.
@@ -12,10 +13,18 @@ Per S06 scope (minimalist, Plan B-adopted):
   3. `is_hook_profile_off(config)` — returns True if
      `hooks.profile == "off"`. Used by all hooks for opt-out.
   4. `resolve_project_root()` — walk-up to find .git or athanor.json.
-     Returns Path or None.
+     Returns Path or None. Memoized on (cwd, $HOME) (v0.18.8 M7).
+  5. `_walk_up(...) -> WalkResult` — the unified bounded walk-up core
+     (v0.18.8 P1) behind 2./4. here and hook_state's `_athanor_opt_in` /
+     `_project_dir`; the frozen `WalkResult` record preserves each call
+     site's divergent `.git`/`$HOME`-stop disposition.
+  6. `WRITE_TOOLS` / `extract_target_path(tool_name, tool_input)` — the
+     mutating-tool name tuple + per-tool target-path extraction shared by
+     the PreToolUse guards (kernel cred gate, freeze write gate).
 
 DESIGN PRINCIPLES (per C1 conflict resolution adopting Plan B):
-  - No framework, no class hierarchy — bare module-level helpers.
+  - No framework, no class hierarchy beyond the single frozen `WalkResult`
+    result dataclass — otherwise bare module-level helpers.
   - No new behavior, no new policy. Each helper is a tightening of the
     minimal common slice between the two existing scripts.
   - Per-script defensive elaborations (audit-breadcrumb mechanisms,
@@ -133,8 +142,10 @@ def _walk_up(
       4. filesystem root (``cur.parent == cur``) → halt, no flags.
 
     Bounded by ``depth`` levels (default ``_WALK_UP_DEPTH`` — the SOLE named
-    walk-up depth constant). All call sites flow their bound from here; no
-    ``range(8)`` literal survives at any call site.
+    walk-up depth constant). All four of ``_walk_up``'s unified call sites
+    flow their bound from here; no ``range(8)`` literal survives at any of
+    them (the Stop-hook and capability-probe walkers retain their own
+    independent loops — out of this consolidation's scope).
     """
     if marker_check is None:  # pragma: no cover - defensive; all callers pass one
         raise TypeError("_walk_up requires a marker_check callable")
@@ -171,12 +182,12 @@ def _walk_up(
 @lru_cache(maxsize=None)
 def _resolve_project_root_cached(cwd: str, home: str | None) -> Path | None:
     """Memoized core of :func:`resolve_project_root`, keyed on
-    ``(cwd, $HOME)`` so the per-Stop walk-up runs once per (cwd, home) pair.
+    ``(cwd, $HOME)`` so the walk-up runs once per (cwd, home) pair.
 
     ``cwd`` / ``home`` are passed in as strings (hashable, and they form the
-    cache identity) even though the actual walk re-derives ``cwd`` from
-    ``Path.cwd()`` inside ``_walk_up`` — the strings are the *key*, and a
-    caller only reaches here after ``os.getcwd()`` matched this ``cwd``.
+    cache identity), and the walk below starts from ``Path(cwd)`` — the same
+    string that forms the cache key — so the memo key and the traversal
+    origin are identical by construction.
     """
 
     def _is_root(p: Path) -> bool:
@@ -197,10 +208,12 @@ def resolve_project_root() -> Path | None:
     or ``athanor.json``. Returns that Path, or ``None`` if nothing found
     within the walk-up bounds.
 
-    Memoized on ``(cwd, $HOME)`` (v0.18.8): repeat calls within the same Stop
-    event resolve from cache instead of re-walking. Call
-    ``resolve_project_root.cache_clear()`` to drop the memo (tests + any
-    caller that intentionally changes cwd mid-process).
+    Memoized on ``(cwd, $HOME)`` (v0.18.8): the cache key is stable for the
+    process lifetime, and hooks run as one-shot subprocesses, so the memo's
+    production value is bounded — it guards against repeat resolution within
+    a single hook process, not across events. Call
+    ``resolve_project_root.cache_clear()`` to drop the memo if the repo
+    layout can change under a long-lived process (tests do this).
 
     Used by callers that want a stable reference dir (e.g., for resolving
     session paths). Does NOT consult ``$CLAUDE_PROJECT_DIR`` — that's

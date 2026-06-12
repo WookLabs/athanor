@@ -270,19 +270,25 @@ def test_find_config_path_env_missing_file_falls_through(tmp_path, monkeypatch):
 
 
 def test_walk_up_depth_8_bound(tmp_path):
-    """`_walk_up` visits at most `_WALK_UP_DEPTH` (8) levels. A marker placed
-    9 levels above `start` is NOT reached; the walk returns match=None.
-    `_WALK_UP_DEPTH` stays the SOLE named depth constant (no `range(8)`
-    literals survive in hook_state.py — see test_hook_state_no_range8_literal).
+    """`_walk_up` visits at most `_WALK_UP_DEPTH` (8) levels: start (level 0)
+    through level 7. The far marker sits at EXACTLY level 8 above `start` —
+    the FIRST level the depth-8 loop must NOT visit — so an over-walk by even
+    one level (`range(depth + 1)` visits levels 0..8) flips this test RED
+    (a marker any higher would tolerate one-level over-walks). The level-7
+    `near` control below pins the lower edge (an under-walk `range(depth - 1)`
+    misses it). `_WALK_UP_DEPTH` stays the SOLE named depth constant (no
+    `range(8)` literals survive in hook_state.py — see
+    test_hook_state_no_range8_literal).
     """
     assert runtime._WALK_UP_DEPTH == 8
-    # Build start with 8 ancestors + a 9th-level marker dir above the bound.
+    # Build start = d8 with 9 ancestors inside tmp_path: tmp_path/d0/.../d8.
     deep = tmp_path
     for i in range(9):  # tmp_path/d0/d1/.../d8  → start = d8 (9 dirs deep)
         deep = deep / f"d{i}"
     deep.mkdir(parents=True)
-    # Marker at tmp_path (the 9th ancestor of `deep`): name "MARKER".
-    marker_dir = tmp_path
+    # Marker at d0 = deep.parents[7] — exactly level 8 above `start`, the
+    # boundary level: unreached at depth 8, reached at depth 9.
+    marker_dir = deep.parents[7]
 
     def marker_check(p: Path) -> bool:
         return p == marker_dir.resolve()
@@ -291,7 +297,7 @@ def test_walk_up_depth_8_bound(tmp_path):
         start=deep, marker_check=marker_check, stop_at_git=False, stop_at_home=False
     )
     assert res.match is None, (
-        f"_walk_up exceeded depth-8 bound and reached the 9th-level marker: {res}"
+        f"_walk_up exceeded the depth-8 bound and reached the level-8 marker: {res}"
     )
 
     # Control: a marker exactly 7 levels up (within bound) IS reached.

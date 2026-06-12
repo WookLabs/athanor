@@ -52,7 +52,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from _athanor_hook_runtime import WalkResult, _walk_up  # noqa: E402,F401
+from _athanor_hook_runtime import _walk_up  # noqa: E402
 
 # Whitelist for session IDs — anything outside this charset is rejected to
 # prevent `../` traversal or shell metacharacter injection via crafted
