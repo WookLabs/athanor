@@ -739,3 +739,169 @@ def test_absolute_bash_redirect_relativized_with_project_root(freeze_guard, tmp_
         _bash(f"echo 'x' > {abs_out}"), al, mode="session", project_root=tmp_path
     )
     assert blocked == 2
+
+
+# ---------------------------------------------------------------------------
+# Subtask 5 (M10) — `_relativize_target` escape coverage
+# ---------------------------------------------------------------------------
+#
+# `_relativize_target(target, root)` is the absolute→project-relative shim the
+# session-mode freeze guard runs before the allowlist match. M10 audits its
+# escape surface across three vectors:
+#
+#   (a) An absolute path whose `..` segments climb out of root via an INNER
+#       traversal (`{root}/sub/../../etc/x`). `relative_to(root)` keeps the
+#       `..` lexically (it does not collapse them), then `_path_in_allowlist`
+#       runs `posixpath.normpath`, which resolves the climb to a leading `..`
+#       that matches no allowlist prefix → BLOCKED (fail-closed).
+#   (b) An absolute path ENTIRELY outside root (`/etc/passwd`). `relative_to`
+#       raises `ValueError`; `_relativize_target` returns it UNCHANGED (still
+#       absolute), so it matches no relative allowlist entry → BLOCKED.
+#   (c) A SYMLINK inside root that points outside root. `_relativize_target`
+#       is LEXICAL-ONLY — it calls neither `.resolve()` nor `os.path.realpath`
+#       — so `{root}/<link>/secret.py` relativizes to an in-root-LOOKING
+#       `<link>/secret.py` that CAN match an allowlist glob even though the
+#       real file is outside root. That escape is asserted as a documented
+#       `xfail` (see the symlink test for the decision rationale).
+#
+# The (a)/(b) tests exercise `_relativize_target` directly AND through the full
+# `evaluate_payload` session-mode path so the unit boundary and the integrated
+# block-decision are both pinned. None of these may be silently allowed.
+
+
+def test_relativize_lexical_only_no_resolve(freeze_guard):
+    """M10 premise pin — `_relativize_target` performs a LEXICAL relativization:
+    it must NOT call `.resolve()` or `os.path.realpath`. This is the factual
+    basis for the symlink-escape xfail below; if a future change adds real-path
+    resolution this guard trips so the symlink test's xfail status is revisited
+    deliberately rather than drifting."""
+    import inspect
+
+    src = inspect.getsource(freeze_guard._relativize_target)
+    assert ".resolve(" not in src, (
+        "_relativize_target gained a .resolve() call — it is no longer lexical; "
+        "the symlink-escape xfail below must be re-evaluated (it should now XPASS)"
+    )
+    assert "realpath" not in src, (
+        "_relativize_target gained an os.path.realpath call — no longer lexical; "
+        "re-evaluate the symlink-escape xfail below"
+    )
+
+
+def test_relativize_inner_traversal_escape_blocked(freeze_guard, tmp_path):
+    """M10 (a) — an absolute path that climbs out of root via inner `..`
+    (`{root}/sub/../../etc/x`) must be BLOCKED in session mode.
+
+    `Path(target).relative_to(root)` keeps the `..` segments lexically
+    (`sub/../../etc/x`); `_path_in_allowlist` then runs `posixpath.normpath`,
+    collapsing the climb to a leading `../etc/x` that matches no allowlist
+    prefix — fail-closed, never silently allowed."""
+    root = tmp_path
+    # Unit boundary: the relativized form keeps the inner `..` segments.
+    escaping = str(root / "sub" / ".." / ".." / "etc" / "x")
+    rel = freeze_guard._relativize_target(escaping, root)
+    assert ".." in rel, (
+        "the inner traversal must survive lexically as `..` segments so normpath "
+        "can resolve it to an out-of-root leading `..` (got %r)" % rel
+    )
+    assert not freeze_guard._path_in_allowlist(
+        rel, [".athanor/sessions/2026-06-11-001/**", "src/**", "etc/**"]
+    ), "an inner-`..` climb out of root must not match any allowlist prefix"
+
+    # Integrated path: session mode blocks the edit (exit 2), never allows.
+    al = _allowlist(["src/foo.py", "etc/x"], session_dir=root)
+    exit_code, stderr = freeze_guard.evaluate_payload(
+        _edit(escaping), al, mode="session", project_root=root
+    )
+    assert exit_code == 2, (
+        "an absolute path climbing out of root via inner `..` must be BLOCKED "
+        "(fail-closed), never silently allowed"
+    )
+    assert "BLOCKED" in stderr
+
+
+def test_relativize_absolute_outside_root_escape_blocked(freeze_guard, tmp_path):
+    """M10 (b) — an absolute path ENTIRELY outside root (no shared prefix) must
+    be BLOCKED in session mode.
+
+    `relative_to(root)` raises `ValueError`, so `_relativize_target` returns the
+    path UNCHANGED (still absolute). An absolute string matches no relative
+    allowlist entry → fail-closed."""
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    outside = tmp_path / "elsewhere" / "secret.py"
+
+    # Unit boundary: an outside-root absolute path is returned unchanged.
+    rel = freeze_guard._relativize_target(str(outside), project_root)
+    assert rel == str(outside), (
+        "an absolute path outside root must be returned unchanged (still "
+        "absolute) so it matches no relative allowlist entry"
+    )
+    assert os.path.isabs(rel)
+    # Against a REALISTIC session allowlist (relative exact + prefix globs) the
+    # still-absolute path matches nothing — fail-closed. (A pathological catch-all
+    # like `**/secret.py` would match any tail; that is not a session allowlist
+    # shape, so we assert the realistic entries a built allowlist actually holds.)
+    assert not freeze_guard._path_in_allowlist(
+        rel, ["secret.py", "src/**", ".athanor/sessions/2026-06-11-001/**"]
+    )
+
+    # Integrated path: session mode blocks it.
+    al = _allowlist(["secret.py"], session_dir=project_root)
+    exit_code, stderr = freeze_guard.evaluate_payload(
+        _edit(str(outside)), al, mode="session", project_root=project_root
+    )
+    assert exit_code == 2, (
+        "an absolute path entirely outside root must be BLOCKED (fail-closed)"
+    )
+    assert "BLOCKED" in stderr
+
+
+@pytest.mark.xfail(
+    reason="lexical-only: _relativize_target does not resolve(), a symlink CAN escape",
+    strict=False,
+)
+def test_relativize_symlink_escape_blocked(freeze_guard, tmp_path):
+    """M10 (c) — MANDATORY symlink case, asserted as a documented `xfail`.
+
+    DECISION (Subtask 5): we chose the `xfail` option (not a test pinning the
+    current allowed-behavior) because `_relativize_target` is LEXICAL-ONLY —
+    it calls neither `.resolve()` nor `os.path.realpath` (pinned by
+    `test_relativize_lexical_only_no_resolve`). Construct a symlink INSIDE root
+    that points OUTSIDE root: `{root}/src -> {tmp}/outside`. An edit to
+    `{root}/src/secret.py` has its REAL file at `{tmp}/outside/secret.py`
+    (outside root), yet `_relativize_target` lexically yields the in-root-LOOKING
+    `src/secret.py`, which matches the legitimate `src/**` allowlist glob — so
+    session mode currently ALLOWS (exit 0) an edit that physically escapes root.
+
+    This test ASSERTS the SECURE behavior (the escape is BLOCKED, exit 2).
+    Today that assertion FAILS → the test `xfail`s, honestly recording that the
+    lexical guard does not contain a symlink escape. If someone later teaches
+    `_relativize_target` to resolve real paths, this test will start passing and
+    XPASS — a loud signal to flip it to a normal passing test. Plain (non-strict)
+    `xfail` matches the file's conventions and the suite's existing xpass tolerance.
+    """
+    root = tmp_path / "project"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.py").write_text("SECRET", encoding="utf-8")
+
+    # Symlink inside root pointing at the outside dir: root/src -> ../outside
+    (root / "src").symlink_to(outside, target_is_directory=True)
+
+    target = str(root / "src" / "secret.py")
+    # Sanity: the REAL file is genuinely outside root (the escape is real).
+    assert os.path.realpath(target) == str(outside / "secret.py")
+    assert not os.path.realpath(target).startswith(str(root.resolve()) + os.sep)
+
+    al = _allowlist(["src/**"], session_dir=root)
+    exit_code, _ = freeze_guard.evaluate_payload(
+        _edit(target), al, mode="session", project_root=root
+    )
+    # Secure expectation (currently UNMET → xfail): a write whose real target
+    # escapes root via a symlink must be BLOCKED.
+    assert exit_code == 2, (
+        "a symlink inside root pointing outside root lets the edit escape; the "
+        "lexical guard must resolve real paths to block it (currently does not)"
+    )

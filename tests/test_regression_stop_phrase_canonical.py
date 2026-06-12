@@ -113,3 +113,70 @@ def test_claude_md_pointer_resolves_to_whitelist_doc() -> None:
         "CLAUDE.md pointer target docs/stop-phrase-whitelist.md does not "
         "resolve to an existing file."
     )
+
+
+# The bare slug that fingerprints a stop-phrase-whitelist pointer line. It is a
+# substring of the full canonical pointer path (POINTER_TARGET below), so any
+# file that legitimately points at the doc contains BOTH.
+WHITELIST_SLUG = "stop-phrase-whitelist"
+# The full canonical pointer reference every member of the derived set must
+# carry. Discovery is by the bare slug; the per-member assertion is the full
+# path — a wider-discovery / narrower-assertion split so that corrupting a
+# pointer's PATH (e.g. dropping the `docs/` prefix) while leaving the slug keeps
+# the file in the derived set yet fails the assertion (a genuine RED), instead
+# of silently dropping the file out of scope.
+POINTER_TARGET = "docs/stop-phrase-whitelist.md"
+
+
+def test_every_skill_pointer_member_carries_canonical_pointer() -> None:
+    """Assertion 5 (M4 per-skill pointer-presence): the set of skill files
+    that point at the canonical stop-phrase whitelist is DERIVED dynamically
+    by rglobbing skills/ for *.md files containing the literal
+    ``stop-phrase-whitelist`` slug — it is NOT a hardcoded path list.
+
+    Why the derived set is canonical: the pointer pattern (a 1-line "see
+    docs/stop-phrase-whitelist.md" reference replacing the formerly-embedded
+    enumeration) is added/removed per skill as skills are authored or retired.
+    A hardcoded membership list would silently go stale the moment a skill is
+    added or removed — passing vacuously while the real tree diverged. Letting
+    the live tree define the set at test time is the whole point: the assertion
+    set is exactly "whatever in skills/ claims to carry the pointer right now."
+
+    Two invariants are pinned:
+      a. NON-EMPTY: the rglob must discover at least one member. An empty set
+         (e.g. after a skills/ directory rename or a glob typo) must FAIL loud,
+         not pass vacuously — a vacuous "every member is fine" over zero
+         members would hide a total loss of coverage.
+      b. COMPLETENESS: every discovered member must contain the FULL canonical
+         pointer reference ``docs/stop-phrase-whitelist.md``. Because the slug
+         is a substring of that path, a well-formed pointer satisfies both the
+         discovery predicate and this assertion; a member that keeps the slug
+         but corrupts/truncates the path (a half-broken pointer) stays in the
+         derived set and fails here — the RED this guard exists to catch.
+    """
+    members = [
+        md
+        for md in sorted(SKILLS_DIR.rglob("*.md"))
+        if WHITELIST_SLUG in md.read_text(encoding="utf-8")
+    ]
+
+    # Invariant (a): the derived set must be non-empty.
+    assert members, (
+        "No skills/*.md file contains the "
+        f"{WHITELIST_SLUG!r} slug. The pointer set is derived dynamically by "
+        "rglobbing skills/ — an empty result means the pointers vanished or "
+        "skills/ moved/renamed. This must fail loud rather than pass "
+        "vacuously over zero members."
+    )
+
+    # Invariant (b): every derived member carries the full canonical pointer.
+    missing = [
+        str(md.relative_to(REPO_ROOT))
+        for md in members
+        if POINTER_TARGET not in md.read_text(encoding="utf-8")
+    ]
+    assert not missing, (
+        f"These skill files contain the {WHITELIST_SLUG!r} slug but not the "
+        f"full canonical pointer {POINTER_TARGET!r} (a corrupted/truncated "
+        f"pointer): {missing}"
+    )
