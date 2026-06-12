@@ -321,6 +321,8 @@ Judge B = goal_met (or split — show both).
 Confirm goal is achieved? [yes / continue-iterating / abort]
 ```
 
+cycle·goal-completion 보고는 해석된 `output.language`에 맞춘다; ledger 필드/판정 토큰/센티널은 영어; 완료-주장 어조 회피. 즉 이 ratification 프롬프트의 user-facing 안내 문구(예: "목표가 달성되었는지 확인할까요? [yes / continue-iterating / abort]")와 아래 응답 처리 안내는 해석된 언어로 제시하되, machine-parsed 토큰은 영어로 둔다 — 옵션 토큰 `[yes / continue-iterating / abort]`·`receipt-validator`·`Tier 1 mechanical`·`Judge A = goal_met`·`validation_status` enum 값·ledger 필드 키·G-markers·DONE 센티널은 언어 무관 항상 영어. 해석 규칙은 `skills/setup/SKILL.md` §`output.language 해석 (canonical)` (Present-to-User 직전 해석; 파일 부재·malformed·미지원 값 → en).
+
 User responses:
 
 - **yes** → write `goal-completion.md`, set ledger `status: complete`,

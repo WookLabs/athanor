@@ -286,6 +286,16 @@ section in the PR body and proceed to step 9. The autopilot contract is
 
 Emit the completion sentinel so caller workflows can detect end-of-pipeline.
 
+Language directive (best-effort advisory): 단계·최종 보고는 해석된
+`output.language`에 맞춘다; 커밋 메시지/PR 본문/센티널/GATE 키워드는 영어;
+완료-주장 어조(`완료했습니다`) 회피 — 사실 서술 사용. The DONE 센티널 above,
+the `fix(review):` / `fix(ci):` commit templates, the `## Residual Review
+Findings` / `## CI Failures Unresolved` PR body labels, and `GATE: STOP`
+keywords are machine-parsed and stay English; only user-facing explanation
+prose follows the resolved language. Resolve the value per
+`skills/setup/SKILL.md` §`output.language 해석 (canonical)` (Present-to-User
+직전 해석; 파일 부재·malformed·미지원 값 → en).
+
 ---
 
 ## Athanor identity invariants
