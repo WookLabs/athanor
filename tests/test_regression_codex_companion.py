@@ -3,6 +3,121 @@
 The Codex companion is intentionally separate from the Claude Code plugin
 runtime. It must expose prefix-safe Codex skills and a repo-local marketplace
 entry without changing Athanor's Claude hooks or command surface.
+
+Companion-vs-parent pin directionality (M5 — one-way-pin rationale)
+==================================================================
+
+Most assertions in this module pin the companion plugin's content against
+*hardcoded literals* (token lists, manifest values, dir-name sets). Exactly
+one assertion *derives* its expectation from the parent (native Claude)
+surface at test time. The distinction matters: a two-way derived pin breaks
+the moment EITHER side drifts; a one-way verbatim pin breaks ONLY when the
+companion drifts from the named literal — a parent-side edit alone does NOT
+trip it. This block enumerates which pins are which and WHY one-way is the
+correct (fail-loud, not fail-silent) choice for each one-way group.
+
+Why one-way is acceptable in general
+------------------------------------
+A one-way pin asserts the companion still carries a *published contract
+surface* (status vocabulary the worker must emit, LFG step headings users
+type, the receipt-validator table, the release ceremony surface, etc.).
+These surfaces are deliberately versioned: they should change only through a
+considered companion release, never silently follow whatever the parent
+happens to evolve into. If we instead *derived* every companion expectation
+from the parent, a routine parent reword would silently mutate the
+companion's asserted contract — masking a real divergence the maintainer
+needs to see and ratify. The companion is a separate published artifact, so
+"the parent changed, therefore the companion expectation changed too" is the
+wrong default. With a one-way pin, a parent change that SHOULD propagate
+surfaces as a loud, located failure at companion-update time (the literal no
+longer matches), forcing a deliberate edit + re-pin rather than an invisible
+drift. This is the same fail-loud-over-silent-fallback stance the repo holds
+elsewhere: a stale pin is a feature, not a bug — it is the alarm.
+
+Two-way DERIVED pin (breaks if EITHER companion OR parent drifts)
+-----------------------------------------------------------------
+* UNDETERMINED non-blocking parity rule
+  -> ``test_codex_lfg_goal_undetermined_rule_matches_parent``
+  Reads BOTH ``PARENT_RECEIPT_VALIDATOR``
+  (``skills/lfg-goal/references/receipt-validator.md``) AND
+  ``CODEX_LFG_GOAL_SKILL``. It first re-asserts the canonical UNDETERMINED
+  tokens against the parent (a derivation guard: if the parent rule is
+  reworded or removed the test fails and *forces re-derivation*), then
+  asserts the companion mirrors the same non-blocking semantics. This pin is
+  intentionally two-way because the aggregate-status rule ("8 VALID + 1
+  UNDETERMINED still aggregates as all_valid, provided no step is INVALID")
+  is a *shared algorithm contract*, not a companion-local prose surface — the
+  two artifacts MUST agree on the actual gate semantics, so divergence on
+  either side is a real bug worth a hard failure. (Note ``_normalize_ws``
+  exists only to make this comparison whitespace-insensitive across markdown
+  reflow; it is plumbing for this one two-way test.)
+
+One-way VERBATIM pins (break ONLY when the companion drifts from the literal)
+----------------------------------------------------------------------------
+Plan-named groups:
+
+* status vocabulary
+  -> ``test_codex_work_skill_absorbs_execution_contract_without_hooks``
+  Pins the ATHANOR_RESULT status enum the Codex worker must emit
+  (``done_with_concerns`` / ``needs_context`` / ``blocked``) plus the
+  execution-class tokens (Spec-then-TDD / test-aware / direct) and the
+  no-hook-enforcement disclaimer, as companion-only literals. One-way is
+  right: this is the worker's own output protocol; it must stay stable for
+  the leader's parser regardless of how parent prose evolves.
+
+* LFG step headings
+  -> ``test_codex_lfg_skill_absorbs_end_to_end_pipeline_contract``
+  Pins the user-facing pipeline step headings (``Step 1`` plan ...
+  ``Step 8`` CI) and the ``<promise>DONE</promise>`` sentinel as
+  companion-only literals. One-way is right: these step labels are a
+  published surface Codex users follow; a parent renumbering should force a
+  deliberate companion edit, not silently rewrite the asserted headings.
+
+* receipt table
+  -> ``test_codex_lfg_goal_skill_includes_receipt_validator_table``
+  Pins the 9-step verification-command table and its aggregate buckets
+  (``VALID`` / ``INVALID`` / ``UNDETERMINED`` / ``all_valid`` /
+  ``completed_with_residuals`` / ``invalid_steps_present``) as companion-only
+  literals. (Contrast: the *semantics* of the UNDETERMINED bucket are
+  two-way derived above; this group pins only that the table's vocabulary is
+  *present* in the companion, which is a companion-local structural surface.)
+  One-way is right: the table is a published validator contract that should
+  change only on a deliberate companion release.
+
+* release surface
+  -> ``test_codex_release_skill_absorbs_release_ceremony_contract``
+  Pins the release-ceremony surface (5-file version bump set, the
+  ``python3 scripts/check_release_ready.py --ci`` gate command, the
+  no-Task-dispatch disclaimer) as companion-only literals. One-way is right:
+  the release surface is a stable operational contract; a stale pin firing at
+  companion-update time is exactly the alarm a maintainer wants.
+
+Additional one-way groups (same rationale — companion-only structural/contract
+surfaces; a parent edit alone must NOT silently move the expectation):
+
+* ``test_codex_companion_manifest_is_codex_native`` — Codex manifest shape
+  (``skills`` path, absence of ``hooks``/``mcpServers``/``apps``, interface
+  display/long-description tokens).
+* ``test_codex_companion_marketplace_selector`` — repo-local marketplace
+  entry (source path, install/auth policy, category).
+* ``test_codex_companion_exposes_only_prefix_safe_skills`` — the exact
+  ``EXPECTED_SKILLS`` dir-name set and per-skill ``athanor-`` prefix.
+* ``test_codex_companion_keeps_claude_runtime_separate`` — Claude runtime
+  files present AND the companion ships no ``hooks`` dir (separation invariant).
+* ``test_codex_companion_documents_install_and_refresh_flow`` — README install
+  command *shapes* (deliberately NOT a machine-specific absolute path, per the
+  v0.18.7 ``06_athanor`` regression) plus a fail-loud guard on the stale path.
+* ``test_codex_discuss_skill_absorbs_dual_mode_contract`` — dual-mode tokens
+  (synthesis/clarify, the four gap labels, one-question-per-turn).
+* ``test_codex_analyze_skill_absorbs_fast_analysis_contract`` — fast-analysis
+  contract tokens.
+* ``test_codex_verify_skill_absorbs_completion_evidence_contract`` —
+  completion-evidence tokens plus the no-Stop-hook-enforcement disclaimer.
+* ``test_codex_lfg_goal_skill_absorbs_receipt_ledger_contract`` — the durable
+  goal-ledger contract tokens (ledger paths, G-markers, 3-tier check,
+  maxIterations, no-hook disclaimer).
+* ``test_codex_ci_watch_skill_absorbs_ci_autofix_contract`` — CI autofix-loop
+  tokens (``gh`` commands, maxIterations, no-fabricated-status disclaimer).
 """
 
 from __future__ import annotations
