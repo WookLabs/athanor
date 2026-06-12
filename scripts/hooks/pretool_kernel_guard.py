@@ -96,14 +96,25 @@ _RM_ROOT_OR_HOME_TARGET = re.compile(
 )
 
 
-def _is_destructive_rm(command: str) -> bool:
+def _is_destructive_rm(
+    command: str, segments: Optional[list[str]] = None
+) -> bool:
     """True if `command` has an `rm` invocation that is recursive AND force AND
     targets filesystem root or home — any flag order, with optional intervening
-    options, including shell-glob forms (`/*`, `~/*`)."""
+    options, including shell-glob forms (`/*`, `~/*`).
+
+    `segments` is an optional precomputed `_command_segments(command)` result:
+    when `None` (the default) it is computed internally; when supplied, the
+    passed list is used verbatim. This lets the Bash branch of
+    `evaluate_payload` split the command ONCE and share it across both the
+    destructive-rm and force-push checks (M8 perf batch) — identical verdicts,
+    only the redundant per-checker split is avoided."""
     # Reason per command segment (P13 shared splitter) so a later command's
     # tokens don't bleed into this rm's analysis; within a segment, take the
     # text after the `rm` token as its argument span.
-    for segment in _command_segments(command):
+    if segments is None:
+        segments = _command_segments(command)
+    for segment in segments:
         m = re.search(r"\brm\b(.*)", segment)
         if m is None:
             continue
@@ -199,6 +210,14 @@ _BASH_READER_KEYWORDS = ("cat", "less", "more", "head", "tail", "bat")
 # (v0.18.6 bug hunt R1: `head -n 5 .env` previously captured `5`, not `.env`).
 _BASH_READER_VALUE_OPTS = frozenset({"-n", "-c", "--lines", "--bytes"})
 
+# Tool names whose target path the credential gate inspects: `Read` (kept as an
+# EXPLICIT, separate reference — it is not a write tool, see
+# _athanor_hook_runtime) plus the write-class tools (Write/Edit/MultiEdit/
+# NotebookEdit) sourced from the shared WRITE_TOOLS tuple. Hoisted to a
+# module-level frozenset (was `{"Read"} | set(_runtime.WRITE_TOOLS)` rebuilt on
+# every Read/write-tool payload) so the set is constructed once at import.
+_CRED_GATE_TOOLS = frozenset({"Read", *_runtime.WRITE_TOOLS})
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -287,9 +306,16 @@ def _read_profile() -> str:
 # Rule dispatchers
 # ---------------------------------------------------------------------------
 
-def _check_destructive_shell(command: str) -> str | None:
-    """Return matched description if the command is destructive, else None."""
-    if _is_destructive_rm(command):
+def _check_destructive_shell(
+    command: str, segments: Optional[list[str]] = None
+) -> str | None:
+    """Return matched description if the command is destructive, else None.
+
+    `segments` is an optional precomputed `_command_segments(command)` result
+    threaded into the segment-scoped `_is_destructive_rm` check (M8 perf
+    batch); the regex-driven DESTRUCTIVE_PATTERNS run against the whole
+    `command` string as before. Verdicts are unchanged."""
+    if _is_destructive_rm(command, segments):
         return "rm -rf targeting filesystem root or home"
     for pattern, description in DESTRUCTIVE_PATTERNS:
         if pattern.search(command):
@@ -353,8 +379,15 @@ def _strip_force_push_wrappers(segment: str) -> str:
     return " ".join(tokens[i:])
 
 
-def _check_force_push(command: str) -> bool:
+def _check_force_push(
+    command: str, segments: Optional[list[str]] = None
+) -> bool:
     """Return True if the command force-pushes to a protected branch.
+
+    `segments` is an optional precomputed `_command_segments(command)` result:
+    `None` (default) computes it internally; a supplied list is used verbatim,
+    shared with the destructive-rm check so the Bash branch splits ONCE (M8
+    perf batch). Verdicts are identical either way.
 
     Segment-scoped (P13): the `git push`, a force flag, and the `main`/`master`
     token must all co-occur within a SINGLE command segment (split on `&&`,
@@ -376,7 +409,9 @@ def _check_force_push(command: str) -> bool:
     `xargs`/`time`/`nice` wrappers, `sudo -u <user>` option-argument forms,
     shell aliases. Acceptable for a fat-finger guardrail (see module docstring).
     """
-    for segment in _command_segments(command):
+    if segments is None:
+        segments = _command_segments(command)
+    for segment in segments:
         stripped = _strip_force_push_wrappers(segment)
         if not _SEGMENT_IS_GIT_PUSH.match(stripped):
             continue
@@ -511,8 +546,13 @@ def evaluate_payload(
         if not isinstance(command, str) or not command:
             return (0, "")
 
+        # Split the command into P13 segments ONCE and share the list across
+        # both segment-scoped checks (M8 perf batch) — the destructive-rm and
+        # force-push checkers otherwise each recompute `_command_segments`.
+        segments = _command_segments(command)
+
         # Rule 1: destructive shell
-        destructive = _check_destructive_shell(command)
+        destructive = _check_destructive_shell(command, segments)
         if destructive is not None:
             return (
                 2,
@@ -521,7 +561,7 @@ def evaluate_payload(
             )
 
         # Rule 2: force-push to protected branches
-        if _check_force_push(command):
+        if _check_force_push(command, segments):
             return (
                 2,
                 "BLOCKED: force-push to main/master. Use a feature branch.",
@@ -544,8 +584,10 @@ def evaluate_payload(
     # The write-class tools (Write/Edit/MultiEdit/NotebookEdit) come from the
     # shared WRITE_TOOLS tuple so the credential gate covers all of them; the
     # target path is resolved via `extract_target_path` so NotebookEdit's
-    # `notebook_path` key is honored (every other tool uses `file_path`).
-    if tool_name in ({"Read"} | set(_runtime.WRITE_TOOLS)):
+    # `notebook_path` key is honored (every other tool uses `file_path`). The
+    # gated-tool set is the module-level `_CRED_GATE_TOOLS` frozenset (hoisted
+    # so it is not rebuilt on every payload).
+    if tool_name in _CRED_GATE_TOOLS:
         path = _runtime.extract_target_path(tool_name, tool_input)
         if not isinstance(path, str) or not path:
             return (0, "")

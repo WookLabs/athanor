@@ -48,6 +48,16 @@ DISPATCHER = SCRIPTS_HOOKS / "pretool_dispatcher.py"
 KERNEL_GUARD = SCRIPTS_HOOKS / "pretool_kernel_guard.py"
 HOOKS_JSON = REPO_ROOT / "hooks" / "hooks.json"
 
+# In-process import of the dispatcher for the root-threading unit tests below
+# (the subprocess suite above stays black-box; these exercise the helper
+# signatures directly). Mirrors the sys.path convention in
+# test_regression_v0188_walkup_unification.py.
+if str(SCRIPTS_HOOKS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_HOOKS))
+
+import pretool_dispatcher as dispatcher  # noqa: E402
+import _athanor_hook_runtime as runtime  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Subprocess helper (mirrors v0.16.0 pattern from test_regression_v016_…)
@@ -379,4 +389,192 @@ def test_kernel_guard_subprocess_entry_still_runs():
     assert proc.returncode == 2, (
         f"kernel guard direct invocation must still block rm -rf /, "
         f"got rc={proc.returncode}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 2a (M6) — root threading through _latest_session_dir /
+# _read_freeze_allowlist / main(). Behavior-preserving refactor: with
+# root=None each helper self-resolves (back-compat); main() resolves ONCE and
+# threads the value so both consumers anchor to the same root.
+# ---------------------------------------------------------------------------
+
+
+def _make_session_with_allowlist(tmp_path: Path, name: str, allow: dict) -> Path:
+    """Create `<tmp>/.athanor/sessions/<name>/freeze-allowlist.json` and
+    return the session dir Path."""
+    session_dir = tmp_path / ".athanor" / "sessions" / name
+    session_dir.mkdir(parents=True)
+    (session_dir / "freeze-allowlist.json").write_text(
+        json.dumps(allow), encoding="utf-8"
+    )
+    return session_dir
+
+
+def _counting_resolver(return_value):
+    """Return (fn, calls) where fn() records its invocation count and
+    returns ``return_value`` — used to prove resolve-ONCE / no-resolve."""
+    calls = {"n": 0}
+
+    def fn():
+        calls["n"] += 1
+        return return_value
+
+    return fn, calls
+
+
+def test_latest_session_dir_honors_explicit_root(tmp_path, monkeypatch):
+    """An explicit ``root`` is used verbatim — the helper must NOT call the
+    resolver at all when root is supplied."""
+    _make_session_with_allowlist(tmp_path, "2026-06-12-002", {"allowed_paths": []})
+    _make_session_with_allowlist(tmp_path, "2026-06-12-001", {"allowed_paths": []})
+
+    resolver, calls = _counting_resolver(None)  # would yield None if ever called
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    got = dispatcher._latest_session_dir(root=tmp_path)
+    assert got is not None
+    assert got.name == "2026-06-12-002", "latest (lexicographic) must be chosen"
+    assert calls["n"] == 0, (
+        "explicit root must short-circuit the resolver; "
+        f"resolver called {calls['n']}x"
+    )
+
+
+def test_latest_session_dir_self_resolves_when_root_none(tmp_path, monkeypatch):
+    """``root=None`` (the back-compat default) self-resolves via the
+    runtime resolver — identical to pre-refactor behavior."""
+    _make_session_with_allowlist(tmp_path, "2026-06-12-005", {"allowed_paths": []})
+
+    resolver, calls = _counting_resolver(tmp_path)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    got = dispatcher._latest_session_dir()  # root defaults to None
+    assert got is not None and got.name == "2026-06-12-005"
+    assert calls["n"] == 1, "root=None must self-resolve exactly once"
+
+
+def test_latest_session_dir_none_root_fail_open(tmp_path, monkeypatch):
+    """When the resolver yields None (no project root), the helper returns
+    None → dispatcher fail-open. Bit-for-bit with pre-refactor."""
+    resolver, calls = _counting_resolver(None)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+    assert dispatcher._latest_session_dir() is None
+    assert calls["n"] == 1
+    # Explicit root=None is the same path (the default), still fail-open.
+    assert dispatcher._latest_session_dir(root=None) is None
+
+
+def test_read_freeze_allowlist_threads_explicit_root(tmp_path, monkeypatch):
+    """``_read_freeze_allowlist(root)`` threads ``root`` into
+    ``_latest_session_dir`` — proven by loading the allowlist under an
+    explicit root WITHOUT the resolver ever firing, and by ``_session_dir``
+    pointing inside that root."""
+    session_dir = _make_session_with_allowlist(
+        tmp_path, "2026-06-12-007", {"allowed_paths": ["src/a.py"]}
+    )
+
+    resolver, calls = _counting_resolver(None)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    data = dispatcher._read_freeze_allowlist(root=tmp_path)
+    assert data is not None
+    assert data["allowed_paths"] == ["src/a.py"]
+    assert data["_session_dir"] == str(session_dir), (
+        "allowlist must be anchored to the session under the supplied root"
+    )
+    assert calls["n"] == 0, "explicit root must not trigger the resolver"
+
+
+def test_read_freeze_allowlist_self_resolves_when_root_none(tmp_path, monkeypatch):
+    """``root=None`` back-compat: the allowlist read self-resolves the root
+    via the runtime resolver, exactly as before the refactor."""
+    session_dir = _make_session_with_allowlist(
+        tmp_path, "2026-06-12-009", {"allowed_paths": ["x.py"]}
+    )
+    resolver, calls = _counting_resolver(tmp_path)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    data = dispatcher._read_freeze_allowlist()  # root defaults to None
+    assert data is not None and data["allowed_paths"] == ["x.py"]
+    assert data["_session_dir"] == str(session_dir)
+    assert calls["n"] == 1, "root=None must self-resolve exactly once"
+
+
+def test_read_freeze_allowlist_none_root_fail_open(monkeypatch):
+    """None root (no project root) → None allowlist → dispatcher fail-open."""
+    resolver, _ = _counting_resolver(None)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+    assert dispatcher._read_freeze_allowlist() is None
+    assert dispatcher._read_freeze_allowlist(root=None) is None
+
+
+def test_main_resolves_root_once_and_threads_it(tmp_path, monkeypatch):
+    """``main()`` on the freeze-enabled path resolves the project root EXACTLY
+    once and threads that same root into ``_read_freeze_allowlist``.
+
+    Observed via a counting wrapper on ``resolve_project_root`` (call-count
+    must be 1, not 2 — the prior code resolved separately for the allowlist
+    read and for freeze_evaluate) and by capturing the ``root`` argument the
+    allowlist read receives.
+    """
+    # Drive main() down the freeze branch deterministically by stubbing the
+    # runtime surface; avoids depending on ambient cwd/config.
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_stdin_payload",
+        lambda: {"tool_name": "Edit", "tool_input": {"file_path": "src/x.py"}},
+    )
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_athanor_config",
+        lambda: {"hooks": {"freeze": {"mode": "warn"}}},
+    )
+    monkeypatch.setattr(dispatcher._runtime, "is_hook_profile_off", lambda c: False)
+
+    resolver, calls = _counting_resolver(tmp_path)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    # Capture the root threaded into the allowlist read, and short-circuit it
+    # to None so main() takes the early fail-open exit (no freeze_guard needed).
+    captured = {}
+
+    def fake_allowlist(root=None):
+        captured["root"] = root
+        return None
+
+    monkeypatch.setattr(dispatcher, "_read_freeze_allowlist", fake_allowlist)
+
+    rc = dispatcher.main()
+    assert rc == 0, "missing allowlist must fail-open (exit 0)"
+    assert calls["n"] == 1, (
+        f"main() must resolve the project root exactly ONCE on the freeze "
+        f"path; resolver called {calls['n']}x"
+    )
+    assert captured["root"] == tmp_path, (
+        "main() must thread the resolved root into _read_freeze_allowlist"
+    )
+
+
+def test_main_freeze_off_does_not_resolve_root(monkeypatch):
+    """Behavior-preserving: when freeze mode is off (default), main() never
+    reaches the root resolution — the walk-up is paid only on the opt-in
+    path."""
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_stdin_payload",
+        lambda: {"tool_name": "Edit", "tool_input": {"file_path": "src/x.py"}},
+    )
+    monkeypatch.setattr(
+        dispatcher._runtime, "read_athanor_config", lambda: {"hooks": {}}
+    )
+    monkeypatch.setattr(dispatcher._runtime, "is_hook_profile_off", lambda c: False)
+
+    resolver, calls = _counting_resolver(None)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", resolver)
+
+    rc = dispatcher.main()
+    assert rc == 0
+    assert calls["n"] == 0, (
+        "freeze.mode=off must short-circuit before resolving the root"
     )

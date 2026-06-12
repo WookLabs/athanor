@@ -26,6 +26,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts/hooks/pretool_kernel_guard.py"
 
+# Import the guard module directly for the M8/M9 perf-batch white-box pins
+# (segment-threading parity + the `_CRED_GATE_TOOLS` frozenset). The hooks dir
+# must be on sys.path because the module imports its sibling
+# `_athanor_hook_runtime` by bare name.
+_HOOKS_DIR = REPO_ROOT / "scripts" / "hooks"
+if str(_HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(_HOOKS_DIR))
+import pretool_kernel_guard as guard  # noqa: E402
+import _athanor_hook_runtime as guard_runtime  # noqa: E402
+
 
 def _run(payload, *, cwd=None, env=None) -> tuple[int, str, str]:
     """Invoke the script with `payload` (dict or string) as stdin.
@@ -578,3 +588,132 @@ def test_head_normal_file_with_value_option_allowed():
         f"head -n 5 README.md must be allowed (non-sensitive), "
         f"got rc={rc} stderr={err!r}"
     )
+
+
+# --- chore/fable5-audit R3: M8 segment-threading + M9 _CRED_GATE_TOOLS -----
+# Behavior-PRESERVING perf refactor: the Bash branch of `evaluate_payload`
+# now computes `_command_segments(command)` ONCE and threads the list into
+# both `_check_destructive_shell`/`_is_destructive_rm` and `_check_force_push`
+# (each previously recomputed the split). The `Read | WRITE_TOOLS` set is
+# hoisted from a per-payload rebuild to the module-level `_CRED_GATE_TOOLS`
+# frozenset. These pins assert the new semantics produce IDENTICAL verdicts.
+
+# Representative commands spanning destructive-rm, force-push, and benign
+# segment shapes (including multi-segment chains) — used to assert that a
+# precomputed `segments` list yields the same verdict as internal compute.
+_SEGMENT_PARITY_COMMANDS = (
+    "rm -rf /",
+    "rm -rf /*",
+    "rm -fr ~/",
+    "rm -rf /tmp/build",
+    "rm -rf ./build/*",
+    "rm -f file.txt",
+    "git push --force origin main",
+    "git push --force-with-lease origin main",
+    "git push --force origin feature/x",
+    "git push --force origin feat && git switch main",
+    "sudo git push --force origin main",
+    "cd /repo && sudo git push --force origin main",
+    "echo building ; echo 'git push --force origin main' >> notes.txt",
+    "rm -rf /tmp/x && git push --force origin main",
+    "ls -la",
+)
+
+
+def test_is_destructive_rm_segment_param_parity():
+    """`_is_destructive_rm(cmd, segments)` with a precomputed split equals the
+    internal-compute (`segments=None`) verdict for every representative command.
+
+    M8 threads an optional precomputed segment list through the checker; the
+    list MUST be a transparent pass-through of `_command_segments(command)`
+    with no verdict change.
+    """
+    for cmd in _SEGMENT_PARITY_COMMANDS:
+        internal = guard._is_destructive_rm(cmd)
+        precomputed = guard._is_destructive_rm(cmd, guard._command_segments(cmd))
+        assert internal == precomputed, (
+            f"_is_destructive_rm verdict diverged for {cmd!r}: "
+            f"internal={internal} precomputed={precomputed}"
+        )
+
+
+def test_check_force_push_segment_param_parity():
+    """`_check_force_push(cmd, segments)` with a precomputed split equals the
+    internal-compute verdict for every representative command (M8)."""
+    for cmd in _SEGMENT_PARITY_COMMANDS:
+        internal = guard._check_force_push(cmd)
+        precomputed = guard._check_force_push(cmd, guard._command_segments(cmd))
+        assert internal == precomputed, (
+            f"_check_force_push verdict diverged for {cmd!r}: "
+            f"internal={internal} precomputed={precomputed}"
+        )
+
+
+def test_check_destructive_shell_segment_param_parity():
+    """`_check_destructive_shell(cmd, segments)` with a precomputed split equals
+    the internal-compute verdict (M8 threads `segments` to `_is_destructive_rm`
+    while the regex DESTRUCTIVE_PATTERNS still scan the whole command)."""
+    extra = ("git reset --hard", "git clean -fd", "git checkout .")
+    for cmd in _SEGMENT_PARITY_COMMANDS + extra:
+        internal = guard._check_destructive_shell(cmd)
+        precomputed = guard._check_destructive_shell(
+            cmd, guard._command_segments(cmd)
+        )
+        assert internal == precomputed, (
+            f"_check_destructive_shell verdict diverged for {cmd!r}: "
+            f"internal={internal} precomputed={precomputed}"
+        )
+
+
+def test_segment_param_default_is_none():
+    """Both threaded checkers default `segments` to None (internal compute) so
+    every existing call site — `_check_destructive_shell` and the subprocess
+    CLI path — keeps the v0.18.6 single-arg contract."""
+    import inspect
+
+    for fn in (guard._is_destructive_rm, guard._check_force_push,
+               guard._check_destructive_shell):
+        sig = inspect.signature(fn)
+        assert "segments" in sig.parameters, (
+            f"{fn.__name__} must accept a `segments` parameter (M8)"
+        )
+        assert sig.parameters["segments"].default is None, (
+            f"{fn.__name__}.segments default must be None (internal compute)"
+        )
+
+
+def test_cred_gate_tools_is_module_level_frozenset():
+    """M9 — `_CRED_GATE_TOOLS` is a module-level frozenset containing exactly
+    `Read` plus every WRITE_TOOLS entry (Write/Edit/MultiEdit/NotebookEdit).
+
+    Hoisted from the per-payload `{"Read"} | set(_runtime.WRITE_TOOLS)` rebuild
+    so the gated-tool set is constructed once at import. Read must be present
+    AND must NOT have been folded into WRITE_TOOLS itself.
+    """
+    gate = guard._CRED_GATE_TOOLS
+    assert isinstance(gate, frozenset), (
+        f"_CRED_GATE_TOOLS must be a frozenset, got {type(gate).__name__}"
+    )
+    assert gate == frozenset({"Read", *guard_runtime.WRITE_TOOLS}), (
+        f"_CRED_GATE_TOOLS must equal Read + WRITE_TOOLS, got {sorted(gate)}"
+    )
+    assert "Read" in gate
+    assert "Read" not in guard_runtime.WRITE_TOOLS, (
+        "Read must stay separate from WRITE_TOOLS — folded only into the gate set"
+    )
+    for tool in guard_runtime.WRITE_TOOLS:
+        assert tool in gate, f"{tool} (WRITE_TOOLS) must be in _CRED_GATE_TOOLS"
+
+
+def test_cred_gate_tools_drives_verdict_parity():
+    """Every tool in `_CRED_GATE_TOOLS` blocks a credential path end-to-end via
+    the subprocess CLI — confirming the hoisted constant still drives the same
+    gated set as the old inline union."""
+    for tool in sorted(guard._CRED_GATE_TOOLS):
+        key = "notebook_path" if tool == "NotebookEdit" else "file_path"
+        payload = {"tool_name": tool, "tool_input": {key: ".env"}}
+        rc, _, err = _run(payload)
+        assert rc == 2, (
+            f"{tool} targeting .env must be blocked via _CRED_GATE_TOOLS, "
+            f"got rc={rc} stderr={err!r}"
+        )

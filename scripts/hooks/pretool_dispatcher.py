@@ -75,15 +75,21 @@ def _freeze_mode(config) -> str:
     return mode
 
 
-def _latest_session_dir() -> Optional[Path]:
+def _latest_session_dir(root: Optional[Path] = None) -> Optional[Path]:
     """Resolve the latest session directory per CLAUDE.md Session Lookup
     Convention: lexicographic-sort matching `<YYYY-MM-DD>-<NNN>` names.
 
     Walks up from cwd (matching ``_athanor_hook_runtime`` semantics) to
     find a `.athanor/sessions/` parent. Returns the latest dir Path, or
     None if no matching dir exists.
+
+    ``root`` may be supplied by the caller (``main()`` resolves it ONCE and
+    threads it through). When ``None`` this resolves the root itself
+    (back-compat). A ``None`` root — passed or self-resolved — returns
+    ``None`` so the dispatcher fails open.
     """
-    root = _runtime.resolve_project_root()
+    if root is None:
+        root = _runtime.resolve_project_root()
     if root is None:
         return None
     sessions_dir = root / ".athanor" / "sessions"
@@ -102,7 +108,7 @@ def _latest_session_dir() -> Optional[Path]:
     return sessions_dir / candidates[-1]
 
 
-def _read_freeze_allowlist() -> Optional[dict]:
+def _read_freeze_allowlist(root: Optional[Path] = None) -> Optional[dict]:
     """Read `.athanor/sessions/<latest>/freeze-allowlist.json` and return
     the parsed dict. None on any failure (missing dir, missing file,
     unreadable, malformed) — the dispatcher will fail-open in that case
@@ -111,8 +117,13 @@ def _read_freeze_allowlist() -> Optional[dict]:
     Augments the loaded dict with `_session_dir` so freeze_guard's
     violation logger writes to the correct path even when cwd is set
     elsewhere.
+
+    ``root`` is threaded into ``_latest_session_dir`` so the project root is
+    resolved ONCE in ``main()`` rather than once per helper. When ``None``
+    the session lookup self-resolves (back-compat); a ``None`` root yields a
+    ``None`` session dir → ``None`` here → dispatcher fails open.
     """
-    session_dir = _latest_session_dir()
+    session_dir = _latest_session_dir(root)
     if session_dir is None:
         return None
     allowlist_path = session_dir / "freeze-allowlist.json"
@@ -158,6 +169,16 @@ def main() -> int:
     if mode == "off":
         return 0  # default — freeze layer skipped entirely
 
+    # Resolve the project root ONCE (after the freeze-mode gate, so we pay the
+    # walk-up only on the opt-in path) and thread it through both the allowlist
+    # read and freeze_guard. This drops the prior double-resolve (allowlist
+    # read self-resolved, then main() resolved again for freeze_evaluate).
+    # None is tolerated end-to-end: a None root yields a None allowlist below
+    # (fail-open), and freeze_guard falls back to its own cwd-coupled resolver
+    # when project_root is None. The single resolution also keeps both
+    # consumers anchored to the SAME root, defensive against cwd drift.
+    root = _runtime.resolve_project_root()
+
     # Step 3: lazy-import freeze_guard (Subtask 2.3). Missing module is
     # opt-in fail-open with a stderr breadcrumb.
     try:
@@ -169,18 +190,13 @@ def main() -> int:
         )
         return 0
 
-    # Step 4: load per-session allowlist. Missing allowlist → fail-open
-    # (the freeze_guard signature mirrors this; we short-circuit early
-    # to avoid the lazy-load + import cost on every PreToolUse event).
-    allowlist = _read_freeze_allowlist()
+    # Step 4: load per-session allowlist (using the root resolved above).
+    # Missing allowlist → fail-open (the freeze_guard signature mirrors this;
+    # we short-circuit early to avoid the lazy-load + import cost on every
+    # PreToolUse event).
+    allowlist = _read_freeze_allowlist(root)
     if allowlist is None:
         return 0
-
-    # Resolve the project root so freeze_guard can relativize ABSOLUTE
-    # tool-target paths (real Claude Code payloads send absolute file_path
-    # values; the allowlist stores project-relative POSIX paths). None is
-    # tolerated — freeze_guard falls back to its own cwd-coupled resolver.
-    root = _runtime.resolve_project_root()
 
     try:
         freeze_exit, freeze_msg = freeze_evaluate(
