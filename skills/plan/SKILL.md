@@ -273,7 +273,7 @@ present the **complete plan** using the template in
 Phase Detail / Key Decisions / Risks), followed by either the UNRESOLVED
 conflict handler (`AskUserQuestion`) or the no-conflicts confirmation
 prompt (Y 확정 / N 수정 필요). 제시 텍스트는 해석된 `output.language`(ko→
-한국어 / en→영어; 부재 시 en)에 맞춘다 — plan.md의 Splitter 구조 토큰(`##
+한국어 / en→영어; 부재 시 en)에 맞춘다(해석 규칙: skills/setup/SKILL.md §"output.language 해석 (canonical)") — plan.md의 Splitter 구조 토큰(`##
 Subtasks`, `execution_note:` 등)·필드 키는 언어 무관 항상 영어. After
 confirmation, plan.md is as-authored; `/athanor:work` consumes the latest
 plan.md.

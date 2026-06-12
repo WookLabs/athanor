@@ -492,7 +492,7 @@ OUTPUT_LANG=$(jq -r '.output.language // "en"' athanor.json 2>/dev/null); case "
 
 의미: Present-to-User 직전 해석; 파일 부재·malformed·미지원 값 → `en`.
 
-leader-side `athanor.json` pre-dispatch read는 approved infra-exception이다(precedent: `skills/work/SKILL.md:64` thin-leader-rejection comment — dispatch 파라미터는 worker launch 전에 알아야 하므로).
+leader-side `athanor.json` pre-dispatch read는 approved infra-exception이다(precedent(유사 선례): `skills/work/SKILL.md`의 `<!-- thin-leader-rejection -->` 주석 — 그 allow-list는 work-scoped이며 본 키의 직접 선례가 아닌 동일 원칙("dispatch 파라미터는 worker launch 전에 해석")의 적용).
 
 ### Step 5: Summary
 

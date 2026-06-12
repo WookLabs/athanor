@@ -137,6 +137,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "_doc": { "type": "string" },
         "language": {
           "type": "string",
           "enum": ["ko", "en"],

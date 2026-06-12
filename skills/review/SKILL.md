@@ -214,7 +214,7 @@ Reviewers: {comma-separated lens list}
 
 ## Executive Summary
 
-{2-3 sentences, in the interpreted `output.language` — `{ko: 치명 건수를 먼저 적고, 그다음 핵심 테마. / en: lead with critical count, then headline themes.}` Heading keyword stays English.}
+{2-3 sentences, in the interpreted `output.language`. Lead with critical count, then headline themes. Heading keyword stays English.}
 
 ## 🔴 Critical
 {numbered list of critical findings, deduplicated, with severity tag and lens

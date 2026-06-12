@@ -42,6 +42,10 @@ SCHEMA_PATH = REPO_ROOT / "schemas" / "athanor-config.schema.json"
 SETUP_SKILL = REPO_ROOT / "skills" / "setup" / "SKILL.md"
 REVIEW_SKILL = REPO_ROOT / "skills" / "review" / "SKILL.md"
 LFG_SKILL = REPO_ROOT / "skills" / "lfg" / "SKILL.md"
+# A reference doc (not a SKILL.md) that also quotes completion-claim literals
+# inside backticks; included in the smoke corpus so its claim references stay
+# directive-quoted under the tightened heuristic.
+MULTI_STATUS_REF = REPO_ROOT / "skills" / "work" / "references" / "multi-status.md"
 
 # The 9 Thin-Leader skills that must carry the output.language directive.
 DIRECTIVE_SKILLS = (
@@ -125,8 +129,16 @@ def test_output_language_schema_key_with_enum():
 # --------------------------------------------------------------------------- #
 
 
+# The canonical interpretation section name. The 8 non-setup skills must point
+# at it (delimiter-agnostic — citation styles vary, but this section-name string
+# is identical everywhere); setup IS the producer and carries the heading itself.
+CANONICAL_POINTER = "output.language 해석 (canonical)"
+
+
 def test_all_nine_skills_carry_output_language_directive():
-    """Each of the 9 Thin-Leader skills references output.language ≥ once."""
+    """Each of the 9 Thin-Leader skills references output.language ≥ once,
+    and each of the 8 non-setup skills cites the canonical interpretation
+    section by name (consumer→producer pointer)."""
     missing = [
         name
         for name in DIRECTIVE_SKILLS
@@ -134,6 +146,15 @@ def test_all_nine_skills_carry_output_language_directive():
     ]
     assert not missing, (
         "these skills are missing the output.language directive: " f"{missing}"
+    )
+    missing_pointer = [
+        name
+        for name in DIRECTIVE_SKILLS
+        if name != "setup" and CANONICAL_POINTER not in _read(_skill_path(name))
+    ]
+    assert not missing_pointer, (
+        "these non-setup skills are missing the canonical-pointer substring "
+        f"{CANONICAL_POINTER!r}: {missing_pointer}"
     )
 
 
@@ -143,11 +164,17 @@ def test_all_nine_skills_carry_output_language_directive():
 
 
 def test_setup_skill_has_canonical_jq_snippet():
-    """setup SKILL.md carries the canonical jq -r '.output.language interpreter."""
+    """setup SKILL.md carries the canonical jq -r '.output.language interpreter
+    under the canonical section heading (producer/consumer co-lock)."""
     body = _read(SETUP_SKILL)
     assert "jq -r '.output.language" in body, (
         "setup SKILL.md must carry the canonical jq -r '.output.language "
         "interpretation snippet (single source of truth)"
+    )
+    assert "### output.language 해석 (canonical)" in body, (
+        "setup SKILL.md must declare the canonical heading "
+        "'### output.language 해석 (canonical)' that the 8 consumer skills "
+        "point at (producer/consumer co-lock)"
     )
 
 
@@ -193,22 +220,44 @@ def test_lfg_skill_retains_done_sentinel():
 _DIRECTIVE_MARKERS = ("회피", "대신", "어조", "금지")
 
 
-def _occurrence_is_directive_quote(line: str, literal: str) -> bool:
-    """True if `literal` on `line` is directive-quoting, not bare output text.
+# Max char distance from an occurrence to a directive marker for the marker
+# to be considered "adjacent" (and thus to license a bare-looking occurrence).
+_MARKER_PROXIMITY = 30
 
-    Heuristic (kept deliberately simple — see module docstring):
-      * the literal is wrapped in a backtick span (`…`), AND/OR
-      * the line carries a directive marker (회피/대신/어조/금지).
+
+def _occurrence_is_directive_quote(line: str, literal: str) -> bool:
+    """True iff EVERY occurrence of `literal` on `line` is directive-quoting.
+
+    Per-occurrence heuristic (kept deliberately simple — see module docstring).
+    An individual occurrence is directive-quoting iff:
+      * it lies inside a backtick span (`…`), OR
+      * a directive marker (회피/대신/어조/금지) occurs within
+        ``_MARKER_PROXIMITY`` chars of the occurrence on that line.
     A real completion-report output template would print the literal bare
-    (no backticks, no avoid-directive context) — that is what we flag.
+    (no backticks, no nearby avoid-directive marker) — that is what we flag.
+
+    The function returns False if ANY occurrence fails the per-occurrence test,
+    so a line that backtick-quotes a first occurrence but prints a second one
+    bare is correctly flagged.
     """
     backtick_spans = [
         (m.start(), m.end()) for m in re.finditer(r"`[^`]*`", line)
     ]
-    idx = line.index(literal)
-    in_backticks = any(start <= idx < end for start, end in backtick_spans)
-    has_marker = any(marker in line for marker in _DIRECTIVE_MARKERS)
-    return in_backticks or has_marker
+    marker_positions = [
+        m.start()
+        for marker in _DIRECTIVE_MARKERS
+        for m in re.finditer(re.escape(marker), line)
+    ]
+    for occ in re.finditer(re.escape(literal), line):
+        start, end = occ.start(), occ.end()
+        in_backticks = any(b0 <= start < b1 for b0, b1 in backtick_spans)
+        near_marker = any(
+            min(abs(pos - start), abs(pos - end)) <= _MARKER_PROXIMITY
+            for pos in marker_positions
+        )
+        if not (in_backticks or near_marker):
+            return False
+    return True
 
 
 def test_stop_phrase_literals_only_in_directive_context():
@@ -219,17 +268,17 @@ def test_stop_phrase_literals_only_in_directive_context():
     occurrence would mean a completion-claim phrase shipped as user-facing output
     template text, which the Stop hook would (rightly) flag.
     """
+    corpus = [(name, _skill_path(name)) for name in STOP_PHRASE_SKILLS]
+    corpus.append(("work/references/multi-status.md", MULTI_STATUS_REF))
     violations = []
-    for name in STOP_PHRASE_SKILLS:
-        for lineno, line in enumerate(
-            _read(_skill_path(name)).splitlines(), start=1
-        ):
+    for label, path in corpus:
+        for lineno, line in enumerate(_read(path).splitlines(), start=1):
             for literal in MATERIAL_CLAIMS_KO:
                 if literal in line and not _occurrence_is_directive_quote(
                     line, literal
                 ):
                     violations.append(
-                        f"{name}:{lineno} bare completion-claim literal "
+                        f"{label}:{lineno} bare completion-claim literal "
                         f"{literal!r}: {line.strip()!r}"
                     )
     assert not violations, (
@@ -237,3 +286,46 @@ def test_stop_phrase_literals_only_in_directive_context():
         "(expected only as backtick-wrapped directive quotes): "
         + "; ".join(violations)
     )
+
+
+# --------------------------------------------------------------------------- #
+# (e2) Unit-level anchors pinning the _occurrence_is_directive_quote heuristic #
+# --------------------------------------------------------------------------- #
+
+
+def test_stop_phrase_heuristic_flags_bare_claim():
+    """A bare completion-claim sentence is flagged (not directive-quoted)."""
+    assert (
+        _occurrence_is_directive_quote("작업을 완료했습니다.", "완료했습니다") is False
+    )
+
+
+def test_stop_phrase_heuristic_allows_backtick_directive():
+    """A backtick-wrapped literal on an avoid-directive line is allowed."""
+    line = "`완료했습니다` 같은 단정 어조는 회피한다"
+    assert _occurrence_is_directive_quote(line, "완료했습니다") is True
+
+
+def test_stop_phrase_heuristic_allows_marker_adjacent_bare_literal():
+    """A bare literal within proximity of a directive marker is allowed."""
+    # No backticks, but '회피' sits within _MARKER_PROXIMITY chars.
+    line = "완료했습니다 어조는 회피"
+    assert _occurrence_is_directive_quote(line, "완료했습니다") is True
+
+
+def test_stop_phrase_heuristic_flags_bare_second_occurrence():
+    """A backtick-quoted first occurrence does NOT whitelist a bare second one.
+
+    This is the per-occurrence tightening: the FIRST `완료했습니다` is inside a
+    backtick span, but the second is bare and far from any directive marker, so
+    the line must be flagged.
+    """
+    line = "`완료했습니다` 라는 표현은 이렇게 쓴다 그리고 또 완료했습니다 라고 단정한다"
+    assert _occurrence_is_directive_quote(line, "완료했습니다") is False
+
+
+def test_stop_phrase_heuristic_distant_marker_does_not_whitelist():
+    """A directive marker far (> proximity) from a bare occurrence is ignored."""
+    # '회피' is pushed well beyond _MARKER_PROXIMITY chars from the literal.
+    line = "완료했습니다" + " " * (_MARKER_PROXIMITY + 5) + "회피"
+    assert _occurrence_is_directive_quote(line, "완료했습니다") is False
