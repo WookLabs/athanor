@@ -30,7 +30,10 @@ from __future__ import annotations
 import json
 import os
 import sys
+from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
+from typing import Callable, Optional
 
 ATHANOR_CONFIG_NAME = "athanor.json"
 _WALK_UP_DEPTH = 8
@@ -80,37 +83,113 @@ def read_stdin_payload() -> dict | None:
 # ---------------------------------------------------------------------------
 
 
-def _walk_up_for(marker_check) -> Path | None:
-    """Internal: walk up from cwd, invoking `marker_check(path)` per level.
-    The first level where `marker_check` returns truthy wins; the returned
-    Path is that level.
+@dataclass(frozen=True)
+class WalkResult:
+    """Outcome of a single ``_walk_up`` traversal.
 
-    Bounded by:
-      - depth `_WALK_UP_DEPTH` (8)
-      - $HOME
-      - filesystem root
-      - .git boundary (callers may treat .git as a stop themselves; this
-        helper itself does not stop at .git — leaving that decision to the
-        marker_check)
+    Fields:
+      - ``match``: the first directory where ``marker_check`` returned truthy,
+        or ``None`` if the walk halted (depth / git / home / fs-root) without
+        a hit.
+      - ``stopped_at_git``: True iff the walk halted because it reached a
+        ``.git/`` boundary (only possible when ``stop_at_git=True``).
+      - ``stopped_at_home``: True iff the walk halted at ``$HOME`` (only
+        possible when ``stop_at_home=True``).
+
+    The three fields let the four call sites recover their *divergent*
+    ``.git``-hit dispositions over ONE walker without collapsing them:
+    ``_find_athanor_config_path`` returns ``None`` on a git stop,
+    ``resolve_project_root`` never stops at git, ``_athanor_opt_in`` maps a
+    git stop to ``False``, and ``_project_dir`` maps a git stop to a
+    ``start.resolve()`` boundary fallback. A bare ``match`` would erase that
+    distinction; the flags preserve it.
     """
+
+    match: Optional[Path]
+    stopped_at_git: bool
+    stopped_at_home: bool
+
+
+def _walk_up(
+    start: Path | None = None,
+    marker_check: Callable[[Path], bool] | None = None,
+    *,
+    stop_at_git: bool,
+    stop_at_home: bool,
+    depth: int = _WALK_UP_DEPTH,
+) -> WalkResult:
+    """Walk up from ``start`` (default ``cwd``), invoking ``marker_check`` per
+    level, returning a :class:`WalkResult`.
+
+    Order of checks at each level (this ordering is contractual — the marker
+    is consulted BEFORE the git/home stops so an ``athanor.json`` AT a
+    ``.git`` boundary, or a ``.git`` dir used as a *marker*, is still found):
+
+      1. ``marker_check(cur)`` truthy → ``WalkResult(match=cur, ...)``.
+      2. ``stop_at_git`` and ``cur/.git`` is a dir → halt,
+         ``WalkResult(match=None, stopped_at_git=True, ...)``.
+      3. ``stop_at_home`` and ``cur == $HOME`` → halt,
+         ``WalkResult(match=None, stopped_at_home=True)``.
+      4. filesystem root (``cur.parent == cur``) → halt, no flags.
+
+    Bounded by ``depth`` levels (default ``_WALK_UP_DEPTH`` — the SOLE named
+    walk-up depth constant). All call sites flow their bound from here; no
+    ``range(8)`` literal survives at any call site.
+    """
+    if marker_check is None:  # pragma: no cover - defensive; all callers pass one
+        raise TypeError("_walk_up requires a marker_check callable")
+    if start is None:
+        start = Path.cwd()
     try:
-        cur = Path.cwd().resolve()
+        cur = start.resolve()
     except (OSError, FileNotFoundError):
-        return None
+        return WalkResult(match=None, stopped_at_git=False, stopped_at_home=False)
     try:
         home = Path.home().resolve()
     except (OSError, RuntimeError):
         home = None
 
-    for _ in range(_WALK_UP_DEPTH):
+    for _ in range(depth):
         if marker_check(cur):
-            return cur
-        if home is not None and cur == home:
-            break
+            return WalkResult(
+                match=cur, stopped_at_git=False, stopped_at_home=False
+            )
+        if stop_at_git and (cur / ".git").is_dir():
+            return WalkResult(
+                match=None, stopped_at_git=True, stopped_at_home=False
+            )
+        if stop_at_home and home is not None and cur == home:
+            return WalkResult(
+                match=None, stopped_at_git=False, stopped_at_home=True
+            )
         if cur.parent == cur:
             break
         cur = cur.parent
-    return None
+    return WalkResult(match=None, stopped_at_git=False, stopped_at_home=False)
+
+
+@lru_cache(maxsize=None)
+def _resolve_project_root_cached(cwd: str, home: str | None) -> Path | None:
+    """Memoized core of :func:`resolve_project_root`, keyed on
+    ``(cwd, $HOME)`` so the per-Stop walk-up runs once per (cwd, home) pair.
+
+    ``cwd`` / ``home`` are passed in as strings (hashable, and they form the
+    cache identity) even though the actual walk re-derives ``cwd`` from
+    ``Path.cwd()`` inside ``_walk_up`` — the strings are the *key*, and a
+    caller only reaches here after ``os.getcwd()`` matched this ``cwd``.
+    """
+
+    def _is_root(p: Path) -> bool:
+        return (p / ".git").is_dir() or (p / ATHANOR_CONFIG_NAME).is_file()
+
+    # resolve_project_root historically does NOT stop at .git (git IS the
+    # marker) and DOES respect the $HOME ceiling.
+    return _walk_up(
+        start=Path(cwd),
+        marker_check=_is_root,
+        stop_at_git=False,
+        stop_at_home=True,
+    ).match
 
 
 def resolve_project_root() -> Path | None:
@@ -118,13 +197,25 @@ def resolve_project_root() -> Path | None:
     or ``athanor.json``. Returns that Path, or ``None`` if nothing found
     within the walk-up bounds.
 
+    Memoized on ``(cwd, $HOME)`` (v0.18.8): repeat calls within the same Stop
+    event resolve from cache instead of re-walking. Call
+    ``resolve_project_root.cache_clear()`` to drop the memo (tests + any
+    caller that intentionally changes cwd mid-process).
+
     Used by callers that want a stable reference dir (e.g., for resolving
     session paths). Does NOT consult ``$CLAUDE_PROJECT_DIR`` — that's
     config-resolution policy, kept inside the scripts that need it.
     """
-    def _is_root(p: Path) -> bool:
-        return (p / ".git").is_dir() or (p / ATHANOR_CONFIG_NAME).is_file()
-    return _walk_up_for(_is_root)
+    try:
+        cwd = str(Path.cwd())
+    except (OSError, FileNotFoundError):
+        return None
+    home = os.environ.get("HOME")
+    return _resolve_project_root_cached(cwd, home)
+
+
+# Expose cache_clear on the public callable (the memo lives on the cached core).
+resolve_project_root.cache_clear = _resolve_project_root_cached.cache_clear  # type: ignore[attr-defined]
 
 
 def read_athanor_config() -> dict:
@@ -160,7 +251,9 @@ def _find_athanor_config_path() -> Path | None:
 
     Resolution priority:
       1. ``$CLAUDE_PROJECT_DIR/athanor.json`` if env var set and file exists.
-      2. Walk up from cwd; stop at .git boundary, $HOME, or depth 8.
+      2. Walk up from cwd via the unified ``_walk_up`` (stop at .git boundary,
+         $HOME, or depth ``_WALK_UP_DEPTH``). A .git or $HOME stop yields no
+         match → ``None`` (the hijack guard: do not cross the repo root).
     """
     env_proj = os.environ.get("CLAUDE_PROJECT_DIR")
     if env_proj:
@@ -168,30 +261,16 @@ def _find_athanor_config_path() -> Path | None:
         if candidate.is_file():
             return candidate.resolve()
 
-    try:
-        cur = Path.cwd().resolve()
-    except (OSError, FileNotFoundError):
-        return None
-    try:
-        home = Path.home().resolve()
-    except (OSError, RuntimeError):
-        home = None
+    def _has_config(p: Path) -> bool:
+        return (p / ATHANOR_CONFIG_NAME).is_file()
 
-    for _ in range(_WALK_UP_DEPTH):
-        candidate = cur / ATHANOR_CONFIG_NAME
-        has_git = (cur / ".git").is_dir()
-        if candidate.is_file():
-            return candidate
-        if has_git:
-            # Hit a .git boundary without finding athanor.json at this
-            # level. Do NOT cross repo root upward (v0.7.8 hijack lesson).
-            return None
-        if home is not None and cur == home:
-            break
-        if cur.parent == cur:
-            break
-        cur = cur.parent
-    return None
+    # match → the athanor.json-bearing dir; git/home stop → match is None.
+    result = _walk_up(
+        marker_check=_has_config, stop_at_git=True, stop_at_home=True
+    )
+    if result.match is None:
+        return None
+    return result.match / ATHANOR_CONFIG_NAME
 
 
 # ---------------------------------------------------------------------------

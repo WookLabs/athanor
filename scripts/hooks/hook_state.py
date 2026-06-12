@@ -43,6 +43,17 @@ import tempfile
 import time
 from pathlib import Path
 
+# Sibling-module import: the walk-up logic is unified in
+# `_athanor_hook_runtime` (v0.18.8). Every entrypoint that imports hook_state
+# (stop_verify_claims.py, sentinel_helper.py) already inserts SCRIPTS_DIR into
+# sys.path before importing us; we re-assert it here so a standalone import
+# (e.g. a direct test import) still resolves the sibling.
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from _athanor_hook_runtime import WalkResult, _walk_up  # noqa: E402,F401
+
 # Whitelist for session IDs — anything outside this charset is rejected to
 # prevent `../` traversal or shell metacharacter injection via crafted
 # Stop event payloads.
@@ -69,21 +80,28 @@ def _project_dir(start: Path | None = None) -> Path | None:
     Mirrors stop_verify_claims.py's config resolution but only needs to find
     a writable `.athanor/sessions/` parent. Walks up from `start` (default cwd)
     until it finds a `.athanor/` directory or hits a `.git/` boundary.
-    Returns None if no suitable parent is found within depth 8.
+    Returns None if no suitable parent is found within the walk-up depth.
+
+    Re-expressed over the unified `_walk_up` (v0.18.8). Disposition that is
+    UNIQUE to this call site and must be preserved: on a `.git` boundary with
+    NO `.athanor/` found, return `start.resolve()` — a boundary fallback so
+    state has *somewhere* to live (NOT None). No `$HOME` stop here (state
+    placement may legitimately live at $HOME).
     """
     if start is None:
         start = Path.cwd()
-    cur = start.resolve()
-    for _ in range(8):
-        if (cur / ".athanor").is_dir():
-            return cur
-        if (cur / ".git").is_dir():
-            # .git boundary — don't cross. If .athanor wasn't here, fall back
-            # to cwd-as-project so we at least have somewhere to write state.
-            return start.resolve()
-        if cur.parent == cur:
-            break
-        cur = cur.parent
+    result = _walk_up(
+        start=start,
+        marker_check=lambda p: (p / ".athanor").is_dir(),
+        stop_at_git=True,
+        stop_at_home=False,
+    )
+    if result.match is not None:
+        return result.match
+    if result.stopped_at_git:
+        # .git boundary without a .athanor/ — fall back to start-as-project so
+        # we at least have somewhere to write state (preserved disposition).
+        return start.resolve()
     return None
 
 
@@ -101,31 +119,24 @@ def _athanor_opt_in(root: Path) -> bool:
 
     Walks up from `root` looking for `athanor.json`, stopping at a `.git/`
     boundary (the v0.7.9 parent-dir hijack guard: an `athanor.json` above
-    the repo root is NOT honoured from inside the repo). Mirrors the
-    walk-up/.git-boundary logic in
-    `_athanor_hook_runtime._find_athanor_config_path()`, but is parametrized
-    by an explicit start dir (that helper resolves from cwd / env only).
+    the repo root is NOT honoured from inside the repo) AND at `$HOME` (the
+    v0.18.8 M2 NEW behavior: an `athanor.json` above the user's home dir is
+    likewise not honoured — closes the unbounded-upward-walk gap). Now
+    re-expressed over the unified `_walk_up` (the helper this used to mirror
+    by hand), parametrized by an explicit start dir.
 
     Opt-in is the v0.18.x Phase 4 gate: state-dir creation is a no-op in
     repos that never opted in, so a stray hook never materializes a
     `.athanor/` tree as a side effect (closes the P15 `/tmp/.athanor`
     debris incident).
     """
-    try:
-        cur = root.resolve()
-    except (OSError, RuntimeError):
-        return False
-    for _ in range(8):
-        if (cur / "athanor.json").is_file():
-            return True
-        if (cur / ".git").is_dir():
-            # .git boundary upward — do not cross repo root looking for an
-            # ancestor athanor.json (hijack guard).
-            return False
-        if cur.parent == cur:
-            break
-        cur = cur.parent
-    return False
+    result = _walk_up(
+        start=root,
+        marker_check=lambda p: (p / "athanor.json").is_file(),
+        stop_at_git=True,
+        stop_at_home=True,
+    )
+    return result.match is not None
 
 
 def get_state_dir(
