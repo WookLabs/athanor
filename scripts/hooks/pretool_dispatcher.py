@@ -39,6 +39,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -203,7 +204,16 @@ def main() -> int:
             payload, allowlist, mode=mode, config=config, project_root=root
         )
     except Exception as exc:  # noqa: BLE001 — defensive: never brick PreToolUse
+        # Decision (P12): PreToolUse must never brick the session; exception
+        # narrowing is REJECTED (open-ended failure modes — any bug in
+        # freeze_guard, regardless of class, must degrade to pass, not crash
+        # the tool call). Broad catch + traceback is the correct shape for a
+        # defense layer: stay fail-open (exit 0) but emit the FULL traceback to
+        # stderr so the swallowed exception is VISIBLE (§Core Principle:
+        # fail-loud over silent fallback — a guard that silently no-ops hides
+        # the failure; closes lesson 2026-06-11-007).
         _stderr(f"freeze_guard raised {type(exc).__name__}; passing (fail-open)")
+        _stderr(traceback.format_exc())
         return 0
 
     if freeze_exit != 0:

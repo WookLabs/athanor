@@ -578,3 +578,84 @@ def test_main_freeze_off_does_not_resolve_root(monkeypatch):
     assert calls["n"] == 0, (
         "freeze.mode=off must short-circuit before resolving the root"
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 (P12) — broad fail-open breadcrumb is traceback-enriched.
+# When freeze_guard.evaluate_payload raises, main() must stay fail-open
+# (exit 0 — PreToolUse must never brick the session) AND emit the full
+# traceback to stderr so the swallowed exception is VISIBLE (fail-loud over
+# silent fallback; closes lesson 2026-06-11-007 residual). Exception
+# narrowing is REJECTED here on purpose: a defense layer's broad catch is the
+# correct shape — see the decision comment in pretool_dispatcher.py.
+# ---------------------------------------------------------------------------
+
+
+def _drive_main_into_freeze_branch(monkeypatch, tmp_path):
+    """Stub the runtime + allowlist surface so ``main()`` reaches the
+    ``freeze_evaluate(...)`` call with a valid (non-None) allowlist. Returns
+    nothing; the caller is responsible for making ``freeze_guard.evaluate_payload``
+    raise (or not) to exercise the except branch."""
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_stdin_payload",
+        lambda: {"tool_name": "Edit", "tool_input": {"file_path": "src/x.py"}},
+    )
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_athanor_config",
+        lambda: {"hooks": {"freeze": {"mode": "warn"}}},
+    )
+    monkeypatch.setattr(dispatcher._runtime, "is_hook_profile_off", lambda c: False)
+    monkeypatch.setattr(
+        dispatcher._runtime, "resolve_project_root", lambda: tmp_path
+    )
+    # Return a valid allowlist so main() proceeds to the freeze_evaluate call
+    # (the except branch under test lives AFTER the missing-allowlist
+    # short-circuit). The lazy ``from freeze_guard import evaluate_payload``
+    # resolves the attribute at call time, so monkeypatching it below takes.
+    monkeypatch.setattr(
+        dispatcher, "_read_freeze_allowlist", lambda root=None: {"allowed_paths": []}
+    )
+
+
+def test_freeze_guard_raise_fail_open_with_traceback(monkeypatch, tmp_path, capsys):
+    """When ``freeze_guard.evaluate_payload`` raises, ``main()`` returns 0
+    (fail-open invariant preserved) AND stderr carries the one-line breadcrumb
+    PLUS the full ``traceback.format_exc()`` content (the distinctive
+    exception type/message and the ``Traceback`` header). Pre-P12 the code
+    emitted only the breadcrumb line — so the traceback assertions go RED
+    against current source."""
+    import freeze_guard
+
+    sentinel = "p12-distinctive-boom-9f3a"
+
+    def _raiser(*args, **kwargs):
+        raise RuntimeError(sentinel)
+
+    monkeypatch.setattr(freeze_guard, "evaluate_payload", _raiser)
+    _drive_main_into_freeze_branch(monkeypatch, tmp_path)
+
+    rc = dispatcher.main()
+    captured = capsys.readouterr()
+
+    # 1. Fail-open invariant: a raising freeze guard must NOT brick the session.
+    assert rc == 0, (
+        f"freeze_guard raising must stay fail-open (exit 0); got rc={rc}, "
+        f"stderr={captured.err!r}"
+    )
+    # 2. Existing one-line breadcrumb preserved (enrich, don't replace).
+    assert "freeze_guard raised RuntimeError" in captured.err, (
+        f"the original breadcrumb must remain intact; stderr={captured.err!r}"
+    )
+    assert "passing (fail-open)" in captured.err
+    # 3. NEW: traceback content present — header + the distinctive exception
+    #    message that only a real traceback (not the one-liner) carries.
+    assert "Traceback (most recent call last)" in captured.err, (
+        "stderr must include the traceback header (traceback.format_exc()); "
+        f"stderr={captured.err!r}"
+    )
+    assert sentinel in captured.err, (
+        "stderr must include the raised exception's message via the traceback; "
+        f"stderr={captured.err!r}"
+    )
