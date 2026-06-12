@@ -133,6 +133,17 @@
         }
       }
     },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["ko", "en"],
+          "description": "Best-effort 사용자-대면 제시/산출물 출력 언어 선호. triggers.language(트리거 키워드 인식)와 별개 축. Advisory — 런타임이 분기 강제하지 않으며 각 스킬 leader가 Present-to-User 직전 해석한다(부재/malformed 시 en). Deterministic localization 아님. default en."
+        }
+      }
+    },
     "hooks": {
       "type": "object",
       "additionalProperties": false,

@@ -189,6 +189,7 @@ Wave 2: [task 3]          ← depends on wave 1
 | `team.waveSize` | `3` | Max parallel workers per wave |
 | `memory.decayDays` | `7` | Working memory retention period |
 | `memory.promotionThreshold` | `5` | Access count for auto-promotion to permanent |
+| `output.language` | `"en"` | best-effort 사용자-대면 출력 언어 선호 (트리거 인식과 별개; advisory) |
 
 ## FAQ
 

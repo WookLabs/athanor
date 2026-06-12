@@ -78,7 +78,8 @@ brick `/athanor:setup`.
   },
   "team": { "waveSize": 3, "discoveryRelay": true },
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
-  "triggers": { "language": "both" }
+  "triggers": { "language": "both" },
+  "output": { "language": "en" }
 }
 ```
 
@@ -479,6 +480,20 @@ same rules as the Vendoring Gate verdict above — informational, non-blocking.
 
 Triggers are declared per-skill in each skill's frontmatter `description:` field — both Korean and English keywords are embedded there. The `triggers.language` field in `athanor.json` is informational only; no runtime component reads it to gate trigger matching. Report the current value if present, but do not prompt the user to change it.
 
+출력 언어는 `output.language`로 제어되며 기본 `en`(best-effort advisory); 현재 값을 보고하되 변경을 강요하지 않는다. `triggers.language`와는 별개 축이며, 런타임 렌더러는 없고 각 skill leader가 Present-to-User 직전 해석한다(부재·malformed → `en`).
+
+### output.language 해석 (canonical)
+
+이것이 `output.language` 해석의 **단일 소스(single source of truth)**다 — 다른 8개 skill은 전체 스니펫을 재기술하지 않고 이 섹션을 한 줄 포인터로 인용한다.
+
+```bash
+OUTPUT_LANG=$(jq -r '.output.language // "en"' athanor.json 2>/dev/null); case "$OUTPUT_LANG" in ko|en) ;; *) OUTPUT_LANG=en;; esac
+```
+
+의미: Present-to-User 직전 해석; 파일 부재·malformed·미지원 값 → `en`.
+
+leader-side `athanor.json` pre-dispatch read는 approved infra-exception이다(precedent: `skills/work/SKILL.md:64` thin-leader-rejection comment — dispatch 파라미터는 worker launch 전에 알아야 하므로).
+
 ### Step 5: Summary
 
 ```
@@ -488,6 +503,7 @@ Project: {current directory name}
 Config:  athanor.json
 Session: .athanor/sessions/
 Triggers: {ko|en|both}
+Output: {ko|en}
 
 다음 단계:
   /athanor:discuss  — 브레인스토밍/의사결정

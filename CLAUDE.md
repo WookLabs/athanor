@@ -153,4 +153,4 @@ Workers should check `.athanor/lessons/` before starting, filter by `skill:` tag
 
 ## Configuration
 
-See `athanor.json` in project root. Key settings: `codex.enabled` (Codex cross-model planning, default true), `work.defaultMode` ("solo"/"team"), `memory.decayDays` (working-memory retention, default 7), `memory.promotionThreshold` (access count for auto-promotion, default 5), `triggers.language` ("ko"/"en"/"both").
+See `athanor.json` in project root. Key settings: `codex.enabled` (Codex cross-model planning, default true), `work.defaultMode` ("solo"/"team"), `memory.decayDays` (working-memory retention, default 7), `memory.promotionThreshold` (access count for auto-promotion, default 5), `triggers.language` ("ko"/"en"/"both"), `output.language` ("ko"/"en", default en — 사용자-대면 출력 언어, best-effort advisory; leader가 Present-to-User 직전 `jq ... // "en"` 으로 해석, 부재/오류 시 en).
