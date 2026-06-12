@@ -170,7 +170,7 @@ def test_athanor_opt_in_stops_at_home(tmp_path, monkeypatch):
     start dir at/below $HOME — the walk halts at the HOME boundary.
 
     Layout:  above/athanor.json   <- ABOVE home, must NOT be honored
-             above/home/          <- $HOME (the stop)
+             above/home/          <- faked Path.home() (the stop)
              above/home/proj/sub  <- start (no .git, no athanor.json on path)
     """
     above = tmp_path / "above"
@@ -179,8 +179,12 @@ def test_athanor_opt_in_stops_at_home(tmp_path, monkeypatch):
     start.mkdir(parents=True)
     (above / "athanor.json").write_text("{}", encoding="utf-8")  # above HOME
 
-    monkeypatch.setenv("HOME", str(home))
-    # Path.home() honors $HOME on POSIX; force-resolve to be safe under WSL.
+    # Fake the home ceiling by patching Path.home on the class — NOT via
+    # setenv("HOME"): on Windows, Path.home() reads %USERPROFILE% and IGNORES
+    # $HOME (bpo-36264, Python 3.8+), so env-faking is POSIX-only. The SUT
+    # calls Path.home().resolve() on this same pathlib.Path class, so the
+    # class-attribute patch is deterministic on every platform.
+    monkeypatch.setattr(Path, "home", lambda: home)
     result = hook_state._athanor_opt_in(start)
     assert result is False, (
         "opt-in walked past $HOME and honored an athanor.json above it "
