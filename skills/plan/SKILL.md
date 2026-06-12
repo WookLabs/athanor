@@ -54,8 +54,7 @@ code, rubric text, and templates live under `skills/plan/references/`:
 - `references/depth-flag-dispatch.md` — v0.17.0 **active** handler for
   `--depth={standard|deep|lite}` + `--no-review`. S07 collapsed the
   former `/athanor:deep-plan` + `/athanor:lite-plan` skills into this
-  one unified `/athanor:plan` invocation with flag dispatch (see
-  `docs/v0.17.0-migration.md`).
+  one flag-dispatch invocation (see `docs/v0.17.0-migration.md`).
 - `references/approach-altitude.md` — Step 1 approach-altitude gate (plan-the-approach vs plan-the-deliverable recognition).
 
 ---
@@ -273,8 +272,11 @@ present the **complete plan** using the template in
 `references/presentation.md` (Goal / Approach / Phase Summary / Scope /
 Phase Detail / Key Decisions / Risks), followed by either the UNRESOLVED
 conflict handler (`AskUserQuestion`) or the no-conflicts confirmation
-prompt (Y 확정 / N 수정 필요). After confirmation, plan.md is as-authored;
-`/athanor:work` consumes the latest plan.md.
+prompt (Y 확정 / N 수정 필요). 제시 텍스트는 해석된 `output.language`(ko→
+한국어 / en→영어; 부재 시 en)에 맞춘다 — plan.md의 Splitter 구조 토큰(`##
+Subtasks`, `execution_note:` 등)·필드 키는 언어 무관 항상 영어. After
+confirmation, plan.md is as-authored; `/athanor:work` consumes the latest
+plan.md.
 
 ---
 
