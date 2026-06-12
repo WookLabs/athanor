@@ -3,17 +3,19 @@
 Context
 -------
 The v0.16.0 release (Phase 3.5) bundles a CLAUDE.md token-diet rewrite
-that slimmed the file from ~534 lines down to a 145-175 line "contract
+that slimmed the file from ~534 lines down to a 145-178 line "contract
 index" + 3 archive companion docs under `docs/archive/`. The new
 top-level file is meant to be a navigational contract surface — not the
 single-source-of-truth prose dump it had become through v0.7.x → v0.15.x.
 
 This regression test pins the invariants of that rewrite:
 
-1. Line count stays in the 145-175 band — guards against re-bloat
+1. Line count stays in the 145-178 band — guards against re-bloat
    (regressing back into the source-of-truth role) and against
    over-aggressive trimming (losing the contract anchors that
-   skills cross-reference).
+   skills cross-reference). The 178 ceiling is the v0.18.4 update
+   (see LINE_COUNT_MAX rationale below); the live band is always the
+   LINE_COUNT_MIN / LINE_COUNT_MAX constants, not these prose numbers.
 2. The four navigational anchors are present:
    - §"Session Lookup Convention"
    - §"Defense Mechanisms" + its §"Status table" subsection
@@ -45,6 +47,16 @@ LINE_COUNT_MIN = 145
 # is a deliberate contract update, not drift.
 LINE_COUNT_MAX = 178
 
+# v0.18.8: byte ceiling complements the line ceiling. A line-count gate
+# alone cannot catch a single line growing unboundedly (the Defense
+# Mechanisms status-table rows are each one very long line), so a byte cap
+# guards that re-bloat axis too. As of the v0.18.8 CLAUDE.md diet the file
+# is ~19.5 KB; 24000 leaves ~23% headroom for ordinary contract updates
+# (a +3-line v0.18.4-style addition) without sliding back toward the old
+# source-of-truth prose dump. This is an additive guard, not a widening of
+# the line band.
+BYTE_COUNT_MAX = 24000
+
 
 def _read_claude_md() -> str:
     assert CLAUDE_MD.is_file(), (
@@ -54,11 +66,13 @@ def _read_claude_md() -> str:
 
 
 def test_claude_md_line_count_in_target_range() -> None:
-    """MUST — CLAUDE.md line count in the [145, 175] band.
+    """MUST — CLAUDE.md line count in the [LINE_COUNT_MIN, LINE_COUNT_MAX]
+    = [145, 178] band.
 
-    v0.16.0 token-diet rewrite: ~534 → ~175 lines. Re-bloat past 175
-    means the file is sliding back toward source-of-truth role;
-    going below 145 means we've lost contract anchors.
+    v0.16.0 token-diet rewrite: ~534 → ~175 lines; the v0.18.4 ceiling
+    update raised the cap to 178. Re-bloat past LINE_COUNT_MAX means the
+    file is sliding back toward source-of-truth role; going below
+    LINE_COUNT_MIN means we've lost contract anchors.
 
     Counts physical newlines (matches `wc -l` semantics).
     """
@@ -71,6 +85,23 @@ def test_claude_md_line_count_in_target_range() -> None:
         f"file is a navigational index, not a prose dump — re-bloat "
         f"suggests content should move to docs/archive/, while under-"
         f"shoot suggests an essential anchor section was deleted."
+    )
+
+
+def test_claude_md_byte_count_under_ceiling() -> None:
+    """MUST — CLAUDE.md byte size under BYTE_COUNT_MAX (24000).
+
+    Complements the line-count band: the Defense Mechanisms status-table
+    rows are each a single very long line, so the line gate alone cannot
+    detect per-line re-bloat. The byte ceiling guards that axis — overflow
+    means verbose prose belongs in `docs/archive/` companion files, not in
+    the navigational contract index.
+    """
+    byte_count = len(_read_claude_md().encode("utf-8"))
+    assert byte_count <= BYTE_COUNT_MAX, (
+        f"CLAUDE.md is {byte_count} bytes, over the {BYTE_COUNT_MAX}-byte "
+        f"ceiling. The file is a navigational index, not a prose dump — "
+        f"move verbose internals to docs/archive/ companion docs."
     )
 
 

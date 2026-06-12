@@ -323,3 +323,34 @@ gate entirely. The script exits 0 unconditionally with no claim detection.
   (Spec-then-TDD).
 - Adversarial-forgery runtime gate within `verification-before-completion`
   skill extension (Spec-then-TDD).
+
+## PreToolUse Kernel Guard (Pattern Targets and Honest Scope)
+
+Relocated from the CLAUDE.md §Defense Mechanisms status-table row at
+v0.18.8 (the 1-line summary row remains canonical in CLAUDE.md; this is
+the verbose internals). The guard is registered on the `hooks/hooks.json`
+`PreToolUse` event (since v0.16.0; v0.18.0 routes it through the
+single-outer-entry `pretool_dispatcher.py`, kernel guard running FIRST
+and never over-ruled by the freeze layer). The hook genuinely fires and
+exits 2 to block.
+
+### Pattern targets (3 accident classes)
+
+1. **Destructive shell** — `rm -rf /` and family, `git reset --hard`.
+2. **Force-push to `main`/`master`** — the matcher uses a `(?![\w-])`
+   right boundary so `main`/`master`-prefixed branches (e.g.
+   `feature/main-update`) are allowed while exact `main`/`master`
+   segments stay blocked.
+3. **Credential file access** — `.env`, private keys. `.env.example` /
+   `.env.test` are allowed.
+
+`athanor.json` `hooks.profile: "off"` opt-out disables the guard (exits 0
+even for `rm -rf /`).
+
+### Honest scope (what it is NOT)
+
+This is a **textual regex guard, NOT a command parser or security
+boundary**. It catches obvious literal forms but is bypassable by
+obfuscation: command substitution `$(...)`, variable indirection,
+base64/`eval`, reordered flags. Treat it as a guardrail against
+fat-finger accidents, not containment against an adversary.
