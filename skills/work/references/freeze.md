@@ -22,8 +22,8 @@ with a set of session-local defaults to produce
 `.athanor/sessions/<id>/freeze-allowlist.json`. When
 `athanor.json` `hooks.freeze.mode != "off"`, the PreToolUse dispatcher
 reads this allowlist and rejects Claude-issued `Edit` / `Write` /
-`MultiEdit` / scoped `Bash` writes whose destination paths fall outside
-it.
+`MultiEdit` / `NotebookEdit` / scoped `Bash` writes whose destination
+paths fall outside it.
 
 **Posture.** Opt-in. The allowlist is **always built** (no config gate
 on the builder — cheap stdlib step, no measurable cost), so a user

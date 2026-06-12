@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Fable 5 audit round 3 — hook-runtime consolidation + perf hoists (behavior-preserving).** Walk-up unification (P1, a5b1038): a single `_walk_up(...) -> WalkResult` in `scripts/hooks/_athanor_hook_runtime.py` replaces 4 divergent walk-up loops, with a frozen `WalkResult {match, stopped_at_git, stopped_at_home}` preserving each call site's `.git`-hit disposition; `_athanor_opt_in` now also stops at `$HOME` (M2), both `range(8)` literals dropped from `hook_state.py` (M1), and `resolve_project_root` is memoized on `(cwd, $HOME)` with an exposed `cache_clear()` (M7). Hot-path hoists (P2, 7807c2c): `pretool_dispatcher.py` resolves the project root ONCE in `main()` after the freeze-mode gate ("off" stays zero-walk) and threads it through `_read_freeze_allowlist` → `_latest_session_dir` → `freeze_evaluate` (M6); `pretool_kernel_guard.py` splits the Bash command ONCE per evaluation and threads the segment list into its 3 checkers (M8); the cred-gate tool-set rebuild is hoisted to a module-level `_CRED_GATE_TOOLS` frozenset (M9). Verdicts bit-for-bit unchanged.
+- **Fail-open traceback breadcrumb (P5, 7a80e26).** The `pretool_dispatcher` freeze-delegation except-branch now emits the full traceback to stderr after the existing one-line breadcrumb, making fail-open defects diagnosable under `claude --debug`; the exit-0 fail-open disposition is unchanged and an in-code comment records why except-narrowing was rejected (an uncaught class would fail-closed and block ALL tool calls).
+- **CLAUDE.md diet 178→156 lines (P6, 502b447).** All cuts from zero-pin sections; Kernel Guard pattern-target detail relocated to a new `docs/archive/defense-mechanisms-detail.md` section; contract-test docstrings corrected from the stale "145-175 band" to the actual `[145, 178]`; new `BYTE_COUNT_MAX=24000` ceiling + `test_claude_md_byte_count_under_ceiling`.
+- **Low-priority prose batch (P7).** `skills/work/references/freeze.md` write-tool list now includes `NotebookEdit`; `docs/DESIGN.md` effort-level table annotated as illustrative (binding check is `tests/test_regression_agent_effort_level.py`); `tests/conftest.py` gains a comment explaining why `tests/` is deliberately NOT a package (sys.path injection vs `__init__.py` ref/-collection INTERNALERROR risk).
+
+### Added
+
+- **Audit round-3 regression coverage.** P1 adds `tests/test_regression_v0188_walkup_unification.py` (13 walk-up invariant tests); P2 adds +14 verdict-parity tests; P5 adds +1 fail-open-traceback test. Test-gap closures (P3, 4bc4b76): the derived per-skill stop-phrase-whitelist pointer assertion now rglob-discovers pointer-bearing skill files (no hardcoded path list, M4), and the freeze-guard `_relativize_target` escape suite pins inner-traversal and outside-root absolute paths BLOCKED at both the unit and `evaluate_payload` exit-2 layers, with the symlink escape documented as an xfail sentinel (lexical-only walker; XPASS-flags if real-path resolution ever lands) (M10).
+
+### Documentation
+
+- **Companion-pin directionality documented (P4, adb5df8).** `tests/test_regression_codex_companion.py` module docstring now records the pin directionality — exactly ONE two-way derived pin (the lfg-goal UNDETERMINED non-blocking parity rule) vs 14 one-way verbatim pin groups, with per-group fail-loud rationale.
+
 ## [0.18.8] — 2026-06-12
 
 ### Added

@@ -539,7 +539,8 @@ they cannot collide.)
 ### Verification
 
 CI / pre-commit should enforce the two-kind partition — exactly the 4 registered types carry
-a `name:`, the 7 reference docs do not:
+a `name:`, the 7 reference docs do not (illustrative; the binding check is
+`tests/test_regression_agent_effort_level.py`):
 
 ```bash
 python -c "import re,pathlib; reg={p.stem for p in pathlib.Path('agents').glob('*.md') if re.search(r'^name:\s*\S+', p.read_text(encoding='utf-8'), re.M)}; ref={p.stem for p in pathlib.Path('agents').glob('*.md')} - reg; assert reg=={'learner','releaser','ci-watcher','codex-dispatcher'}, reg; assert ref=={'analyst','cleaner','critic','executor','planner','researcher','reviewer'}, ref"
