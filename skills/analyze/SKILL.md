@@ -268,6 +268,8 @@ The workers' briefs are short enough to combine directly.
 
 ### Step 4: Save & Present
 
+User-facing prose — the Step 1 announce, the Merged Report body, and the presentation below — follows the resolved `output.language` (ko→한국어 / en→영어; 부재 시 en; resolve per `skills/setup/SKILL.md` §`output.language 해석 (canonical)` just before Present-to-User). Structure headings, the Summary heading, field keys, and result-packet field keys stay English regardless.
+
 1. Save the merged report to `.athanor/sessions/{id}/analyze.md`
 2. Present to user:
 
