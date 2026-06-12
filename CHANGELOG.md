@@ -12,6 +12,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - **Fail-open traceback breadcrumb (P5, 7a80e26).** The `pretool_dispatcher` freeze-delegation except-branch now emits the full traceback to stderr after the existing one-line breadcrumb, making fail-open defects diagnosable under `claude --debug`; the exit-0 fail-open disposition is unchanged and an in-code comment records why except-narrowing was rejected (an uncaught class would fail-closed and block ALL tool calls).
 - **CLAUDE.md diet 178→156 lines (P6, 502b447).** All cuts from zero-pin sections; Kernel Guard pattern-target detail relocated to a new `docs/archive/defense-mechanisms-detail.md` section; contract-test docstrings corrected from the stale "145-175 band" to the actual `[145, 178]`; new `BYTE_COUNT_MAX=24000` ceiling + `test_claude_md_byte_count_under_ceiling`.
 - **Low-priority prose batch (P7).** `skills/work/references/freeze.md` write-tool list now includes `NotebookEdit`; `docs/DESIGN.md` effort-level table annotated as illustrative (binding check is `tests/test_regression_agent_effort_level.py`); `tests/conftest.py` gains a comment explaining why `tests/` is deliberately NOT a package (sys.path injection vs `__init__.py` ref/-collection INTERNALERROR risk).
+- 사용자-대면 출력 언어 선호 `output.language` 설정 키 신설(best-effort advisory, default en — 본 레포 ko) + 9개 native 스킬에 leader-side 해석 + 조건부 per-language directive 주입; 영어권 default 동작 불변
 
 ### Added
 
