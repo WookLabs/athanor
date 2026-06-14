@@ -51,6 +51,8 @@ import json
 import re
 from pathlib import Path
 
+from tests._version import _plugin_version
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLAN_SKILL = REPO_ROOT / "skills" / "plan" / "SKILL.md"
 CONFIG_SCHEMA = REPO_ROOT / "schemas" / "athanor-config.schema.json"
@@ -494,16 +496,18 @@ def test_codex_fallback_after_ms_key_absent():
     )
 
 
-def test_schema_id_v0160_bump():
-    """MUST — `$id` URL contains the `v0.18.7` release-tag token.
+def test_schema_id_release_tag_bump():
+    """MUST — `$id` URL contains the live `v<version>` release-tag token.
 
     Per CONTRIBUTING.md §Release URL bump, the `$id` is pinned to the
-    release tag. v0.18.7 bumps the URL token away from the v0.18.0 tag.
+    release tag. The expected token is derived from the live plugin version
+    (``tests._version._plugin_version()``), so it tracks every release bump.
     """
     schema = _load_schema()
     schema_id = schema.get("$id", "")
-    assert "v0.18.7" in schema_id, (
-        f"`$id` URL in {CONFIG_SCHEMA.name} must contain 'v0.18.7' release "
+    release_tag = f"v{_plugin_version()}"
+    assert release_tag in schema_id, (
+        f"`$id` URL in {CONFIG_SCHEMA.name} must contain '{release_tag}' release "
         f"tag (per CONTRIBUTING.md §Release URL bump); got {schema_id!r}."
     )
 

@@ -1,12 +1,14 @@
-"""Release-level smoke tests for v0.14.0.
+"""Release-level smoke tests for the v0.14.0 release line.
 
 Verifies version consistency across the 5-file manifest convention,
 CHANGELOG entry presence, and correct native agent count.
 
 Plan reference: v0.14.0 subtask S8.
 
-Note: test_v014_version_consistent and test_v014_changelog_entry_exists
-will RED until the S10 version bump and S11 CHANGELOG entry are applied.
+The version consistency check asserts against the live plugin version
+(``TARGET_VERSION`` derived from ``tests._version._plugin_version()``), so it
+tracks every release bump without edits. ``test_v014_changelog_entry_exists``
+asserts the historical ``[0.14.0]`` CHANGELOG header is preserved.
 """
 
 from __future__ import annotations
@@ -16,6 +18,8 @@ import re
 from pathlib import Path
 
 import pytest
+
+from tests._version import _plugin_version
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -31,7 +35,7 @@ VERSION_FILES = {
     ),
 }
 
-TARGET_VERSION = "0.18.7"
+TARGET_VERSION = _plugin_version()
 
 # Regex to extract version from $schema/$id URLs like .../v0.14.0/schemas/...
 _URL_VERSION_RE = re.compile(r"/v?(\d+\.\d+\.\d+)/schemas/")
@@ -88,7 +92,7 @@ def _extract_version(label: str, path: Path) -> str:
     ids=list(VERSION_FILES.keys()),
 )
 def test_v014_version_consistent(label: str, path: Path):
-    """All 5 manifest files must show version 0.14.0."""
+    """All 5 manifest files must agree on the live plugin version (TARGET_VERSION)."""
     actual = _extract_version(label, path)
     assert actual == TARGET_VERSION, (
         f"{label} shows version {actual!r}, expected {TARGET_VERSION!r}. "

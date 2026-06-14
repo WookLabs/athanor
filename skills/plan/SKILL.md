@@ -66,10 +66,9 @@ code, rubric text, and templates live under `skills/plan/references/`:
 
 After every worker (Planner A, Planner B, Reviewer A, Reviewer B, Critic)
 returns, the Leader MUST check for **stop-phrase patterns** (see
-`CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection" — "이 정도면
-멈춰도 될 것 같습니다", "계속할까요?", "기존 이슈입니다", "새 세션에서 계속",
-"좋은 체크포인트" / English equivalents). If detected, re-dispatch with
-prefix `"Complete the planning task fully. Do not stop early. Address
+`CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"; stop-phrase
+whitelist: see `docs/stop-phrase-whitelist.md`). If detected, re-dispatch
+with prefix `"Complete the planning task fully. Do not stop early. Address
 every aspect of the assignment."`.
 
 Also validate that each worker output contains a well-formed

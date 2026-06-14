@@ -172,10 +172,24 @@ def test_step_2_5_worker_output_defense_still_present():
     assert "step 2.5" in body_lower or "step 2 .5" in body_lower or "worker output defense" in body_lower
     # Stop-phrase detection markers must still exist
     assert "stop-phrase" in body_lower or "stop phrase" in body_lower
-    # The whitelist (at least one canonical phrase from v0.7.x) must still be there
-    canonical = ["계속할까요", "should i continue", "이 정도면 멈춰도", "i think we can stop"]
-    assert any(c in body for c in canonical) or any(c in body_lower for c in canonical), (
-        f"Step 2.5 stop-phrase whitelist must remain. Expected one of: {canonical}"
+    # Phase 6 (P10) hoisted the verbatim 5-phrase whitelist into the
+    # canonical docs/stop-phrase-whitelist.md; Step 2.5 now carries a
+    # pointer instead of the enumeration. Accept EITHER the pointer form
+    # (new canonical structure) OR a residual inline phrase mention
+    # (e.g. the leader-side guard prose in clarify mode).
+    whitelist_signals = [
+        "stop-phrase-whitelist.md",
+        "계속할까요",
+        "should i continue",
+        "이 정도면 멈춰도",
+        "이 정도면 멈출",
+        "i think we can stop",
+    ]
+    assert any(c in body for c in whitelist_signals) or any(
+        c in body_lower for c in whitelist_signals
+    ), (
+        f"Step 2.5 stop-phrase whitelist (pointer or residual phrase) must "
+        f"remain. Expected one of: {whitelist_signals}"
     )
 
 

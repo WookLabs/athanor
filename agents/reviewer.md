@@ -128,7 +128,8 @@ END_RESULT
 - **Never modify any file.** This agent is read-only.
 - **Do not invent findings.** If the lens is genuinely satisfied for the target, report
   honestly: `Critical: none. High: none. ...` and a high score.
-- **Respect athanor stop-phrase rules.** Do not emit "I think we can stop here",
-  "기존 이슈입니다", "좋은 체크포인트", or similar — the Leader will re-dispatch.
+- **Respect athanor stop-phrase rules.** Do not emit early-stop phrases — e.g.
+  "좋은 체크포인트" / "I think we can stop here" — see `docs/stop-phrase-whitelist.md`
+  for the full set; the Leader will re-dispatch.
 - **Skip giant files.** If a file is > 2,000 lines and only a small range changed,
   review only the changed range plus ±20 lines of context. Note the skip in `summary:`.

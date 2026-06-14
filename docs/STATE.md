@@ -4,7 +4,37 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
+## Current Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
+
+**v0.18.8** (released 2026-06-12) — Ships the **athanor-codex companion plugin**
+(the window's one additive feature) plus a two-round Fable 5 audit (PR #53,
+P2–P20) of hooks, docs, and ledgers. The athanor plugin's own behavior is
+unchanged — patch, not minor (no migration guide; the companion carries its own
+independent `0.1.0+codex.*` version). No identity-invariant change.
+
+1. **athanor-codex companion** (`plugins/athanor-codex/`). A second-runtime
+   mirror of the athanor native skill set for the Codex CLI — 13 prefix-safe
+   skills (discuss/analyze/plan/work/lfg/lfg-goal/review/debug/ci-watch/release/
+   scope-drift/verify/setup), no Claude hooks, repo-local marketplace entry. P9
+   pins lfg-goal UNDETERMINED non-blocking parity both ways.
+2. **Hook hardening (security).** P14 removes a dead `DEPRECATION_SENTINEL`
+   Stop-gate bypass; P13 segment-scopes the force-push guard (`feature/main-update`
+   allowed, exact `main`/`master` blocked) and strips `sudo`/`env` wrapper
+   prefixes; P16 adds NotebookEdit/MultiEdit to Kernel Guard coverage; P15 makes
+   `.athanor/.hook-state/` creation opt-in (no debris in non-athanor repos).
+3. **Freeze + doc-contract.** P2 fixes the freeze allowlist DOA on absolute paths
+   (relativization + `allowedPaths` key unification); P18 centralizes the plugin
+   version literal via `tests/_version.py`; P5/P6/P7/P17 restore doc-contract
+   parity; P10 canonicalizes the stop-phrase whitelist; P19/P20 correct stale
+   STATE ledger rows + re-key ROADMAP deferrals to stable codenames.
+
+A 6-lens review round (0 Critical / 4 High, all fixed) closed the release; +53
+regression tests. Full suite **1025 passed, 4 skipped, 1 xpassed**.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
 
 **v0.18.7** (released 2026-06-07) — An evidence-based plugin-diet audit (3
 Explore agents + direct verification). Honest finding: athanor is already lean;
@@ -128,32 +158,6 @@ adoptions, from the ref-update audit. No identity-invariant change.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
-## Previous Phase: v0.18.2 — lfg/lfg-goal Doc-Lifecycle Audit + Cleanup
-
-**v0.18.2** (released 2026-06-04) — Patch closing the lfg/lfg-goal
-documentation-lifecycle audit (3 concerns: read→execute, execute→document,
-cleanup of stale docs). No identity-invariant change.
-
-1. **Cleanup layer (concern ③, the weakest).** `agents/cleaner.md` gains a
-   "Clean Old Goals" step that ages out non-completing (`aborted`/
-   `abandoned`) goals past `goalRetentionDays` — closing the **D13 broken
-   cross-reference** (lfg-goal claimed the cleaner does this; no step
-   existed). `complete` goals excluded (user action). Dispatch synced.
-2. **Drift + dormancy fixes.** Cleaner dispatch tier `sonnet`→`haiku`
-   (matches frontmatter + CLAUDE.md "minimal effort"); `learner-on-release`
-   wired into the release ceremony (`agents/releaser.md` Step 6).
-3. **Documentation lifecycle (new).** Migration-guide staleness frontmatter
-   (`status`/`superseded-by`) + `CONVENTIONS.md §7` + regression-test ager;
-   STATE.md bounded-history trim rule (progressive); completed-goal
-   `receipts/` archival; lfg PR-body work-log/review persistence slots.
-
-16 new regression tests (7 files), all RED→GREEN. Cleanup/trigger layers
-are advisory (prose-driven), consistent with athanor defense-mechanism
-honesty labels.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 
 ### Foundation — v0.1.0 ~ v0.5.x (2026-04-08 ~ 2026-04-14)
@@ -195,19 +199,16 @@ Spec-then-TDD / Stop hook gate.
 | `session-lookup-convention` (v0.7.7) | ✅ enforced | `tests/test_regression_session_lookup_convention.py` |
 | `_doc-honesty` (v0.7.7+v0.7.8) | ✅ enforced | `tests/test_regression_doc_string_honesty.py` (models deprecated; hooks working contract) |
 | `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
-| `contract-ledger` presence | ⚠️ user-install 환경에서 항상 fail | `/athanor:setup` Check #11. fresh-checkout 분기 필요 (개선 후보) |
+| `contract-ledger` presence | ✅ fixed (v0.18.x) | `/athanor:setup` Check #11 — fresh-checkout fast-path implemented: no sessions → PASS (info), not a hard FAIL. See `skills/setup/SKILL.md` §11 fast-path. |
 | `learner-on-release` | ✅ ceremony 단계 (advisory) | `agents/releaser.md` Step 6 — release tag 후 leader가 Learner dispatch (`learner_on_release: pending-leader-dispatch` 신호). `agents/learner.md` §On Release |
-| `agent-frontmatter-consistency` | ❌ 회귀 0건 | v0.6.2 클래스 재발 시 잡지 못함 (개선 후보) |
+| `agent-frontmatter-consistency` | ✅ enforced | `tests/test_regression_agent_effort_level.py` (registered-agent model tier + 7/4 partition lock), `tests/test_regression_v014_agent_definitions.py`, `tests/test_regression_codex_companion.py` |
 | `stop-phrase-detection` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 | `read-before-edit` | ❌ prose-only, enforce 없음 | CLAUDE.md §Defense Mechanisms (개선 후보) |
 
 ## Known gaps (다음 작업 후보)
 
-- 신규 user 환경에서 `/athanor:setup` Check #11이 항상 빨간 X (`.athanor/sessions/`이 gitignored이므로 fresh checkout에 ledger 없음). `--ci` 모드처럼 user-install fresh 환경 분기 필요.
 - Memory 2-tier (`permanent → mem-search`)이 디자인 문서에는 있으나 실제 구현은 frontmatter `importance` 마킹뿐 — mem-search MCP에 영구 저장하는 코드 부재.
-- agent / skill frontmatter 회귀 테스트 부재 (v0.6.2 클래스 재발 시 잡지 못함).
 - CI matrix는 ubuntu-latest 단일 — Windows-specific 회귀(case-insensitive FS 등) 자동 검증 부재.
-- Stop hook이 모델 자기-식별에 100% 의존 (false-negative 위험). 외부 transcript-parser 마이그레이션 후보. **(2026-05-18 spike: PASS — 아래 §Command-hook Stop blocking spike 참조)**
 
 ## Command-hook Stop blocking spike (2026-05-18)
 

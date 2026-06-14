@@ -14,7 +14,7 @@ classes:
      - `git checkout .` (restore all)
   2. **Force-push to protected branches** (Bash):
      - `git push --force` / `-f` / `--force-with-lease` to main/master
-  3. **Sensitive credential file access** (Bash, Read, Write, Edit):
+  3. **Sensitive credential file access** (Bash, Read, Write, Edit, MultiEdit, NotebookEdit):
      - `.env`, `.env.local`, `.env.production`, `.env.secret`
      - `credentials.json`, `credentials.yaml`, `private_key`, `.ssh/`,
        `.aws/credentials`
@@ -100,10 +100,14 @@ def _is_destructive_rm(command: str) -> bool:
     """True if `command` has an `rm` invocation that is recursive AND force AND
     targets filesystem root or home — any flag order, with optional intervening
     options, including shell-glob forms (`/*`, `~/*`)."""
-    for m in re.finditer(r"\brm\b([^\n;]*)", command):
-        # Bound the arg span at a command-chain separator so a later command's
-        # tokens don't bleed into this rm's analysis.
-        args = re.split(r"&&|\|\||\|", m.group(1))[0]
+    # Reason per command segment (P13 shared splitter) so a later command's
+    # tokens don't bleed into this rm's analysis; within a segment, take the
+    # text after the `rm` token as its argument span.
+    for segment in _command_segments(command):
+        m = re.search(r"\brm\b(.*)", segment)
+        if m is None:
+            continue
+        args = m.group(1)
         has_recursive = (
             "--recursive" in args
             or re.search(r"(?:^|\s)-[a-zA-Z]*r[a-zA-Z]*(?=\s|$)", args) is not None
@@ -138,19 +142,23 @@ DESTRUCTIVE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 # ---------------------------------------------------------------------------
 # Rule 2: Force-push to protected branches
 # ---------------------------------------------------------------------------
-# The `(main|master)` token must appear as a standalone word (\b boundary)
-# anywhere on the same `git push` invocation as a force flag. Feature
-# branches like `feature/x` or `release/main-fix` must NOT match
-# (`release/main-fix` would match `\bmain\b` — but the leading slash + dash
-# inside the branch name means `\b` does fire at the `main` boundary).
-# Trade-off: branch names that literally end in `main` as a slash-segment
-# (e.g. `feature/main`) are conservatively blocked. Acceptable for v0.16.0;
-# users push `feature/main` via `--force-with-lease` to a non-main remote
-# rarely, and the block is easily worked around (rename branch).
+# The `(main|master)` token must appear as a standalone word on the same
+# `git push` invocation as a force flag. The trailing boundary is
+# `(?![\w-])` rather than a bare `\b`: a plain `\b` fires at the `n`→`-`
+# transition inside `feature/main-update`, so `\bmain\b` false-positived on
+# any branch whose name merely STARTS with `main`/`master` (e.g.
+# `feature/main-update`, `release/master-rework`). `(?![\w-])` requires the
+# token to be followed by neither a word char nor a hyphen, so those branch
+# names are correctly ALLOWED while `origin main` / `origin master` (token
+# followed by space or end-of-string) stay BLOCKED.
+# Residual conservative case: a slash-segment that is EXACTLY `main`/`master`
+# (e.g. `feature/main`) is still blocked — the leading `\b` fires at `/`→`m`
+# and the trailing boundary passes at end-of-arg. Rare; rename to work around.
+# This is a best-effort textual gate, not a parser — see module docstring.
 FORCE_PUSH_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\bgit\s+push\b(?=.*--force\b)(?=.*\b(?:main|master)\b)"),
-    re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)-f\b)(?=.*\b(?:main|master)\b)"),
-    re.compile(r"\bgit\s+push\b(?=.*--force-with-lease\b)(?=.*\b(?:main|master)\b)"),
+    re.compile(r"\bgit\s+push\b(?=.*--force\b)(?=.*\b(?:main|master)(?![\w-]))"),
+    re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)-f\b)(?=.*\b(?:main|master)(?![\w-]))"),
+    re.compile(r"\bgit\s+push\b(?=.*--force-with-lease\b)(?=.*\b(?:main|master)(?![\w-]))"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -200,6 +208,41 @@ def _stderr(msg: str) -> None:
     """Emit one line of stderr; stderr is fed back to the model on exit 2
     and visible in CI logs on exit 0. Both are useful — keep messages terse."""
     print(f"athanor (pretool guard): {msg}", file=sys.stderr)
+
+
+# Command-chain separators: `&&`, `||`, single `|`, `;`, and newline. Kept as
+# one shared splitter (P13) so the force-push and destructive-rm checks agree
+# on what "a single command segment" means. This is deliberately NOT a shell
+# tokenizer — it does not honor quoting, here-docs, `$(...)`, or backslash
+# continuations. The bias is false-NEGATIVE: when the split is ambiguous we
+# would rather UNDER-block than over-block, because this guard is a fat-finger
+# guardrail, not a security boundary (see module docstring).
+_SEGMENT_SPLIT = re.compile(r"&&|\|\||\||;|\n")
+# A trailing `#` comment is stripped only when the `#` sits at a token boundary
+# (start-of-segment or after whitespace). Mid-token `#` (e.g. `url#frag`,
+# `issue-#5`) is left intact so we never silently drop a real argument.
+_TRAILING_COMMENT = re.compile(r"(?:^|\s)#.*$")
+
+
+def _command_segments(command: str) -> list[str]:
+    """Split a shell command string into best-effort command segments.
+
+    Splits on `&&`, `||`, `|`, `;`, and newline, then conservatively strips a
+    trailing `#`-comment from each segment (only when the `#` is at a token
+    boundary). Empty/whitespace-only segments are dropped. Shared by the
+    force-push and destructive-rm checks so both reason over the SAME notion of
+    a single command (P13).
+
+    Intentionally not a shell parser: quoting/here-docs/`$(...)` are not
+    honored. False-NEGATIVE bias — an ambiguous case under-blocks rather than
+    over-blocks (fat-finger guardrail, not a security boundary).
+    """
+    segments: list[str] = []
+    for raw in _SEGMENT_SPLIT.split(command):
+        seg = _TRAILING_COMMENT.sub("", raw).strip()
+        if seg:
+            segments.append(seg)
+    return segments
 
 
 def _read_stdin_payload() -> dict | None:
@@ -254,9 +297,92 @@ def _check_destructive_shell(command: str) -> str | None:
     return None
 
 
+# A force-push segment's command word is `git push`, optionally behind a small
+# safe wrapper-prefix set (`sudo [-flags]`, `env [VAR=val] [-flags]`) stripped
+# by `_strip_force_push_wrappers` before this anchor is applied. Anchoring to
+# the segment's (post-strip) leading command keeps the force-push literal
+# appearing only as QUOTED DATA to another command (e.g.
+# `echo 'git push --force origin main'`) from tripping the gate: there the
+# segment's command is `echo`, not git push.
+#
+# Accepted false-negative CLASS (still slips, by design — this is a fat-finger
+# guardrail, NOT a security boundary, see module docstring): any segment whose
+# effective head after stripping the sudo/env wrapper set is not literally
+# `git` — e.g. `xargs`/`time`/`nice` wrappers, `sudo -u <user>` option-argument
+# forms (the non-flag `<user>` token stops the strip), and shell aliases.
+_SEGMENT_IS_GIT_PUSH = re.compile(r"^git\s+push\b")
+
+
+def _strip_force_push_wrappers(segment: str) -> str:
+    """Strip a small, safe wrapper-prefix set from a command segment's head so
+    `sudo git push …` / `env VAR=v git push …` are recognised as git-push
+    invocations by the `^git\\s+push` anchor.
+
+    Stripped (simple whitespace tokenization — deliberately NOT shlex/a real
+    shell parser, to stay consistent with this file's best-effort textual
+    idiom):
+      * leading `sudo` token(s), plus any immediately following BARE option
+        tokens (tokens starting with `-`, e.g. `sudo -E`),
+      * leading `env` token, plus any following `VAR=value` assignment tokens
+        and bare option tokens (e.g. `env GIT_DIR=/tmp/x`).
+
+    Known honest residual (ACCEPTED): an option-with-argument form like
+    `sudo -u alice git push …` stops at the non-flag `alice` token — the strip
+    leaves `-u alice git push …`, which the anchor rejects, so it slips. We do
+    NOT build argument-aware option parsing (see module docstring).
+    """
+    tokens = segment.split()
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok == "sudo":
+            i += 1
+            # Consume immediately-following bare option flags (e.g. `-E`).
+            while i < len(tokens) and tokens[i].startswith("-"):
+                i += 1
+            continue
+        if tok == "env":
+            i += 1
+            # Consume following `VAR=value` assignments and bare option flags.
+            while i < len(tokens) and (
+                tokens[i].startswith("-") or "=" in tokens[i]
+            ):
+                i += 1
+            continue
+        break
+    return " ".join(tokens[i:])
+
+
 def _check_force_push(command: str) -> bool:
-    """Return True if the command is a force-push to a protected branch."""
-    return any(pattern.search(command) for pattern in FORCE_PUSH_PATTERNS)
+    """Return True if the command force-pushes to a protected branch.
+
+    Segment-scoped (P13): the `git push`, a force flag, and the `main`/`master`
+    token must all co-occur within a SINGLE command segment (split on `&&`,
+    `||`, `|`, `;`, newline). Before the leading-command anchor is applied, a
+    small safe wrapper-prefix set (`sudo [-flags]`, `env [VAR=val] [-flags]`)
+    is stripped from the segment head (`_strip_force_push_wrappers`) so a
+    privileged/env-wrapped push is still recognised; the force-push checks then
+    run against the STRIPPED segment. Two false-positives are thereby avoided:
+
+      * cross-segment — `git push --force origin feat && git switch main`: the
+        force flag and `main` live in different segments, so no single segment
+        satisfies all three tokens.
+      * quoted data — `echo 'git push --force origin main' >> notes.txt`: the
+        force-push spelling is only an argument to `echo`; the segment's
+        command word (after stripping) is not `git push`, so it is ignored.
+
+    Accepted false-NEGATIVE class: any segment whose effective head after
+    stripping the sudo/env wrapper set is not literally `git` slips — e.g.
+    `xargs`/`time`/`nice` wrappers, `sudo -u <user>` option-argument forms,
+    shell aliases. Acceptable for a fat-finger guardrail (see module docstring).
+    """
+    for segment in _command_segments(command):
+        stripped = _strip_force_push_wrappers(segment)
+        if not _SEGMENT_IS_GIT_PUSH.match(stripped):
+            continue
+        if any(pattern.search(stripped) for pattern in FORCE_PUSH_PATTERNS):
+            return True
+    return False
 
 
 def _path_is_sensitive(path: str) -> bool:
@@ -412,11 +538,15 @@ def evaluate_payload(
 
         return (0, "")
 
-    # ---- Read / Write / Edit tools ----
-    if tool_name in ("Read", "Write", "Edit"):
-        # All three tools use `file_path` as the canonical input key
-        # (per Claude Code tool schemas).
-        path = tool_input.get("file_path", "")
+    # ---- Read + write-class file tools ----
+    # `Read` is kept as an EXPLICIT, separate reference rather than folded
+    # into WRITE_TOOLS (it is not a write tool — see _athanor_hook_runtime).
+    # The write-class tools (Write/Edit/MultiEdit/NotebookEdit) come from the
+    # shared WRITE_TOOLS tuple so the credential gate covers all of them; the
+    # target path is resolved via `extract_target_path` so NotebookEdit's
+    # `notebook_path` key is honored (every other tool uses `file_path`).
+    if tool_name in ({"Read"} | set(_runtime.WRITE_TOOLS)):
+        path = _runtime.extract_target_path(tool_name, tool_input)
         if not isinstance(path, str) or not path:
             return (0, "")
         if _path_is_sensitive(path):

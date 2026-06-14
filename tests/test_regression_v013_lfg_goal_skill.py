@@ -131,6 +131,29 @@ def test_frontmatter_has_required_fields():
 
 
 # ---------------------------------------------------------------------------
+# Test 2b (P17) — allowed-tools grants AskUserQuestion
+# ---------------------------------------------------------------------------
+
+
+def test_allowed_tools_includes_ask_user_question():
+    """MUST (P17): frontmatter ``allowed-tools`` includes ``AskUserQuestion``.
+
+    Tier 3 goal-completion blocks on user ratification (D6) — the lfg-goal
+    leader must prompt the user for the blocking ratification decision.
+    Without the ``AskUserQuestion`` grant the Tier-3 user-block prompt is an
+    under-specified capability. The grant was previously missing from the
+    ``Bash, Read, Write, Skill`` list.
+    """
+    text = _read_skill_text()
+    fm, _body = _split_frontmatter(text)
+    allowed = fm.get("allowed-tools", "")
+    assert "AskUserQuestion" in allowed, (
+        f"lfg-goal SKILL.md allowed-tools must include 'AskUserQuestion' "
+        f"(Tier-3 user-ratification prompt, D6); got: '{allowed}'"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Test 3 — Validated Receipt-Ledger Loop literal in body
 # ---------------------------------------------------------------------------
 

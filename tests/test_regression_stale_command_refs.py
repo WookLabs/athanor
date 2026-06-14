@@ -25,6 +25,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 README = REPO_ROOT / "README.md"
 DISCUSS = REPO_ROOT / "skills" / "discuss" / "SKILL.md"
 DESIGN = REPO_ROOT / "docs" / "DESIGN.md"
+SKILLS_DIR = REPO_ROOT / "skills"
+
+# `/athanor:plan` is the ONE skill allowed to name the dead commands — its
+# body explains the v0.17.0 (S07) collapse ("former /athanor:deep-plan +
+# /athanor:lite-plan skills ... folded into this"). Every other skill must
+# use the flag form in user-facing guidance.
+_DEAD_PLAN_COMMANDS = ("/athanor:deep-plan", "/athanor:lite-plan")
+_HISTORICAL_REF_SKILLS = {"plan"}
 
 
 def test_readme_no_dead_plan_commands() -> None:
@@ -55,6 +63,31 @@ def test_design_no_dead_plan_commands() -> None:
         )
     assert "--depth=" in body, (
         "docs/DESIGN.md must document the '--depth=' flag form of /athanor:plan."
+    )
+
+
+def test_no_skill_recommends_dead_plan_commands() -> None:
+    """MUST — no skill (except plan's migration prose) names the dead
+    `/athanor:deep-plan` / `/athanor:lite-plan` commands.
+
+    v0.18.8 audit found six skills still *recommending* the removed
+    commands as live invocations in their "다음 단계" / "When NOT to invoke"
+    blocks: analyze, debug, discuss, setup, lfg, lfg-goal. v0.17.0 (S07)
+    folded both into `/athanor:plan --depth={deep|lite}`. Lock every skill
+    body to the flag form; only `plan` may name the old commands (to explain
+    the collapse).
+    """
+    offenders: list[str] = []
+    for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
+        if skill_md.parent.name in _HISTORICAL_REF_SKILLS:
+            continue
+        body = skill_md.read_text(encoding="utf-8")
+        for dead in _DEAD_PLAN_COMMANDS:
+            if dead in body:
+                offenders.append(f"{skill_md.parent.name}: {dead}")
+    assert not offenders, (
+        "Skills must use '/athanor:plan --depth=' not the v0.17.0-removed "
+        f"commands. Offenders: {offenders}"
     )
 
 

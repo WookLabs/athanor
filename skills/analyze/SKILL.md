@@ -3,6 +3,7 @@ name: analyze
 description: >
   병렬 고속 분석. 여러 analyst가 동시에 코드베이스를 분석.
   '분석', '분석해줘', '코드 분석', '구조 파악', '다각도 분석' 요청 시 사용.
+  English triggers: 'analyze', 'code analysis'.
 user-invocable: true
 allowed-tools: Bash, Read, Grep, Glob, Task
 ---
@@ -225,12 +226,7 @@ Keep under 300 words."
 
 Before merging, the Leader MUST check every worker brief for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a brief — re-dispatch that worker with the same prompt prefixed by `"Complete the analysis fully. Do not stop early. Cover the full scope you were assigned."`.
 
-Patterns enforced (English alias in parentheses):
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 Also validate that each brief contains a well-formed `ATHANOR_RESULT ... END_RESULT` block with a `status:` field. If absent or truncated, re-dispatch once with the same prompt.
 
@@ -288,9 +284,9 @@ Workers: {N} parallel analysts
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:deep-plan  — 분석 결과 기반 심층 계획
-  /athanor:plan       — 분석 결과 기반 구현 계획 (기본값)
-  /athanor:lite-plan  — 빠른 계획
+  /athanor:plan --depth=deep  — 분석 결과 기반 심층 계획
+  /athanor:plan               — 분석 결과 기반 구현 계획 (기본값)
+  /athanor:plan --depth=lite  — 빠른 계획
 ```
 
 ---

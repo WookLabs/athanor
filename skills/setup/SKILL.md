@@ -78,11 +78,6 @@ brick `/athanor:setup`.
   },
   "team": { "waveSize": 3, "discoveryRelay": true },
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
-  "models": {
-    "researcher": "sonnet", "analyst": "sonnet", "planner": "opus", "critic": "opus",
-    "executor": "opus", "cleaner": "haiku", "learner": "sonnet",
-    "debugger": "sonnet", "debugger-tracer": "opus"
-  },
   "triggers": { "language": "both" }
 }
 ```
@@ -411,7 +406,7 @@ Based on the Codex check result, announce tier impact:
 
 **If Codex AVAILABLE:**
 ```
-✓ Codex 사용 가능 — deep-plan은 cross-model 교차 검증, plan은 Codex review 사용
+✓ Codex 사용 가능 — /athanor:plan --depth=deep는 cross-model 교차 검증, 표준 plan은 Codex review 사용
 ```
 
 **If Codex UNAVAILABLE:**
@@ -480,18 +475,9 @@ same rules as the Vendoring Gate verdict above — informational, non-blocking.
   Checks 8–11은 ref/ 없이도 동작하므로 위 verdict는 신뢰할 수 있습니다.
 ```
 
-### Step 4: Trigger Language Configuration
+### Step 4: Trigger Language (informational)
 
-Ask the user:
-
-```
-트리거 언어를 설정하세요:
-  [1] ko    — 한글 트리거만 (/논의, /분석, /플랜, /워크)
-  [2] en    — English only (/discuss, /analyze, /plan, /work)
-  [3] both  — 한글 + English (기본값)
-```
-
-Save the choice to `athanor.json` field `triggers.language`.
+Triggers are declared per-skill in each skill's frontmatter `description:` field — both Korean and English keywords are embedded there. The `triggers.language` field in `athanor.json` is informational only; no runtime component reads it to gate trigger matching. Report the current value if present, but do not prompt the user to change it.
 
 ### Step 5: Summary
 

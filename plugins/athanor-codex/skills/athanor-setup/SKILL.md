@@ -14,7 +14,7 @@ Run a Codex-focused health check for the Athanor companion.
    - `.agents/plugins/marketplace.json`
    - `codex plugin list`
 2. Validate the Codex plugin with the local plugin validator when available:
-   `python3 /home/wook/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/athanor-codex`
+   `python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/athanor-codex`
 3. Check project state:
    - `athanor.json` exists or can be created by the Claude Athanor setup flow.
    - `.athanor/` session and lesson directories are present when used.

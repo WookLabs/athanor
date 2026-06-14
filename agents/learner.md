@@ -10,9 +10,11 @@ tools:
   - Bash
 ---
 
-> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
-> using inline prompts (not this file directly). Keep this file in sync with the dispatch
-> prompts in the corresponding SKILL.md.
+> **Note:** This is a registered agent type (`name:`/`tools:` frontmatter) with a
+> genuine dual path: it is dispatched **as a type** (e.g. by the release/work
+> lessons-extraction trigger and reachable standalone via `@athanor-learner`), AND
+> skills may dispatch the same lessons-extraction role via an **inline** prompt. Keep
+> this definition in sync with the inline dispatch prompt in the corresponding SKILL.md.
 
 # Athanor Learner
 

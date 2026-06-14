@@ -359,12 +359,7 @@ Max 15 tool calls. Keep under 400 words."
 
 Before merging, the Leader MUST check every worker finding for **stop-phrase patterns** (see `CLAUDE.md` §"Defense Mechanisms / Stop-Phrase Detection"). If any pattern appears in a finding — re-dispatch that worker with the same prompt prefixed by `"Diagnose to root cause. Do not stop early or dismiss as a pre-existing issue without evidence."`.
 
-Patterns enforced (English alias in parentheses):
-- "이 정도면 멈춰도 될 것 같습니다" / "I think we can stop here"
-- "계속할까요?" / "Should I continue?"
-- "기존 이슈입니다" / "This is a pre-existing issue"
-- "새 세션에서 계속" / "Let's continue in a new session"
-- "좋은 체크포인트" / "Good checkpoint"
+Stop-phrase whitelist: see `docs/stop-phrase-whitelist.md`.
 
 `debug` is especially sensitive to "기존 이슈입니다 / This is a pre-existing issue" — if this phrase appears, reject the finding unless it is paired with a git blame line + a session id where the issue was first observed.
 
@@ -373,7 +368,7 @@ Also validate that each finding contains a well-formed `ATHANOR_RESULT ... END_R
 ## Systematic Debugging Discipline
 
 Concept adopted from superpowers@5.1.0 `sp-systematic-debugging` (MIT, Copyright (c) 2025 Jesse Vincent; upstream: https://github.com/obra/superpowers).
-See NOTICE.md §Concepts adopted from upstream and `concepts/debug-discipline.md` (Subtask 11) for full attribution.
+See NOTICE.md §Concepts adopted from upstream and `concepts/systematic-debugging.md` for full attribution.
 
 This discipline binds every `/athanor:debug` worker (Triage, Error Analyst, Git History, Code Tracer). Workers MUST hold to the Iron Law and proceed phase-by-phase; the Leader MUST reject any finding that proposes a fix before Phase 1 evidence is on the table.
 
@@ -460,9 +455,9 @@ Workers: 1 triage + {N} parallel
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 다음 단계:
-  /athanor:plan       — 디버그 결과 기반 수정 계획 (복잡한 수정)
-  /athanor:lite-plan  — 빠른 수정 계획 (단순 버그)
-  /athanor:work       — 바로 수정 실행
+  /athanor:plan              — 디버그 결과 기반 수정 계획 (복잡한 수정)
+  /athanor:plan --depth=lite — 빠른 수정 계획 (단순 버그)
+  /athanor:work              — 바로 수정 실행
 ```
 
 ---
@@ -474,4 +469,4 @@ Workers: 1 triage + {N} parallel
 3. Leader가 결과를 직접 merge — merge agent 불필요.
 4. **Depth over speed** — 철저한 조사 우선. 단, tool call 제한으로 범위 통제.
 5. Plan Mode — 프로젝트 파일 수정 금지. `.athanor/sessions/`에만 쓰기.
-6. 기존 세션 재사용 (discuss/analyze 실행 후 같은 날이면).
+6. 세션 재사용 — LATEST 세션 사용 (날짜 무관; CLAUDE.md §Session Lookup Convention 참조).

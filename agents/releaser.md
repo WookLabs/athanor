@@ -11,9 +11,11 @@ tools:
   - Bash
 ---
 
-> **Note:** This agent definition serves as reference documentation. Skills dispatch workers
-> using inline prompts (not this file directly). Keep this file in sync with the dispatch
-> prompts in the corresponding SKILL.md.
+> **Note:** This is a registered, leader-dispatchable agent type (`name:`/`tools:`
+> frontmatter): the `/athanor:lfg` Step 7 release ceremony and `/athanor:lfg-goal`
+> per-cycle tagging dispatch it by type, and it is reachable standalone via
+> `@athanor-releaser`. If a skill ALSO carries an inline variant of this role, keep
+> this definition in sync with that dispatch prompt.
 
 # Athanor Releaser
 

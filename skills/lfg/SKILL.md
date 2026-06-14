@@ -9,7 +9,7 @@ description: >
   '진행해', '전체 파이프라인', '배포해', '커밋 푸시 PR', 'ship this',
   'release this end-to-end', '/athanor:lfg', 'athanor lfg'.
 user-invocable: true
-allowed-tools: Bash, Read, Write, Skill
+allowed-tools: Bash, Read, Write, Task, Skill
 ---
 
 # /athanor:lfg — Athanor-native LFG Pipeline
@@ -36,8 +36,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 - For casual conversation or exploratory questions — use `/athanor:discuss`
   instead.
-- For one-off planning without execution — use `/athanor:plan` or
-  `/athanor:lite-plan` directly.
+- For one-off planning without execution — use `/athanor:plan`
+  (optionally `--depth=lite`) directly.
 - For one-off review without commit/push/PR — use `/athanor:review`
   directly.
 
@@ -292,13 +292,13 @@ Emit the completion sentinel so caller workflows can detect end-of-pipeline.
 
 This pipeline preserves all four v0.10.0 athanor identity commitments:
 
-1. **Thin Leader** — every step above dispatches to a worker skill
-   (`/athanor:plan` / `/athanor:work` / `/athanor:review` / etc.) or runs
-   shell commands (`git`, `gh`); the LFG leader does NOT write code
-   directly.
+1. **Thin Leader** — every step dispatches to a worker skill or runs the
+   git/gh plumbing permitted by CLAUDE.md §Core Principle exceptions; the
+   LFG leader never authors code itself.
 2. **Cross-model adversarial planning** — step 1 invokes `/athanor:plan`,
-   which routes to deep tier (Planner A + Planner B + Critic) when
-   `codex.enabled=true`.
+   whose tier is set by `--depth=` (or trigger keywords) per its Tier
+   Dispatch Table (`skills/plan/SKILL.md`); `codex.enabled` controls only
+   the in-tier Codex fallback, not which tier runs.
 3. **Spec-then-TDD discipline** — step 2 invokes `/athanor:work`, which
    applies Splitter `execution_note` classification and the Phase 3 gate.
 4. **Stop hook runtime gate** — every Stop event during this pipeline
