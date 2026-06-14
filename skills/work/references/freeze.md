@@ -193,12 +193,17 @@ NOT "editing envelope" — to set honest expectations. Users running
 subprocess dispatches (Codex worker, test runners) whose writes are
 outside the freeze envelope.
 
-A future v0.19.0 PostToolUse sniffer pass may close part of this gap
-by inspecting `tool_response.files_changed` style fields after Bash
-returns. This is the same forward-compat anchor as the Spec-then-TDD
-v0.19.0 evidence-bound enforcement work (see
+The v0.19.0 PostToolUse sniffer closes two evidence-only parts of this gap:
+it records pytest exit codes to `.hook-state/test-evidence.jsonl`, and it
+records observed file-change candidates to
+`.hook-state/freeze-change-evidence.jsonl` when the PostToolUse payload
+exposes them through tool input, conservative Bash write targets, or
+structured `tool_response.files_changed`-style fields. This still does
+**not** make Freeze a comprehensive editing envelope: missing file-change
+evidence is not treated as a problem, and observed out-of-allowlist paths
+are surfaced as `/athanor:work` concerns only. See
 `references/spec-then-tdd-handler.md` §"v0.19.0 — Evidence-Bound
-Enforcement (planned)"). Not promised in v0.18.0.
+Enforcement (hybrid stage)".
 
 ## Opt-in: `athanor.json` `hooks.freeze`
 
@@ -274,5 +279,6 @@ which legitimate-edit path to take.
   per-tool gating logic described above.
 - v0.18.1 staged worktree: contains the worktree contamination work
   (admission criteria in `docs/STATE.md` §v0.18.x roadmap).
-- v0.19.0 evidence-bound enforcement: PostToolUse sniffer may close
-  part of the subprocess-write residual.
+- v0.19.0 evidence-bound enforcement: PostToolUse records test-execution
+  evidence and evidence-only Freeze D2 file-change observations. Strict
+  blocking on observed file changes remains deferred.

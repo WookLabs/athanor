@@ -14,7 +14,7 @@ have for the four event types athanor cares about next:
   - SessionStart      (system-reminder-channel skill auto-load; not a hook
                        registration target athanor currently uses)
   - UserPromptSubmit  (forward-compat — additionalContext via stdout JSON)
-  - PostToolUse       (forward-compat — v0.19.0 pytest exit-code sniffer)
+  - PostToolUse       (evidence-only — v0.19.0 pytest exit-code sniffer)
   - PreCompact        (forward-compat — context-compaction inspection)
 
 Inspection inputs:
@@ -23,7 +23,7 @@ Inspection inputs:
   2. CLAUDE.md                         — prose references to event semantics
   3. docs/STATE.md (Stop hook spike)   — empirical evidence from 2026-05-18
   4. skills/work/references/spec-then-tdd-handler.md
-                                       — v0.19.0 forward-compat anchor for
+                                       — v0.19.0 evidence-bound anchor for
                                          PostToolUse pytest sniffer
 
 Output:
@@ -222,32 +222,39 @@ def _inspect_post_tool_use(
 ) -> dict:
     """PostToolUse capability.
 
-    Empirical data: zero (athanor does not register). Documentary:
-    spec-then-tdd-handler.md carries the v0.19.0 forward-compat anchor
-    that explicitly names a `PostToolUse test-evidence sniffer` planned
-    to intercept pytest Bash calls and stamp real exit codes.
+    v0.19.0 registers an evidence-only sniffer. It records pytest Bash
+    command results to session JSONL and never blocks. The registration is
+    real, but this passive capability probe still does not manufacture a
+    live Claude Code PostToolUse event; payload-shape certainty remains
+    nullable until a live run stamps evidence.
 
-    Key question for v0.19.0: is `tool_response` (or equivalent) actually
-    present in the PostToolUse payload, and does it carry exit code +
-    stdout/stderr? — this probe records the FORWARD-COMPAT INTENT and
-    explicitly defers empirical validation to a v0.19.0 spike.
+    Key empirical question: is `tool_response` (or equivalent) present in
+    the installed Claude Code version's PostToolUse payload, and does it
+    carry exit code + stdout/stderr? The tolerant sniffer supports several
+    likely field names; this report keeps `tool_response_available` as
+    None until live evidence proves the exact runtime shape.
     """
     anchor_present = bool(
         re.search(r"PostToolUse[^\n]*test[- ]evidence sniffer", handler_md, re.IGNORECASE)
     )
+    registered_posttool = "PostToolUse" in registered
     return {
-        "supported": False,
-        "registered_in_hooks_json": "PostToolUse" in registered,
-        "payload_keys": [],
+        "supported": registered_posttool,
+        "support_level": "evidence-only" if registered_posttool else "forward-compat",
+        "registered_in_hooks_json": registered_posttool,
+        "payload_keys": (
+            ["hook_event_name", "tool_name", "tool_input", "tool_response"]
+            if registered_posttool
+            else []
+        ),
         "tool_response_available": None,
         "forward_compat_anchor_present": anchor_present,
         "notes": (
-            "athanor does not register PostToolUse as of v0.17.0. "
-            "skills/work/references/spec-then-tdd-handler.md carries the "
-            "v0.19.0 forward-compat anchor for a pytest exit-code sniffer "
-            "(promotes the conjunction-of-three Phase 3 gate from advisory "
-            "to enforced). v0.19.0 design must spike-verify that "
-            "`tool_response` carries pytest exit code + tail."
+            "athanor registers PostToolUse as an evidence-only pytest "
+            "sniffer when hooks.json contains the event. The sniffer is "
+            "tolerant of likely payload field names and always fails open; "
+            "`tool_response_available` remains null until a live Claude Code "
+            "run confirms the exact response fields."
         ),
     }
 
@@ -309,10 +316,10 @@ def build_capability_report(project_root: Path) -> dict:
             "contract before designing any context-injection feature on top "
             "of it (mirror the 2026-05-18 Stop hook spike methodology — "
             "log-only probe registered in ~/.claude/settings.json).",
-            "v0.19.0: spike-verify PostToolUse payload carries pytest exit "
-            "code + tool_response stdout tail; this is the precondition "
-            "for promoting Phase 3 gate from advisory to enforced per the "
-            "anchor in skills/work/references/spec-then-tdd-handler.md.",
+            "v0.19.0: use the evidence-only PostToolUse sniffer to collect "
+            "pytest exit code + output tail in session JSONL. Promote Phase "
+            "3 from advisory to enforced only after live evidence confirms "
+            "the installed Claude Code payload shape.",
             "v0.18.0+: do NOT register SessionStart in hooks/hooks.json — "
             "skill loading is a Claude Code platform mechanism handled "
             "outside athanor's hook surface. Re-affirming this avoids the "

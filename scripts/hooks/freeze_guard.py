@@ -85,9 +85,10 @@ Examples that bypass the freeze envelope:
 These bypass freeze because the destination path is not syntactically
 visible in the Bash command string. The v0.18.0 CHANGELOG labels this
 surface as "Claude file-tool allowlist" — NOT "editing envelope" — to
-set honest expectations. v0.19.0 may close part of this gap via a
-PostToolUse sniffer pass that inspects ``tool_response.files_changed``
-style fields after Bash returns; not promised in v0.18.0.
+set honest expectations. v0.19.0 adds PostToolUse evidence streams for
+pytest results and observed file-change candidates, but Freeze enforcement
+remains PreToolUse-only. Observed D2 file changes are surfaced as concerns
+rather than new blocks.
 
 Architectural note: failure-open contract
 =========================================
@@ -120,7 +121,11 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import _athanor_hook_runtime as _runtime  # noqa: E402
 
-__all__ = ["evaluate_payload"]
+__all__ = [
+    "classify_paths_against_allowlist",
+    "evaluate_payload",
+    "extract_bash_write_targets",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +273,45 @@ def _path_in_allowlist(path: str, allowed_paths: list[str]) -> bool:
     return False
 
 
+def classify_paths_against_allowlist(
+    paths: list[str],
+    allowlist: Optional[dict],
+    config: Optional[dict] = None,
+) -> list[dict]:
+    """Classify observed file-change paths against the effective allowlist.
+
+    This is evidence-only support for PostToolUse D2 follow-up work. Missing
+    or empty allowlists return ``unknown_allowlist`` rather than pretending a
+    path was allowed or denied.
+    """
+    if not isinstance(allowlist, dict):
+        allowed_paths: list[str] = []
+    else:
+        allowed_paths = _merged_allowed_paths(allowlist, config)
+
+    classified: list[dict] = []
+    seen: set[str] = set()
+    for raw in paths:
+        if not isinstance(raw, str):
+            continue
+        normalized = _normalize_path(raw)
+        if not normalized:
+            continue
+        normalized = posixpath.normpath(normalized)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+
+        if not allowed_paths:
+            status = "unknown_allowlist"
+        elif _path_in_allowlist(normalized, allowed_paths):
+            status = "in_allowlist"
+        else:
+            status = "out_of_allowlist"
+        classified.append({"path": normalized, "allowlist_status": status})
+    return classified
+
+
 # ---------------------------------------------------------------------------
 # Bash destination extraction
 # ---------------------------------------------------------------------------
@@ -311,6 +355,11 @@ def _extract_bash_write_targets(command: str) -> list[str]:
             seen.add(norm)
             deduped.append(norm)
     return deduped
+
+
+def extract_bash_write_targets(command: str) -> list[str]:
+    """Public wrapper for conservative Bash write-target extraction."""
+    return _extract_bash_write_targets(command)
 
 
 # ---------------------------------------------------------------------------

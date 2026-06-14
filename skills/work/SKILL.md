@@ -36,7 +36,8 @@ semantics.
 
 Heavy prose under `skills/work/references/`:
 `references/splitter.md`, `references/spec-then-tdd-handler.md` (carries
-v0.19.0 forward-compat anchor for PostToolUse sniffer),
+v0.19.0 PostToolUse evidence-only sniffer reference; former
+forward-compat anchor),
 `references/multi-status.md` (backwards-compat success→done alias),
 `references/team-mode.md`, `references/learner-cleaner.md`.
 
@@ -161,8 +162,12 @@ shape; auto-downgrade `spec-then-tdd → test-aware` on `never_red` /
 `partial_never_red`; conjunction-of-three test-aware gate; grandfathered
 fallback breadcrumb) and their router-locked invariants are fully specified
 in `references/spec-then-tdd-handler.md`. Conceptual overview in CLAUDE.md
-§"Spec-then-TDD Discipline". Runtime hard-enforcement deferred to v0.19.0
-PostToolUse sniffer (forward-compat anchor in the handler ref). Auto-downgrade
+§"Spec-then-TDD Discipline". v0.19.0 uses `scripts/work/evidence_gate.py`
+to cross-check stamped PostToolUse JSONL evidence in hybrid mode: mismatch
+fails, missing evidence becomes a concern. It also uses
+`scripts/work/freeze_evidence_gate.py` to surface PostToolUse Freeze D2
+file-change observations as concerns only; it does not add new blocking
+behavior. Auto-downgrade
 is silent (no user escalation) except for a work-log breadcrumb
 `auto-downgraded: spec-then-tdd → test-aware`; on gate violation the leader
 marks the subtask failed and increments `consecutiveFailures`.

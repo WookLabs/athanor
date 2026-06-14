@@ -154,7 +154,9 @@ V011_FORBIDDEN_PHRASES = FORBIDDEN_PHRASES + [
 def test_changelog_v011_entry_exists_when_version_is_0_11_x():
     """MUST: if plugin.json is at 0.11.x, CHANGELOG has a [0.11.x] entry."""
     import json
-    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
     pj_version = pj.get("version") or ""
     if not pj_version.startswith("0.11."):
         return
@@ -170,7 +172,9 @@ def test_changelog_v011_entry_exists_when_version_is_0_11_x():
 def test_changelog_v011_no_forbidden_phrases():
     """MUST: v0.11.0 CHANGELOG entry uses positive commitment only."""
     import json
-    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
     pj_version = pj.get("version") or ""
     if not pj_version.startswith("0.11."):
         return
@@ -185,7 +189,9 @@ def test_state_md_v011_no_forbidden_phrases():
     """MUST: STATE.md Current Phase + body has no CE-deprecate phrases at
     v0.11.0."""
     import json
-    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    pj = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
     pj_version = pj.get("version") or ""
     if not pj_version.startswith("0.11."):
         return
