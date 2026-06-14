@@ -22,15 +22,19 @@ def test_v013_release_surface_intact():
     for f in fixtures:
         assert (REPO_ROOT / "tests" / "fixtures" / "lfg_goal" / f).is_file(), f"missing fixture {f}"
     # config block
-    config = json.loads((REPO_ROOT / "athanor.json").read_text())
+    config = json.loads((REPO_ROOT / "athanor.json").read_text(encoding="utf-8"))
     assert "lfgGoal" in config, "athanor.json missing lfgGoal block"
     assert config["lfgGoal"]["maxIterations"] == 5, "D8 default violated"
     assert config["lfgGoal"]["consolidateCycles"] is False, "D9 default violated"
     # template parity
-    template = json.loads((REPO_ROOT / "templates" / "athanor.json").read_text())
+    template = json.loads(
+        (REPO_ROOT / "templates" / "athanor.json").read_text(encoding="utf-8")
+    )
     assert template["lfgGoal"] == config["lfgGoal"], "athanor.json + templates/athanor.json lfgGoal parity violated"
     # version bump
-    plugin = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
+    plugin = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
     assert plugin["version"] == "0.18.7", f"plugin.json version not bumped: {plugin['version']}"
 
 

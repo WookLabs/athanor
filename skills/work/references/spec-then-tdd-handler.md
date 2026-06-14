@@ -134,16 +134,16 @@ the end gate enforces test artifact changes:
    - `test_paths_touched: [...]` (list of paths from step 1)
    - `full_suite_passed: true` (only if step 2 actually returned exit code 0)
 
-## v0.8.0 Spec-then-TDD result handler (runs BEFORE the success/failure branch)
+## v0.8.0+ Spec-then-TDD result handler (runs BEFORE the success/failure branch)
 
-This handler is an **advisory self-report shape** — the leader validates the
-shape of the worker's `red_evidence` (command, test_node_id, exit_code,
-output_tail) but does NOT independently re-execute the RED check. A worker
-that fabricates evidence can still pass. The handler's value is catching
-the most common failure mode (worker forgets the RED step entirely → no
-evidence shape) rather than adversarial forgery. Runtime hard-enforcement
-of `red_evidence` authenticity is deferred to v0.8.1+ (verification skill
-extension candidate).
+This handler starts with the original **advisory self-report shape** check:
+the leader validates the shape of the worker's `red_evidence` (command,
+test_node_id, exit_code, output_tail) before applying the downgrade rule.
+v0.19.0 adds a **hybrid evidence gate** after the test-aware clauses: when
+PostToolUse evidence exists, `scripts/work/evidence_gate.py` cross-checks
+worker self-report against `.hook-state/test-evidence.jsonl`. Evidence
+mismatch is a gate failure. Missing evidence is a concern, not a hard failure,
+so early PostToolUse payload/environment gaps do not brick work completion.
 
 ### Phase 1 — validate red_evidence shape (only when subtask.execution_note == "spec-then-tdd")
 
@@ -198,8 +198,24 @@ the subtask to pass:
 3. The `verification:` line in ATHANOR_RESULT (free-form prose set by the
    existing Ralph-Loop instruction) shows a pass/green signal consistent
    with full_suite_passed.
+4. **Hybrid PostToolUse evidence gate**: normalize the worker's
+   `ATHANOR_RESULT` fields into JSON and run:
+   ```
+   python3 scripts/work/evidence_gate.py \
+     --evidence .athanor/sessions/<id>/.hook-state/test-evidence.jsonl \
+     --result-json -
+   ```
+   Pass this JSON object on stdin:
+   ```
+   {
+     "execution_note": "<effective execution_note>",
+     "red_evidence": [...],
+     "full_suite_passed": true|false,
+     "verification": "<verification line>"
+   }
+   ```
 
-If any of the three fails:
+If any hard gate clause fails:
 - This is a worker-side gate violation — test-aware (or downgraded
   spec-then-tdd) subtask completed without proper test discipline.
 - Mark subtask as failed (NOT success), increment `consecutiveFailures`.
@@ -207,21 +223,43 @@ If any of the three fails:
   - `test-aware gate violation: no tests/** paths modified (test_paths_touched empty)`
   - `test-aware gate violation: full_suite_passed=false or missing (worker did not run pytest tests/)`
   - `test-aware gate violation: verification line contradicts full_suite_passed`
+  - `test-evidence gate violation: evidence mismatch between ATHANOR_RESULT and PostToolUse test-evidence.jsonl`
 - If this subtask was a Phase 2 downgrade, the work-log entry is updated
   from `pending` to `✗ failed [downgraded then gate-rejected]` so the audit
   trail captures both steps.
 
-If all three gate clauses pass:
+If `evidence_gate.py` returns JSON status `"concern"`:
+- Do NOT treat it as a gate failure. Missing evidence is expected on some
+  early PostToolUse payload variants or sessions where pytest ran outside the
+  hook surface.
+- Append the concern to work-log.md:
+  `test-evidence gate concern: missing evidence for <red_evidence|full_suite>`.
+- If the worker otherwise passed all gate clauses, prefer
+  `done_with_concerns` when reporting the final subtask status; otherwise keep
+  the normal failure handling for the failing non-evidence clause.
+
+After the test-evidence gate, run the Freeze D2 evidence concern check:
+```
+python3 scripts/work/freeze_evidence_gate.py \
+  --evidence .athanor/sessions/<id>/.hook-state/freeze-change-evidence.jsonl
+```
+If it returns JSON status `"concern"`, do NOT treat it as a gate failure.
+Append each concern to work-log.md as
+`freeze-evidence gate concern: <concern>`, and prefer `done_with_concerns`
+when the worker otherwise passed all hard gate clauses. Missing
+`freeze-change-evidence.jsonl` returns `"pass"` and should not create a
+concern; many legitimate tool runs expose no file-change payload.
+
+If all hard gate clauses pass and the evidence gate has no failure:
 - Subtask is marked complete and the work-log `pending` entry (if any) is
   updated to `✓ {title} [auto-downgraded: spec-then-tdd → test-aware]`.
 
-**Honesty note on the gate**: the leader does not independently re-execute
-`pytest tests/` to verify `full_suite_passed`. The signal is worker
-self-report; a worker that fabricates `full_suite_passed: true` can still
-pass. The gate's value is catching the most common honest mistake (worker
-forgot the full-suite run, or wrote tests but they failed) rather than
-adversarial forgery. Runtime hard-enforcement (Stop-hook validating
-test-commit presence in the session diff) is deferred to v0.8.1+ candidates.
+**Honesty note on the gate**: the leader still does not independently
+re-execute `pytest tests/`. The hybrid evidence gate only cross-checks
+PostToolUse records that actually exist. A fabricated `full_suite_passed:
+true` claim with conflicting full-suite evidence fails; the same claim with
+no full-suite evidence becomes a concern. Strict hard-fail on missing evidence
+is deferred until live PostToolUse payload coverage is proven.
 
 ### Phase 4 — grandfathered fallback breadcrumb (only when execution_note absent in plan)
 
@@ -237,25 +275,41 @@ If `ATHANOR_RESULT.execution_note_source == "grandfathered"`:
     entry (current pre-v0.8.0 behavior), write a minimal one anchored on
     grandfathered status: `## Subtask {id}: ✗ {title} [grandfathered, failed]`.
 
-## v0.19.0 — Evidence-Bound Enforcement (planned)
+## v0.19.0 — Evidence-Bound Enforcement (hybrid stage)
 
-<!-- forward-compat anchor for PostToolUse test-evidence sniffer -->
+<!-- forward-compat anchor for PostToolUse test-evidence sniffer — fulfilled by evidence-only v1 and evidence_gate.py hybrid cross-check -->
 
-PostToolUse hook will intercept pytest Bash calls and stamp real exit codes.
-This will promote the conjunction-of-three Phase 3 gate from advisory to
-**enforced**. The runtime hard-enforcement deferred from v0.8.1+ becomes the
-v0.19.0 PostToolUse sniffer:
+The PostToolUse hook records pytest evidence, and the `/athanor:work` result
+handler now cross-checks that evidence through `scripts/work/evidence_gate.py`:
 
-- Hook fires after Bash tool runs `pytest`.
-- Hook parses pytest exit code from tool result and stamps it into session
-  state as `evidence_bound: {test_node_id, exit_code, timestamp}`.
-- Leader's Phase 3 gate cross-checks worker-reported `red_evidence` against
-  the stamped state. Mismatch (worker says exit_code != stamped) → gate
-  violation, not advisory.
-- Closes the adversarial-forgery loophole noted in the Phase 3 honesty note
-  above. `full_suite_passed: true` claims become verifiable against actual
-  Bash tool output rather than worker self-report.
+- Hook fires after Bash tool runs a pytest-family command (`pytest`,
+  `py.test`, or `python -m pytest`).
+- Hook appends JSONL evidence to
+  `.athanor/sessions/<latest>/.hook-state/test-evidence.jsonl`.
+- Each record includes the command, normalized test targets, scope
+  (`targeted`, `full_suite`, or `unspecified`), exit code, output tail,
+  timestamp, and session id.
+- The hook always fails open. It never exits 2 and never blocks a session.
+- The handler treats evidence mismatches as `test-evidence gate violation`
+  failures.
+- The handler treats missing evidence as a concern in hybrid mode.
+- The same hook also records evidence-only Freeze D2 file-change observations
+  to `.hook-state/freeze-change-evidence.jsonl` when PostToolUse exposes
+  tool input write targets or structured `tool_response.files_changed`-style
+  fields. `scripts/work/freeze_evidence_gate.py` reports observed
+  out-of-allowlist or unknown-allowlist paths as concerns only.
 
-Forward-compat anchor: the v0.19.0 work lands in this file as a new
-`## v0.19.0 — Evidence-Bound Enforcement` section replacing this stub. The
-Phase 3 prose above stays advisory until that section ships.
+What this stage does **not** enforce:
+
+- Missing evidence is not a hard failure yet.
+- File-change observations are not hard failures yet.
+- `tool_response_available` remains empirical. The sniffer tolerates several
+  likely payload field names, but live Claude Code payload evidence should
+  still be reviewed before strict enforcement.
+
+Next enforcement upgrade:
+
+- Promote missing PostToolUse evidence from concern to failure once live
+  payload coverage is stable.
+- Add a separate `FileChanged` spike only after a live payload capture proves
+  that event is needed beyond the current PostToolUse evidence stream.

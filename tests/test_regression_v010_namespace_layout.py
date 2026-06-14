@@ -146,7 +146,9 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
     v0.19.0+ will need another explicit update.
     """
     import json
-    mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    mp = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
     versions = [p.get("version") for p in mp.get("plugins", [])]
     in_series = [v for v in versions
                  if v and (
@@ -170,8 +172,12 @@ def test_plugin_manifest_version_matches_marketplace():
     """MUST: plugin.json version matches marketplace.json version (single
     source-of-truth across the two manifests)."""
     import json
-    pj = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text())
-    mp = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    pj = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    mp = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
     pj_version = pj.get("version")
     mp_versions = [p.get("version") for p in mp.get("plugins", [])]
     assert pj_version in mp_versions, (

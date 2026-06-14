@@ -13,10 +13,12 @@ boundary (v0.11.1) — canonical declaration". UPS-driven runtime dedup
 was explicitly deferred in the v0.18.0 plan-of-record per R-B5 to a
 future v0.18.2 spike pending live Claude Code UPS support.
 
-This test asserts that state remains true at v0.18.0:
+This test asserts that state remains true for UserPromptSubmit at v0.18.x
+while allowing the deliberate v0.19.0 PostToolUse evidence-only addition:
 
   1. `hooks/hooks.json` does NOT register a `UserPromptSubmit` entry —
-     only `Stop` (v0.7.8+) and `PreToolUse` (v0.16.0+).
+     only `Stop` (v0.7.8+), `PreToolUse` (v0.16.0+), and the
+     `PostToolUse` evidence sniffer (v0.19.0+).
   2. CLAUDE.md still uses the 9-pointer + 1-canonical static dedup
      pattern (9 skills with `### using-superpowers boundary` pointers
      plus the canonical heading in CLAUDE.md).
@@ -90,18 +92,18 @@ def test_hooks_json_does_not_register_user_prompt_submit():
     )
 
 
-def test_hooks_json_event_inventory_is_stop_and_pretool_only():
-    """Lock the exact event surface: Stop + PreToolUse, nothing else.
+def test_hooks_json_event_inventory_is_stop_pretool_and_posttool_only():
+    """Lock the exact event surface: Stop + PreToolUse + PostToolUse.
 
     Detects accidental UPS introduction OR any other event-registration
     drift that would silently expand athanor's runtime gate surface.
     """
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     events = set(data.get("hooks", {}).keys())
-    assert events == {"Stop", "PreToolUse"}, (
-        f"v0.18.0 hooks.json must register exactly Stop + PreToolUse; "
+    assert events == {"Stop", "PreToolUse", "PostToolUse"}, (
+        f"hooks.json must register exactly Stop + PreToolUse + PostToolUse; "
         f"got {sorted(events)!r}. Any added event needs explicit honesty "
-        f"framing per the v0.18.0 plan-of-record (R-B5)."
+        f"framing per the plan-of-record."
     )
 
 

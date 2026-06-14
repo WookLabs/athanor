@@ -502,6 +502,52 @@ def test_phase_3_gate_is_conjunction_of_three_signals():
     )
 
 
+def test_phase_3_gate_runs_evidence_gate_script():
+    """MUST: Phase 3 now invokes scripts/work/evidence_gate.py to cross-check
+    worker self-report against PostToolUse JSONL evidence."""
+    body = _load()
+    assert "scripts/work/evidence_gate.py" in body, (
+        "Phase 3 gate must name the evidence gate script."
+    )
+    assert "test-evidence.jsonl" in body, (
+        "Phase 3 gate must read PostToolUse test-evidence.jsonl."
+    )
+    assert "--result-json" in body and "--evidence" in body, (
+        "Phase 3 gate must document evidence_gate.py CLI arguments."
+    )
+
+
+def test_phase_3_evidence_mismatch_is_gate_violation():
+    """MUST: evidence mismatch is failure, not advisory prose."""
+    body = _load().lower()
+    assert "test-evidence gate violation" in body, (
+        "Handler must name evidence mismatches as test-evidence gate violations."
+    )
+    mismatch_signals = [
+        "evidence mismatch",
+        "exit code mismatch",
+        "mismatch becomes",
+    ]
+    assert any(signal in body for signal in mismatch_signals), (
+        f"Handler must describe mismatch failure. Expected one of: {mismatch_signals}"
+    )
+
+
+def test_phase_3_missing_evidence_is_concern_not_failure():
+    """MUST: Hybrid mode treats missing PostToolUse evidence as concern so
+    early payload/environment gaps do not brick work completion."""
+    body = _load().lower()
+    concern_signals = [
+        "missing evidence",
+        "evidence missing",
+        "done_with_concerns",
+    ]
+    assert any(signal in body for signal in concern_signals), (
+        f"Handler must describe missing evidence as concern. Expected one of: {concern_signals}"
+    )
+    assert "hybrid" in body, "Handler must label the evidence gate as hybrid."
+
+
 # --- P1-2 semantic regression canary — minimal sanity check that the
 # --- handler's gate condition is not inverted ---
 
