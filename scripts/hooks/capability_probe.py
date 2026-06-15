@@ -192,7 +192,32 @@ def _inspect_session_start(
     }
 
 
-def _inspect_user_prompt_submit(registered: set[str]) -> dict:
+def _latest_ups_summary(project_root: Path) -> dict | None:
+    """Return a small pointer to the latest redacted UPS spike summary."""
+    spikes_dir = project_root / ".athanor" / "spikes"
+    try:
+        summaries = sorted(spikes_dir.glob("ups-payload-*.summary.json"))
+    except OSError:
+        return None
+    if not summaries:
+        return None
+    latest = summaries[-1]
+    try:
+        data = json.loads(latest.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    return {
+        "path": str(latest.relative_to(project_root)),
+        "captured_at": data.get("captured_at"),
+        "event_name": data.get("event_name"),
+        "raw_sha256": data.get("raw_sha256"),
+        "top_level_keys": data.get("top_level_keys", []),
+    }
+
+
+def _inspect_user_prompt_submit(project_root: Path, registered: set[str]) -> dict:
     """UserPromptSubmit capability.
 
     No empirical evidence in this repo (athanor does not currently
@@ -202,11 +227,17 @@ def _inspect_user_prompt_submit(registered: set[str]) -> dict:
     next-turn context. We mark this as `unprobed` so v0.18.0 design
     teams know to validate empirically before relying on it.
     """
+    summary = _latest_ups_summary(project_root)
     return {
         "supported": False,
         "registered_in_hooks_json": "UserPromptSubmit" in registered,
         "payload_keys": [],
         "stdout_additional_context_accepted": None,
+        "spike_harness_available": (
+            project_root / "scripts" / "hooks" / "user_prompt_submit_spike.py"
+        ).is_file(),
+        "live_payload_captured": summary is not None,
+        "latest_payload_summary": summary,
         "notes": (
             "athanor does not register UserPromptSubmit as of v0.17.0; "
             "documented Claude Code contract is stdout JSON with "
@@ -307,7 +338,7 @@ def build_capability_report(project_root: Path) -> dict:
         "athanor_registered_events": sorted(registered),
         "events": {
             "SessionStart": _inspect_session_start(claude_md, state_md, registered),
-            "UserPromptSubmit": _inspect_user_prompt_submit(registered),
+            "UserPromptSubmit": _inspect_user_prompt_submit(project_root, registered),
             "PostToolUse": _inspect_post_tool_use(registered, handler_md),
             "PreCompact": _inspect_pre_compact(registered),
         },

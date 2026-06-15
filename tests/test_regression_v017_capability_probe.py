@@ -222,6 +222,27 @@ def test_probe_marks_all_four_events_unsupported(tmp_path):
         )
 
 
+def test_probe_reports_userpromptsubmit_spike_harness_when_available(tmp_path):
+    """UPS remains unsupported, but the opt-in log-only spike harness is
+    visible to the passive probe when packaged in scripts/hooks/."""
+    root = _make_synthetic_repo(tmp_path)
+    hooks_dir = root / "scripts" / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    (hooks_dir / "user_prompt_submit_spike.py").write_text(
+        "#!/usr/bin/env python3\n",
+        encoding="utf-8",
+    )
+
+    import capability_probe as cp
+
+    report = cp.build_capability_report(root)
+    ups = report["events"]["UserPromptSubmit"]
+    assert ups["supported"] is False
+    assert ups["spike_harness_available"] is True
+    assert ups["live_payload_captured"] is False
+    assert ups["latest_payload_summary"] is None
+
+
 def test_probe_post_tool_use_forward_compat_anchor_detected(tmp_path):
     """The PostToolUse branch must detect the v0.19.0 anchor in the handler ref."""
     root = _make_synthetic_repo(tmp_path)

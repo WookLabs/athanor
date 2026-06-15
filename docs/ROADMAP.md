@@ -409,6 +409,9 @@ The spike methodology mirrors the 2026-05-18 Stop hook spike (see
 log-only probe in `~/.claude/settings.json`, trigger a real prompt
 submission, capture the JSON payload to `.athanor/spikes/ups-payload-*.json`,
 and only then begin design work on the injection contract.
+The opt-in harness and manual protocol live in
+`docs/spikes/userpromptsubmit-spike.md`; the repo still does not register
+`UserPromptSubmit` in `hooks/hooks.json`.
 
 Until the spike completes, the UserPromptSubmit injection work stays
 unscoped. Premature design work would replay the v0.7.8 -> v0.11.2
