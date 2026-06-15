@@ -32,6 +32,14 @@ CHANGELOG entry content, then execute the full release preparation sequence.
 | `ship_date` | string | Ship date in `YYYY-MM-DD` format |
 | `changelog_entry` | string | Markdown content for the CHANGELOG section |
 
+## Release Ownership Precondition
+
+Run the sequence below only after an explicit release request that provides a
+target version, ship date, and CHANGELOG entry. For ordinary feature/fix/docs work,
+future-version roadmap prose, or non-release implementation branches, Do NOT
+run Step 1: 5-File Version Bump; report that version changes belong to a
+separate release-specific pass.
+
 ## Release Sequence
 
 Execute the following steps in order. Each step must succeed before proceeding.
@@ -40,8 +48,8 @@ Execute the following steps in order. Each step must succeed before proceeding.
 
 Update the version string in exactly these 5 files:
 
-1. **`plugin.json`** — top-level `"version"` field
-2. **`marketplace.json`** — top-level `"version"` field
+1. **`.claude-plugin/plugin.json`** — top-level `"version"` field
+2. **`.claude-plugin/marketplace.json`** — `plugins[0].version` field
 3. **`athanor.json`** — `"$schema"` URL contains the version segment
 4. **`templates/athanor.json`** — `"$schema"` URL contains the version segment
 5. **`schemas/athanor-config.schema.json`** — `"$id"` URL contains the version segment

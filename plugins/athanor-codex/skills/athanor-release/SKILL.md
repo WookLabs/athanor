@@ -6,7 +6,14 @@ description: "Run Athanor's release ceremony in Codex: version bump, changelog, 
 # Athanor Release
 
 Use this when the user asks to prepare or ship an Athanor release. This is a
-Codex-native release ceremony, not a Claude `Task` worker dispatch.
+Codex-native release ceremony, not a Claude `Task` worker dispatch. It is a
+release-specific pass: use it only for an explicit release request, not for
+ordinary feature/fix/docs work.
+
+If the current request is ordinary feature/fix/docs work, future-version
+roadmap prose, or a non-release implementation branch, Do NOT perform the
+5-file version bump. Report that version changes belong to a separate release
+pass.
 
 ## Protocol
 
@@ -16,8 +23,8 @@ Codex-native release ceremony, not a Claude `Task` worker dispatch.
    exist because older Athanor release contracts named them.
 3. Perform the 5-file version bump when the release surface contains the full
    original Athanor contract:
-   - `plugin.json`: top-level `version`.
-   - `marketplace.json`: top-level `version`.
+   - `.claude-plugin/plugin.json`: top-level `version`.
+   - `.claude-plugin/marketplace.json`: `plugins[0].version`.
    - `athanor.json`: `$schema` URL version segment.
    - `templates/athanor.json`: `$schema` URL version segment.
    - `schemas/athanor-config.schema.json`: `$id` URL version segment.
