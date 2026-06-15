@@ -206,6 +206,11 @@ def test_capability_probe_reports_posttooluse_evidence_only_supported():
     assert post["supported"] is True
     assert post["support_level"] == "evidence-only"
     assert post["tool_response_available"] is None
+    assert post["payload_keys_source"] == "expected"
+    assert set(post["evidence_streams"]) == {
+        "test_evidence",
+        "freeze_change_evidence",
+    }
 
 
 def test_ci_installs_yaml_dependency_for_collection():

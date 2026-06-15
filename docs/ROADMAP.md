@@ -409,6 +409,9 @@ The spike methodology mirrors the 2026-05-18 Stop hook spike (see
 log-only probe in `~/.claude/settings.json`, trigger a real prompt
 submission, capture the JSON payload to `.athanor/spikes/ups-payload-*.json`,
 and only then begin design work on the injection contract.
+The opt-in harness and manual protocol live in
+`docs/spikes/userpromptsubmit-spike.md`; the repo still does not register
+`UserPromptSubmit` in `hooks/hooks.json`.
 
 Until the spike completes, the UserPromptSubmit injection work stays
 unscoped. Premature design work would replay the v0.7.8 -> v0.11.2
@@ -420,25 +423,8 @@ input-layer fail-open pattern (payload shape assumed wrong).
 
 **Intent:** Close the test-execution evidence gap and start observing the
 Freeze D2 file-change residual without making missing evidence a hard
-failure. The PostToolUse hook records pytest-family Bash results to
-`.athanor/sessions/<latest>/.hook-state/test-evidence.jsonl`, records
-file-change observations to `.hook-state/freeze-change-evidence.jsonl`, and
-the work gates summarize those streams for `/athanor:work`.
-
-**Current scope:**
-
-- Registers `PostToolUse` in `hooks/hooks.json`.
-- Captures `pytest`, `py.test`, and `python -m pytest` commands.
-- Records command, test targets, scope, exit code, output tail, timestamp,
-  and session id.
-- Fails the work gate on evidence mismatch.
-- Treats missing evidence as a concern in hybrid mode.
-- Records evidence-only Freeze D2 file-change observations from tool inputs,
-  conservative Bash write targets, and structured `tool_response.files_changed`
-  style fields when present.
-- Treats observed out-of-allowlist or unknown-allowlist file-change evidence
-  as a work concern, not a failure.
-- Keeps `UserPromptSubmit` deferred.
+failure. Runtime details, result-gate semantics, and evidence stream behavior
+live in `skills/work/references/spec-then-tdd-handler.md`.
 
 **Still deferred:** strict failure on missing evidence, strict failure on
 Freeze D2 observations, and a separate `FileChanged` hook spike.

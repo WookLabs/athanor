@@ -1,8 +1,9 @@
 # Spec-then-TDD Execution Reference
 
-Detailed reference for `/athanor:work` Spec-then-TDD execution discipline.
-Cross-linked from `skills/work/SKILL.md` Step 2 (Solo dispatch packet) and
-Step 2b (result handler).
+This is the canonical runtime behavior reference for `/athanor:work`
+Spec-then-TDD execution discipline. Cross-linked from `skills/work/SKILL.md`
+Step 2 (Solo dispatch packet), Step 2b (result handler), `CLAUDE.md`, and
+`docs/ROADMAP.md`.
 
 ## ATHANOR_RESULT schema
 
@@ -305,7 +306,9 @@ What this stage does **not** enforce:
 - File-change observations are not hard failures yet.
 - `tool_response_available` remains empirical. The sniffer tolerates several
   likely payload field names, but live Claude Code payload evidence should
-  still be reviewed before strict enforcement.
+  still be reviewed before strict enforcement. The capability probe therefore
+  labels PostToolUse payload keys as `expected` and reports only redacted
+  `evidence_streams` metadata from existing JSONL files.
 
 Next enforcement upgrade:
 

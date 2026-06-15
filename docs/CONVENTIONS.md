@@ -366,6 +366,25 @@ with the release cadence.
 - **Reference:** see `agents/learner.md` §"On Release" for the full
   Learner-side protocol.
 
+### Release/version ownership
+
+Version pins are release-owned. Ordinary feature/fix/docs work MUST NOT edit
+the release version surface merely because it mentions a future design anchor
+such as `v0.19.0` in roadmap, test, or doc prose.
+
+A release-specific pass is the only place to update these version-pinned files:
+
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+- `athanor.json`
+- `templates/athanor.json`
+- `schemas/athanor-config.schema.json`
+
+The same release-specific pass owns the corresponding `CHANGELOG.md` release
+entry and `docs/STATE.md` Current/Previous rotation. Feature branches should
+leave those release artifacts unchanged unless the user explicitly asks to
+prepare or ship a release.
+
 ---
 
 ## 7. Documentation Lifecycle

@@ -308,6 +308,36 @@ def test_spec_then_tdd_subsection_present():
     )
 
 
+def test_spec_then_tdd_claude_summary_points_to_canonical_reference():
+    """CLAUDE.md should summarize the identity/status only and defer runtime
+    branch/gate detail to the split handler reference."""
+    subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
+    assert subsection, "CLAUDE.md must keep a lite Spec-then-TDD subsection"
+    assert "skills/work/references/spec-then-tdd-handler.md" in subsection, (
+        "CLAUDE.md Spec-then-TDD subsection must point to the canonical "
+        "runtime behavior reference."
+    )
+
+
+def test_spec_then_tdd_claude_summary_does_not_repeat_runtime_detail():
+    """CLAUDE.md must not duplicate schema/gate details that belong in
+    spec-then-tdd-handler.md."""
+    subsection = _extract_spec_then_tdd_subsection(_load_claude_md())
+    forbidden = [
+        "red_evidence",
+        "full_suite_passed",
+        "test_paths_touched",
+        "scripts/work/evidence_gate.py",
+        "test-evidence.jsonl",
+        "freeze-change-evidence.jsonl",
+    ]
+    hits = [needle for needle in forbidden if needle in subsection]
+    assert not hits, (
+        "CLAUDE.md Spec-then-TDD subsection duplicates runtime details that "
+        f"belong in spec-then-tdd-handler.md: {hits}"
+    )
+
+
 def test_spec_then_tdd_subsection_describes_three_branches():
     """The subsection must describe all three execution_note branches.
 

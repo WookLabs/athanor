@@ -28,6 +28,8 @@ Inspection inputs:
 
 Output:
   `.athanor/hook-capability.json`  (project-root relative; created if needed)
+  PostToolUse includes `payload_keys_source` and `evidence_streams` so
+  registration facts stay separate from empirically observed payload facts.
 
 Usage:
   python3 scripts/hooks/capability_probe.py [--output PATH]
@@ -112,6 +114,14 @@ def _safe_read(path: Path) -> str:
         return ""
 
 
+def _relative_posix(path: Path, root: Path) -> str:
+    """Return a stable project-relative path for JSON output."""
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _detect_claude_code_version() -> str | None:
     """Best-effort: look for a Claude Code version string in the environment.
 
@@ -192,7 +202,32 @@ def _inspect_session_start(
     }
 
 
-def _inspect_user_prompt_submit(registered: set[str]) -> dict:
+def _latest_ups_summary(project_root: Path) -> dict | None:
+    """Return a small pointer to the latest redacted UPS spike summary."""
+    spikes_dir = project_root / ".athanor" / "spikes"
+    try:
+        summaries = sorted(spikes_dir.glob("ups-payload-*.summary.json"))
+    except OSError:
+        return None
+    if not summaries:
+        return None
+    latest = summaries[-1]
+    try:
+        data = json.loads(latest.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    return {
+        "path": str(latest.relative_to(project_root)),
+        "captured_at": data.get("captured_at"),
+        "event_name": data.get("event_name"),
+        "raw_sha256": data.get("raw_sha256"),
+        "top_level_keys": data.get("top_level_keys", []),
+    }
+
+
+def _inspect_user_prompt_submit(project_root: Path, registered: set[str]) -> dict:
     """UserPromptSubmit capability.
 
     No empirical evidence in this repo (athanor does not currently
@@ -202,11 +237,17 @@ def _inspect_user_prompt_submit(registered: set[str]) -> dict:
     next-turn context. We mark this as `unprobed` so v0.18.0 design
     teams know to validate empirically before relying on it.
     """
+    summary = _latest_ups_summary(project_root)
     return {
         "supported": False,
         "registered_in_hooks_json": "UserPromptSubmit" in registered,
         "payload_keys": [],
         "stdout_additional_context_accepted": None,
+        "spike_harness_available": (
+            project_root / "scripts" / "hooks" / "user_prompt_submit_spike.py"
+        ).is_file(),
+        "live_payload_captured": summary is not None,
+        "latest_payload_summary": summary,
         "notes": (
             "athanor does not register UserPromptSubmit as of v0.17.0; "
             "documented Claude Code contract is stdout JSON with "
@@ -216,7 +257,82 @@ def _inspect_user_prompt_submit(registered: set[str]) -> dict:
     }
 
 
+def _empty_evidence_stream_summary() -> dict:
+    return {
+        "observed": False,
+        "path": None,
+        "latest_session_id": None,
+        "latest_timestamp": None,
+        "record_count": 0,
+    }
+
+
+def _read_jsonl_records(path: Path) -> list[dict]:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+    records: list[dict] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            records.append(parsed)
+    return records
+
+
+def _latest_evidence_stream(project_root: Path, filename: str) -> dict:
+    """Summarize the latest redacted PostToolUse evidence JSONL stream.
+
+    This deliberately reports only metadata. It does not expose stdout,
+    stderr, commands, changed paths, or raw hook payload fields.
+    """
+    sessions_dir = project_root / ".athanor" / "sessions"
+    try:
+        session_dirs = sorted(
+            child for child in sessions_dir.iterdir() if child.is_dir()
+        )
+    except OSError:
+        return _empty_evidence_stream_summary()
+
+    for session_dir in reversed(session_dirs):
+        evidence_path = session_dir / ".hook-state" / filename
+        if not evidence_path.is_file():
+            continue
+        records = _read_jsonl_records(evidence_path)
+        if not records:
+            continue
+        latest = records[-1]
+        latest_timestamp = latest.get("timestamp")
+        latest_session_id = latest.get("session_id")
+        return {
+            "observed": True,
+            "path": _relative_posix(evidence_path, project_root),
+            "latest_session_id": (
+                latest_session_id if isinstance(latest_session_id, str) else session_dir.name
+            ),
+            "latest_timestamp": latest_timestamp if isinstance(latest_timestamp, str) else None,
+            "record_count": len(records),
+        }
+    return _empty_evidence_stream_summary()
+
+
+def _posttool_evidence_streams(project_root: Path) -> dict:
+    return {
+        "test_evidence": _latest_evidence_stream(project_root, "test-evidence.jsonl"),
+        "freeze_change_evidence": _latest_evidence_stream(
+            project_root,
+            "freeze-change-evidence.jsonl",
+        ),
+    }
+
+
 def _inspect_post_tool_use(
+    project_root: Path,
     registered: set[str],
     handler_md: str,
 ) -> dict:
@@ -238,23 +354,29 @@ def _inspect_post_tool_use(
         re.search(r"PostToolUse[^\n]*test[- ]evidence sniffer", handler_md, re.IGNORECASE)
     )
     registered_posttool = "PostToolUse" in registered
+    payload_keys = (
+        ["hook_event_name", "tool_name", "tool_input", "tool_response"]
+        if registered_posttool
+        else []
+    )
     return {
         "supported": registered_posttool,
         "support_level": "evidence-only" if registered_posttool else "forward-compat",
         "registered_in_hooks_json": registered_posttool,
-        "payload_keys": (
-            ["hook_event_name", "tool_name", "tool_input", "tool_response"]
-            if registered_posttool
-            else []
-        ),
+        "payload_keys": payload_keys,
+        "payload_keys_source": "expected" if payload_keys else "none",
         "tool_response_available": None,
+        "evidence_streams": _posttool_evidence_streams(project_root),
         "forward_compat_anchor_present": anchor_present,
         "notes": (
             "athanor registers PostToolUse as an evidence-only pytest "
             "sniffer when hooks.json contains the event. The sniffer is "
             "tolerant of likely payload field names and always fails open; "
+            "`payload_keys_source` stays `expected` and "
             "`tool_response_available` remains null until a live Claude Code "
-            "run confirms the exact response fields."
+            "run confirms the exact response fields. `evidence_streams` "
+            "summarizes existing JSONL evidence metadata without exposing raw "
+            "payloads or command output."
         ),
     }
 
@@ -307,8 +429,8 @@ def build_capability_report(project_root: Path) -> dict:
         "athanor_registered_events": sorted(registered),
         "events": {
             "SessionStart": _inspect_session_start(claude_md, state_md, registered),
-            "UserPromptSubmit": _inspect_user_prompt_submit(registered),
-            "PostToolUse": _inspect_post_tool_use(registered, handler_md),
+            "UserPromptSubmit": _inspect_user_prompt_submit(project_root, registered),
+            "PostToolUse": _inspect_post_tool_use(project_root, registered, handler_md),
             "PreCompact": _inspect_pre_compact(registered),
         },
         "recommendations_for_v018_v019": [

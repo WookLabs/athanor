@@ -260,6 +260,12 @@ of each event class is deferred to per-event spikes (mirror the 2026-05-18
 Stop hook spike methodology — log-only probe registered in
 `~/.claude/settings.json`).
 
+PostToolUse is registered as evidence-only when present in `hooks/hooks.json`.
+The probe reports expected payload keys separately from live certainty:
+`payload_keys_source` stays `expected`, `tool_response_available` stays
+`null`, and `evidence_streams` summarizes existing JSONL evidence metadata
+without exposing raw hook payloads or command output.
+
 Standalone invocation (outside `/athanor:setup`):
 
 ```bash

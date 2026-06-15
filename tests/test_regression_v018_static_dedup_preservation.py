@@ -208,32 +208,43 @@ def test_pointer_count_is_nine():
 
 
 # ---------------------------------------------------------------------------
-# No UPS runtime entry point in scripts/hooks/ (M3.1-MUST)
+# No UPS runtime injection in scripts/hooks/ (M3.1-MUST)
 # ---------------------------------------------------------------------------
 
 
-def test_no_ups_runtime_script_in_scripts_hooks():
-    """No script in `scripts/hooks/` registers itself as a
-    UserPromptSubmit handler.
+def test_only_log_only_ups_spike_script_in_scripts_hooks():
+    """No script in `scripts/hooks/` may implement UserPromptSubmit runtime
+    dedup or injection.
 
     `capability_probe.py` is allowed to MENTION `UserPromptSubmit` in
-    docstrings / probe definitions for forward-compat reporting; what
-    we forbid is any script that would act as the runtime entry point
-    Claude Code invokes on UPS events. The check excludes files whose
-    name does not match a `*_ups*` / `*user_prompt*` pattern AND whose
-    body does not declare itself an event handler.
+    docstrings / probe definitions for forward-compat reporting. The one
+    allowed UPS-shaped script is `user_prompt_submit_spike.py`, and it must
+    stay log-only: no `additionalContext` emission and no stdout injection.
     """
+    allowed_spike = "user_prompt_submit_spike.py"
     forbidden_name_fragments = ("user_prompt", "ups_")
+    found: list[str] = []
     for entry in SCRIPTS_HOOKS_DIR.iterdir():
         if not entry.is_file():
             continue
         if entry.suffix != ".py":
             continue
         name_lower = entry.name.lower()
-        assert not any(f in name_lower for f in forbidden_name_fragments), (
-            f"Found a UPS-shaped hook script at {entry}. v0.18.0 must not "
-            "carry UPS runtime scripts (R-B5 deferred to v0.18.2)."
-        )
+        if any(f in name_lower for f in forbidden_name_fragments):
+            found.append(entry.name)
+            assert entry.name == allowed_spike, (
+                f"Found unexpected UPS-shaped hook script at {entry}. Only "
+                f"{allowed_spike!r} is allowed before runtime dedup ships."
+            )
+            body = entry.read_text(encoding="utf-8")
+            assert "additionalContext" not in body, (
+                f"{allowed_spike} must not emit UserPromptSubmit context "
+                "injection; it is a log-only payload spike harness."
+            )
+    assert found == [allowed_spike], (
+        f"expected only {allowed_spike!r} as the UPS-shaped hook script; "
+        f"got {found!r}"
+    )
 
 
 def test_capability_probe_ups_mention_is_documentation_only():
