@@ -1,8 +1,9 @@
 # Spec-then-TDD Execution Reference
 
-Detailed reference for `/athanor:work` Spec-then-TDD execution discipline.
-Cross-linked from `skills/work/SKILL.md` Step 2 (Solo dispatch packet) and
-Step 2b (result handler).
+This is the canonical runtime behavior reference for `/athanor:work`
+Spec-then-TDD execution discipline. Cross-linked from `skills/work/SKILL.md`
+Step 2 (Solo dispatch packet), Step 2b (result handler), `CLAUDE.md`, and
+`docs/ROADMAP.md`.
 
 ## ATHANOR_RESULT schema
 

@@ -135,6 +135,37 @@ def test_roadmap_documents_v018_deferrals():
     ), "ROADMAP UserPromptSubmit deferral must reference its precondition"
 
 
+def _extract_roadmap_v019_posttool_section() -> str:
+    body = ROADMAP_MD.read_text(encoding="utf-8")
+    marker = "### v0.19.0 — PostToolUse evidence sniffer"
+    start = body.find(marker)
+    assert start != -1, "ROADMAP must contain the v0.19.0 PostToolUse section"
+    next_section = body.find("\n### ", start + len(marker))
+    if next_section == -1:
+        return body[start:]
+    return body[start:next_section]
+
+
+def test_roadmap_v019_defers_runtime_detail_to_spec_then_tdd_reference():
+    """ROADMAP should be a roadmap, not a second runtime spec."""
+    section = _extract_roadmap_v019_posttool_section()
+    assert "skills/work/references/spec-then-tdd-handler.md" in section, (
+        "ROADMAP v0.19.0 section must point to the canonical runtime "
+        "behavior reference."
+    )
+    forbidden = [
+        "**Current scope:**",
+        "Records command, test targets, scope, exit code, output tail",
+        "structured `tool_response.files_changed`",
+        "Treats observed out-of-allowlist",
+    ]
+    hits = [needle for needle in forbidden if needle in section]
+    assert not hits, (
+        "ROADMAP v0.19.0 section duplicates runtime details that belong in "
+        f"spec-then-tdd-handler.md: {hits}"
+    )
+
+
 # --- B. Version parity across 5-file manifest ---
 
 def _read_plugin_version(path: Path) -> str:

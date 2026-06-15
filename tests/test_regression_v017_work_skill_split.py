@@ -86,6 +86,25 @@ def test_spec_then_tdd_handler_has_v019_forward_compat_anchor():
     )
 
 
+def test_spec_then_tdd_handler_declares_canonical_runtime_reference():
+    """MUST: runtime behavior detail lives in the split reference, not in
+    CLAUDE.md or ROADMAP restatements."""
+    path = WORK_REFS / "spec-then-tdd-handler.md"
+    assert path.is_file()
+    body = path.read_text(encoding="utf-8")
+    required = [
+        "canonical runtime behavior reference",
+        "Evidence-Bound Enforcement",
+        "scripts/work/evidence_gate.py",
+        "scripts/work/freeze_evidence_gate.py",
+    ]
+    missing = [needle for needle in required if needle not in body]
+    assert not missing, (
+        "spec-then-tdd-handler.md must be the canonical runtime behavior "
+        f"reference; missing: {missing}"
+    )
+
+
 def test_work_skill_router_points_at_references():
     """MUST: the thin router SKILL.md cross-links the reference files
     (otherwise the references are orphaned)."""
