@@ -6,7 +6,8 @@ four hook event classes that matter for v0.18.0 / v0.19.0 design:
 
   - SessionStart      (platform mechanism; NOT athanor hook surface)
   - UserPromptSubmit  (forward-compat — stdout additionalContext)
-  - PostToolUse       (forward-compat — v0.19.0 pytest exit-code sniffer)
+  - PostToolUse       (evidence-only when registered — v0.19.0 pytest
+                       exit-code sniffer)
   - PreCompact        (forward-compat — pre-compaction snapshots)
 
 The probe is informational, not a runtime gate; honesty label "passive".
@@ -17,9 +18,9 @@ These tests assert the contract enumerated in the S08 subtask:
   3. test_probe_emits_valid_json (run in a tmp project root)
   4. test_capability_json_schema_documented
 
-Plus a small set of structural-honesty checks (each event must record
-`supported: false` until a spike lands, mirroring the v0.7.7 → v0.7.8 honesty
-arc for the Stop hook label).
+Plus a small set of structural-honesty checks: unsupported synthetic events
+stay `supported: false`, while registered PostToolUse support stays
+evidence-only and does not overclaim live payload shape.
 """
 from __future__ import annotations
 
@@ -142,6 +143,16 @@ def _make_synthetic_repo(tmp_path: Path) -> Path:
     return root
 
 
+def _register_posttooluse(root: Path) -> None:
+    """Add a minimal PostToolUse registration to a synthetic repo."""
+    hooks_path = root / "hooks" / "hooks.json"
+    data = json.loads(hooks_path.read_text(encoding="utf-8"))
+    data["hooks"]["PostToolUse"] = [
+        {"hooks": [{"type": "command", "command": "python posttool.py"}]}
+    ]
+    hooks_path.write_text(json.dumps(data), encoding="utf-8")
+
+
 def test_probe_emits_valid_json(tmp_path):
     """Running the probe writes a parseable JSON document at the expected path."""
     root = _make_synthetic_repo(tmp_path)
@@ -204,12 +215,12 @@ def test_probe_records_registered_events_from_hooks_json(tmp_path):
     )
 
 
-def test_probe_marks_all_four_events_unsupported(tmp_path):
-    """Honesty invariant — until a spike lands, each event stays `supported: false`.
+def test_probe_marks_unregistered_synthetic_events_unsupported(tmp_path):
+    """Honesty invariant — unregistered synthetic events stay unsupported.
 
-    This mirrors the v0.7.7 → v0.7.8 honesty arc for the Stop label. The
-    probe must not silently claim capability athanor hasn't empirically
-    verified.
+    This mirrors the v0.7.7 → v0.7.8 honesty arc for the Stop label. A
+    synthetic repo with no PostToolUse registration must not inherit the real
+    repo's evidence-only support status.
     """
     root = _make_synthetic_repo(tmp_path)
     rc, _stdout, stderr = _run_probe_in(root)
@@ -254,6 +265,67 @@ def test_probe_post_tool_use_forward_compat_anchor_detected(tmp_path):
         "probe should detect the v0.19.0 PostToolUse sniffer anchor in "
         f"skills/work/references/spec-then-tdd-handler.md; got: {post!r}"
     )
+    assert post["support_level"] == "forward-compat"
+    assert post["payload_keys_source"] == "none"
+
+
+def test_probe_post_tool_use_registered_payload_keys_are_expected_not_empirical(tmp_path):
+    """Registered PostToolUse support must not imply live payload certainty."""
+    root = _make_synthetic_repo(tmp_path)
+    _register_posttooluse(root)
+
+    import capability_probe as cp
+
+    report = cp.build_capability_report(root)
+    post = report["events"]["PostToolUse"]
+    assert post["registered_in_hooks_json"] is True
+    assert post["supported"] is True
+    assert post["support_level"] == "evidence-only"
+    assert post["payload_keys"] == [
+        "hook_event_name",
+        "tool_name",
+        "tool_input",
+        "tool_response",
+    ]
+    assert post["payload_keys_source"] == "expected"
+    assert post["tool_response_available"] is None
+
+
+def test_probe_post_tool_use_reports_evidence_stream_summaries(tmp_path):
+    """Existing JSONL evidence streams should be discoverable without
+    overclaiming the live Claude Code payload shape."""
+    root = _make_synthetic_repo(tmp_path)
+    _register_posttooluse(root)
+    state = root / ".athanor" / "sessions" / "2026-06-14-001" / ".hook-state"
+    state.mkdir(parents=True)
+    (state / "test-evidence.jsonl").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "timestamp": "2026-06-14T00:00:00+00:00",
+                "hook_event_name": "PostToolUse",
+                "session_id": "2026-06-14-001",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    import capability_probe as cp
+
+    report = cp.build_capability_report(root)
+    post = report["events"]["PostToolUse"]
+    streams = post["evidence_streams"]
+    assert streams["test_evidence"] == {
+        "observed": True,
+        "path": ".athanor/sessions/2026-06-14-001/.hook-state/test-evidence.jsonl",
+        "latest_session_id": "2026-06-14-001",
+        "latest_timestamp": "2026-06-14T00:00:00+00:00",
+        "record_count": 1,
+    }
+    assert streams["freeze_change_evidence"]["observed"] is False
+    assert post["payload_keys_source"] == "expected"
+    assert post["tool_response_available"] is None
 
 
 def test_probe_handles_missing_hooks_json(tmp_path):
@@ -302,6 +374,8 @@ def test_capability_json_schema_documented():
         "probe_mode",
         "athanor_registered_events",
         "recommendations_for_v018_v019",
+        "payload_keys_source",
+        "evidence_streams",
         # Honesty anchors
         "passive",
     ]
