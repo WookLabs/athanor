@@ -27,6 +27,7 @@ evidence, risk, and performance metadata instead of README-only intent.
 | --- | --- | --- | --- | --- | ---: | --- |
 | `stop-verify-claims` | Stop | enabled | block | replay-gated | 500 ms | Verifies completion claims at turn end. |
 | `pretool-dispatcher` | PreToolUse | enabled | block | replay-gated | 500 ms | Routes tool calls through kernel and freeze guards. |
+| `pretool-safety-pattern-corpus` | PreToolUse | disabled | observe | synthetic | 100 ms | Opt-in diagnostics for risky shell and secret-shaped write patterns. |
 | `posttool-evidence-sniffer` | PostToolUse | enabled | warn | replay-gated | 500 ms | Records evidence and diagnostics without changing default policy. |
 | `generic-payload-capture` | FileChanged | capture-only | observe | synthetic | 250 ms | Manual capture path for future FileChanged evidence. |
 | `userpromptsubmit-spike` | UserPromptSubmit | capture-only | observe | synthetic | 250 ms | Manual prompt payload spike; not a runtime policy hook. |

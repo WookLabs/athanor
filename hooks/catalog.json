@@ -38,6 +38,24 @@
       ]
     },
     {
+      "id": "pretool-safety-pattern-corpus",
+      "event": "PreToolUse",
+      "matcher": "",
+      "command": "",
+      "runtime_default": "disabled",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 100,
+      "dependencies": ["python3", "git-optional"],
+      "risk": "medium",
+      "description": "Opt-in observe/warn diagnostics for risky shell commands and secret-shaped write payloads.",
+      "source_refs": [
+        "scripts/hooks/safety_patterns.py",
+        "docs/hook-safety-pattern-corpus.md",
+        "docs/architecture/2026-06-16-ref-deep-research.md"
+      ]
+    },
+    {
       "id": "posttool-evidence-sniffer",
       "event": "PostToolUse",
       "matcher": "",

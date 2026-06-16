@@ -81,3 +81,12 @@ def test_catalog_documentation_names_every_catalog_entry():
     doc = DOC_PATH.read_text(encoding="utf-8")
     for entry in _catalog_entries():
         assert f"`{entry['id']}`" in doc
+
+
+def test_safety_corpus_catalog_entry_is_disabled_or_observe_only():
+    entries = {entry["id"]: entry for entry in _catalog_entries()}
+    entry = entries["pretool-safety-pattern-corpus"]
+    assert entry["event"] == "PreToolUse"
+    assert entry["runtime_default"] == "disabled"
+    assert entry["policy_mode"] == "observe"
+    assert entry["command"] == ""
