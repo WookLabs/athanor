@@ -79,7 +79,10 @@ installer, or settings writer.
 
 ## Generator Boundary
 
-P3 does not generate manifests. The generator is deferred until:
+P3 does not generate manifests, and P4 only adds a read-only install dry-run
+planner. `scripts/gates/hook_install_dry_run.py` can preview settings actions,
+but it does not write settings, manifests, trust state, or hook files. The
+generator is deferred until:
 
 1. every Athanor catalog event has an explicit Claude Code and Codex support
    status;

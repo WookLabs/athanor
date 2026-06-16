@@ -10,6 +10,11 @@ evidence, risk, and performance metadata instead of README-only intent.
 Cross-runtime support and generator boundaries are tracked in
 [docs/cross-runtime-hook-matrix.md](cross-runtime-hook-matrix.md).
 
+Installer previews are read-only. Use
+`python scripts/gates/hook_install_dry_run.py --json` to compare the catalog,
+`hooks/hooks.json`, and an optional Claude settings file. The planner reports
+what would be added, blocked, or conflicted, and always emits `writes: []`.
+
 ## Runtime Defaults
 
 - `enabled`: registered in `hooks/hooks.json` now.

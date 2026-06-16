@@ -168,6 +168,15 @@ Hook runtime policy is tracked separately from hook expansion candidates in
 [docs/hook-catalog.md](docs/hook-catalog.md). Only entries marked `enabled`
 there are registered by default.
 
+Hook installer changes can be previewed without mutating user settings:
+
+```bash
+python scripts/gates/hook_install_dry_run.py --json
+```
+
+The dry-run planner reports `already-present`, `would-add`, `blocked`, and
+`conflict` actions and always returns `writes: []`.
+
 ## Execution Modes
 
 **Solo (`--solo`)** — One subtask at a time, each in a clean context. Simple and reliable.
