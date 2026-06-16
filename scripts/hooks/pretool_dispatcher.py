@@ -38,7 +38,9 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -48,6 +50,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import _athanor_hook_runtime as _runtime  # noqa: E402
 from pretool_kernel_guard import evaluate_payload as kernel_evaluate  # noqa: E402
+from safety_patterns import classify_pretool_payload  # noqa: E402
 
 # Session ID pattern per CLAUDE.md §Session Lookup Convention.
 _SESSION_ID_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{3}$")
@@ -73,6 +76,73 @@ def _freeze_mode(config) -> str:
     if not isinstance(mode, str) or mode not in {"off", "session", "warn"}:
         return "off"
     return mode
+
+
+def _safety_corpus_mode(config) -> str:
+    """Return opt-in safety corpus mode (``off`` | ``observe`` | ``warn``)."""
+    if not isinstance(config, dict):
+        return "off"
+    hooks_section = config.get("hooks")
+    if not isinstance(hooks_section, dict):
+        return "off"
+    corpus = hooks_section.get("safetyCorpus")
+    if not isinstance(corpus, dict):
+        return "off"
+    mode = corpus.get("mode", "off")
+    if not isinstance(mode, str) or mode not in {"off", "observe", "warn"}:
+        return "off"
+    return mode
+
+
+def _current_git_branch(project_root: Path | None) -> str | None:
+    if project_root is None:
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(project_root),
+            text=True,
+            capture_output=True,
+            timeout=1,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    branch = proc.stdout.strip()
+    return branch or None
+
+
+def _write_safety_findings(project_root: Path, records: list[dict[str, str]]) -> None:
+    out_dir = project_root / ".athanor"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "hook-safety.jsonl"
+    with path.open("a", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def _observe_safety_corpus(payload: dict, config: dict, project_root: Path | None) -> str:
+    """Run the opt-in safety corpus and return a warn-mode summary string."""
+    mode = _safety_corpus_mode(config)
+    if mode == "off" or project_root is None:
+        return ""
+    branch = _current_git_branch(project_root)
+    findings = classify_pretool_payload(payload, branch=branch)
+    if not findings:
+        return ""
+    now = datetime.now(timezone.utc).isoformat()
+    records: list[dict[str, str]] = []
+    for finding in findings:
+        record = finding.to_record()
+        record["hook_event_name"] = "PreToolUse"
+        record["timestamp"] = now
+        records.append(record)
+    try:
+        _write_safety_findings(project_root, records)
+    except OSError:
+        return ""
+    if mode == "warn":
+        return ", ".join(record["pattern_id"] for record in records)
+    return ""
 
 
 def _latest_session_dir() -> Optional[Path]:
@@ -154,6 +224,11 @@ def main() -> int:
     if _runtime.is_hook_profile_off(config):
         return 0  # global opt-out (same as Stop hook)
 
+    root = _runtime.resolve_project_root()
+    warning = _observe_safety_corpus(payload, config, root)
+    if warning:
+        _stderr(f"safety corpus observation: {warning}")
+
     mode = _freeze_mode(config)
     if mode == "off":
         return 0  # default — freeze layer skipped entirely
@@ -180,7 +255,7 @@ def main() -> int:
     # tool-target paths (real Claude Code payloads send absolute file_path
     # values; the allowlist stores project-relative POSIX paths). None is
     # tolerated — freeze_guard falls back to its own cwd-coupled resolver.
-    root = _runtime.resolve_project_root()
+    # root already resolved for safety corpus observation above.
 
     try:
         freeze_exit, freeze_msg = freeze_evaluate(
