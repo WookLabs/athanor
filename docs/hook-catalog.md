@@ -7,6 +7,9 @@ Claude settings. Runtime registration still comes only from `hooks/hooks.json`.
 The catalog exists so future hook expansion starts from explicit policy,
 evidence, risk, and performance metadata instead of README-only intent.
 
+Cross-runtime support and generator boundaries are tracked in
+[docs/cross-runtime-hook-matrix.md](cross-runtime-hook-matrix.md).
+
 ## Runtime Defaults
 
 - `enabled`: registered in `hooks/hooks.json` now.
