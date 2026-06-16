@@ -515,6 +515,9 @@ def test_phase_3_gate_runs_evidence_gate_script():
     assert "--result-json" in body and "--evidence" in body, (
         "Phase 3 gate must document evidence_gate.py CLI arguments."
     )
+    assert "--mode" in body and "hooks.evidence.mode" in body, (
+        "Phase 3 gate must pass the configured hooks.evidence.mode to evidence_gate.py."
+    )
 
 
 def test_phase_3_evidence_mismatch_is_gate_violation():

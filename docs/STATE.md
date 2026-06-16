@@ -208,7 +208,6 @@ Spec-then-TDD / Stop hook gate.
 ## Known gaps (다음 작업 후보)
 
 - Memory 2-tier (`permanent → mem-search`)이 디자인 문서에는 있으나 실제 구현은 frontmatter `importance` 마킹뿐 — mem-search MCP에 영구 저장하는 코드 부재.
-- CI matrix는 ubuntu-latest 단일 — Windows-specific 회귀(case-insensitive FS 등) 자동 검증 부재.
 
 ## Command-hook Stop blocking spike (2026-05-18)
 

@@ -167,6 +167,32 @@
               "description": "User-extended allowlist; added to dynamic per-session allowlist, never replaces it"
             }
           }
+        },
+        "evidence": {
+          "type": "object",
+          "description": "PostToolUse evidence gate configuration for /athanor:work.",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["observe", "warn", "strict"],
+              "default": "warn",
+              "description": "observe = report evidence observations only; warn = preserve hybrid pass/concern/failure behavior; strict = promote evidence concerns to failures"
+            }
+          }
+        },
+        "safetyCorpus": {
+          "type": "object",
+          "description": "Opt-in PreToolUse safety-pattern corpus diagnostics. Default off; observe/warn never block.",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["off", "observe", "warn"],
+              "default": "off",
+              "description": "off = no diagnostics, observe = write JSONL findings, warn = write JSONL findings and stderr summary. No blocking mode in this release."
+            }
+          }
         }
       }
     },

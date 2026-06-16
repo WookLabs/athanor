@@ -6,6 +6,7 @@ Covers:
   - schemas/athanor-config.schema.json rejects invalid mode value
   - athanor.json + templates/athanor.json parity for freeze section
   - Default mode is "off" (D1)
+  - hooks.evidence.mode defaults to "warn" and validates observe/warn/strict
 """
 from __future__ import annotations
 
@@ -110,6 +111,36 @@ def test_schema_accepts_hooks_freeze_absent(schema):
     jsonschema.validate(instance=config, schema=schema)
 
 
+def test_schema_accepts_hooks_evidence_modes(schema):
+    """Schema accepts hooks.evidence.mode = observe|warn|strict."""
+    for mode in ("observe", "warn", "strict"):
+        config = {
+            "version": "1.0",
+            "hooks": {
+                "profile": "standard",
+                "evidence": {
+                    "mode": mode,
+                },
+            },
+        }
+        jsonschema.validate(instance=config, schema=schema)
+
+
+def test_schema_rejects_invalid_evidence_mode(schema):
+    """Schema rejects invalid hooks.evidence.mode values."""
+    config = {
+        "version": "1.0",
+        "hooks": {
+            "profile": "standard",
+            "evidence": {
+                "mode": "loud",
+            },
+        },
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=config, schema=schema)
+
+
 def test_schema_rejects_invalid_mode_value(schema):
     """Schema rejects hooks.freeze.mode with an invalid enum value."""
     config = {
@@ -171,6 +202,24 @@ def test_schema_freeze_property_declared(schema):
     )
 
 
+def test_schema_evidence_property_declared(schema):
+    """hooks.evidence property is declared in the schema."""
+    hooks_props = schema["properties"]["hooks"]["properties"]
+    assert "evidence" in hooks_props
+
+
+def test_schema_evidence_mode_enum_contains_observe_warn_strict(schema):
+    """hooks.evidence.mode enum is exactly observe/warn/strict."""
+    evidence_props = schema["properties"]["hooks"]["properties"]["evidence"]["properties"]
+    assert evidence_props["mode"]["enum"] == ["observe", "warn", "strict"]
+
+
+def test_schema_evidence_additional_properties_false(schema):
+    """evidence object has additionalProperties: false."""
+    evidence_def = schema["properties"]["hooks"]["properties"]["evidence"]
+    assert evidence_def.get("additionalProperties") is False
+
+
 def test_schema_freeze_mode_enum_contains_off(schema):
     """hooks.freeze.mode enum contains 'off'."""
     freeze_props = schema["properties"]["hooks"]["properties"]["freeze"]["properties"]
@@ -229,6 +278,12 @@ def test_athanor_json_freeze_allowed_paths_is_empty_list(athanor_config):
     )
 
 
+def test_athanor_json_evidence_mode_is_warn(athanor_config):
+    """athanor.json hooks.evidence.mode defaults to warn."""
+    evidence = athanor_config["hooks"]["evidence"]
+    assert evidence.get("mode") == "warn"
+
+
 def test_athanor_json_validates_against_schema(schema, athanor_config):
     """athanor.json validates against the updated schema."""
     jsonschema.validate(instance=athanor_config, schema=schema)
@@ -261,6 +316,12 @@ def test_template_json_freeze_allowed_paths_is_empty_list(template_config):
     assert freeze.get("allowedPaths") == []
 
 
+def test_template_json_evidence_mode_is_warn(template_config):
+    """templates/athanor.json hooks.evidence.mode defaults to warn."""
+    evidence = template_config["hooks"]["evidence"]
+    assert evidence.get("mode") == "warn"
+
+
 def test_template_json_validates_against_schema(schema, template_config):
     """templates/athanor.json validates against the updated schema."""
     jsonschema.validate(instance=template_config, schema=schema)
@@ -270,4 +331,11 @@ def test_athanor_json_template_freeze_parity(athanor_config, template_config):
     """athanor.json and templates/athanor.json have identical hooks.freeze blocks."""
     assert athanor_config["hooks"]["freeze"] == template_config["hooks"]["freeze"], (
         "hooks.freeze parity broken between athanor.json and templates/athanor.json"
+    )
+
+
+def test_athanor_json_template_evidence_parity(athanor_config, template_config):
+    """athanor.json and templates/athanor.json have identical hooks.evidence blocks."""
+    assert athanor_config["hooks"]["evidence"] == template_config["hooks"]["evidence"], (
+        "hooks.evidence parity broken between athanor.json and templates/athanor.json"
     )

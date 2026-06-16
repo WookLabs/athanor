@@ -58,3 +58,10 @@ def test_broken_fixture_fails():
     assert "boolean" in msg or "enabled" in msg, (
         f"validation error should reference the boolean / enabled field, got: {msg}"
     )
+
+
+def test_schema_accepts_safety_corpus_mode():
+    schema = _load_json(SCHEMA_PATH)
+    instance = _load_json(ROOT_CONFIG)
+    instance["hooks"]["safetyCorpus"] = {"mode": "observe"}
+    jsonschema.validate(instance=instance, schema=schema)

@@ -238,24 +238,28 @@
 
 ## Phase 8: Learning & Memory — 성장 메커니즘
 > 목표: 사용할수록 똑똑해지는 Athanor
+>
+> Current boundary: local `.athanor/lessons/` frontmatter is implemented through
+> Learner/Cleaner dispatch prompts. mem-search permanent persistence is
+> unimplemented; see `docs/STATE.md` Known gaps.
 
 ### 8.1 Learner Agent
 - [x] learner.md 에이전트 정의 작성
 - [x] 세션 결과 분석 로직 (성공/실패/패턴)
 - [x] structured lesson 추출
 - [x] 기존 lesson과 중복 체크
-- [x] mem-search에 lesson 저장
+- [ ] mem-search에 lesson 저장 (deferred; local `.athanor/lessons/` only)
 
 ### 8.2 Memory Decay + Access Count
 - [x] working memory에 access_count 메타데이터 추가
-- [x] worker가 memory 참조 시 access_count 증가 로직
-- [x] decay 규칙 구현:
+- [x] worker가 memory 참조 시 access_count 증가 로직 (Learner prompt-level)
+- [x] decay 규칙 구현 (Cleaner prompt-level):
   - age > 7일 + 참조 0회 → 삭제
   - age > 7일 + 참조 5회+ → permanent 승격
   - age > 30일 + 참조 0회 → 삭제
 
 ### 8.3 Working Cleaner 보강
-- [x] access_count 기반 smart promotion
+- [x] access_count 기반 smart promotion (local frontmatter only)
 - [x] 단순 age 삭제 → decay model 적용
 - [x] Cleaner Report 출력
 
@@ -266,7 +270,7 @@
 ### 8.5 테스트
 - [x] /work 완료 후 lesson 생성 확인
 - [x] 다음 세션에서 lesson이 worker에 주입되는지 확인
-- [x] access_count 증가 + 자동 승격 확인
+- [x] access_count 증가 + local 자동 승격 확인
 - [x] 30일+ 미참조 memory 삭제 확인
 
 ---
@@ -425,6 +429,35 @@ input-layer fail-open pattern (payload shape assumed wrong).
 Freeze D2 file-change residual without making missing evidence a hard
 failure. Runtime details, result-gate semantics, and evidence stream behavior
 live in `skills/work/references/spec-then-tdd-handler.md`.
+
+**Replay foundation:** A hook payload corpus and replay gate now exercise the
+current Stop, PreToolUse, and PostToolUse contracts against synthetic fixtures.
+The corpus also has an opt-in `scripts/hooks/hook_payload_capture.py` harness
+for collecting live local Stop, PreToolUse, PostToolUse, and FileChanged
+payloads, plus a deterministic live fixture import tool that redacts reviewed
+captures before appending replayable events to the replay index. The index now
+includes live-redacted Claude Code 2.1.177 captures for Stop, PreToolUse, and
+PostToolUse, so the payload-shape precondition for a strict upgrade is
+satisfied. A Claude Code 2.1.178 live-redacted targeted pytest PostToolUse
+fixture now also exercises the actual test-evidence path and records the
+empirical payload boundary that stdout/stderr are available while direct
+exit-code is absent; the sniffer therefore records `exit_code_source` and only
+infers an exit code from clear pytest output summaries when no direct code is
+available.
+
+**Evidence mode ladder:** `hooks.evidence.mode` now exposes
+`observe|warn|strict` for both test evidence and Freeze D2 evidence gates.
+`warn` preserves the hybrid default, `observe` records JSON observations
+without affecting subtask status, and `strict` promotes evidence concerns to
+failures when a project is ready to enforce them.
+
+**Strict default migration policy:** before changing the shipped default from
+`warn` to `strict`, the release pass must decide and document the user-facing
+migration. The recommended policy is `strict` for new installs only after live
+pytest evidence fixtures exist, while existing installs keep their explicit or
+generated `hooks.evidence.mode: "warn"` unless the user opts in. This prevents a
+silent behavior change for existing projects while allowing stricter evidence
+semantics for newly generated configs.
 
 **Still deferred:** strict failure on missing evidence, strict failure on
 Freeze D2 observations, and a separate `FileChanged` hook spike.

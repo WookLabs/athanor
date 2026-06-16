@@ -66,6 +66,12 @@ def _records(session_dir: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
+def _health_records(root: Path) -> list[dict]:
+    path = root / ".athanor" / "hook-health.jsonl"
+    assert path.is_file(), f"missing health file at {path}"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
 def test_script_exists_and_has_python_shebang():
     assert SNIFTER_SCRIPT.is_file(), f"missing {SNIFTER_SCRIPT}"
     first = SNIFTER_SCRIPT.read_text(encoding="utf-8").splitlines()[0]
@@ -161,6 +167,40 @@ def test_pytest_payload_marks_full_suite_scope(sniffer, tmp_path):
     assert record["exit_code"] == 0
 
 
+def test_pytest_payload_infers_green_exit_code_from_output_when_direct_code_absent(sniffer, tmp_path):
+    root, session_dir = _project_with_session(tmp_path)
+    payload = _bash_payload(
+        "python -m pytest tests/test_demo.py::test_green -q",
+        stdout=".                                                                        [100%]\n1 passed in 0.44s",
+    )
+    payload["tool_response"].pop("exit_code")
+
+    exit_code, stderr = sniffer.evaluate_payload(payload, project_root=root)
+
+    assert exit_code == 0
+    assert stderr == ""
+    [record] = _records(session_dir)
+    assert record["exit_code"] == 0
+    assert record["exit_code_source"] == "pytest_output"
+
+
+def test_pytest_payload_infers_red_exit_code_from_output_when_direct_code_absent(sniffer, tmp_path):
+    root, session_dir = _project_with_session(tmp_path)
+    payload = _bash_payload(
+        "python -m pytest tests/test_demo.py::test_red -q",
+        stdout="FAILED tests/test_demo.py::test_red\n1 failed in 0.12s",
+    )
+    payload["tool_response"].pop("exit_code")
+
+    exit_code, stderr = sniffer.evaluate_payload(payload, project_root=root)
+
+    assert exit_code == 0
+    assert stderr == ""
+    [record] = _records(session_dir)
+    assert record["exit_code"] == 1
+    assert record["exit_code_source"] == "pytest_output"
+
+
 def test_payload_without_session_dir_fails_open(sniffer, tmp_path):
     root = tmp_path / "project"
     root.mkdir()
@@ -170,6 +210,31 @@ def test_payload_without_session_dir_fails_open(sniffer, tmp_path):
 
     assert exit_code == 0
     assert "session" in stderr.lower()
+
+
+def test_missing_session_dir_records_fail_open_health_diagnostic(sniffer, tmp_path):
+    root = tmp_path / "project"
+    root.mkdir()
+    (root / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "standard"}}),
+        encoding="utf-8",
+    )
+
+    exit_code, stderr = sniffer.evaluate_payload(
+        _bash_payload("python -m pytest tests/test_demo.py -q", exit_code=0),
+        project_root=root,
+    )
+
+    assert exit_code == 0
+    assert "fail-open" in stderr
+    [record] = _health_records(root)
+    assert record["schema_version"] == 1
+    assert record["hook_name"] == "posttool_evidence_sniffer"
+    assert record["event"] == "missing_session_dir"
+    assert record["severity"] == "warning"
+    assert record["fail_open"] is True
+    assert record["tool_name"] == "Bash"
+    assert record["command"] == "python -m pytest tests/test_demo.py -q"
 
 
 def test_subprocess_entry_fails_open_on_malformed_json(tmp_path):

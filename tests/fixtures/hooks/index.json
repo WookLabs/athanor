@@ -1,0 +1,381 @@
+{
+  "description": "Synthetic hook payload replay corpus. Live-redacted fixtures require explicit review before being added.",
+  "fixtures": [
+    {
+      "event": "Stop",
+      "expected": {
+        "evidence": {},
+        "exit_code": 2,
+        "stderr_contains": [
+          "material claim detected"
+        ]
+      },
+      "id": "stop-transcript-material-claim-blocks",
+      "payload": {
+        "_athanor_transcript_entries": [
+          {
+            "message": {
+              "content": [
+                {
+                  "text": "Implementation complete. Tests pass.",
+                  "type": "text"
+                }
+              ],
+              "role": "assistant"
+            },
+            "type": "assistant"
+          }
+        ],
+        "hook_event_name": "Stop",
+        "session_id": "2026-06-16-001",
+        "stop_hook_active": false
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "Stop",
+      "expected": {
+        "evidence": {},
+        "exit_code": 0
+      },
+      "id": "stop-transcript-non-claim-passes",
+      "payload": {
+        "_athanor_transcript_entries": [
+          {
+            "message": {
+              "content": [
+                {
+                  "text": "I inspected the repo and found the current hook surface.",
+                  "type": "text"
+                }
+              ],
+              "role": "assistant"
+            },
+            "type": "assistant"
+          }
+        ],
+        "hook_event_name": "Stop",
+        "session_id": "2026-06-16-001",
+        "stop_hook_active": false
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "PreToolUse",
+      "expected": {
+        "evidence": {},
+        "exit_code": 2,
+        "stderr_contains": [
+          "destructive command detected"
+        ]
+      },
+      "id": "pretool-bash-rm-root-blocks",
+      "payload": {
+        "hook_event_name": "PreToolUse",
+        "tool_input": {
+          "command": "rm -rf /"
+        },
+        "tool_name": "Bash"
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "PreToolUse",
+      "expected": {
+        "evidence": {},
+        "exit_code": 0
+      },
+      "id": "pretool-bash-benign-passes",
+      "payload": {
+        "hook_event_name": "PreToolUse",
+        "tool_input": {
+          "command": "git status --short"
+        },
+        "tool_name": "Bash"
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "PostToolUse",
+      "expected": {
+        "evidence": {
+          "test-evidence.jsonl": [
+            {
+              "command": "python -m pytest tests/test_demo.py::test_red -q",
+              "exit_code": 1,
+              "hook_event_name": "PostToolUse",
+              "primary_target": "tests/test_demo.py::test_red",
+              "scope": "targeted",
+              "tool_name": "Bash"
+            }
+          ]
+        },
+        "exit_code": 0
+      },
+      "id": "posttool-pytest-targeted-red-evidence",
+      "payload": {
+        "hook_event_name": "PostToolUse",
+        "tool_input": {
+          "command": "python -m pytest tests/test_demo.py::test_red -q"
+        },
+        "tool_name": "Bash",
+        "tool_response": {
+          "exit_code": 1,
+          "stderr": "",
+          "stdout": "FAILED tests/test_demo.py::test_red"
+        }
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "PostToolUse",
+      "expected": {
+        "evidence": {
+          "test-evidence.jsonl": [
+            {
+              "command": "pytest tests/ -q",
+              "exit_code": 0,
+              "hook_event_name": "PostToolUse",
+              "primary_target": "tests/",
+              "scope": "full_suite",
+              "tool_name": "Bash"
+            }
+          ]
+        },
+        "exit_code": 0
+      },
+      "id": "posttool-pytest-full-suite-green-evidence",
+      "payload": {
+        "hook_event_name": "PostToolUse",
+        "tool_input": {
+          "command": "pytest tests/ -q"
+        },
+        "tool_name": "Bash",
+        "tool_response": {
+          "exit_code": 0,
+          "stderr": "",
+          "stdout": "1080 passed"
+        }
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "event": "PostToolUse",
+      "expected": {
+        "evidence": {
+          "freeze-change-evidence.jsonl": [
+            {
+              "allowlist_loaded": false,
+              "freeze_mode": "session",
+              "hook_event_name": "PostToolUse",
+              "paths": [
+                {
+                  "allowlist_status": "unknown_allowlist",
+                  "path": "docs/generated.md"
+                }
+              ],
+              "tool_name": "Write"
+            }
+          ]
+        },
+        "exit_code": 0
+      },
+      "id": "posttool-write-freeze-change-observation",
+      "payload": {
+        "hook_event_name": "PostToolUse",
+        "tool_input": {
+          "file_path": "docs/generated.md"
+        },
+        "tool_name": "Write",
+        "tool_response": {
+          "changed_files": [
+            "docs/generated.md"
+          ]
+        }
+      },
+      "source_level": "synthetic"
+    },
+    {
+      "capture": {
+        "captured_at": "2026-06-15T17:04:07.887970+00:00",
+        "captured_with": "scripts/hooks/hook_payload_capture.py",
+        "source": "claude-code",
+        "tool_version": "2.1.177"
+      },
+      "event": "Stop",
+      "expected": {
+        "evidence": {},
+        "exit_code": 0
+      },
+      "id": "live-claude-2-1-177-stop-basic",
+      "payload": {
+        "background_tasks": [],
+        "cwd": "<REDACTED_HOME>/.config/superpowers/worktrees/03_athanor/feat-hook-payload-replay",
+        "effort": {
+          "level": "high"
+        },
+        "hook_event_name": "Stop",
+        "last_assistant_message": "ATHANOR_LIVE_BASH_DONE",
+        "permission_mode": "bypassPermissions",
+        "session_crons": [],
+        "session_id": "8f7a123e-7d21-4e39-9373-de692acf2568",
+        "stop_hook_active": false,
+        "transcript_path": "<REDACTED_HOME>/.claude/projects/<REDACTED_HOME_SLUG>--config-superpowers-worktrees-03-athanor-feat-hook-payload-replay/8f7a123e-7d21-4e39-9373-de692acf2568.jsonl"
+      },
+      "redaction": {
+        "applied": true,
+        "review_required": true,
+        "rules": [
+          "claude_project_slug",
+          "home_path"
+        ]
+      },
+      "source_level": "live-redacted"
+    },
+    {
+      "capture": {
+        "captured_at": "2026-06-15T17:04:03.484231+00:00",
+        "captured_with": "scripts/hooks/hook_payload_capture.py",
+        "source": "claude-code",
+        "tool_version": "2.1.177"
+      },
+      "event": "PreToolUse",
+      "expected": {
+        "evidence": {},
+        "exit_code": 0
+      },
+      "id": "live-claude-2-1-177-pretool-bash-echo",
+      "payload": {
+        "cwd": "<REDACTED_HOME>/.config/superpowers/worktrees/03_athanor/feat-hook-payload-replay",
+        "effort": {
+          "level": "high"
+        },
+        "hook_event_name": "PreToolUse",
+        "permission_mode": "bypassPermissions",
+        "session_id": "8f7a123e-7d21-4e39-9373-de692acf2568",
+        "tool_input": {
+          "command": "echo ATHANOR_LIVE_BASH_PROBE",
+          "description": "Echo the probe string"
+        },
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01CT1HgQgKYVZfz5NKEwNtwD",
+        "transcript_path": "<REDACTED_HOME>/.claude/projects/<REDACTED_HOME_SLUG>--config-superpowers-worktrees-03-athanor-feat-hook-payload-replay/8f7a123e-7d21-4e39-9373-de692acf2568.jsonl"
+      },
+      "redaction": {
+        "applied": true,
+        "review_required": true,
+        "rules": [
+          "claude_project_slug",
+          "home_path"
+        ]
+      },
+      "source_level": "live-redacted"
+    },
+    {
+      "capture": {
+        "captured_at": "2026-06-15T17:04:04.262620+00:00",
+        "captured_with": "scripts/hooks/hook_payload_capture.py",
+        "source": "claude-code",
+        "tool_version": "2.1.177"
+      },
+      "event": "PostToolUse",
+      "expected": {
+        "evidence": {},
+        "exit_code": 0
+      },
+      "id": "live-claude-2-1-177-posttool-bash-echo",
+      "payload": {
+        "cwd": "<REDACTED_HOME>/.config/superpowers/worktrees/03_athanor/feat-hook-payload-replay",
+        "duration_ms": 642,
+        "effort": {
+          "level": "high"
+        },
+        "hook_event_name": "PostToolUse",
+        "permission_mode": "bypassPermissions",
+        "session_id": "8f7a123e-7d21-4e39-9373-de692acf2568",
+        "tool_input": {
+          "command": "echo ATHANOR_LIVE_BASH_PROBE",
+          "description": "Echo the probe string"
+        },
+        "tool_name": "Bash",
+        "tool_response": {
+          "interrupted": false,
+          "isImage": false,
+          "noOutputExpected": false,
+          "stderr": "",
+          "stdout": "ATHANOR_LIVE_BASH_PROBE"
+        },
+        "tool_use_id": "toolu_01CT1HgQgKYVZfz5NKEwNtwD",
+        "transcript_path": "<REDACTED_HOME>/.claude/projects/<REDACTED_HOME_SLUG>--config-superpowers-worktrees-03-athanor-feat-hook-payload-replay/8f7a123e-7d21-4e39-9373-de692acf2568.jsonl"
+      },
+      "redaction": {
+        "applied": true,
+        "review_required": true,
+        "rules": [
+          "claude_project_slug",
+          "home_path"
+        ]
+      },
+      "source_level": "live-redacted"
+    },
+    {
+      "event": "PostToolUse",
+      "expected": {
+        "evidence": {
+          "test-evidence.jsonl": [
+            {
+              "command": "python -m pytest tests/test_regression_hook_payload_replay.py::test_replay_script_filters_single_event -q",
+              "exit_code": 0,
+              "exit_code_source": "pytest_output",
+              "primary_target": "tests/test_regression_hook_payload_replay.py::test_replay_script_filters_single_event",
+              "scope": "targeted",
+              "tool_name": "Bash"
+            }
+          ]
+        },
+        "exit_code": 0
+      },
+      "capture": {
+        "captured_at": "2026-06-16T11:41:32.721248+00:00",
+        "captured_with": "scripts/hooks/hook_payload_capture.py",
+        "source": "claude-code",
+        "tool_version": "2.1.178"
+      },
+      "id": "live-claude-2-1-178-posttool-pytest-targeted",
+      "payload": {
+        "cwd": "<REDACTED_HOME>/.config/superpowers/worktrees/03_athanor/feat-hook-payload-replay",
+        "duration_ms": 1758,
+        "effort": {
+          "level": "high"
+        },
+        "hook_event_name": "PostToolUse",
+        "permission_mode": "bypassPermissions",
+        "session_id": "efd06b57-3912-4c10-ac4a-d624e085e165",
+        "tool_input": {
+          "command": "python -m pytest tests/test_regression_hook_payload_replay.py::test_replay_script_filters_single_event -q",
+          "description": "Run a single pytest test"
+        },
+        "tool_name": "Bash",
+        "tool_response": {
+          "interrupted": false,
+          "isImage": false,
+          "noOutputExpected": false,
+          "stderr": "",
+          "stdout": ".                                                                        [100%]\r\n1 passed in 0.44s"
+        },
+        "tool_use_id": "toolu_012UkT2gEM5gFGPjQV2cR2rX",
+        "transcript_path": "<REDACTED_HOME>/.claude/projects/<REDACTED_HOME_SLUG>/efd06b57-3912-4c10-ac4a-d624e085e165.jsonl"
+      },
+      "redaction": {
+        "applied": true,
+        "review_required": true,
+        "rules": [
+          "claude_project_slug",
+          "home_path"
+        ]
+      },
+      "source_level": "live-redacted"
+    }
+  ],
+  "schema_version": 1
+}

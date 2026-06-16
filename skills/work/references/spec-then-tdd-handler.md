@@ -145,6 +145,8 @@ PostToolUse evidence exists, `scripts/work/evidence_gate.py` cross-checks
 worker self-report against `.hook-state/test-evidence.jsonl`. Evidence
 mismatch is a gate failure. Missing evidence is a concern, not a hard failure,
 so early PostToolUse payload/environment gaps do not brick work completion.
+Read `hooks.evidence.mode` from `athanor.json` before running evidence gates;
+if the field is missing or invalid, use `warn`.
 
 ### Phase 1 — validate red_evidence shape (only when subtask.execution_note == "spec-then-tdd")
 
@@ -204,7 +206,8 @@ the subtask to pass:
    ```
    python3 scripts/work/evidence_gate.py \
      --evidence .athanor/sessions/<id>/.hook-state/test-evidence.jsonl \
-     --result-json -
+     --result-json - \
+     --mode <hooks.evidence.mode default warn>
    ```
    Pass this JSON object on stdin:
    ```
@@ -238,11 +241,17 @@ If `evidence_gate.py` returns JSON status `"concern"`:
 - If the worker otherwise passed all gate clauses, prefer
   `done_with_concerns` when reporting the final subtask status; otherwise keep
   the normal failure handling for the failing non-evidence clause.
+- In `observe` mode, the gate reports missing or conflicting evidence under
+  JSON `observations` and returns `"pass"` so evidence rollout can be audited
+  without changing subtask status.
+- In `strict` mode, evidence concerns are promoted to failures and must be
+  handled as `test-evidence gate violation` entries.
 
 After the test-evidence gate, run the Freeze D2 evidence concern check:
 ```
 python3 scripts/work/freeze_evidence_gate.py \
-  --evidence .athanor/sessions/<id>/.hook-state/freeze-change-evidence.jsonl
+  --evidence .athanor/sessions/<id>/.hook-state/freeze-change-evidence.jsonl \
+  --mode <hooks.evidence.mode default warn>
 ```
 If it returns JSON status `"concern"`, do NOT treat it as a gate failure.
 Append each concern to work-log.md as
@@ -250,6 +259,8 @@ Append each concern to work-log.md as
 when the worker otherwise passed all hard gate clauses. Missing
 `freeze-change-evidence.jsonl` returns `"pass"` and should not create a
 concern; many legitimate tool runs expose no file-change payload.
+In `observe` mode, Freeze D2 findings are reported only as JSON
+`observations`. In `strict` mode, Freeze D2 concerns become failures.
 
 If all hard gate clauses pass and the evidence gate has no failure:
 - Subtask is marked complete and the work-log `pending` entry (if any) is
@@ -288,17 +299,20 @@ handler now cross-checks that evidence through `scripts/work/evidence_gate.py`:
 - Hook appends JSONL evidence to
   `.athanor/sessions/<latest>/.hook-state/test-evidence.jsonl`.
 - Each record includes the command, normalized test targets, scope
-  (`targeted`, `full_suite`, or `unspecified`), exit code, output tail,
-  timestamp, and session id.
+  (`targeted`, `full_suite`, or `unspecified`), exit code, `exit_code_source`,
+  output tail, timestamp, and session id.
 - The hook always fails open. It never exits 2 and never blocks a session.
 - The handler treats evidence mismatches as `test-evidence gate violation`
   failures.
-- The handler treats missing evidence as a concern in hybrid mode.
+- The handler treats missing evidence according to `hooks.evidence.mode`:
+  `observe` reports observations only, `warn` reports concerns in hybrid mode,
+  and `strict` promotes concerns to failures.
 - The same hook also records evidence-only Freeze D2 file-change observations
   to `.hook-state/freeze-change-evidence.jsonl` when PostToolUse exposes
   tool input write targets or structured `tool_response.files_changed`-style
   fields. `scripts/work/freeze_evidence_gate.py` reports observed
-  out-of-allowlist or unknown-allowlist paths as concerns only.
+  out-of-allowlist or unknown-allowlist paths according to the same
+  `hooks.evidence.mode`.
 
 What this stage does **not** enforce:
 
@@ -308,7 +322,9 @@ What this stage does **not** enforce:
   likely payload field names, but live Claude Code payload evidence should
   still be reviewed before strict enforcement. The capability probe therefore
   labels PostToolUse payload keys as `expected` and reports only redacted
-  `evidence_streams` metadata from existing JSONL files.
+  `evidence_streams` metadata from existing JSONL files. When a direct exit
+  code is absent, the sniffer only infers from clear pytest output summaries
+  and records `exit_code_source: "pytest_output"`.
 
 Next enforcement upgrade:
 

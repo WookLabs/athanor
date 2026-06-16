@@ -47,6 +47,13 @@ def test_userpromptsubmit_spike_script_exists_and_is_importable():
     assert callable(user_prompt_submit_spike.main)
 
 
+def test_userpromptsubmit_spike_reuses_shared_capture_utils():
+    body = SPIKE_SCRIPT.read_text(encoding="utf-8")
+
+    assert "hook_capture_utils" in body
+    assert "capture_payload" in body
+
+
 def test_valid_payload_writes_raw_and_redacted_summary(tmp_path):
     import user_prompt_submit_spike
 

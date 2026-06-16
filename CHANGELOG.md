@@ -5,6 +5,76 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **v0.19 evidence branch candidate.** Adds the PostToolUse test-evidence
+  path, Freeze D2 evidence follow-up, hook payload corpus replay gate, and
+  log-only UserPromptSubmit spike harness while keeping runtime blocking
+  behavior opt-in or evidence-only where live payload certainty is still
+  empirical.
+- **Generic hook payload capture harness.** `scripts/hooks/hook_payload_capture.py`
+  prints an opt-in settings snippet for live Stop, PreToolUse, PostToolUse,
+  and FileChanged payload review, writes raw local captures plus redacted shape
+  summaries under `.athanor/spikes/hook-payloads`, and remains unregistered in
+  repo `hooks/hooks.json`.
+- **Shared hook capture utilities.** `scripts/hooks/hook_capture_utils.py`
+  centralizes raw capture, redacted shape summaries, and settings-snippet
+  generation so the generic capture harness and UserPromptSubmit spike harness
+  cannot silently drift.
+- **Evidence enforcement ladder.** `hooks.evidence.mode` now supports
+  `observe`, `warn`, and `strict` for the work evidence gates. `warn` preserves
+  the hybrid default; `observe` records observations without changing subtask
+  status; `strict` promotes evidence concerns to failures.
+- **Live hook fixture importer.** `scripts/gates/import_hook_fixture.py` imports
+  manually reviewed hook payload captures into the replay corpus as
+  `source_level: live-redacted`, recursively redacting home paths, obvious API
+  tokens, private GitHub image URLs, and private-key blocks before appending to
+  `tests/fixtures/hooks/index.json`.
+- **Claude Code 2.1.177 live hook fixtures.** The replay corpus now includes
+  reviewed live-redacted Stop, PreToolUse, and PostToolUse captures generated
+  through `scripts/hooks/hook_payload_capture.py`, with capture provenance
+  recorded on each fixture.
+- **Claude Code 2.1.178 live pytest PostToolUse fixture.** The replay corpus
+  now includes a reviewed live-redacted targeted pytest run captured from a
+  real Claude Code PostToolUse event. It locks the current empirical fact that
+  this payload shape exposes stdout/stderr but no direct exit-code field; the
+  sniffer now infers clear pytest pass/fail summaries and records
+  `exit_code_source`.
+- **Hook corpus safety gate.** `scripts/gates/replay_hook_fixtures.py` now
+  rejects fixtures containing obvious secrets/local paths, Claude project slugs,
+  and requires `live-redacted` fixtures to carry redaction metadata with
+  manual-review provenance.
+- **CI hook replay gate.** The validation workflow now runs
+  `scripts/gates/replay_hook_fixtures.py` as a named CI step, so hook fixture
+  replay failures are visible independently from the pytest suite.
+- **PostToolUse health diagnostics.** Fail-open infrastructure issues such as a
+  missing session directory now write `.athanor/hook-health.jsonl` breadcrumbs
+  while preserving hook exit 0 behavior.
+
+### Changed
+
+- **Memory honesty cleanup.** README, DESIGN, and ROADMAP now describe the
+  shipped learning surface as local `.athanor/lessons/` files plus
+  Learner/Cleaner prompt-level decay. mem-search permanent persistence remains
+  explicitly unimplemented instead of being implied by the historical Phase 8
+  checklist.
+- **XHigh progress audit refresh.** The saved xhigh report now separates the
+  original 7.3/10 score from the current post-remediation evidence score,
+  records all eight original recommendations as done, and records the
+  live-redacted core hook fixture evidence that satisfies the approximate
+  9.5/10 target plus the final live pytest evidence hardening.
+- **Strict default migration policy.** ROADMAP now states the release policy
+  needed before changing `hooks.evidence.mode` from `warn` to `strict`: new
+  installs may move stricter after live pytest evidence is present, while
+  existing installs keep explicit/generated `warn` unless users opt in.
+
+### Release Notes
+
+- This branch intentionally does not bump `.claude-plugin/plugin.json` beyond
+  v0.18.8. A release-specific pass should decide whether these Unreleased
+  changes ship as v0.19.0 and then update manifests, schema URLs, README, STATE,
+  migration notes, and release evidence atomically.
+
 ## [0.18.8] — 2026-06-12
 
 ### Added

@@ -59,6 +59,8 @@ _FILE_CHANGE_CONTAINER_KEYS = {
     "modified",
     "paths",
 }
+_PYTEST_FAILURE_SUMMARY_RE = re.compile(r"\b(?:failed|error|errors)\b", re.IGNORECASE)
+_PYTEST_PASS_SUMMARY_RE = re.compile(r"\b\d+\s+passed\b", re.IGNORECASE)
 _OPTIONS_WITH_VALUE = {
     "-c",
     "-k",
@@ -217,6 +219,25 @@ def _extract_exit_code(payload: dict) -> int | None:
                 except ValueError:
                     continue
     return None
+
+
+def _infer_pytest_exit_code_from_output(payload: dict) -> int | None:
+    output = _output_tail(payload)
+    if _PYTEST_FAILURE_SUMMARY_RE.search(output):
+        return 1
+    if _PYTEST_PASS_SUMMARY_RE.search(output):
+        return 0
+    return None
+
+
+def _extract_exit_code_with_source(payload: dict) -> tuple[int | None, str]:
+    direct = _extract_exit_code(payload)
+    if direct is not None:
+        return direct, "tool_response"
+    inferred = _infer_pytest_exit_code_from_output(payload)
+    if inferred is not None:
+        return inferred, "pytest_output"
+    return None, "unavailable"
 
 
 def _string_value(value: Any) -> str:
@@ -433,6 +454,33 @@ def _append_jsonl(path: Path, record: dict) -> None:
         f.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _append_hook_health(
+    root: Path | None,
+    *,
+    event: str,
+    message: str,
+    payload: dict,
+) -> None:
+    if root is None:
+        return
+    record = {
+        "schema_version": 1,
+        "timestamp": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "hook_name": "posttool_evidence_sniffer",
+        "hook_event_name": payload.get("hook_event_name") or payload.get("hookEventName") or "PostToolUse",
+        "event": event,
+        "severity": "warning",
+        "fail_open": True,
+        "message": message,
+        "tool_name": _tool_name(payload),
+        "command": _command_from_payload(payload),
+    }
+    try:
+        _append_jsonl(root / ".athanor" / "hook-health.jsonl", record)
+    except OSError:
+        return
+
+
 def evaluate_payload(
     payload: Any,
     *,
@@ -468,10 +516,18 @@ def evaluate_payload(
         return 0, freeze_stderr
 
     if resolved_session is None:
-        return 0, freeze_stderr or "no session directory found; passing (fail-open)"
+        message = freeze_stderr or "no session directory found; passing (fail-open)"
+        _append_hook_health(
+            root,
+            event="missing_session_dir",
+            message=message,
+            payload=payload,
+        )
+        return 0, message
 
     targets = _extract_test_targets(pytest_args)
     primary_target = targets[0] if targets else None
+    observed_exit_code, exit_code_source = _extract_exit_code_with_source(payload)
     record = {
         "schema_version": 1,
         "timestamp": _dt.datetime.now(_dt.timezone.utc).isoformat(),
@@ -481,7 +537,8 @@ def evaluate_payload(
         "test_targets": targets,
         "primary_target": primary_target,
         "scope": _scope_for_targets(targets),
-        "exit_code": _extract_exit_code(payload),
+        "exit_code": observed_exit_code,
+        "exit_code_source": exit_code_source,
         "output_tail": _output_tail(payload),
         "session_id": resolved_session.name,
     }
@@ -490,7 +547,14 @@ def evaluate_payload(
     try:
         _append_jsonl(evidence_path, record)
     except OSError as exc:
-        return 0, f"could not write test evidence: {exc}; passing (fail-open)"
+        message = f"could not write test evidence: {exc}; passing (fail-open)"
+        _append_hook_health(
+            root,
+            event="write_test_evidence_failed",
+            message=message,
+            payload=payload,
+        )
+        return 0, message
     return 0, freeze_stderr
 
 
