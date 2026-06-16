@@ -31,8 +31,11 @@ evidence, risk, and performance metadata instead of README-only intent.
 | `posttool-evidence-sniffer` | PostToolUse | enabled | warn | replay-gated | 500 ms | Records evidence and diagnostics without changing default policy. |
 | `generic-payload-capture` | FileChanged | capture-only | observe | synthetic | 250 ms | Manual capture path for future FileChanged evidence. |
 | `userpromptsubmit-spike` | UserPromptSubmit | capture-only | observe | synthetic | 250 ms | Manual prompt payload spike; not a runtime policy hook. |
-| `sessionstart-context-candidate` | SessionStart | disabled | observe | none | 100 ms | Candidate for opt-in context injection after live evidence. |
-| `precompact-summary-candidate` | PreCompact | disabled | observe | none | 100 ms | Candidate for opt-in compaction summaries after payload evidence. |
+| `sessionstart-context-candidate` | SessionStart | capture-only | observe | synthetic | 100 ms | Capture-first context injection candidate after live evidence. |
+| `precompact-summary-candidate` | PreCompact | capture-only | observe | synthetic | 100 ms | Capture-first compaction summary candidate after payload evidence. |
+| `permissionrequest-capture-candidate` | PermissionRequest | capture-only | observe | synthetic | 100 ms | Capture-first approval-surface candidate before policy hooks. |
+| `posttoolusefailure-capture-candidate` | PostToolUseFailure | capture-only | observe | synthetic | 100 ms | Capture-first failure diagnostics candidate before enforcement. |
+| `subagentstop-capture-candidate` | SubagentStop | capture-only | observe | synthetic | 100 ms | Capture-first worker completion metadata candidate before runtime policy. |
 
 ## Promotion Rules
 

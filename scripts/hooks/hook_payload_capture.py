@@ -16,7 +16,18 @@ from typing import Any
 
 import hook_capture_utils
 
-CORE_EVENTS = ("Stop", "PreToolUse", "PostToolUse", "FileChanged")
+CORE_EVENTS = (
+    "Stop",
+    "PreToolUse",
+    "PostToolUse",
+    "FileChanged",
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreCompact",
+    "PermissionRequest",
+    "PostToolUseFailure",
+    "SubagentStop",
+)
 
 
 def capture_payload(payload: dict[str, Any], output_dir: Path, event: str | None = None) -> int:

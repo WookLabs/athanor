@@ -158,12 +158,13 @@ def test_print_settings_snippet_covers_core_hooks_and_does_not_mutate_repo():
 
     assert proc.returncode == 0
     snippet = json.loads(proc.stdout)
-    assert sorted(snippet["hooks"].keys()) == [
+    for event_name in [
         "FileChanged",
         "PostToolUse",
         "PreToolUse",
         "Stop",
-    ]
+    ]:
+        assert event_name in snippet["hooks"]
     for event_name, event_entries in snippet["hooks"].items():
         command = event_entries[0]["hooks"][0]["command"]
         assert event_entries[0]["matcher"] == "*"
@@ -172,6 +173,36 @@ def test_print_settings_snippet_covers_core_hooks_and_does_not_mutate_repo():
         assert ".athanor" in command
         assert "hook-payloads" in command
     assert not (REPO_ROOT / ".claude").exists()
+
+
+def test_print_settings_snippet_covers_capture_first_lifecycle_events():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(CAPTURE_SCRIPT),
+            "--project-root",
+            str(REPO_ROOT),
+            "--print-settings-snippet",
+        ],
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+    )
+
+    assert proc.returncode == 0
+    snippet = json.loads(proc.stdout)
+    assert sorted(snippet["hooks"].keys()) == [
+        "FileChanged",
+        "PermissionRequest",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "PreCompact",
+        "PreToolUse",
+        "SessionStart",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+    ]
 
 
 def test_repo_hooks_json_still_does_not_register_hook_payload_capture():

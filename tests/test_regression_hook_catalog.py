@@ -90,3 +90,27 @@ def test_safety_corpus_catalog_entry_is_disabled_or_observe_only():
     assert entry["runtime_default"] == "disabled"
     assert entry["policy_mode"] == "observe"
     assert entry["command"] == ""
+
+
+def test_capture_first_lifecycle_events_are_cataloged_as_capture_only():
+    by_event = {
+        entry["event"]: entry
+        for entry in _catalog_entries()
+        if entry["runtime_default"] == "capture-only"
+    }
+    for event in (
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreCompact",
+        "PermissionRequest",
+        "PostToolUseFailure",
+        "SubagentStop",
+    ):
+        entry = by_event[event]
+        assert entry["policy_mode"] == "observe"
+        assert entry["evidence_level"] == "synthetic"
+        if event == "UserPromptSubmit":
+            assert "user_prompt_submit_spike.py" in entry["command"]
+        else:
+            assert "hook_payload_capture.py" in entry["command"]
+            assert f"--event {event}" in entry["command"]

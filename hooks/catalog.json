@@ -113,15 +113,16 @@
       "id": "sessionstart-context-candidate",
       "event": "SessionStart",
       "matcher": "",
-      "command": "",
-      "runtime_default": "disabled",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event SessionStart",
+      "runtime_default": "capture-only",
       "policy_mode": "observe",
-      "evidence_level": "none",
+      "evidence_level": "synthetic",
       "performance_budget_ms": 100,
-      "dependencies": [],
+      "dependencies": ["python3"],
       "risk": "medium",
-      "description": "Future opt-in context injection candidate informed by refs; no Athanor runtime handler exists yet.",
+      "description": "Capture-first SessionStart payload candidate for studying opt-in context injection before runtime registration.",
       "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
         "docs/architecture/2026-06-16-ref-deep-research.md",
         "ref/obra-superpowers/hooks/hooks.json",
         "ref/alexei-led-cc-thingz/dist/claude/plugins/dev-flow/hooks/hooks.json"
@@ -131,18 +132,73 @@
       "id": "precompact-summary-candidate",
       "event": "PreCompact",
       "matcher": "",
-      "command": "",
-      "runtime_default": "disabled",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event PreCompact",
+      "runtime_default": "capture-only",
       "policy_mode": "observe",
-      "evidence_level": "none",
+      "evidence_level": "synthetic",
       "performance_budget_ms": 100,
-      "dependencies": [],
+      "dependencies": ["python3"],
       "risk": "medium",
-      "description": "Future opt-in compaction summary candidate; held until live payload shape and storage policy are proven.",
+      "description": "Capture-first PreCompact payload candidate for studying compaction summaries before runtime registration.",
       "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
         "docs/architecture/2026-06-16-ref-deep-research.md",
         "ref/ElliotJLT-hooksmith/README.md",
         "ref/disler-claude-code-hooks-mastery/README.md"
+      ]
+    },
+    {
+      "id": "permissionrequest-capture-candidate",
+      "event": "PermissionRequest",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event PermissionRequest",
+      "runtime_default": "capture-only",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 100,
+      "dependencies": ["python3"],
+      "risk": "medium",
+      "description": "Capture-first PermissionRequest payload candidate for studying approval surfaces before policy hooks.",
+      "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
+        "docs/architecture/2026-06-16-ref-deep-research.md",
+        "ref/karanb192-claude-code-hooks/README.md"
+      ]
+    },
+    {
+      "id": "posttoolusefailure-capture-candidate",
+      "event": "PostToolUseFailure",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event PostToolUseFailure",
+      "runtime_default": "capture-only",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 100,
+      "dependencies": ["python3"],
+      "risk": "medium",
+      "description": "Capture-first PostToolUseFailure payload candidate for studying failure diagnostics before enforcement.",
+      "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
+        "docs/architecture/2026-06-16-ref-deep-research.md",
+        "ref/karanb192-claude-code-hooks/README.md"
+      ]
+    },
+    {
+      "id": "subagentstop-capture-candidate",
+      "event": "SubagentStop",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event SubagentStop",
+      "runtime_default": "capture-only",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 100,
+      "dependencies": ["python3"],
+      "risk": "medium",
+      "description": "Capture-first SubagentStop payload candidate for studying worker completion metadata before runtime policy.",
+      "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
+        "docs/architecture/2026-06-16-ref-deep-research.md",
+        "ref/karanb192-claude-code-hooks/README.md"
       ]
     }
   ]

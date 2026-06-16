@@ -29,10 +29,11 @@ no direct exit-code field.
 ## Opt-In Live Capture
 
 `scripts/hooks/hook_payload_capture.py` is a log-only capture harness for
-reviewing live Stop, PreToolUse, PostToolUse, and FileChanged payload shapes.
-It is not registered in repo `hooks/hooks.json`; use it only by copying the
-printed settings snippet into user-global Claude settings for a short manual
-capture session.
+reviewing live Stop, PreToolUse, PostToolUse, FileChanged, SessionStart,
+UserPromptSubmit, PreCompact, PermissionRequest, PostToolUseFailure, and
+SubagentStop payload shapes. It is not registered in repo `hooks/hooks.json`;
+use it only by copying the printed settings snippet into user-global Claude
+settings for a short manual capture session.
 
 Print the snippet with:
 
@@ -76,8 +77,10 @@ is minimal, add capture provenance when committing the fixture, and run the
 replay gate before committing it.
 
 Only replayable events can be imported into the live-redacted fixture corpus:
-Stop, PreToolUse, and PostToolUse. UserPromptSubmit and FileChanged captures
-remain spike-only until a registered replay hook exists for those events.
+Stop, PreToolUse, and PostToolUse. Capture-first lifecycle events such as
+SessionStart, UserPromptSubmit, PreCompact, PermissionRequest,
+PostToolUseFailure, SubagentStop, and FileChanged remain spike-only until a
+registered replay hook exists for those events.
 
 ## Replay
 
