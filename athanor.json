@@ -37,6 +37,9 @@
     },
     "evidence": {
       "mode": "warn"
+    },
+    "safetyCorpus": {
+      "mode": "off"
     }
   },
   "lfgGoal": {
