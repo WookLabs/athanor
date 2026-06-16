@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "hooks": [
+    {
+      "id": "stop-verify-claims",
+      "event": "Stop",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\"",
+      "runtime_default": "enabled",
+      "policy_mode": "block",
+      "evidence_level": "replay-gated",
+      "performance_budget_ms": 500,
+      "dependencies": ["python3"],
+      "risk": "medium",
+      "description": "Verifies completion claims at Stop time and blocks unsupported success claims.",
+      "source_refs": [
+        "hooks/hooks.json",
+        "scripts/hooks/stop_verify_claims.py",
+        "docs/plans/2026-06-14-athanor-xhigh-audit.md"
+      ]
+    },
+    {
+      "id": "pretool-dispatcher",
+      "event": "PreToolUse",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\"",
+      "runtime_default": "enabled",
+      "policy_mode": "block",
+      "evidence_level": "replay-gated",
+      "performance_budget_ms": 500,
+      "dependencies": ["python3"],
+      "risk": "medium",
+      "description": "Routes PreToolUse payloads through Athanor kernel and freeze guards before tools run.",
+      "source_refs": [
+        "hooks/hooks.json",
+        "scripts/hooks/pretool_dispatcher.py",
+        "tests/test_regression_v018_pretool_dispatcher.py"
+      ]
+    },
+    {
+      "id": "posttool-evidence-sniffer",
+      "event": "PostToolUse",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\"",
+      "runtime_default": "enabled",
+      "policy_mode": "warn",
+      "evidence_level": "replay-gated",
+      "performance_budget_ms": 500,
+      "dependencies": ["python3"],
+      "risk": "low",
+      "description": "Records test and file-change evidence from PostToolUse payloads without changing default runtime policy.",
+      "source_refs": [
+        "hooks/hooks.json",
+        "scripts/hooks/posttool_evidence_sniffer.py",
+        "docs/hook-payload-corpus.md"
+      ]
+    },
+    {
+      "id": "generic-payload-capture",
+      "event": "FileChanged",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/hook_payload_capture.py\" --event FileChanged",
+      "runtime_default": "capture-only",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 250,
+      "dependencies": ["python3"],
+      "risk": "low",
+      "description": "Opt-in payload capture path for reviewing FileChanged hook shape before any runtime registration.",
+      "source_refs": [
+        "scripts/hooks/hook_payload_capture.py",
+        "docs/hook-payload-corpus.md",
+        "docs/architecture/2026-06-16-ref-deep-research.md"
+      ]
+    },
+    {
+      "id": "userpromptsubmit-spike",
+      "event": "UserPromptSubmit",
+      "matcher": "",
+      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/user_prompt_submit_spike.py\"",
+      "runtime_default": "capture-only",
+      "policy_mode": "observe",
+      "evidence_level": "synthetic",
+      "performance_budget_ms": 250,
+      "dependencies": ["python3"],
+      "risk": "low",
+      "description": "Opt-in UserPromptSubmit capture harness for studying prompt payloads before enforcement.",
+      "source_refs": [
+        "scripts/hooks/user_prompt_submit_spike.py",
+        "docs/spikes/userpromptsubmit-spike.md",
+        "tests/test_regression_userpromptsubmit_spike.py"
+      ]
+    },
+    {
+      "id": "sessionstart-context-candidate",
+      "event": "SessionStart",
+      "matcher": "",
+      "command": "",
+      "runtime_default": "disabled",
+      "policy_mode": "observe",
+      "evidence_level": "none",
+      "performance_budget_ms": 100,
+      "dependencies": [],
+      "risk": "medium",
+      "description": "Future opt-in context injection candidate informed by refs; no Athanor runtime handler exists yet.",
+      "source_refs": [
+        "docs/architecture/2026-06-16-ref-deep-research.md",
+        "ref/obra-superpowers/hooks/hooks.json",
+        "ref/alexei-led-cc-thingz/dist/claude/plugins/dev-flow/hooks/hooks.json"
+      ]
+    },
+    {
+      "id": "precompact-summary-candidate",
+      "event": "PreCompact",
+      "matcher": "",
+      "command": "",
+      "runtime_default": "disabled",
+      "policy_mode": "observe",
+      "evidence_level": "none",
+      "performance_budget_ms": 100,
+      "dependencies": [],
+      "risk": "medium",
+      "description": "Future opt-in compaction summary candidate; held until live payload shape and storage policy are proven.",
+      "source_refs": [
+        "docs/architecture/2026-06-16-ref-deep-research.md",
+        "ref/ElliotJLT-hooksmith/README.md",
+        "ref/disler-claude-code-hooks-mastery/README.md"
+      ]
+    }
+  ]
+}

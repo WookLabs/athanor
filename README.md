@@ -164,6 +164,10 @@ When Codex is available, it serves as Planner B (deep tier) or Reviewer (standar
 
 [Full architecture details](docs/DESIGN.md) | [Conventions](docs/CONVENTIONS.md)
 
+Hook runtime policy is tracked separately from hook expansion candidates in
+[docs/hook-catalog.md](docs/hook-catalog.md). Only entries marked `enabled`
+there are registered by default.
+
 ## Execution Modes
 
 **Solo (`--solo`)** — One subtask at a time, each in a clean context. Simple and reliable.
