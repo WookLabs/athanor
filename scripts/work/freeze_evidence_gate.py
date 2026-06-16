@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Concern gate for PostToolUse Freeze file-change evidence.
+"""Mode-aware gate for PostToolUse Freeze file-change evidence.
 
 Hybrid v1 behavior:
 
 - missing evidence file => pass
 - in-allowlist observations only => pass
-- out-of-allowlist or unknown-allowlist observations => concern
+- out-of-allowlist or unknown-allowlist observations => concern in warn,
+  failure in strict, observation in observe
 - malformed JSONL => invalid input (exit 2)
 
-This gate never returns a failure status. Freeze enforcement remains the
-PreToolUse guard; this script only turns after-the-fact evidence into a work
-concern that the leader can report.
+Freeze enforcement remains the PreToolUse guard. This script turns
+after-the-fact evidence into work concerns by default, while allowing projects
+to opt into observe-only rollout or strict failure promotion.
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+
+EVIDENCE_MODES = {"observe", "warn", "strict"}
 
 
 def _load_evidence(path: Path) -> list[dict]:
@@ -55,8 +58,23 @@ def _path_text(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
-def evaluate_freeze_evidence(evidence_path: Path | str) -> dict:
+def _normalize_mode(mode: str) -> str:
+    if mode not in EVIDENCE_MODES:
+        raise ValueError(f"unsupported evidence mode: {mode}")
+    return mode
+
+
+def _apply_mode(concerns: list[str], mode: str) -> tuple[str, list[str], list[str], list[str]]:
+    if mode == "observe":
+        return "pass", [], [], concerns
+    if mode == "strict":
+        return ("failure" if concerns else "pass"), concerns, [], []
+    return ("concern" if concerns else "pass"), [], concerns, []
+
+
+def evaluate_freeze_evidence(evidence_path: Path | str, *, mode: str = "warn") -> dict:
     """Return a JSON-serializable freeze evidence report."""
+    mode = _normalize_mode(mode)
     evidence = Path(evidence_path)
     records = _load_evidence(evidence)
 
@@ -75,10 +93,14 @@ def evaluate_freeze_evidence(evidence_path: Path | str) -> dict:
             source = _path_text(entry.get("source")) or "<unknown source>"
             concerns.append(f"line {line}: {path} is {status} via {source}")
 
+    status, failures, concerns, observations = _apply_mode(concerns, mode)
     return {
         "schema_version": 1,
-        "status": "concern" if concerns else "pass",
+        "mode": mode,
+        "status": status,
+        "failures": failures,
         "concerns": concerns,
+        "observations": observations,
         "observed_paths": observed_paths,
         "evidence_path": str(evidence),
     }
@@ -86,21 +108,22 @@ def evaluate_freeze_evidence(evidence_path: Path | str) -> dict:
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Summarize PostToolUse Freeze file-change evidence as pass/concern."
+        description="Summarize PostToolUse Freeze file-change evidence as pass/concern/failure."
     )
     parser.add_argument("--evidence", required=True, type=Path)
+    parser.add_argument("--mode", choices=sorted(EVIDENCE_MODES), default="warn")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv if argv is not None else sys.argv[1:])
     try:
-        report = evaluate_freeze_evidence(args.evidence)
+        report = evaluate_freeze_evidence(args.evidence, mode=args.mode)
     except ValueError as exc:
         sys.stderr.write(f"{exc}\n")
         return 2
     sys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    return 0
+    return 1 if report["status"] == "failure" else 0
 
 
 if __name__ == "__main__":

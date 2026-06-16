@@ -167,6 +167,19 @@
               "description": "User-extended allowlist; added to dynamic per-session allowlist, never replaces it"
             }
           }
+        },
+        "evidence": {
+          "type": "object",
+          "description": "PostToolUse evidence gate configuration for /athanor:work.",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["observe", "warn", "strict"],
+              "default": "warn",
+              "description": "observe = report evidence observations only; warn = preserve hybrid pass/concern/failure behavior; strict = promote evidence concerns to failures"
+            }
+          }
         }
       }
     },

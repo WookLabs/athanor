@@ -5,8 +5,8 @@ Consumes PostToolUse pytest evidence JSONL plus a normalized ATHANOR_RESULT
 JSON object. Hybrid v1 behavior:
 
 - matching evidence => pass
-- evidence mismatch => failure
-- missing evidence => concern
+- evidence mismatch => failure in warn/strict, observation in observe
+- missing evidence => concern in warn, failure in strict, observation in observe
 
 This script does not parse the free-form ATHANOR_RESULT block. The leader
 normalizes the fields it already validates into JSON and passes that here.
@@ -18,6 +18,8 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+
+EVIDENCE_MODES = {"observe", "warn", "strict"}
 
 
 def _as_int(value: Any) -> int | None:
@@ -182,10 +184,31 @@ def _needs_evidence(result: dict) -> bool:
     return bool(_red_entries(result)) or result.get("full_suite_passed") is True
 
 
-def evaluate_result_against_evidence(result: dict, evidence_path: Path | str) -> dict:
+def _normalize_mode(mode: str) -> str:
+    if mode not in EVIDENCE_MODES:
+        raise ValueError(f"unsupported evidence mode: {mode}")
+    return mode
+
+
+def _apply_mode(failures: list[str], concerns: list[str], mode: str) -> tuple[str, list[str], list[str], list[str]]:
+    if mode == "observe":
+        return "pass", [], [], failures + concerns
+    if mode == "strict":
+        strict_failures = failures + concerns
+        return ("failure" if strict_failures else "pass"), strict_failures, [], []
+    return ("failure" if failures else "concern" if concerns else "pass"), failures, concerns, []
+
+
+def evaluate_result_against_evidence(
+    result: dict,
+    evidence_path: Path | str,
+    *,
+    mode: str = "warn",
+) -> dict:
     """Return JSON-serializable gate report for normalized ATHANOR_RESULT."""
     if not isinstance(result, dict):
         raise ValueError("result must be a JSON object")
+    mode = _normalize_mode(mode)
 
     evidence = Path(evidence_path)
     records, concerns = _load_evidence(evidence)
@@ -202,12 +225,14 @@ def evaluate_result_against_evidence(result: dict, evidence_path: Path | str) ->
         matches.extend(red_matches)
         matches.extend(suite_matches)
 
-    status = "failure" if failures else "concern" if concerns else "pass"
+    status, failures, concerns, observations = _apply_mode(failures, concerns, mode)
     return {
         "schema_version": 1,
+        "mode": mode,
         "status": status,
         "failures": failures,
         "concerns": concerns,
+        "observations": observations,
         "matches": matches,
         "evidence_path": str(evidence),
     }
@@ -230,6 +255,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--result-json", required=True)
+    parser.add_argument("--mode", choices=sorted(EVIDENCE_MODES), default="warn")
     return parser.parse_args(argv)
 
 
@@ -241,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"{exc}\n")
         return 2
 
-    report = evaluate_result_against_evidence(result, args.evidence)
+    report = evaluate_result_against_evidence(result, args.evidence, mode=args.mode)
     sys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + "\n")
     return 1 if report["status"] == "failure" else 0
 

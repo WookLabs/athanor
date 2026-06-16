@@ -142,7 +142,7 @@ Input ── Planner ──→ Final Plan
 
 **3-tier adversarial planning.** Choose the review depth that fits the task: lite for speed, standard for balanced quality, deep for competing perspectives with cross-model review.
 
-**Grow with use.** Lessons from every session are extracted, scored, and surfaced to future workers. The system gets better at your codebase over time.
+**Grow with use.** Lessons from every session are extracted to local `.athanor/lessons/` files, scored, and surfaced to future workers. The system gets better at your codebase over time.
 
 **Plan before execute.** No files are modified until you confirm the plan. Explicit mode separation prevents accidental changes.
 
@@ -160,7 +160,7 @@ When Codex is available, it serves as Planner B (deep tier) or Reviewer (standar
 
 **Session communication** via `.md` files — workers read and write to `.athanor/sessions/{id}/`. No shared state in the leader's context.
 
-**Learning system** — after each `/athanor:work`, the Learner extracts structured lessons to `.athanor/lessons/`. Workers read relevant lessons before starting. Frequently-accessed lessons auto-promote to permanent. Stale ones decay and get cleaned.
+**Learning system** — after each `/athanor:work`, the Learner extracts structured lessons to `.athanor/lessons/`. Workers read relevant lessons before starting. Frequently-accessed lessons can promote from working to permanent in local lesson frontmatter, and stale working lessons decay. Permanent persistence to mem-search is still unimplemented; see `docs/STATE.md` Known gaps.
 
 [Full architecture details](docs/DESIGN.md) | [Conventions](docs/CONVENTIONS.md)
 
@@ -188,7 +188,7 @@ Wave 2: [task 3]          ← depends on wave 1
 | `work.circuitBreaker.consecutiveFailures` | `3` | Failures before circuit breaker trips |
 | `team.waveSize` | `3` | Max parallel workers per wave |
 | `memory.decayDays` | `7` | Working memory retention period |
-| `memory.promotionThreshold` | `5` | Access count for auto-promotion to permanent |
+| `memory.promotionThreshold` | `5` | Access count for local working→permanent lesson promotion; mem-search persistence is not implemented |
 
 ## FAQ
 
@@ -246,7 +246,7 @@ Run `/athanor:setup` to audit installed companions. If superpowers is absent, at
 - [x] Core workflow (discuss, analyze, plan, work)
 - [x] Cross-model adversarial planning
 - [x] Solo and team execution modes
-- [x] 2-tier learning system with memory decay
+- [x] Local 2-tier lesson files with memory decay prompts (mem-search persistence deferred)
 - [x] Codex native integration (codex exec CLI)
 - [ ] Multi-project lesson sharing
 - [ ] Custom worker agent definitions

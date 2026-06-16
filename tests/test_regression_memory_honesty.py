@@ -18,6 +18,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
+README = REPO_ROOT / "README.md"
+DESIGN = REPO_ROOT / "docs" / "DESIGN.md"
+ROADMAP = REPO_ROOT / "docs" / "ROADMAP.md"
 SCHEMA = REPO_ROOT / "schemas" / "athanor-config.schema.json"
 
 _HONEST_MARKERS = ("not yet implemented", "unimplemented", "advisory", "not enforced")
@@ -74,4 +77,50 @@ def test_schema_labels_triggers_language_advisory() -> None:
     assert any(mark in desc for mark in _HONEST_MARKERS), (
         "triggers.language description must flag that it is advisory / not "
         f"enforced at dispatch (one of {_HONEST_MARKERS}); got: {desc!r}"
+    )
+
+
+def test_readme_learning_system_names_local_lesson_boundary() -> None:
+    """MUST — README must not market mem-search-backed memory as shipped."""
+    body = README.read_text(encoding="utf-8").lower()
+    assert ".athanor/lessons/" in body, (
+        "README learning-system prose must name the shipped local lesson-store "
+        "mechanism, not only generic memory."
+    )
+    assert "mem-search" in body and any(mark in body for mark in _HONEST_MARKERS), (
+        "README must label mem-search permanent persistence as unimplemented / "
+        "not shipped so user-facing marketing does not over-claim memory."
+    )
+
+
+def test_design_memory_model_labels_mem_search_as_deferred() -> None:
+    """MUST — DESIGN memory model may describe the target, but must label reality."""
+    body = DESIGN.read_text(encoding="utf-8").lower()
+    start = body.index("## memory model")
+    end = body.index("## configuration", start)
+    memory_model = body[start:end]
+    assert ".athanor/lessons/" in memory_model, (
+        "DESIGN memory model must name the implemented local lesson store."
+    )
+    assert "mem-search" in memory_model and any(
+        mark in memory_model for mark in _HONEST_MARKERS
+    ), (
+        "DESIGN memory model must flag mem-search permanent persistence as "
+        "not implemented / deferred."
+    )
+
+
+def test_roadmap_phase8_does_not_mark_mem_search_storage_done() -> None:
+    """MUST — historical Phase 8 checklist must not show mem-search as done."""
+    body = ROADMAP.read_text(encoding="utf-8").lower()
+    start = body.index("## phase 8: learning & memory")
+    end = body.index("---", start)
+    phase8 = body[start:end]
+    assert "- [x] mem-search에 lesson 저장" not in phase8, (
+        "ROADMAP Phase 8 must not mark mem-search lesson storage as done; "
+        "STATE.md Known gaps says no mem-search writer exists."
+    )
+    assert "state.md" in phase8 and "known gaps" in phase8, (
+        "ROADMAP Phase 8 should point readers to the current implementation "
+        "boundary instead of preserving a stale done-check."
     )

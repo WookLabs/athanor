@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Log-only UserPromptSubmit payload spike harness.
+"""Log-only generic hook payload capture harness.
 
 This script is deliberately not registered in repo `hooks/hooks.json`.
 Operators can copy the printed settings snippet into user-global Claude
-settings for a one-off live payload capture. The script never blocks and
-never emits prompt-injection stdout in hook mode.
+settings for a one-off Stop/PreToolUse/PostToolUse live payload capture.
+The script never blocks and never emits stdout in hook mode.
 """
 from __future__ import annotations
 
@@ -16,15 +16,12 @@ from typing import Any
 
 import hook_capture_utils
 
+CORE_EVENTS = ("Stop", "PreToolUse", "PostToolUse", "FileChanged")
 
-def capture_payload(payload: dict[str, Any], output_dir: Path) -> int:
-    """Write raw payload and redacted shape summary for a live UPS spike."""
-    return hook_capture_utils.capture_payload(
-        payload,
-        output_dir,
-        event="UserPromptSubmit",
-        prefix="ups-payload",
-    )
+
+def capture_payload(payload: dict[str, Any], output_dir: Path, event: str | None = None) -> int:
+    """Write a raw hook payload and a redacted shape summary."""
+    return hook_capture_utils.capture_payload(payload, output_dir, event=event)
 
 
 def _resolve_project_root(explicit: Path | None = None) -> Path:
@@ -59,18 +56,19 @@ def _read_stdin_payload() -> dict[str, Any] | None:
 
 def _settings_snippet(project_root: Path, output_dir: Path) -> str:
     return hook_capture_utils.settings_snippet(
-        events=("UserPromptSubmit",),
+        events=CORE_EVENTS,
         script_path=Path(__file__).resolve(),
         project_root=project_root,
         output_dir=output_dir,
-        include_matcher=False,
+        include_matcher=True,
     )
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Capture UserPromptSubmit payloads for an opt-in live spike."
+        description="Capture Stop/PreToolUse/PostToolUse payloads for opt-in live fixture review."
     )
+    parser.add_argument("--event", default=None)
     parser.add_argument("--project-root", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--print-settings-snippet", action="store_true")
@@ -83,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = (
         args.output_dir.resolve()
         if args.output_dir is not None
-        else project_root / ".athanor" / "spikes"
+        else project_root / ".athanor" / "spikes" / "hook-payloads"
     )
     if args.print_settings_snippet:
         sys.stdout.write(_settings_snippet(project_root, output_dir) + "\n")
@@ -92,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = _read_stdin_payload()
     if payload is None:
         return 0
-    return capture_payload(payload, output_dir)
+    return capture_payload(payload, output_dir, event=args.event)
 
 
 if __name__ == "__main__":

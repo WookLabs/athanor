@@ -31,7 +31,9 @@ Leader (thin router) ── 파일 안 읽음, 분석 안 함, 코드 안 씀
 ```
 
 **모든 실제 작업은 깨끗한 컨텍스트의 worker가 수행.**
-Worker는 mem-search, LSP(Serena), .md 파일을 통해 컨텍스트를 얻는다.
+Worker는 `.athanor/lessons/`, LSP(Serena), `.md` 파일을 통해 컨텍스트를
+얻는다. mem-search는 사용 가능할 때 recall 대상으로 둘 수 있지만,
+영구 저장 writer는 아직 구현되어 있지 않다.
 
 Leader 컨텍스트에는 dispatch 기록 + 결과 brief만 쌓이므로,
 세션이 아무리 길어져도 컨텍스트가 터지지 않는다.
@@ -49,7 +51,7 @@ Leader 컨텍스트에는 dispatch 기록 + 결과 brief만 쌓이므로,
                          ↓
                   /athanor:work (Execution Mode)
                   실제 코드 수정, 빌드, 테스트
-                  완료 시 → 메모리 자동 저장
+                  완료 시 → lesson 추출/정리
 ```
 
 Plan Mode에서는 절대 파일을 수정하지 않는다.
@@ -105,7 +107,7 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
   ↓
 처리: 병렬 에이전트 N개 동시 투입
       - LSP(Serena) 심볼 분석
-      - mem-search 관련 과거 지식 recall
+      - mem-search 관련 과거 지식 recall (사용 가능할 때)
       - 코드 구조/의존성 파악
   ↓
 출력: 구조화된 분석 리포트
@@ -261,7 +263,7 @@ Worker에게 넘기는 정보:
 ```
 
 **완료 시:**
-1. 자동 메모리 저장 (2-tier)
+1. local lesson 추출/정리 (`.athanor/lessons/`, 2-tier frontmatter)
 2. cleaner 실행
 
 **중간 취소:**
@@ -321,18 +323,24 @@ Discovery brief 내용:
 
 ### 2-Tier Architecture
 
+**Current implementation boundary:** shipped memory is local lesson files under
+`.athanor/lessons/` plus Learner/Cleaner dispatch prompts. Permanent persistence
+to mem-search is unimplemented and remains tracked in `docs/STATE.md` Known
+gaps; this section describes the intended 2-tier model without claiming a
+mem-search writer exists.
+
 **영구 메모리 (Permanent)**
 - 아키텍처 결정, 프로젝트 목표, 고정 구조/규칙
-- 명시적 저장 또는 importance 태그로 승격
-- mem-search에 저장
+- 명시적 저장 또는 importance 태그로 local lesson frontmatter 승격
+- mem-search 영구 저장은 unimplemented
 
 **작업 메모리 (Working/Cache)**
 - 작업 내용, 변경 기록, 중간 결과
-- 자동 저장 (/athanor:work 완료 시)
+- local `.athanor/lessons/`에 저장 (/athanor:work 완료 시)
 - cleaner가 자동 관리:
   - 오래된 항목 삭제
   - 쓸모없어진 항목 삭제
-  - `important` 태그 → 영구로 승격
+  - `important` 태그 → local permanent frontmatter로 승격
 
 ### Discovery Importance Tagging
 
@@ -346,9 +354,12 @@ PR #42에서 lint 경고 3개 수정함.
 ```
 
 cleaner는:
-- `permanent` 태그 → mem-search 영구 저장으로 승격
+- `permanent` 태그 → local permanent lesson으로 승격
 - `working` 태그 → 기간 경과 후 자동 삭제
 - 태그 없음 → working으로 간주
+
+mem-search 영구 저장은 아직 unimplemented이므로 permanent 승격은 local
+`.athanor/lessons/` frontmatter 상태만 의미한다.
 
 ---
 
@@ -493,7 +504,7 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 | 플래닝 | 단일 모델 플랜 | 3-tier (deep/standard/lite) + real Codex CLI integration |
 | 실행 | 한번 시도 | TodoList grinding (전부 완료까지) |
 | 리더 | 오케스트레이터가 직접 작업 | Thin leader (dispatch만) |
-| 메모리 | 수동 저장 | 자동 2-tier (영구 + 작업캐시 auto-evict) |
+| 메모리 | 수동 저장 | local 2-tier lessons + prompt-based decay (mem-search deferred) |
 | 철학 | 기능 N개 모음 | 소수의 핵심 워크플로우 설계 |
 | 모드 | 항상 같음 | Plan mode → Execution mode 명시적 전환 |
 

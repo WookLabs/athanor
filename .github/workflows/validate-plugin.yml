@@ -40,6 +40,9 @@ jobs:
         # artifacts which are gitignored and absent in CI fresh checkouts.
         shell: bash
         run: python scripts/check_release_ready.py --ci
+      - name: Hook payload replay gate
+        shell: bash
+        run: python scripts/gates/replay_hook_fixtures.py --fixture-root tests/fixtures/hooks --json
       - name: Regression fixtures (pytest)
         shell: bash
         run: |

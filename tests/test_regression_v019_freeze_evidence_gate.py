@@ -87,6 +87,61 @@ def test_out_of_allowlist_evidence_returns_concern(tmp_path):
     ]
 
 
+def test_observe_mode_reports_freeze_observations_without_concern(tmp_path):
+    evidence = _write_jsonl(
+        tmp_path / "freeze-change-evidence.jsonl",
+        [
+            {
+                "schema_version": 1,
+                "paths": [
+                    {
+                        "path": "src/secret.py",
+                        "source": "tool_response.files_changed",
+                        "allowlist_status": "out_of_allowlist",
+                    }
+                ],
+            }
+        ],
+    )
+
+    report = _gate().evaluate_freeze_evidence(evidence, mode="observe")
+
+    assert report["mode"] == "observe"
+    assert report["status"] == "pass"
+    assert report["concerns"] == []
+    assert report["failures"] == []
+    assert report["observations"] == [
+        "line 1: src/secret.py is out_of_allowlist via tool_response.files_changed"
+    ]
+
+
+def test_strict_mode_promotes_freeze_concern_to_failure(tmp_path):
+    evidence = _write_jsonl(
+        tmp_path / "freeze-change-evidence.jsonl",
+        [
+            {
+                "schema_version": 1,
+                "paths": [
+                    {
+                        "path": "src/secret.py",
+                        "source": "tool_response.files_changed",
+                        "allowlist_status": "out_of_allowlist",
+                    }
+                ],
+            }
+        ],
+    )
+
+    report = _gate().evaluate_freeze_evidence(evidence, mode="strict")
+
+    assert report["mode"] == "strict"
+    assert report["status"] == "failure"
+    assert report["concerns"] == []
+    assert report["failures"] == [
+        "line 1: src/secret.py is out_of_allowlist via tool_response.files_changed"
+    ]
+
+
 def test_unknown_allowlist_evidence_returns_concern(tmp_path):
     evidence = _write_jsonl(
         tmp_path / "freeze-change-evidence.jsonl",
@@ -139,6 +194,34 @@ def test_cli_returns_zero_for_concern_and_outputs_json(tmp_path):
     report = json.loads(proc.stdout)
     assert report["status"] == "concern"
     assert report["observed_paths"] == 1
+
+
+def test_cli_strict_mode_returns_one_for_freeze_failure(tmp_path):
+    evidence = _write_jsonl(
+        tmp_path / "freeze-change-evidence.jsonl",
+        [
+            {
+                "schema_version": 1,
+                "paths": [
+                    {
+                        "path": "src/secret.py",
+                        "source": "tool_response.files_changed",
+                        "allowlist_status": "out_of_allowlist",
+                    }
+                ],
+            }
+        ],
+    )
+
+    proc = subprocess.run(
+        [sys.executable, str(GATE_SCRIPT), "--evidence", str(evidence), "--mode", "strict"],
+        text=True,
+        capture_output=True,
+    )
+
+    assert proc.returncode == 1
+    report = json.loads(proc.stdout)
+    assert report["status"] == "failure"
 
 
 def test_cli_returns_two_for_malformed_jsonl(tmp_path):

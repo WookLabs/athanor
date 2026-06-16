@@ -147,6 +147,57 @@ def test_missing_red_evidence_is_concern_not_failure(gate, tmp_path):
     assert any("missing evidence" in item for item in report["concerns"])
 
 
+def test_observe_mode_reports_missing_evidence_without_gate_status(gate, tmp_path):
+    report = gate.evaluate_result_against_evidence(
+        _result(),
+        tmp_path / "missing.jsonl",
+        mode="observe",
+    )
+
+    assert report["mode"] == "observe"
+    assert report["status"] == "pass"
+    assert report["failures"] == []
+    assert report["concerns"] == []
+    assert any("missing evidence" in item for item in report["observations"])
+
+
+def test_strict_mode_promotes_missing_evidence_to_failure(gate, tmp_path):
+    report = gate.evaluate_result_against_evidence(
+        _result(),
+        tmp_path / "missing.jsonl",
+        mode="strict",
+    )
+
+    assert report["mode"] == "strict"
+    assert report["status"] == "failure"
+    assert report["concerns"] == []
+    assert any("missing evidence" in item for item in report["failures"])
+
+
+def test_observe_mode_demotes_mismatch_to_observation(gate, tmp_path):
+    evidence = _write_jsonl(
+        tmp_path / "test-evidence.jsonl",
+        [
+            {
+                "command": "python -m pytest tests/test_demo.py::test_red -v",
+                "test_targets": ["tests/test_demo.py::test_red"],
+                "scope": "targeted",
+                "exit_code": 0,
+            }
+        ],
+    )
+
+    report = gate.evaluate_result_against_evidence(
+        _result(red_exit=1),
+        evidence,
+        mode="observe",
+    )
+
+    assert report["status"] == "pass"
+    assert report["failures"] == []
+    assert any("exit code mismatch" in item for item in report["observations"])
+
+
 def test_full_suite_true_with_nonzero_latest_full_suite_fails(gate, tmp_path):
     evidence = _write_jsonl(
         tmp_path / "test-evidence.jsonl",
@@ -232,6 +283,30 @@ def test_cli_reads_result_from_stdin_and_writes_json(gate, tmp_path):
     parsed = json.loads(proc.stdout)
     assert parsed["status"] == "pass"
     assert proc.stderr == ""
+
+
+def test_cli_strict_mode_returns_one_on_missing_evidence(tmp_path):
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(GATE_SCRIPT),
+            "--evidence",
+            str(tmp_path / "missing.jsonl"),
+            "--result-json",
+            "-",
+            "--mode",
+            "strict",
+        ],
+        input=json.dumps(_result()),
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+    )
+
+    assert proc.returncode == 1
+    parsed = json.loads(proc.stdout)
+    assert parsed["status"] == "failure"
+    assert parsed["mode"] == "strict"
 
 
 def test_cli_returns_one_on_failure(tmp_path):
