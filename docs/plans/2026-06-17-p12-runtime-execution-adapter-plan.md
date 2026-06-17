@@ -1071,7 +1071,7 @@ git commit -m "docs: wire runtime execution adapter gate"
 **Files:**
 - Modify: `docs/plans/2026-06-17-p12-runtime-execution-adapter-plan.md`
 
-- [ ] **Step 1: Run focused verification**
+- [x] **Step 1: Run focused verification**
 
 ```bash
 python -m pytest tests/test_regression_runtime_execution_adapter.py tests/test_regression_runtime_conformance.py tests/test_regression_v019_release_story.py -q
@@ -1089,7 +1089,7 @@ Expected:
 - Entropy cleanup with relaxed refs exits `0`.
 - `git diff --check` exits `0`.
 
-- [ ] **Step 2: Run full regression suite**
+- [x] **Step 2: Run full regression suite**
 
 ```bash
 python -m pytest tests\ -q
@@ -1099,7 +1099,7 @@ Expected:
 
 - PASS with the existing skip/xpass profile.
 
-- [ ] **Step 3: Mark verification steps complete and commit**
+- [x] **Step 3: Mark verification steps complete and commit**
 
 ```bash
 git add docs/plans/2026-06-17-p12-runtime-execution-adapter-plan.md
