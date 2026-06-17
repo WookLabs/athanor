@@ -770,7 +770,7 @@ git commit -m "feat: report local observability trends"
 - Create: `scripts/observability/promote_trace_scenario.py`
 - Modify: `docs/plans/2026-06-17-p10-live-trace-trends-plan.md`
 
-- [ ] **Step 1: Write failing promotion tests**
+- [x] **Step 1: Write failing promotion tests**
 
 Append to `tests/test_regression_observability_trends.py`:
 
@@ -864,7 +864,7 @@ def test_promote_trace_scenario_refuses_existing_output_without_force(tmp_path: 
     assert "already exists" in proc.stderr
 ```
 
-- [ ] **Step 2: Run promotion tests to verify RED**
+- [x] **Step 2: Run promotion tests to verify RED**
 
 Run:
 
@@ -874,7 +874,7 @@ python -m pytest tests/test_regression_observability_trends.py::test_promote_tra
 
 Expected: FAIL because `promote_trace_scenario.py` does not exist.
 
-- [ ] **Step 3: Implement trace promotion**
+- [x] **Step 3: Implement trace promotion**
 
 Create `scripts/observability/promote_trace_scenario.py` with:
 
@@ -1011,7 +1011,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Run promotion tests to verify GREEN**
+- [x] **Step 4: Run promotion tests to verify GREEN**
 
 Run:
 
@@ -1021,7 +1021,7 @@ python -m pytest tests/test_regression_observability_trends.py::test_promote_tra
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit promotion**
+- [x] **Step 5: Commit promotion**
 
 ```bash
 git add scripts/observability/promote_trace_scenario.py tests/test_regression_observability_trends.py docs/plans/2026-06-17-p10-live-trace-trends-plan.md

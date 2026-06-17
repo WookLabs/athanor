@@ -11,6 +11,8 @@ import jsonschema
 REPO_ROOT = Path(__file__).resolve().parents[1]
 COLLECTOR = REPO_ROOT / "scripts" / "observability" / "collect_trend_snapshot.py"
 REPORTER = REPO_ROOT / "scripts" / "observability" / "report_trends.py"
+PROMOTER = REPO_ROOT / "scripts" / "observability" / "promote_trace_scenario.py"
+EVAL_RUNNER = REPO_ROOT / "scripts" / "evals" / "run_workflow_scenarios.py"
 SNAPSHOT_SCHEMA = REPO_ROOT / "schemas" / "observability-trend-snapshot.schema.json"
 TREND_SCHEMA = REPO_ROOT / "schemas" / "observability-trend-report.schema.json"
 
@@ -157,3 +159,99 @@ def test_report_trends_exits_two_for_missing_history(tmp_path: Path) -> None:
 
     assert proc.returncode == 2
     assert "history does not exist" in proc.stderr
+
+
+def _trace_record(
+    seq: int,
+    event_type: str,
+    status: str,
+    *,
+    references: list[str] | None = None,
+) -> dict:
+    record = {
+        "schema_version": 1,
+        "trace_id": "live-trace-demo",
+        "seq": seq,
+        "phase": "work",
+        "event_type": event_type,
+        "actor": "leader" if event_type.startswith("workflow.") else "gate",
+        "status": status,
+        "message": f"{event_type} {status}",
+    }
+    if references is not None:
+        record["references"] = references
+    return record
+
+
+def test_promote_trace_scenario_writes_valid_fixture(tmp_path: Path) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    output = tmp_path / "promoted.json"
+    records = [
+        _trace_record(1, "workflow.started", "started"),
+        _trace_record(
+            2,
+            "verifier.result",
+            "pass",
+            references=[".athanor/sessions/live/.hook-state/test-evidence.jsonl"],
+        ),
+        _trace_record(3, "workflow.finished", "pass"),
+    ]
+    trace_path.write_text(
+        "\n".join(json.dumps(record, sort_keys=True) for record in records) + "\n",
+        encoding="utf-8",
+    )
+
+    proc = _run(
+        PROMOTER,
+        "--trace",
+        str(trace_path),
+        "--scenario-id",
+        "promoted-work-trace",
+        "--description",
+        "Promoted work trace",
+        "--output",
+        str(output),
+        "--json",
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    promoted = json.loads(output.read_text(encoding="utf-8"))
+    assert promoted["schema_version"] == 1
+    assert promoted["scenarios"][0]["id"] == "promoted-work-trace"
+    assert any(
+        grader["kind"] == "require_reference"
+        and grader["reference"] == "test-evidence.jsonl"
+        for grader in promoted["scenarios"][0]["graders"]
+    )
+    eval_proc = _run(EVAL_RUNNER, "--scenario-root", str(output), "--json")
+    assert eval_proc.returncode == 0, eval_proc.stderr
+
+
+def test_promote_trace_scenario_refuses_existing_output_without_force(
+    tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    output = tmp_path / "promoted.json"
+    trace_path.write_text(
+        json.dumps(_trace_record(1, "workflow.started", "started"))
+        + "\n"
+        + json.dumps(_trace_record(2, "workflow.finished", "pass"))
+        + "\n",
+        encoding="utf-8",
+    )
+    output.write_text("{}", encoding="utf-8")
+
+    proc = _run(
+        PROMOTER,
+        "--trace",
+        str(trace_path),
+        "--scenario-id",
+        "existing-output",
+        "--description",
+        "Existing output",
+        "--output",
+        str(output),
+    )
+
+    assert proc.returncode == 2
+    assert "already exists" in proc.stderr
