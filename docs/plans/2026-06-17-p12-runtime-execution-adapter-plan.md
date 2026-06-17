@@ -529,7 +529,7 @@ git commit -m "test: add runtime adapter fixtures"
 **Files:**
 - Create: `scripts/gates/runtime_execution_adapter.py`
 
-- [ ] **Step 1: Implement adapter script**
+- [x] **Step 1: Implement adapter script**
 
 Create `scripts/gates/runtime_execution_adapter.py` with:
 
@@ -896,7 +896,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Run GREEN verification for adapter tests**
+- [x] **Step 2: Run GREEN verification for adapter tests**
 
 Run:
 
@@ -908,7 +908,7 @@ Expected:
 
 - PASS.
 
-- [ ] **Step 3: Run fixture gate directly**
+- [x] **Step 3: Run fixture gate directly**
 
 Run:
 
@@ -922,7 +922,7 @@ Expected:
 - JSON report has `status: pass`.
 - `summary.failed` is `0`.
 
-- [ ] **Step 4: Commit implementation**
+- [x] **Step 4: Commit implementation**
 
 ```bash
 git add scripts/gates/runtime_execution_adapter.py schemas/runtime-execution-adapter-report.schema.json tests/fixtures/runtime_execution tests/test_regression_runtime_execution_adapter.py
