@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/main/schemas/hook-installer-trust.schema.json",
+  "title": "Athanor hook installer trust state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trusted_hooks"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "trusted_hooks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "command_hash",
+          "source_hashes",
+          "reviewed_at",
+          "reviewer"
+        ],
+        "properties": {
+          "status": {
+            "const": "trusted"
+          },
+          "command_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "source_hashes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "reviewed_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reviewer": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
