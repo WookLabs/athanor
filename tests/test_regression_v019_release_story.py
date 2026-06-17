@@ -235,3 +235,29 @@ def test_unreleased_documents_entropy_cleanup_loop():
         "CHANGELOG [Unreleased] must explain P11 entropy cleanup; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_runtime_execution_adapter_fixture_gate():
+    """P12 runtime backend routing should be checked before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Runtime execution adapter fixture gate" in workflow
+    assert "python scripts/gates/runtime_execution_adapter.py" in workflow
+    assert "--fixture-root tests/fixtures/runtime_execution --json" in workflow
+
+
+def test_unreleased_documents_runtime_execution_adapter():
+    """The Unreleased story must name the P12 runtime execution adapter."""
+    section = _unreleased_section()
+    required = [
+        "Runtime execution adapter",
+        "scripts/gates/runtime_execution_adapter.py",
+        "dynamic workflow",
+        "agent team",
+        "worktree",
+        "read-only",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P12 runtime execution adapter; "
+        f"missing: {missing}"
+    )

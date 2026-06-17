@@ -939,7 +939,7 @@ git commit -m "feat: recommend runtime execution backends"
 - Modify: `CHANGELOG.md`
 - Modify: `tests/test_regression_v019_release_story.py`
 
-- [ ] **Step 1: Add failing release-story tests**
+- [x] **Step 1: Add failing release-story tests**
 
 Append to `tests/test_regression_v019_release_story.py`:
 
@@ -970,7 +970,7 @@ def test_unreleased_documents_runtime_execution_adapter():
     )
 ```
 
-- [ ] **Step 2: Run release-story tests to verify RED**
+- [x] **Step 2: Run release-story tests to verify RED**
 
 Run:
 
@@ -982,7 +982,7 @@ Expected:
 
 - FAIL because docs/CI/changelog are not wired yet.
 
-- [ ] **Step 3: Add operator docs**
+- [x] **Step 3: Add operator docs**
 
 Create `docs/runtime-execution-adapter.md` with:
 
@@ -1022,7 +1022,7 @@ worktrees, mutate settings, or export telemetry. It emits a decision contract
 that future live command flows can consume.
 ```
 
-- [ ] **Step 4: Add CI gate**
+- [x] **Step 4: Add CI gate**
 
 In `.github/workflows/validate-plugin.yml`, after the Entropy cleanup report
 gate, add:
@@ -1033,7 +1033,7 @@ gate, add:
         run: python scripts/gates/runtime_execution_adapter.py --fixture-root tests/fixtures/runtime_execution --json
 ```
 
-- [ ] **Step 5: Add changelog story**
+- [x] **Step 5: Add changelog story**
 
 In `CHANGELOG.md` under `[Unreleased]`, add:
 
@@ -1045,7 +1045,7 @@ In `CHANGELOG.md` under `[Unreleased]`, add:
   dynamic workflow, agent team, or worktree surfaces.
 ```
 
-- [ ] **Step 6: Run docs/release GREEN verification**
+- [x] **Step 6: Run docs/release GREEN verification**
 
 Run:
 
@@ -1057,7 +1057,7 @@ Expected:
 
 - PASS.
 
-- [ ] **Step 7: Commit docs and CI wiring**
+- [x] **Step 7: Commit docs and CI wiring**
 
 ```bash
 git add docs/runtime-execution-adapter.md .github/workflows/validate-plugin.yml CHANGELOG.md tests/test_regression_v019_release_story.py

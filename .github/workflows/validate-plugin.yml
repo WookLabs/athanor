@@ -61,6 +61,9 @@ jobs:
       - name: Entropy cleanup report gate
         shell: bash
         run: python scripts/gates/entropy_cleanup.py --json
+      - name: Runtime execution adapter fixture gate
+        shell: bash
+        run: python scripts/gates/runtime_execution_adapter.py --fixture-root tests/fixtures/runtime_execution --json
       - name: Hook installer regression gate
         shell: bash
         run: python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q

@@ -77,6 +77,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   capture-only hook candidates, ref freshness, and runtime
   mirror/conformance drift as structured cleanup actions before P12 expands
   live orchestration.
+- **Runtime execution adapter.** Adds read-only
+  `scripts/gates/runtime_execution_adapter.py` plus fixture coverage to
+  recommend `solo`, `subagent-wave`, `dynamic-workflow`, `agent-team`, or
+  `manual-worktree` backends before future live orchestration work launches
+  dynamic workflow, agent team, or worktree surfaces.
 
 ### Changed
 
