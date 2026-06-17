@@ -418,7 +418,7 @@ python -m pytest tests/ -q
 git diff --check
 ```
 
-- [ ] Fast-forward merge to `main` and push when clean.
+- [x] Fast-forward merge to `main` and push when clean.
 
 ## Self-Review
 
