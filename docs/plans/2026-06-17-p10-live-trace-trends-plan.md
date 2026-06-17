@@ -1212,7 +1212,7 @@ git add docs/plans/2026-06-17-p10-live-trace-trends-plan.md
 git commit -m "docs: record observability trends verification"
 ```
 
-- [ ] **Step 5: Fast-forward merge to main and push**
+- [x] **Step 5: Fast-forward merge to main and push**
 
 ```bash
 git checkout main
@@ -1223,7 +1223,7 @@ git diff --check
 git push origin main
 ```
 
-- [ ] **Step 6: Mark merge complete, commit, push, and delete feature branch**
+- [x] **Step 6: Mark merge complete, commit, push, and delete feature branch**
 
 ```bash
 git add docs/plans/2026-06-17-p10-live-trace-trends-plan.md
