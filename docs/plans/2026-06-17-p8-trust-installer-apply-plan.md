@@ -92,7 +92,7 @@ compatibility. Default mode remains `dry-run`.
 - Extend `tests/test_regression_v019_release_story.py` or create P8 story test.
 - Update `CHANGELOG.md`
 
-- [ ] Docs must mention:
+- [x] Docs must mention:
   - `--mode dry-run`
   - `--mode apply`
   - `--mode remove`
@@ -100,8 +100,8 @@ compatibility. Default mode remains `dry-run`.
   - hash review
   - backup/rollback
   - capture-only blocked by policy
-- [ ] CI story must lock installer tests.
-- [ ] Changelog must describe the trust-aware apply/remove path.
+- [x] CI story must lock installer tests.
+- [x] Changelog must describe the trust-aware apply/remove path.
 
 ## Task 6: Verification And Merge
 

@@ -52,6 +52,9 @@ jobs:
       - name: Durable loop fixture gate
         shell: bash
         run: python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
+      - name: Hook installer regression gate
+        shell: bash
+        run: python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q
       - name: Regression fixtures (pytest)
         shell: bash
         run: |

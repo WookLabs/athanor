@@ -54,6 +54,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   and evidence schemas, a deterministic decision engine, controller CLI,
   committed fixture gate, P6 `loop.decision` workflow scenario coverage, and
   operator docs while keeping live Claude Code invocation out of scope.
+- **Trust-aware hook installer apply/remove path.**
+  `scripts/gates/hook_install_dry_run.py` now emits schema v2 reports with
+  hook hash fingerprints and trust status, supports `--mode apply` for
+  trusted no-clobber settings writes with backups, and supports
+  `--mode remove` for exact Athanor hook removal while keeping capture-only
+  hooks blocked by policy.
 
 ### Changed
 

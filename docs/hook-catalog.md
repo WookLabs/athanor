@@ -15,6 +15,8 @@ Installer previews are read-only. Use
 `hooks/hooks.json`, and an optional Claude settings file. The planner reports
 what would be added, blocked, or conflicted, includes hook fingerprint and
 trust-state fields in a schema v2 report, and always emits `writes: []`.
+Trusted apply and exact-entry remove operations are documented in
+[docs/hook-installer.md](hook-installer.md).
 
 ## Runtime Defaults
 

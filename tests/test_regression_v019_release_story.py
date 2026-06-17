@@ -17,6 +17,7 @@ PLUGIN_JSON = REPO_ROOT / ".claude-plugin" / "plugin.json"
 STATE_MD = REPO_ROOT / "docs" / "STATE.md"
 VALIDATE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "validate-plugin.yml"
 ROADMAP = REPO_ROOT / "docs" / "ROADMAP.md"
+HOOK_INSTALLER_DOC = REPO_ROOT / "docs" / "hook-installer.md"
 
 
 def _unreleased_section() -> str:
@@ -114,3 +115,53 @@ def test_ci_runs_durable_loop_fixture_gate():
     assert "Durable loop fixture gate" in workflow
     assert "python scripts/loops/run_goal_loop_fixtures.py" in workflow
     assert "--fixture-root tests/fixtures/durable_loops --json" in workflow
+
+
+def test_ci_runs_hook_installer_regression_gate():
+    """Installer apply/remove regressions should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Hook installer regression gate" in workflow
+    for path in (
+        "tests/test_regression_hook_install_dry_run.py",
+        "tests/test_regression_hook_installer_trust.py",
+        "tests/test_regression_hook_installer_apply.py",
+        "tests/test_regression_hook_installer_remove.py",
+    ):
+        assert path in workflow
+
+
+def test_hook_installer_docs_cover_modes_trust_and_rollback():
+    """Operator docs must cover trust review, modes, backups, and rollback."""
+    body = HOOK_INSTALLER_DOC.read_text(encoding="utf-8")
+    required = [
+        "--mode dry-run",
+        "--mode apply",
+        "--mode remove",
+        "--trust-state",
+        "command_hash",
+        "source_hashes",
+        "schemas/hook-installer-trust.schema.json",
+        "backup",
+        "Rollback",
+        "capture-only",
+    ]
+    missing = [token for token in required if token not in body]
+    assert not missing, f"hook installer docs missing: {missing}"
+
+
+def test_unreleased_documents_trust_aware_hook_installer():
+    """The Unreleased story must name the trust-aware apply/remove path."""
+    section = _unreleased_section()
+    required = [
+        "Trust-aware hook installer",
+        "--mode apply",
+        "--mode remove",
+        "hash",
+        "backup",
+        "capture-only",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain the trust-aware installer path; "
+        f"missing: {missing}"
+    )
