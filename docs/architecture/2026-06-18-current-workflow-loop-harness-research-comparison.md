@@ -178,7 +178,7 @@ Observed:
 - Maintenance profile: warn, 6/6 steps, 1 warning, 0 failures,
   `irreversible_actions: 0`.
 - Distribution smoke: pass, 7 checks in skip-Claude mode.
-- Package footprint policy: warn, 467 files, 4,050,781 bytes, 0 hard budget
+- Package footprint policy: warn, 467 files, about 4.05 MB, 0 hard budget
   failures, 20 development-only candidates, `irreversible_actions: 0`.
 - Agent surface: exactly `ci-watcher`, `codex-dispatcher`, `learner`,
   `releaser`.
