@@ -38,12 +38,19 @@ Analyze the completed work session and extract reusable lessons.
    access_count: 0
    created: {today's date}
    importance: {permanent|working}
+   trace_refs: []
+   eval_refs: []
+   evidence_refs: []
    ---
 3. Deduplicate: check .athanor/lessons/ for existing similar lessons
 4. Update access_count: for each lesson file listed in workers' `lessons_read` fields
    (found in work-log.md or discovery files), increment the `access_count` in that
    lesson file's YAML frontmatter by 1.
-5. Report your results as:
+5. When a lesson is marked `importance: permanent` or is likely to be promoted
+   by repeated access, include at least one `trace_refs`, `eval_refs`, or
+   `evidence_refs` entry so `scripts/gates/trace_memory_quality.py` can verify
+   the promotion is evidence-backed.
+6. Report your results as:
 
 ATHANOR_RESULT
 status: success

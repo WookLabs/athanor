@@ -349,3 +349,30 @@ def test_unreleased_documents_distribution_smoke_gate():
         "CHANGELOG [Unreleased] must explain P16 distribution smoke; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_trace_memory_quality_gate():
+    """P17 trace-memory quality should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Trace-memory quality gate" in workflow
+    assert "python scripts/gates/trace_memory_quality.py" in workflow
+    assert "--lesson-root tests/fixtures/trace_memory_quality/lessons" in workflow
+    assert "--comparison-file tests/fixtures/trace_memory_quality/comparisons.json" in workflow
+
+
+def test_unreleased_documents_trace_memory_quality_gate():
+    """The Unreleased story must name the P17 trace-memory quality gate."""
+    section = _unreleased_section()
+    required = [
+        "Trace-memory quality gate",
+        "scripts/gates/trace_memory_quality.py",
+        "promotion",
+        "stale decay",
+        "quarantine",
+        "with/without lesson",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P17 trace-memory quality; "
+        f"missing: {missing}"
+    )

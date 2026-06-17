@@ -104,6 +104,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   `claude plugin details` when available, verifies the live 4-agent loader
   surface, enforces the always-on token budget, checks manifest/marketplace
   pins, and keeps inline-only pipeline role docs out of plugin-root `agents/`.
+- **Trace-memory quality gate.** Adds
+  `scripts/gates/trace_memory_quality.py`,
+  `schemas/trace-memory-quality-report.schema.json`, and committed fixtures so
+  lesson promotion, stale decay, quarantine, and with/without lesson
+  comparisons are evidence-backed before memory can be treated as
+  self-improving.
 
 ### Changed
 

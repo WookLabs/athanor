@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "comparisons": [
+    {
+      "id": "work-lesson-improves-happy-path",
+      "lesson_id": "work-2026-06-17-001",
+      "scenario_id": "work-happy-path",
+      "baseline_score": 0.8,
+      "injected_score": 1.0,
+      "trace_refs": [
+        "tests/fixtures/workflow_evals/scenarios.json#work-happy-path"
+      ]
+    }
+  ]
+}

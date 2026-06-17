@@ -57,6 +57,9 @@ access_count: 0
 date: {YYYY-MM-DD}
 created: {YYYY-MM-DD}
 importance: {permanent|working}
+trace_refs: []
+eval_refs: []
+evidence_refs: []
 ---
 
 ## Lesson: {title}
@@ -141,6 +144,10 @@ See `docs/CONVENTIONS.md` §6 for the release-tag convention, and
   `version-at-time-of-lesson`. Lessons missing any of these on or after
   2026-04-17 will be flagged for deletion by the next Cleaner run — keep
   the schema in sync with `agents/cleaner.md` and `docs/CONVENTIONS.md`.
+- When a lesson is marked `importance: permanent` or is likely to be promoted
+  by repeated access, include at least one `trace_refs`, `eval_refs`, or
+  `evidence_refs` entry so `scripts/gates/trace_memory_quality.py` can verify
+  the promotion is evidence-backed.
 - Read the version tag from `.claude-plugin/plugin.json` (`version` field)
   when populating `version-at-time-of-lesson`.
 - Never fabricate lessons — only report what the data shows

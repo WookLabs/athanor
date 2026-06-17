@@ -124,3 +124,19 @@ def test_roadmap_phase8_does_not_mark_mem_search_storage_done() -> None:
         "ROADMAP Phase 8 should point readers to the current implementation "
         "boundary instead of preserving a stale done-check."
     )
+
+
+def test_learner_contract_mentions_trace_memory_quality_gate() -> None:
+    """P17 — Learner must produce evidence refs for promoted memory."""
+    body = (REPO_ROOT / "agents" / "learner.md").read_text(encoding="utf-8")
+    for token in ("trace_refs", "eval_refs", "evidence_refs", "trace_memory_quality.py"):
+        assert token in body
+
+
+def test_work_learner_reference_mentions_trace_memory_quality_gate() -> None:
+    """P17 — inline Learner prompt must stay aligned with registered Learner."""
+    body = (
+        REPO_ROOT / "skills" / "work" / "references" / "learner-cleaner.md"
+    ).read_text(encoding="utf-8")
+    for token in ("trace_refs", "eval_refs", "evidence_refs", "trace_memory_quality.py"):
+        assert token in body
