@@ -1170,7 +1170,7 @@ git commit -m "docs: wire observability trends into release story"
 **Files:**
 - Modify: `docs/plans/2026-06-17-p10-live-trace-trends-plan.md`
 
-- [ ] **Step 1: Run targeted P10 verification**
+- [x] **Step 1: Run targeted P10 verification**
 
 Run:
 
@@ -1181,7 +1181,7 @@ python scripts/observability/collect_trend_snapshot.py --json --samples 1
 
 Expected: PASS and collector JSON status fields are `pass`.
 
-- [ ] **Step 2: Run existing P9/P6/P7 gates**
+- [x] **Step 2: Run existing P9/P6/P7 gates**
 
 Run:
 
@@ -1194,7 +1194,7 @@ python scripts/gates/check_hook_performance_budget.py --json --samples 1
 
 Expected: all commands exit 0.
 
-- [ ] **Step 3: Run full verification**
+- [x] **Step 3: Run full verification**
 
 Run:
 
@@ -1205,7 +1205,7 @@ git diff --check
 
 Expected: full suite passes and whitespace check exits 0.
 
-- [ ] **Step 4: Mark Task 5 verification checkboxes and commit**
+- [x] **Step 4: Mark Task 5 verification checkboxes and commit**
 
 ```bash
 git add docs/plans/2026-06-17-p10-live-trace-trends-plan.md
