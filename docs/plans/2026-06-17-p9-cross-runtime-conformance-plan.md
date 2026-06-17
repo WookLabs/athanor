@@ -171,7 +171,7 @@ git commit -m "docs: add runtime surface conformance contract"
 - Create: `scripts/gates/runtime_conformance.py`
 - Modify: `tests/test_regression_runtime_conformance.py`
 
-- [ ] **Step 1: Write failing CLI/report tests**
+- [x] **Step 1: Write failing CLI/report tests**
 
 Add tests that execute the CLI and parse JSON:
 
@@ -208,7 +208,7 @@ Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: FAIL because the CLI and schema do not exist.
 
-- [ ] **Step 2: Implement `schemas/runtime-conformance-report.schema.json`**
+- [x] **Step 2: Implement `schemas/runtime-conformance-report.schema.json`**
 
 Required top-level fields:
 
@@ -221,7 +221,7 @@ Required top-level fields:
 Keep the schema permissive for future checks but require check objects to have
 `id`, `status`, and `message`.
 
-- [ ] **Step 3: Implement `scripts/gates/runtime_conformance.py`**
+- [x] **Step 3: Implement `scripts/gates/runtime_conformance.py`**
 
 Required behavior:
 
@@ -239,13 +239,13 @@ Required behavior:
 - emit JSON to stdout;
 - exit 0 only when every check passes.
 
-- [ ] **Step 4: Re-run CLI/report tests**
+- [x] **Step 4: Re-run CLI/report tests**
 
 Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add schemas/runtime-conformance-report.schema.json scripts/gates/runtime_conformance.py tests/test_regression_runtime_conformance.py
