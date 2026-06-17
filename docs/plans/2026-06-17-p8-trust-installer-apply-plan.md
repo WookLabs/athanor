@@ -21,18 +21,18 @@ compatibility. Default mode remains `dry-run`.
 - Create or extend `scripts/gates/hook_installer.py`
 - Add `tests/test_regression_hook_installer_trust.py`
 
-- [ ] Write failing tests for:
+- [x] Write failing tests for:
   - command hash calculation;
   - `${CLAUDE_PLUGIN_ROOT}` source path resolution;
   - source file sha256 calculation;
   - missing source file reported as untrusted;
   - trust state matching and mismatch detection.
-- [ ] Implement minimal trust model helpers:
+- [x] Implement minimal trust model helpers:
   - `build_hook_fingerprint(entry, repo_root)`
   - `load_trust_state(path)`
   - `trust_status(entry, fingerprint, trust_state)`
-- [ ] Add schema and docs tokens.
-- [ ] Run targeted trust tests.
+- [x] Add schema and docs tokens.
+- [x] Run targeted trust tests.
 
 ## Task 2: Shared Report Model
 
@@ -41,15 +41,15 @@ compatibility. Default mode remains `dry-run`.
 - Update `scripts/gates/hook_install_dry_run.py`
 - Extend `tests/test_regression_hook_install_dry_run.py`
 
-- [ ] Write failing tests that dry-run report includes:
+- [x] Write failing tests that dry-run report includes:
   - `schema_version: 2`
   - `mode`
   - `trust_status`
   - `command_hash`
   - `source_hashes`
   - empty `writes`
-- [ ] Preserve existing dry-run behavior and CLI compatibility.
-- [ ] Run dry-run regression tests.
+- [x] Preserve existing dry-run behavior and CLI compatibility.
+- [x] Run dry-run regression tests.
 
 ## Task 3: Apply Mode
 

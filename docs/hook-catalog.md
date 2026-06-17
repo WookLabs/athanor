@@ -13,7 +13,8 @@ Cross-runtime support and generator boundaries are tracked in
 Installer previews are read-only. Use
 `python scripts/gates/hook_install_dry_run.py --json` to compare the catalog,
 `hooks/hooks.json`, and an optional Claude settings file. The planner reports
-what would be added, blocked, or conflicted, and always emits `writes: []`.
+what would be added, blocked, or conflicted, includes hook fingerprint and
+trust-state fields in a schema v2 report, and always emits `writes: []`.
 
 ## Runtime Defaults
 

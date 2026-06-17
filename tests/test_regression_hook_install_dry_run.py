@@ -62,7 +62,7 @@ def test_default_dry_run_reports_enabled_runtime_hooks_and_never_writes(tmp_path
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
-    assert report["schema_version"] == 1
+    assert report["schema_version"] == 2
     assert report["mode"] == "dry-run"
     assert report["writes"] == []
     assert not settings_path.exists()
@@ -78,6 +78,37 @@ def test_default_dry_run_reports_enabled_runtime_hooks_and_never_writes(tmp_path
     assert report["summary"]["would-add"] == 0
     assert report["summary"]["blocked"] == 0
     assert report["summary"]["conflict"] == 0
+    assert report["trust_state_path"].endswith(".athanor/hook-installer-trust.json") or report[
+        "trust_state_path"
+    ].endswith(".athanor\\hook-installer-trust.json")
+
+
+def test_dry_run_report_schema_v2_includes_trust_fingerprint_fields(tmp_path):
+    settings_path = tmp_path / ".claude" / "settings.json"
+
+    result = _run_cli(
+        "--repo-root",
+        str(REPO_ROOT),
+        "--settings",
+        str(settings_path),
+        "--json",
+    )
+
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
+    assert report["mode"] == "dry-run"
+    assert report["writes"] == []
+    for action in report["actions"]:
+        assert action["command_hash"].startswith("sha256:")
+        assert action["trust_status"] in {
+            "missing-source",
+            "mismatch",
+            "trusted",
+            "untrusted",
+        }
+        assert isinstance(action["source_hashes"], list)
+        assert isinstance(action["missing_sources"], list)
 
 
 def test_capture_only_include_is_blocked_until_live_replay_evidence(tmp_path):
@@ -95,6 +126,7 @@ def test_capture_only_include_is_blocked_until_live_replay_evidence(tmp_path):
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
     action = next(action for action in report["actions"] if action["id"] == "generic-payload-capture")
     assert action["status"] == "blocked"
     assert "capture-only" in action["reason"]
@@ -118,6 +150,7 @@ def test_disabled_include_is_blocked_without_command_or_runtime_default(tmp_path
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
     action = next(
         action for action in report["actions"] if action["id"] == "pretool-safety-pattern-corpus"
     )
@@ -147,6 +180,7 @@ def test_would_add_when_enabled_hook_is_missing_from_runtime_and_settings(tmp_pa
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
     assert report["writes"] == []
     assert not settings_path.exists()
     assert report["summary"]["would-add"] == 1
@@ -191,6 +225,7 @@ def test_conflicting_existing_settings_hook_is_reported_without_clobber(tmp_path
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
     assert report["writes"] == []
     assert settings_path.read_text(encoding="utf-8") == before
     assert report["summary"]["conflict"] == 1
@@ -216,6 +251,7 @@ def test_invalid_settings_json_fails_cleanly_and_does_not_rewrite(tmp_path):
 
     assert result.returncode == 1
     report = json.loads(result.stdout)
+    assert report["schema_version"] == 2
     assert report["status"] == "error"
     assert "settings is not valid JSON" in report["error"]
     assert report["writes"] == []

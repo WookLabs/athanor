@@ -14,6 +14,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.gates.hook_installer import (
+    HookInstallerTrustError,
+    build_hook_fingerprint,
+    load_trust_state,
+    trust_status,
+)
+
 INSTALLABLE_EVIDENCE = {"live-redacted", "replay-gated"}
 SUMMARY_KEYS = ("already-present", "would-add", "blocked", "conflict")
 
@@ -136,6 +147,8 @@ def _plan_action(
     runtime_hooks: set[tuple[str, str, str]],
     settings_hooks: set[tuple[str, str, str]],
     settings: dict[str, Any],
+    repo_root: Path,
+    trust_state: dict[str, Any],
 ) -> dict[str, Any]:
     hook_id = str(entry.get("id", ""))
     event = str(entry.get("event", ""))
@@ -152,6 +165,17 @@ def _plan_action(
         "policy_mode": str(entry.get("policy_mode", "")),
         "evidence_level": str(entry.get("evidence_level", "")),
     }
+    fingerprint = build_hook_fingerprint(entry, repo_root)
+    trust = trust_status(entry, fingerprint, trust_state)
+    action.update(
+        {
+            "command_hash": trust["command_hash"],
+            "source_hashes": trust["source_hashes"],
+            "missing_sources": trust["missing_sources"],
+            "trust_status": trust["trust_status"],
+            "trust_reason": trust["reason"],
+        }
+    )
 
     blocked = _blocked_reason(entry)
     if blocked is not None:
@@ -189,32 +213,51 @@ def build_report(
     catalog_path: Path,
     hooks_path: Path,
     settings_path: Path,
+    trust_state_path: Path | None = None,
     includes: list[str],
 ) -> tuple[dict[str, Any], int]:
+    if trust_state_path is None:
+        trust_state_path = repo_root / ".athanor" / "hook-installer-trust.json"
+
     catalog, error = _read_json(catalog_path, "catalog")
     if error:
-        return _error_report(error, repo_root, catalog_path, hooks_path, settings_path), 1
+        return _error_report(
+            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+        ), 1
     assert catalog is not None
 
     hooks, error = _read_json(hooks_path, "hooks")
     if error:
-        return _error_report(error, repo_root, catalog_path, hooks_path, settings_path), 1
+        return _error_report(
+            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+        ), 1
     assert hooks is not None
 
     settings, error = _read_json(settings_path, "settings", missing_ok=True)
     if error:
-        return _error_report(error, repo_root, catalog_path, hooks_path, settings_path), 1
+        return _error_report(
+            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+        ), 1
     assert settings is not None
+
+    try:
+        trust_state = load_trust_state(trust_state_path)
+    except HookInstallerTrustError as exc:
+        return _error_report(
+            str(exc), repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+        ), 1
 
     entries, error = _catalog_entries(catalog, includes)
     if error:
-        return _error_report(error, repo_root, catalog_path, hooks_path, settings_path), 1
+        return _error_report(
+            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+        ), 1
     assert entries is not None
 
     runtime_hooks = set(_iter_manifest_hooks(hooks))
     settings_hooks = set(_iter_manifest_hooks(settings))
     actions = [
-        _plan_action(entry, runtime_hooks, settings_hooks, settings)
+        _plan_action(entry, runtime_hooks, settings_hooks, settings, repo_root, trust_state)
         for entry in entries
     ]
     summary = {key: 0 for key in SUMMARY_KEYS}
@@ -224,13 +267,14 @@ def build_report(
             summary[str(status)] += 1
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "ok",
         "mode": "dry-run",
         "repo_root": str(repo_root),
         "catalog_path": str(catalog_path),
         "hooks_path": str(hooks_path),
         "settings_path": str(settings_path),
+        "trust_state_path": str(trust_state_path),
         "includes": includes,
         "summary": summary,
         "actions": actions,
@@ -244,15 +288,17 @@ def _error_report(
     catalog_path: Path,
     hooks_path: Path,
     settings_path: Path,
+    trust_state_path: Path,
 ) -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "error",
         "mode": "dry-run",
         "repo_root": str(repo_root),
         "catalog_path": str(catalog_path),
         "hooks_path": str(hooks_path),
         "settings_path": str(settings_path),
+        "trust_state_path": str(trust_state_path),
         "summary": {key: 0 for key in SUMMARY_KEYS},
         "actions": [],
         "writes": [],
@@ -267,6 +313,7 @@ def _format_human(report: dict[str, Any]) -> str:
         f"catalog: {report['catalog_path']}",
         f"hooks: {report['hooks_path']}",
         f"settings: {report['settings_path']}",
+        f"trust-state: {report['trust_state_path']}",
     ]
     if report["status"] == "error":
         lines.append(f"error: {report['error']}")
@@ -292,6 +339,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--catalog", help="Hook catalog JSON path.")
     parser.add_argument("--hooks", help="Runtime hooks JSON path.")
     parser.add_argument("--settings", help="Claude settings JSON path.")
+    parser.add_argument("--trust-state", help="Hook installer trust state JSON path.")
     parser.add_argument(
         "--include",
         action="append",
@@ -312,12 +360,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.settings
         else repo_root / ".claude" / "settings.json"
     )
+    trust_state_path = (
+        Path(args.trust_state).resolve()
+        if args.trust_state
+        else repo_root / ".athanor" / "hook-installer-trust.json"
+    )
 
     report, exit_code = build_report(
         repo_root=repo_root,
         catalog_path=catalog_path,
         hooks_path=hooks_path,
         settings_path=settings_path,
+        trust_state_path=trust_state_path,
         includes=list(args.include),
     )
     if args.json:
