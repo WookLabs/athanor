@@ -106,3 +106,11 @@ def test_ci_runs_workflow_scenario_eval_as_named_gate():
     assert "Workflow scenario eval gate" in workflow
     assert "python scripts/evals/run_workflow_scenarios.py" in workflow
     assert "--scenario-root tests/fixtures/workflow_evals --json" in workflow
+
+
+def test_ci_runs_durable_loop_fixture_gate():
+    """Durable loop controller scenarios should be checked before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Durable loop fixture gate" in workflow
+    assert "python scripts/loops/run_goal_loop_fixtures.py" in workflow
+    assert "--fixture-root tests/fixtures/durable_loops --json" in workflow

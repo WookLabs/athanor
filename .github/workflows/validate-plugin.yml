@@ -49,6 +49,9 @@ jobs:
       - name: Workflow scenario eval gate
         shell: bash
         run: python scripts/evals/run_workflow_scenarios.py --scenario-root tests/fixtures/workflow_evals --json
+      - name: Durable loop fixture gate
+        shell: bash
+        run: python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
       - name: Regression fixtures (pytest)
         shell: bash
         run: |
