@@ -50,6 +50,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - **PostToolUse health diagnostics.** Fail-open infrastructure issues such as a
   missing session directory now write `.athanor/hook-health.jsonl` breadcrumbs
   while preserving hook exit 0 behavior.
+- **Durable loop controller foundation.** Adds versioned lfg-goal loop state
+  and evidence schemas, a deterministic decision engine, controller CLI,
+  committed fixture gate, P6 `loop.decision` workflow scenario coverage, and
+  operator docs while keeping live Claude Code invocation out of scope.
 
 ### Changed
 
