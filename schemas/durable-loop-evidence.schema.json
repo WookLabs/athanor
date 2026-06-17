@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Athanor durable loop evidence summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eval_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "eval_status": {
+      "type": "string",
+      "enum": [
+        "fail",
+        "missing",
+        "not_applicable",
+        "pass"
+      ]
+    },
+    "validator_status": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "all_valid",
+        "completed_with_residuals",
+        "invalid_steps_present",
+        "not_yet_run"
+      ]
+    },
+    "tier1_passed": {
+      "type": ["boolean", "null"]
+    },
+    "tier2_goal_met": {
+      "type": ["boolean", "null"]
+    },
+    "tier3_user_response": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "abort",
+        "continue",
+        "yes"
+      ]
+    },
+    "progress_made": {
+      "type": ["boolean", "null"]
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
