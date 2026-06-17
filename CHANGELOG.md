@@ -93,6 +93,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   GenAI-style attributes such as `gen_ai.operation.name` without adding an
   OpenTelemetry SDK dependency, hooks, collector export, or raw
   message/evidence/reference content by default.
+- **Workflow eval episode packaging.** Adds
+  `scripts/evals/package_workflow_episode.py`,
+  `schemas/workflow-eval-episode.schema.json`, and `--episode-root` runner
+  support so deterministic workflow scenarios can be packaged as portable local
+  episodes with `deterministic_grader_kinds`, limits, privacy metadata, and
+  `network_access` sandbox policy before broad pytest.
 
 ### Changed
 

@@ -2,9 +2,9 @@
 
 P6 adds a local deterministic eval harness for Athanor workflow behavior. P13
 adds a local live command emitter and command-skill lifecycle anchors. P14 adds
-a local OTel-style export adapter over those traces. The trace contract stays
-local-first: no external telemetry, new runtime hooks, OpenTelemetry SDK, or
-model grader is required.
+a local OTel-style export adapter over those traces. P15 adds portable local
+eval episode packaging. The trace contract stays local-first: no external
+telemetry, new runtime hooks, OpenTelemetry SDK, or model grader is required.
 
 ## Trace Records
 
@@ -126,6 +126,24 @@ These are harness-quality evals. They score whether workflow decisions,
 evidence production, stopping conditions, and escalation behavior are present in
 the trace.
 
+## Portable Episodes
+
+P15 adds `scripts/evals/package_workflow_episode.py` and
+`schemas/workflow-eval-episode.schema.json` to package scenario fixtures into a
+portable local episode directory:
+
+```bash
+python scripts/evals/package_workflow_episode.py \
+  --scenario-root tests/fixtures/workflow_evals \
+  --output-dir .athanor/episodes/workflow-evals \
+  --json
+```
+
+The package contains `episode.json`, `README.md`, and copied scenario files
+under `scenarios/`. The manifest records runtime command metadata,
+`deterministic_grader_kinds`, sandbox policy such as `network_access: false`,
+limits, artifact paths, and privacy notes. See `docs/workflow-eval-episodes.md`.
+
 ## Deterministic Graders
 
 The runner supports deterministic graders only:
@@ -146,6 +164,12 @@ Run the committed scenario suite with:
 python scripts/evals/run_workflow_scenarios.py --scenario-root tests/fixtures/workflow_evals --json
 ```
 
+Run a packaged portable episode with:
+
+```bash
+python scripts/evals/run_workflow_scenarios.py --episode-root .athanor/episodes/workflow-evals --json
+```
+
 The runner emits a JSON report with top-level `status`, per-scenario scores,
 and per-grader pass/fail reasons. It exits `0` only when every scenario reaches
 its `min_score`.
@@ -159,4 +183,6 @@ P13 gives live `/athanor:*` command skills a local trace emitter and lifecycle
 anchors, but it does not claim exhaustive span coverage for every nested worker
 or subprocess. P14 maps captured traces to a local OTel-style JSON envelope, but
 it still does not perform OTLP export, network telemetry, SDK instrumentation,
-or hook-level automatic capture.
+or hook-level automatic capture. P15 packages deterministic scenarios for
+portable local execution, but it does not upload eval data, run arbitrary setup
+commands, or introduce a model-graded release gate.

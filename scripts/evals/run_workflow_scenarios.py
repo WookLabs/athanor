@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.evals.workflow_trace import validate_record
+from scripts.evals.workflow_episode import resolve_episode_scenario_root
 
 DEFAULT_SCENARIO_ROOT = REPO_ROOT / "tests" / "fixtures" / "workflow_evals"
 GRADER_KINDS = {
@@ -188,7 +189,9 @@ def evaluate_root(scenario_root: Path) -> dict[str, Any]:
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Athanor workflow eval scenarios.")
-    parser.add_argument("--scenario-root", type=Path, default=DEFAULT_SCENARIO_ROOT)
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument("--scenario-root", type=Path, default=None)
+    inputs.add_argument("--episode-root", type=Path, default=None)
     parser.add_argument("--json", action="store_true", help="Emit JSON report.")
     return parser.parse_args(argv)
 
@@ -196,7 +199,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv if argv is not None else sys.argv[1:])
     try:
-        report = evaluate_root(args.scenario_root)
+        episode_root = args.episode_root
+        if episode_root is not None:
+            scenario_root = resolve_episode_scenario_root(episode_root)
+        else:
+            scenario_root = args.scenario_root or DEFAULT_SCENARIO_ROOT
+        report = evaluate_root(scenario_root)
+        if episode_root is not None:
+            report["episode_root"] = str(episode_root)
     except ValueError as exc:
         print(f"workflow scenario eval: {exc}", file=sys.stderr)
         return 2

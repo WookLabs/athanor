@@ -18,5 +18,10 @@ def test_workflow_trace_eval_doc_names_runner_schema_and_events() -> None:
         "deterministic graders",
         "require_order",
         "require_reference",
+        "scripts/evals/package_workflow_episode.py",
+        "schemas/workflow-eval-episode.schema.json",
+        "--episode-root",
+        "deterministic_grader_kinds",
+        "network_access: false",
     ):
         assert token in body

@@ -297,3 +297,31 @@ def test_unreleased_documents_otel_trace_export_adapter():
         "CHANGELOG [Unreleased] must explain P14 OTel-style trace export; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_workflow_episode_package_gate():
+    """P15 portable episodes should be checked before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Workflow episode package gate" in workflow
+    assert "python scripts/evals/package_workflow_episode.py" in workflow
+    assert "--scenario-root tests/fixtures/workflow_evals" in workflow
+    assert "--output-dir .athanor/episodes/workflow-evals --json" in workflow
+    assert "python scripts/evals/run_workflow_scenarios.py --episode-root .athanor/episodes/workflow-evals --json" in workflow
+
+
+def test_unreleased_documents_workflow_eval_episode_packaging():
+    """The Unreleased story must name the P15 portable eval episode package."""
+    section = _unreleased_section()
+    required = [
+        "Workflow eval episode packaging",
+        "scripts/evals/package_workflow_episode.py",
+        "schemas/workflow-eval-episode.schema.json",
+        "--episode-root",
+        "deterministic_grader_kinds",
+        "network_access",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P15 workflow eval episode packaging; "
+        f"missing: {missing}"
+    )
