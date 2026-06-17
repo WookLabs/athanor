@@ -325,3 +325,27 @@ def test_unreleased_documents_workflow_eval_episode_packaging():
         "CHANGELOG [Unreleased] must explain P15 workflow eval episode packaging; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_distribution_smoke_gate():
+    """P16 plugin distribution smoke should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Distribution smoke gate" in workflow
+    assert "python scripts/gates/distribution_smoke.py --json" in workflow
+
+
+def test_unreleased_documents_distribution_smoke_gate():
+    """The Unreleased story must name the P16 distribution smoke gate."""
+    section = _unreleased_section()
+    required = [
+        "Distribution smoke gate",
+        "scripts/gates/distribution_smoke.py",
+        "claude plugin details",
+        "4-agent",
+        "always-on",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P16 distribution smoke; "
+        f"missing: {missing}"
+    )

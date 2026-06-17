@@ -6,7 +6,7 @@ Context
 abandoned / blocked / max-iterations goals "stay in `.athanor/goals/` for
 `lfgGoal.goalRetentionDays` (default 30) then cleaner agent ages them out
 per D13." The lfg/lfg-goal doc-lifecycle audit found that the Cleaner
-(`agents/cleaner.md`) had NO goals-cleaning step — its Step 4 only cleans
+(`docs/agent-roles/cleaner.md`) had NO goals-cleaning step — its Step 4 only cleans
 `.athanor/sessions/`. So the D13 reference was a *broken cross-reference*:
 `.athanor/goals/<id>/` would never be aged out by any automatic path.
 
@@ -29,7 +29,7 @@ import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CLEANER = REPO_ROOT / "agents" / "cleaner.md"
+CLEANER = REPO_ROOT / "docs" / "agent-roles" / "cleaner.md"
 LEARNER_CLEANER = REPO_ROOT / "skills" / "work" / "references" / "learner-cleaner.md"
 LFG_GOAL = REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md"
 
@@ -38,7 +38,7 @@ def test_cleaner_has_goals_cleaning_step() -> None:
     """MUST — Cleaner agent documents a retention-bound goals-cleaning step."""
     text = CLEANER.read_text(encoding="utf-8")
     assert re.search(r"clean\s+old\s+goals", text, re.IGNORECASE), (
-        "agents/cleaner.md must add a 'Clean Old Goals' step — its Step 4 "
+        "docs/agent-roles/cleaner.md must add a 'Clean Old Goals' step — its Step 4 "
         "only cleans .athanor/sessions/, leaving .athanor/goals/ unmanaged."
     )
     low = text.lower()
@@ -61,7 +61,7 @@ def test_cleaner_dispatch_prompt_syncs_goals_cleaning() -> None:
     sub = text[idx:].lower()
     assert "goals" in sub and "goalretentiondays" in sub, (
         "learner-cleaner.md Cleaner dispatch prompt must be kept in sync "
-        "with agents/cleaner.md's goals-cleaning step (goalsDir / "
+        "with docs/agent-roles/cleaner.md's goals-cleaning step (goalsDir / "
         "goalRetentionDays); otherwise the in-pipeline cleaner won't age "
         "out stale goals."
     )
@@ -79,7 +79,7 @@ def test_d13_reference_is_backed_by_cleaner_step() -> None:
     if references_cleaner:
         assert re.search(r"clean\s+old\s+goals", cleaner, re.IGNORECASE), (
             "skills/lfg-goal/SKILL.md claims the cleaner agent ages out "
-            "stale goals (D13), but agents/cleaner.md has no goals-cleaning "
+            "stale goals (D13), but docs/agent-roles/cleaner.md has no goals-cleaning "
             "step — broken cross-reference. Add the 'Clean Old Goals' step "
             "or remove the claim."
         )

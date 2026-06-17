@@ -513,27 +513,31 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 ## Agent Registration
 
 Athanor agents are **auto-discovered** by Claude Code from the `agents/*.md` directory.
-`.claude-plugin/plugin.json` does NOT enumerate individual agents — each `.md` file with a
-valid frontmatter `name:` is registered automatically at plugin load time.
+`.claude-plugin/plugin.json` does NOT enumerate individual agents — each `.md` file under
+plugin-root `agents/` with a valid frontmatter `name:` is registered automatically at
+plugin load time.
 
 ### Two-kind agent model (v0.18.7)
 
-Files under `agents/` come in **two kinds** (canonical source: CLAUDE.md §Native Agent
+Agent role files use a **two-location** model (canonical source: CLAUDE.md §Native Agent
 Inventory):
 
-- **4 registered agent types** carry `name:`/`tools:` frontmatter and ARE dispatched as
+- **4 registered agent types** live under plugin-root `agents/`, carry `name:`/`tools:`
+  frontmatter, and ARE dispatched as
   types by the leader / release ceremony / lfg (also reachable standalone via @-mention):
   - `athanor-learner`
   - `athanor-releaser`
   - `athanor-ci-watcher`
   - `athanor-codex-dispatcher`
-- **7 reference documents** are `description:`-only (no `name:`) and are NOT registered —
-  skills dispatch these pipeline roles via an INLINE `Agent()` prompt carrying
+- **7 reference documents** live under `docs/agent-roles/`, are `description:`-only
+  (no `name:`), and are NOT registered — skills dispatch these pipeline roles via an
+  INLINE `Agent()` prompt carrying
   session-specific paths a standalone agent lacks:
   `analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`.
 
-v0.18.7 de-registered the 7 (0 standalone adoption; inline is canonical), collapsing the
-former 11-agent dual-nature roster to 4 registered.
+v0.18.7 de-registered the 7 (0 standalone adoption; inline is canonical), and P16 moved
+those reference docs out of plugin-root `agents/` so Claude's loader reports only the
+4 registered agents.
 
 Note on naming: CLAUDE.md's inventory table lists bare file stems (`learner`, `releaser`, …)
 while this section uses the registered `name:` frontmatter values (`athanor-learner`, …);

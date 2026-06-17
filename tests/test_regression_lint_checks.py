@@ -51,8 +51,8 @@ def test_current_marketplace_in_sync():
 # Guard 2: agent-descriptions-unique
 # ---------------------------------------------------------------------------
 def test_agent_description_collision_fixture_fails(tmp_path: Path):
-    """fixture's description prefix collides with athanor-analyst's prefix."""
-    real_agent = REPO_ROOT / "agents" / "analyst.md"
+    """fixture's description prefix collides with analyst's reference prefix."""
+    real_agent = REPO_ROOT / "docs" / "agent-roles" / "analyst.md"
     fixture = FIXTURES / "fixture_agent_description_collision.md"
     assert real_agent.is_file()
     assert fixture.is_file()
@@ -68,10 +68,10 @@ def test_agent_description_collision_fixture_fails(tmp_path: Path):
 
 
 def test_current_agents_descriptions_unique():
-    """Repo's actual 7 agents must all have unique 60-char description prefixes."""
-    agents_dir = REPO_ROOT / "agents"
-    ok, violations = agent_descriptions_unique_check(agents_dir)
-    assert ok, f"current agents have description collisions: {violations}"
+    """Registered agents and reference role docs keep unique description prefixes."""
+    for role_dir in (REPO_ROOT / "agents", REPO_ROOT / "docs" / "agent-roles"):
+        ok, violations = agent_descriptions_unique_check(role_dir)
+        assert ok, f"{role_dir} has description collisions: {violations}"
 
 
 # ---------------------------------------------------------------------------

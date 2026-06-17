@@ -99,6 +99,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   support so deterministic workflow scenarios can be packaged as portable local
   episodes with `deterministic_grader_kinds`, limits, privacy metadata, and
   `network_access` sandbox policy before broad pytest.
+- **Distribution smoke gate.** Adds
+  `scripts/gates/distribution_smoke.py` and a named CI gate that runs
+  `claude plugin details` when available, verifies the live 4-agent loader
+  surface, enforces the always-on token budget, checks manifest/marketplace
+  pins, and keeps inline-only pipeline role docs out of plugin-root `agents/`.
 
 ### Changed
 

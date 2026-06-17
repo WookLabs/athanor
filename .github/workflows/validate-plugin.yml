@@ -54,6 +54,9 @@ jobs:
         run: |
           python scripts/evals/package_workflow_episode.py --scenario-root tests/fixtures/workflow_evals --output-dir .athanor/episodes/workflow-evals --json
           python scripts/evals/run_workflow_scenarios.py --episode-root .athanor/episodes/workflow-evals --json
+      - name: Distribution smoke gate
+        shell: bash
+        run: python scripts/gates/distribution_smoke.py --json
       - name: Durable loop fixture gate
         shell: bash
         run: python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json

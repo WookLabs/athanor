@@ -1,7 +1,7 @@
 """Release-level smoke tests for the v0.14.0 release line.
 
 Verifies version consistency across the 5-file manifest convention,
-CHANGELOG entry presence, and correct native agent count.
+CHANGELOG entry presence, and correct native agent/reference-role counts.
 
 Plan reference: v0.14.0 subtask S8.
 
@@ -41,6 +41,7 @@ TARGET_VERSION = _plugin_version()
 _URL_VERSION_RE = re.compile(r"/v?(\d+\.\d+\.\d+)/schemas/")
 
 AGENTS_DIR = REPO_ROOT / "agents"
+REFERENCE_AGENT_ROLES_DIR = REPO_ROOT / "docs" / "agent-roles"
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 
 
@@ -120,21 +121,41 @@ def test_v014_changelog_entry_exists():
 
 
 def test_native_agent_count():
-    """agents/ directory (excluding vendored/) should contain exactly 11 .md files.
-
-    8 existing (analyst, cleaner, critic, executor, learner, planner,
-    researcher, reviewer) + 3 new in v0.14.0 (releaser, codex-dispatcher,
-    ci-watcher) = 11 total.
-    """
+    """Plugin-root agents/ has 4 registered agents; reference docs live elsewhere."""
     assert AGENTS_DIR.is_dir(), f"agents/ directory not found at {AGENTS_DIR}"
     agent_files = [
         f
         for f in sorted(AGENTS_DIR.iterdir())
         if f.suffix == ".md" and f.is_file()
     ]
-    # Exclude vendored/ subdirectory — those are counted separately
     agent_names = [f.name for f in agent_files]
-    assert len(agent_files) == 11, (
-        f"Expected 11 native agent .md files in agents/, "
+    assert agent_names == [
+        "ci-watcher.md",
+        "codex-dispatcher.md",
+        "learner.md",
+        "releaser.md",
+    ], (
+        f"Expected exactly 4 registered agent .md files in plugin-root agents/, "
         f"found {len(agent_files)}: {agent_names}"
+    )
+
+    assert REFERENCE_AGENT_ROLES_DIR.is_dir(), (
+        f"reference role directory not found at {REFERENCE_AGENT_ROLES_DIR}"
+    )
+    reference_names = [
+        f.name
+        for f in sorted(REFERENCE_AGENT_ROLES_DIR.iterdir())
+        if f.suffix == ".md" and f.is_file()
+    ]
+    assert reference_names == [
+        "analyst.md",
+        "cleaner.md",
+        "critic.md",
+        "executor.md",
+        "planner.md",
+        "researcher.md",
+        "reviewer.md",
+    ], (
+        f"Expected 7 inline-only reference role docs in docs/agent-roles/, "
+        f"found {len(reference_names)}: {reference_names}"
     )

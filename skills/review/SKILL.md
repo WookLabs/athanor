@@ -153,13 +153,13 @@ Every finding MUST cite `file:line` and quote ≤3 surrounding lines (or describ
 absence concretely if the finding is `missing X`). Every finding MUST also carry a
 `confidence: {0-100}` value on the anchored rubric (100 = mechanically constructible
 from diff alone; 75 = traceable from code; 50 = judgment-based; 25 = speculative;
-< 25 = suppress) — see agents/reviewer.md §Confidence anchoring. Findings with
+< 25 = suppress) — see docs/agent-roles/reviewer.md §Confidence anchoring. Findings with
 confidence < {min_confidence} (default 25, sourced from athanor.json
 review.minConfidence) MUST be suppressed at the worker level.
 
 Score the lens 0-10 (10 = ideal, 0 = catastrophic) and write a one-sentence rationale.
 
-Output the single ATHANOR_RESULT block defined in agents/reviewer.md. Do not save
+Output the single ATHANOR_RESULT block defined in docs/agent-roles/reviewer.md. Do not save
 any file — return inline only. The Leader will write the consolidated report.
 
 Max 25 tool calls per worker. Keep `details:` body under ~600 words."

@@ -2,7 +2,7 @@
 
 P10 finding: the leader-side worker-output stop-phrase whitelist (5 ko/en
 phrases) was duplicated VERBATIM across ~7 skill/reference files and partially
-embedded in agents/reviewer.md. The copies had begun to drift. Phase 6 creates
+embedded in docs/agent-roles/reviewer.md. The copies had begun to drift. Phase 6 creates
 one canonical doc (docs/stop-phrase-whitelist.md) and replaces every skill-side
 embedding with a 1-line pointer.
 

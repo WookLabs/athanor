@@ -1,5 +1,6 @@
 {
   "name": "athanor",
+  "description": "Athanor workflow orchestrator plugin for Claude Code.",
   "owner": {
     "name": "WookLabs"
   },

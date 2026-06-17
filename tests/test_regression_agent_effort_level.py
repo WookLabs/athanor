@@ -28,6 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 DESIGN_MD = REPO_ROOT / "docs" / "DESIGN.md"
 AGENTS_DIR = REPO_ROOT / "agents"
+REFERENCE_AGENT_ROLES_DIR = REPO_ROOT / "docs" / "agent-roles"
 VALID_TIERS = {"opus", "sonnet", "haiku"}
 
 # v0.18.7 partition: de-registered reference docs vs leader-dispatchable types.
@@ -38,7 +39,10 @@ REGISTERED_AGENTS = {"learner", "releaser", "ci-watcher", "codex-dispatcher"}
 
 
 def _frontmatter(agent_stem: str) -> str:
-    text = (AGENTS_DIR / f"{agent_stem}.md").read_text(encoding="utf-8")
+    path = AGENTS_DIR / f"{agent_stem}.md"
+    if not path.exists():
+        path = REFERENCE_AGENT_ROLES_DIR / f"{agent_stem}.md"
+    text = path.read_text(encoding="utf-8")
     parts = text.split("---", 2)
     return parts[1] if len(parts) >= 3 else ""
 
@@ -84,7 +88,7 @@ def test_pipeline_agents_are_reference_docs_not_registered() -> None:
     """
     for stem in sorted(REFERENCE_DOC_AGENTS):
         assert not _has_name(stem), (
-            f"agents/{stem}.md must be a reference doc (no name: frontmatter) — "
+            f"docs/agent-roles/{stem}.md must be a reference doc (no name: frontmatter) — "
             f"skills dispatch it INLINE; the registered type had 0 adoption and "
             f"contradicted the collision guard (v0.18.7 diet)."
         )
@@ -93,10 +97,15 @@ def test_pipeline_agents_are_reference_docs_not_registered() -> None:
             f"agents/{stem}.md must stay a registered agent (name: present) — it "
             f"is dispatched as a type by the leader / ceremony / lfg."
         )
-    all_stems = {p.stem for p in AGENTS_DIR.glob("*.md")}
-    assert all_stems == REFERENCE_DOC_AGENTS | REGISTERED_AGENTS, (
-        f"unexpected agent set; diff: "
-        f"{all_stems ^ (REFERENCE_DOC_AGENTS | REGISTERED_AGENTS)}"
+    registered_stems = {p.stem for p in AGENTS_DIR.glob("*.md")}
+    reference_stems = {p.stem for p in REFERENCE_AGENT_ROLES_DIR.glob("*.md")}
+    assert registered_stems == REGISTERED_AGENTS, (
+        f"plugin-root agents/ must contain only registered types; diff: "
+        f"{registered_stems ^ REGISTERED_AGENTS}"
+    )
+    assert reference_stems == REFERENCE_DOC_AGENTS, (
+        f"docs/agent-roles/ must contain the 7 inline-only reference docs; diff: "
+        f"{reference_stems ^ REFERENCE_DOC_AGENTS}"
     )
 
 

@@ -12,7 +12,7 @@ explicitly warns: "Keep this file in sync with the dispatch prompts in the
 corresponding SKILL.md."
 
 A drift was found (Goal: lfg/lfg-goal doc-lifecycle audit, Wave 1):
-`agents/cleaner.md` frontmatter declared `model: haiku` (matching
+`docs/agent-roles/cleaner.md` frontmatter declared `model: haiku` (matching
 CLAUDE.md "Cleaner: minimal effort"), but the dispatch prompt in
 `skills/work/references/learner-cleaner.md` Step 5 and the Step-5 line in
 `skills/work/SKILL.md` both said `sonnet`. This test locks the three
@@ -63,7 +63,7 @@ def _skill_line_model(role: str) -> str | None:
 def test_cleaner_model_consistency() -> None:
     """MUST — Cleaner dispatched tier agrees between inline dispatch and skill line.
 
-    v0.18.7 plugin-diet: `agents/cleaner.md` is now a de-registered reference
+    v0.18.7 plugin-diet: `docs/agent-roles/cleaner.md` is now a de-registered reference
     doc with NO frontmatter `model:` (skills dispatch Cleaner inline). The
     consistency lock is therefore between the two INLINE dispatch sources —
     `learner-cleaner.md` Step 5 and `work/SKILL.md` 'Cleaner agent (...)' — which

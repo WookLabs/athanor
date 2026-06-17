@@ -18,21 +18,21 @@ Documented infrastructure/output exceptions:
 
 ## Native Agent Inventory
 
-Agent definitions live in `agents/` as `.md` files in **two kinds**. **4 registered agent types** (`learner`, `releaser`, `ci-watcher`, `codex-dispatcher`) carry `name:`/`tools:` frontmatter and ARE dispatched as types by the leader / release ceremony / lfg. **7 reference documents** (`analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`) are `description:`-only and NOT registered: skills dispatch these pipeline roles via an INLINE `Agent()` prompt carrying session-specific paths (`.athanor/sessions/{id}/...`) a standalone agent lacks — registering them would be a never-usable contradiction. v0.18.7 de-registered the 7 (0 standalone adoption per `docs/agent-evaluation-matrix.md`; inline is canonical), collapsing the former 11-agent dual-nature (Goal 36470e54 C002) to 4. Full detail: `docs/archive/agent-dual-nature.md`.
+Registered agent definitions live in plugin-root `agents/`; inline-only role reference docs live in `docs/agent-roles/`. **4 registered agent types** (`learner`, `releaser`, `ci-watcher`, `codex-dispatcher`) carry `name:`/`tools:` frontmatter and ARE dispatched as types by the leader / release ceremony / lfg. **7 reference documents** (`analyst`, `cleaner`, `critic`, `executor`, `planner`, `researcher`, `reviewer`) are `description:`-only and NOT registered: skills dispatch these pipeline roles via an INLINE `Agent()` prompt carrying session-specific paths (`.athanor/sessions/{id}/...`) a standalone agent lacks — registering them would be a never-usable contradiction. v0.18.7 de-registered the 7 (0 standalone adoption per `docs/agent-evaluation-matrix.md`; inline is canonical), and P16 moved them out of plugin-root `agents/` so `claude plugin details` reports the true 4-agent loader surface. Full detail: `docs/archive/agent-dual-nature.md`.
 
 | Agent | Kind | Purpose | Since |
 |-------|------|---------|-------|
-| `analyst.md` | reference | Analysis dispatch target | v0.7.x |
-| `cleaner.md` | reference | Session/memory lifecycle | v0.7.x |
-| `critic.md` | reference | Adversarial plan review | v0.7.x |
-| `executor.md` | reference | Subtask execution (Ralph loop) | v0.7.x |
-| `learner.md` | registered | Lessons extraction | v0.7.x |
-| `planner.md` | reference | Plan generation | v0.7.x |
-| `researcher.md` | reference | Research/discovery dispatch | v0.7.x |
-| `reviewer.md` | reference | Multi-lens code review | v0.7.x |
-| `releaser.md` | registered | Release ceremony automation (version bump, CHANGELOG, STATE.md, test pins) | v0.14.0 |
-| `codex-dispatcher.md` | registered | Codex CLI dispatch wrapper (timeout clamping, stdin redirect, exit-code handling) | v0.14.0 |
-| `ci-watcher.md` | registered | CI watch + autofix loop (gh pr checks, failure log analysis, fix dispatch) | v0.14.0 |
+| `docs/agent-roles/analyst.md` | reference | Analysis dispatch target | v0.7.x |
+| `docs/agent-roles/cleaner.md` | reference | Session/memory lifecycle | v0.7.x |
+| `docs/agent-roles/critic.md` | reference | Adversarial plan review | v0.7.x |
+| `docs/agent-roles/executor.md` | reference | Subtask execution (Ralph loop) | v0.7.x |
+| `agents/learner.md` | registered | Lessons extraction | v0.7.x |
+| `docs/agent-roles/planner.md` | reference | Plan generation | v0.7.x |
+| `docs/agent-roles/researcher.md` | reference | Research/discovery dispatch | v0.7.x |
+| `docs/agent-roles/reviewer.md` | reference | Multi-lens code review | v0.7.x |
+| `agents/releaser.md` | registered | Release ceremony automation (version bump, CHANGELOG, STATE.md, test pins) | v0.14.0 |
+| `agents/codex-dispatcher.md` | registered | Codex CLI dispatch wrapper (timeout clamping, stdin redirect, exit-code handling) | v0.14.0 |
+| `agents/ci-watcher.md` | registered | CI watch + autofix loop (gh pr checks, failure log analysis, fix dispatch) | v0.14.0 |
 
 ## Commands
 

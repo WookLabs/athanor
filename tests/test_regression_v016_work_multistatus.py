@@ -1,7 +1,7 @@
 """Regression tests for v0.16.0 multi-status executor contract (Phase 1.4).
 
 Verifies that the v0.16.0 multi-status executor expansion is reflected in
-both ``skills/work/SKILL.md`` and ``agents/executor.md``:
+both ``skills/work/SKILL.md`` and ``docs/agent-roles/executor.md``:
 
   - 5 status values documented (done, failure, done_with_concerns,
     needs_context, blocked) plus backwards-compat ``success`` alias.
@@ -28,7 +28,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORK_SKILL = REPO_ROOT / "skills" / "work" / "SKILL.md"
 WORK_REFS_DIR = REPO_ROOT / "skills" / "work" / "references"
-EXECUTOR_AGENT = REPO_ROOT / "agents" / "executor.md"
+EXECUTOR_AGENT = REPO_ROOT / "docs" / "agent-roles" / "executor.md"
 
 # The 5 status values in the v0.16.0 multi-status executor contract.
 ALL_STATUSES = [
@@ -86,16 +86,16 @@ def test_all_statuses_documented_in_skill():
 
 
 # ---------------------------------------------------------------------------
-# 2. All statuses documented in agents/executor.md
+# 2. All statuses documented in docs/agent-roles/executor.md
 # ---------------------------------------------------------------------------
 
 
 def test_all_statuses_documented_in_executor_agent():
-    """All 5 status values appear in agents/executor.md."""
+    """All 5 status values appear in docs/agent-roles/executor.md."""
     text = _read(EXECUTOR_AGENT)
     missing = [s for s in ALL_STATUSES if s not in text]
     assert not missing, (
-        f"agents/executor.md is missing v0.16.0 status value(s): {missing}. "
+        f"docs/agent-roles/executor.md is missing v0.16.0 status value(s): {missing}. "
         f"All of {ALL_STATUSES} must be documented in the agent definition."
     )
 
@@ -129,7 +129,7 @@ def test_backwards_compat_success_mentioned():
     # executor.md must also mention it so worker authors writing against
     # the agent definition see the alias.
     assert "success" in agent_text, (
-        "agents/executor.md must mention legacy `success` status as a "
+        "docs/agent-roles/executor.md must mention legacy `success` status as a "
         "backwards-compat alias for `done`."
     )
     agent_lower = agent_text.lower()
@@ -138,7 +138,7 @@ def test_backwards_compat_success_mentioned():
         or "legacy" in agent_lower
         or "alias" in agent_lower
     ), (
-        "agents/executor.md must explain the `success` ↔ `done` "
+        "docs/agent-roles/executor.md must explain the `success` ↔ `done` "
         "relationship via the words backwards-compat / legacy / alias."
     )
 

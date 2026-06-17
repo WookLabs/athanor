@@ -305,7 +305,7 @@ importance: permanent|working
 ### Required frontmatter keys
 
 Every lesson file must carry the following keys. The cleaner (see
-`agents/cleaner.md` §"Step 2: Schema Validation") enforces this:
+`docs/agent-roles/cleaner.md` §"Step 2: Schema Validation") enforces this:
 
 | Key | Required since | Purpose |
 |-----|----------------|---------|
