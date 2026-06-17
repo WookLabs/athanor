@@ -105,13 +105,13 @@ compatibility. Default mode remains `dry-run`.
 
 ## Task 6: Verification And Merge
 
-- [ ] Run targeted installer tests:
+- [x] Run targeted installer tests:
 
 ```bash
 python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q
 ```
 
-- [ ] Run existing gates:
+- [x] Run existing gates:
 
 ```bash
 python scripts/check_release_ready.py --ci
