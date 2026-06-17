@@ -180,7 +180,7 @@ git commit -m "feat: preserve command trace metadata"
 **Files:**
 - Create: `scripts/evals/emit_workflow_trace.py`
 
-- [ ] **Step 1: Add emitter CLI**
+- [x] **Step 1: Add emitter CLI**
 
 Create `scripts/evals/emit_workflow_trace.py` with:
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Run emitter tests**
+- [x] **Step 2: Run emitter tests**
 
 Run:
 
@@ -327,7 +327,7 @@ Expected:
 - CLI behavior passes.
 - Skill anchor tests still fail until Task 4.
 
-- [ ] **Step 3: Commit emitter CLI**
+- [x] **Step 3: Commit emitter CLI**
 
 ```bash
 git add scripts/evals/emit_workflow_trace.py tests/test_regression_live_command_trace_emitters.py
