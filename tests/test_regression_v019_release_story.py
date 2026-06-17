@@ -98,3 +98,11 @@ def test_ci_runs_hook_performance_budget_as_named_gate():
     assert "Hook performance budget gate" in workflow
     assert "python scripts/gates/check_hook_performance_budget.py" in workflow
     assert "--json" in workflow
+
+
+def test_ci_runs_workflow_scenario_eval_as_named_gate():
+    """Workflow eval scenarios should be checked before the broad pytest suite."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Workflow scenario eval gate" in workflow
+    assert "python scripts/evals/run_workflow_scenarios.py" in workflow
+    assert "--scenario-root tests/fixtures/workflow_evals --json" in workflow

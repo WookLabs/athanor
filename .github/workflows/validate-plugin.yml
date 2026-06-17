@@ -46,6 +46,9 @@ jobs:
       - name: Hook performance budget gate
         shell: bash
         run: python scripts/gates/check_hook_performance_budget.py --json
+      - name: Workflow scenario eval gate
+        shell: bash
+        run: python scripts/evals/run_workflow_scenarios.py --scenario-root tests/fixtures/workflow_evals --json
       - name: Regression fixtures (pytest)
         shell: bash
         run: |
