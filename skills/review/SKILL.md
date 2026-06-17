@@ -68,26 +68,7 @@ and a `score:` 0-10. If absent or malformed, re-dispatch once.
    If no matching directory exists, create `{today}-001` (where `{today}` is `YYYY-MM-DD`).
 2. Ensure `.athanor/sessions/{session-id}/` exists.
 
-### P13 Live Trace Emission
-
-After Step 0 resolves `<LATEST>`, emit `workflow.started`:
-
-```bash
-python scripts/evals/emit_workflow_trace.py \
-  --session-id "<LATEST>" \
-  --command review \
-  --phase review \
-  --event-type workflow.started \
-  --actor leader \
-  --status started \
-  --message "review workflow started" \
-  --json
-```
-
-Emit `agent.dispatched` for each lens reviewer, emit `review.result` after
-consolidating accepted lens outputs, and emit `workflow.finished` before the
-user-facing review summary. Use `scripts/evals/emit_workflow_trace.py` and the
-default `.athanor/traces/<session-id>.jsonl` path.
+### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
 ### Step 1: Scope Detection
 

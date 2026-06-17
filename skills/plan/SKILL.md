@@ -121,27 +121,7 @@ Announce one of: `Codex available` / `Codex disabled by config
 (review_strategy=<value>)` / `Codex CLI not installed
 (review_strategy=<value>)`.
 
-### P13 Live Trace Emission
-
-After Step 0 resolves `<LATEST>`, emit `workflow.started`:
-
-```bash
-python scripts/evals/emit_workflow_trace.py \
-  --session-id "<LATEST>" \
-  --command plan \
-  --phase plan \
-  --event-type workflow.started \
-  --actor leader \
-  --status started \
-  --message "plan workflow started" \
-  --json
-```
-
-Emit `agent.dispatched` for planner/reviewer/critic dispatches, emit
-`review.result` when review or critic results are accepted, and emit
-`workflow.finished` before presenting the final plan. Use
-`scripts/evals/emit_workflow_trace.py` and the default
-`.athanor/traces/<session-id>.jsonl` path.
+### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
 ### Step 1: Gather Context & Parse Request
 

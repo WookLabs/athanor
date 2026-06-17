@@ -423,7 +423,7 @@ git commit -m "docs: wire live command trace anchors"
 - Modify: `tests/test_regression_v019_release_story.py`
 - Modify: `docs/plans/2026-06-17-p13-live-command-trace-emitters-plan.md`
 
-- [ ] **Step 1: Add release-story test**
+- [x] **Step 1: Add release-story test**
 
 Extend `tests/test_regression_v019_release_story.py` to assert the
 Unreleased section contains:
@@ -435,7 +435,7 @@ Unreleased section contains:
 - `workflow.finished`
 - `local-first`
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run:
 
@@ -447,7 +447,7 @@ Expected:
 
 - FAIL until the changelog story is added.
 
-- [ ] **Step 3: Add changelog story**
+- [x] **Step 3: Add changelog story**
 
 Add under `[Unreleased]`:
 
@@ -459,7 +459,7 @@ Add under `[Unreleased]`:
   `workflow.finished` without enabling new default hooks or external telemetry.
 ```
 
-- [ ] **Step 4: Run focused verification**
+- [x] **Step 4: Run focused verification**
 
 Run:
 
@@ -475,7 +475,7 @@ Expected:
 - Workflow scenario eval exits `0`.
 - `git diff --check` exits `0`.
 
-- [ ] **Step 5: Run full regression suite**
+- [x] **Step 5: Run full regression suite**
 
 Run:
 
@@ -487,7 +487,7 @@ Expected:
 
 - PASS with the existing skip/xpass profile.
 
-- [ ] **Step 6: Commit release story and verification record**
+- [x] **Step 6: Commit release story and verification record**
 
 ```bash
 git add CHANGELOG.md tests/test_regression_v019_release_story.py docs/plans/2026-06-17-p13-live-command-trace-emitters-plan.md

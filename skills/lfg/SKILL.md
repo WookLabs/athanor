@@ -65,27 +65,7 @@ entry. Some platforms list skills under a plugin namespace (e.g.,
 Invoking a short-form guess that isn't in the list will fail — always
 match a listed entry verbatim before calling the Skill/Task tool.
 
-### P13 Live Trace Emission
-
-At the beginning of the LFG run, after the active session id is known, emit
-`workflow.started`:
-
-```bash
-python scripts/evals/emit_workflow_trace.py \
-  --session-id "<LATEST>" \
-  --command lfg \
-  --phase lfg \
-  --event-type workflow.started \
-  --actor leader \
-  --status started \
-  --message "lfg pipeline started" \
-  --json
-```
-
-Emit `gate.evaluated` at each STOP/GATE checkpoint and emit
-`workflow.finished` immediately before Step 9's completion sentinel. Use
-`scripts/evals/emit_workflow_trace.py` and the default
-`.athanor/traces/<session-id>.jsonl` path.
+### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
 ### v0.18.0 honesty residual — Codex stage NOT freeze-gated
 

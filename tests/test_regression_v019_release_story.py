@@ -261,3 +261,21 @@ def test_unreleased_documents_runtime_execution_adapter():
         "CHANGELOG [Unreleased] must explain P12 runtime execution adapter; "
         f"missing: {missing}"
     )
+
+
+def test_unreleased_documents_live_command_trace_emitter():
+    """The Unreleased story must name the P13 live command trace emitter."""
+    section = _unreleased_section()
+    required = [
+        "Live command trace emitter",
+        "scripts/evals/emit_workflow_trace.py",
+        ".athanor/traces",
+        "workflow.started",
+        "workflow.finished",
+        "local-first",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P13 live command trace emission; "
+        f"missing: {missing}"
+    )

@@ -82,6 +82,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   recommend `solo`, `subagent-wave`, `dynamic-workflow`, `agent-team`, or
   `manual-worktree` backends before future live orchestration work launches
   dynamic workflow, agent team, or worktree surfaces.
+- **Live command trace emitter.** Adds local-first
+  `scripts/evals/emit_workflow_trace.py` and command skill anchors so
+  Athanor command leaders can write `.athanor/traces` JSONL records for
+  `workflow.started`, worker/evidence events, escalations, and
+  `workflow.finished` without enabling new default hooks or external telemetry.
 
 ### Changed
 
