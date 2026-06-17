@@ -1106,7 +1106,7 @@ git add docs/plans/2026-06-17-p12-runtime-execution-adapter-plan.md
 git commit -m "docs: record runtime execution adapter verification"
 ```
 
-- [ ] **Step 4: Fast-forward merge to main and push**
+- [x] **Step 4: Fast-forward merge to main and push**
 
 ```bash
 git checkout main
@@ -1118,7 +1118,7 @@ git diff --check
 git push origin main
 ```
 
-- [ ] **Step 5: Mark merge complete, commit, push, and delete feature branch**
+- [x] **Step 5: Mark merge complete, commit, push, and delete feature branch**
 
 ```bash
 git add docs/plans/2026-06-17-p12-runtime-execution-adapter-plan.md
