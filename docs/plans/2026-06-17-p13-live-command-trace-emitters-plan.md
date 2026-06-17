@@ -45,7 +45,7 @@
 **Files:**
 - Create: `tests/test_regression_live_command_trace_emitters.py`
 
-- [ ] **Step 1: Add failing regression tests**
+- [x] **Step 1: Add failing regression tests**
 
 Create `tests/test_regression_live_command_trace_emitters.py` with tests for:
 
@@ -58,7 +58,7 @@ Create `tests/test_regression_live_command_trace_emitters.py` with tests for:
 - Core command skills containing `scripts/evals/emit_workflow_trace.py` and
   `workflow.started` / `workflow.finished` anchors.
 
-- [ ] **Step 2: Run tests to verify RED**
+- [x] **Step 2: Run tests to verify RED**
 
 Run:
 
@@ -71,7 +71,7 @@ Expected:
 - FAIL because `scripts/evals/emit_workflow_trace.py` does not exist and
   `workflow_trace.py` does not preserve the new optional fields.
 
-- [ ] **Step 3: Commit RED tests**
+- [x] **Step 3: Commit RED tests**
 
 ```bash
 git add tests/test_regression_live_command_trace_emitters.py
