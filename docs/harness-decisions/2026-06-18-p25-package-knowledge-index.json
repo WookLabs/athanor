@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p25-package-knowledge-index",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "knowledge_surface",
+      "summary": "Add a short package-facing knowledge index and read-only gate so packaged workers can find current runtime docs, operator gates, and safety contracts without scanning repo-local development history.",
+      "expected_metrics": [
+        {
+          "metric": "package_knowledge_index.status",
+          "direction": "stay",
+          "target": "pass"
+        },
+        {
+          "metric": "package_knowledge_index.forbidden_refs",
+          "direction": "stay",
+          "target": "0"
+        },
+        {
+          "metric": "knowledge_surface_freshness_score",
+          "direction": "increase",
+          "target": "at least 9.5/10 after current package-facing index is CI-visible"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/package_knowledge_index.py --json",
+          "expected": "status pass with missing_required_refs 0, forbidden_refs 0, unresolved_links 0, and irreversible_actions 0"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_package_knowledge_index.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P25 tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p25-package-knowledge-index"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P25 adds docs/package-knowledge-index.md, README/CLAUDE back-links, schema, CI gate, and release-story coverage. The focused gate reports missing_required_refs 0, forbidden_refs 0, unresolved_links 0, and irreversible_actions 0.",
+          "evidence_refs": [
+            "docs/package-knowledge-index.md",
+            "scripts/gates/package_knowledge_index.py",
+            ".github/workflows/validate-plugin.yml"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and index gate if it proves too brittle; follow up with actual packaging exclusions only after plugin packaging supports a separate ship profile."
+    }
+  ]
+}

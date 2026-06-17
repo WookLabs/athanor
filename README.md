@@ -7,6 +7,8 @@
 
 **v0.18.8** — 9 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
 
+Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
+
 ### What v0.10.0 absorbed (corrected by v0.12.0 atomic cut)
 
 - **compound-engineering 3.8.3** — originally vendored 33 skills + 49 sub-agents at v0.10.0. v0.12.0 atomic cut reduced this to **1 KEEP skill** (`/athanor:ce-test-browser`, D8) + **2 KEEP sub-agents** (`ce-git-history-analyzer`, `ce-repo-research-analyst`, D12; both later removed in v0.15.x once no live dispatch reference remained). The remaining 32 skills + 47 sub-agents were removed in the v0.12.0 concept-kernel cutover. See [`docs/archive/v010-v011-vendoring-scope-correction.md`](docs/archive/v010-v011-vendoring-scope-correction.md) for the plan-of-record misread retrospective.

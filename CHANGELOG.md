@@ -119,6 +119,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   `record-ci-pass`, and `plan-review-response` action templates while keeping
   every listener unregistered, `auto_execute: false`, no default network
   execution, and zero irreversible actions.
+- **Package knowledge index.** Adds `docs/package-knowledge-index.md` and
+  read-only `scripts/gates/package_knowledge_index.py` so package-facing
+  workers can start from README.md or CLAUDE.md, find current operator gates
+  and safety contracts, and avoid repo-local development history while the
+  broader ship profile remains explicit.
 - **Distribution smoke gate.** Adds
   `scripts/gates/distribution_smoke.py` and a named CI gate that runs
   `claude plugin details` when available, verifies the live 4-agent loader

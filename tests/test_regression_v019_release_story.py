@@ -540,6 +540,32 @@ def test_unreleased_documents_reactive_channel_fixture():
     )
 
 
+def test_ci_runs_package_knowledge_index_gate():
+    """P25 package knowledge index should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Package knowledge index gate" in workflow
+    assert "python scripts/gates/package_knowledge_index.py --json" in workflow
+
+
+def test_unreleased_documents_package_knowledge_index():
+    """The Unreleased story must name the P25 package knowledge index."""
+    section = _unreleased_section()
+    required = [
+        "Package knowledge index",
+        "docs/package-knowledge-index.md",
+        "scripts/gates/package_knowledge_index.py",
+        "README.md",
+        "CLAUDE.md",
+        "repo-local",
+        "ship profile",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P25 package knowledge index; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")

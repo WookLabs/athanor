@@ -1,6 +1,6 @@
 # Athanor
 
-General-purpose agentic workflow orchestrator plugin for Claude Code.
+General-purpose agentic workflow orchestrator plugin for Claude Code. Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
 
 ## Core Principle
 

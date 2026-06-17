@@ -1,8 +1,8 @@
 # Current Workflow, Loop, And Harness Research Comparison
 
 Date: 2026-06-18
-Local branch: `feat/p23-native-runtime-playbook`
-Local baseline commit: `e783ff3`
+Local branch: `feat/p25-package-knowledge-index`
+Local baseline commit: `5f4696c`
 
 ## Executive Verdict
 
@@ -16,10 +16,9 @@ trace-backed improvement loops, evals that can be rerun, short entrypoint
 knowledge with indexed deeper docs, native context isolation, and package
 surfaces that stay lean enough to ship.
 
-Against that frontier, Athanor's remaining gap is now concentrated in one
-place after P24:
-
-1. package-facing knowledge freshness.
+Against that frontier, Athanor's tracked remediation dimensions now all meet
+the current 9.5/10 target after P25. Remaining work is optional packaging
+execution, not a score-blocking design gap.
 
 P21, the package footprint policy gate, has now closed the lowest-risk
 sub-9.5 gap. The gate keeps packaging read-only, reports ship-profile budgets,
@@ -40,6 +39,11 @@ P24, the reactive channel fixture gate, has now closed the reactive
 event/channel gap enough for the current 9.5 target. It maps local fake pushed
 CI and PR review payloads into safe manual action templates without registering
 a listener or executing networked commands by default.
+
+P25, the package knowledge index, has now closed the final knowledge-surface
+gap enough for the current 9.5 target. It adds a short package-facing map from
+README/CLAUDE into current operator docs, gates, and safety contracts while
+rejecting development-history links from that first-read surface.
 
 ## External Sources Checked
 
@@ -237,13 +241,13 @@ Observed:
 - Maintenance profile: warn, 6/6 steps, 1 warning, 0 failures,
   `irreversible_actions: 0`.
 - Distribution smoke: pass, 7 checks in skip-Claude mode.
-- Package footprint policy: warn, 492 files, about 4.17 MB, 0 hard budget
+- Package footprint policy: warn, 499 files, about 4.21 MB, 0 hard budget
   failures, 20 development-only candidates, `irreversible_actions: 0`.
 - External eval adapter: pass, 2 compatibility profiles, network disabled,
   external telemetry disabled, setup commands 0.
 - Agent surface: exactly `ci-watcher`, `codex-dispatcher`, `learner`,
   `releaser`.
-- Harness decision ledger: pass, 8 decisions after P24.
+- Harness decision ledger: pass, 9 decisions after P25.
 - Native runtime probe fixtures: pass; dynamic workflow, agent team, and
   worktree are intentionally dry-run/operator-approved rather than
   auto-launched.
@@ -251,6 +255,8 @@ Observed:
   `auto_executable_recipes: 0`, `irreversible_actions: 0`.
 - Reactive channel fixtures: pass; 3 fixtures, `auto_listeners: 0`,
   `auto_execute_actions: 0`, `irreversible_actions: 0`.
+- Package knowledge index: pass; required refs 14, missing refs 0,
+  forbidden refs 0, unresolved links 0, `irreversible_actions: 0`.
 
 ## Scorecard
 
@@ -268,7 +274,7 @@ Observed:
 | External benchmark/sandbox interop | 9.6 | Portable episodes now export inspect-like/harbor-like task, scorer, and local-only sandbox metadata. |
 | Native execution escalation | 9.6 | Operator-approved worktree/dynamic-workflow/agent-team recipes now exist; default auto-execution stays blocked. |
 | Reactive channels/events | 9.55 | Local fake pushed CI/review event fixtures now map to safe manual action templates; default listeners stay absent. |
-| Knowledge surface freshness | 9.25 | Rich docs and cleanup gates exist; runtime/ship surface is too broad. |
+| Knowledge surface freshness | 9.55 | Short package-facing index now links current operator docs and gates while excluding development-history links. |
 
 ## What Is Good
 
@@ -343,7 +349,7 @@ Target movement:
 
 ### P24: Reactive Channel Spike
 
-Status: implemented on branch `feat/p24-reactive-channel-fixture`.
+Status: implemented and merged on `main` via `feat/p24-reactive-channel-fixture`.
 
 Add a local-only fake channel/event fixture for CI or review event payloads.
 Map the payload to existing maintenance/CI-watch actions. No default listener.
@@ -353,6 +359,8 @@ Target movement:
 - Reactive channels/events: 8.9 -> 9.55.
 
 ### P25: Package-Facing Knowledge Index
+
+Status: implemented on branch `feat/p25-package-knowledge-index`.
 
 Add a short package-facing knowledge index that points from the runtime plugin
 surface to the current operator docs, gates, and safety contracts without
@@ -374,10 +382,11 @@ Target movement:
 
 ## Decision
 
-Continue with P25 after P24 is merged.
+P25 completes the current remediation loop once focused/full verification is
+recorded.
 
-Reason: P21-P24 made the distinction between development repository, runtime
-plugin, external eval package, native runtime escalation, and pushed-event
-compatibility explicit. P25 should now give the shipped knowledge surface a
-short current index so agents do not have to infer the runtime contract from
-the full historical archive.
+Reason: P21-P25 made the distinction between development repository, runtime
+plugin, external eval package, native runtime escalation, pushed-event
+compatibility, and package-facing knowledge explicit. Future work should focus
+on actual ship-profile packaging exclusions and live opt-in integrations,
+not more default runtime surface.
