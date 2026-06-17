@@ -1,0 +1,34 @@
+{
+  "id": "github-workflow-run-success",
+  "channel": "github-actions",
+  "event_type": "workflow_run",
+  "delivery_id": "evt-ci-pass-001",
+  "payload": {
+    "action": "completed",
+    "repository": {
+      "full_name": "WookLabs/athanor"
+    },
+    "workflow_run": {
+      "id": 1002,
+      "name": "Validate plugin manifest",
+      "conclusion": "success",
+      "html_url": "https://github.com/WookLabs/athanor/actions/runs/1002",
+      "pull_requests": [
+        {
+          "number": 42,
+          "head": {
+            "sha": "def456"
+          }
+        }
+      ]
+    }
+  },
+  "expect": {
+    "normalized_type": "ci.passed",
+    "pr_number": 42,
+    "action_ids": [
+      "record-ci-pass"
+    ],
+    "command_tokens": []
+  }
+}

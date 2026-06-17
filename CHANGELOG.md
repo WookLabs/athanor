@@ -112,6 +112,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   `dynamic-workflow`, and `agent-team` lifecycles while keeping
   `auto_execute: false`, explicit cleanup, and zero irreversible actions by
   default.
+- **Reactive channel fixture gate.** Adds local-only
+  `scripts/gates/reactive_channel_fixture.py` plus
+  `schemas/reactive-channel-fixture-report.schema.json` to normalize fake
+  pushed CI and review payloads into `dispatch-ci-watcher`,
+  `record-ci-pass`, and `plan-review-response` action templates while keeping
+  every listener unregistered, `auto_execute: false`, no default network
+  execution, and zero irreversible actions.
 - **Distribution smoke gate.** Adds
   `scripts/gates/distribution_smoke.py` and a named CI gate that runs
   `claude plugin details` when available, verifies the live 4-agent loader

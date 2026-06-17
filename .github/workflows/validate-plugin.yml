@@ -90,6 +90,9 @@ jobs:
       - name: Native runtime playbook gate
         shell: bash
         run: python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json
+      - name: Reactive channel fixture gate
+        shell: bash
+        run: python scripts/gates/reactive_channel_fixture.py --fixture-root tests/fixtures/reactive_channels --json
       - name: Maintenance profile gate
         shell: bash
         run: python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json

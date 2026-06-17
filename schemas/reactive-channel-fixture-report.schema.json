@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/reactive-channel-fixture-report.schema.json",
+  "title": "Athanor Reactive Channel Fixture Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "fixtures"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "fixtures",
+        "passed",
+        "failed",
+        "auto_listeners",
+        "auto_execute_actions",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "fixtures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auto_listeners": {
+          "const": 0
+        },
+        "auto_execute_actions": {
+          "const": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "plan"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "plan": {
+            "$ref": "#/$defs/plan"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "plan": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "fixture_id",
+        "event",
+        "listener",
+        "actions",
+        "safety",
+        "warnings",
+        "errors"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "fixture_id": {
+          "type": "string"
+        },
+        "event": {
+          "type": "object",
+          "required": [
+            "source",
+            "channel",
+            "event_type",
+            "normalized_type",
+            "delivery_id",
+            "repository",
+            "pr_number"
+          ],
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "channel": {
+              "type": "string"
+            },
+            "event_type": {
+              "type": "string"
+            },
+            "normalized_type": {
+              "type": "string"
+            },
+            "delivery_id": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "pr_number": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "listener": {
+          "type": "object",
+          "required": [
+            "default_enabled",
+            "registered",
+            "mode"
+          ],
+          "properties": {
+            "default_enabled": {
+              "const": false
+            },
+            "registered": {
+              "const": false
+            },
+            "mode": {
+              "const": "fixture-only"
+            }
+          },
+          "additionalProperties": true
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "safety": {
+          "type": "object",
+          "required": [
+            "local_only_fixture",
+            "auto_listeners",
+            "auto_execute_actions",
+            "external_network_default",
+            "external_telemetry",
+            "irreversible_actions"
+          ],
+          "properties": {
+            "local_only_fixture": {
+              "const": true
+            },
+            "auto_listeners": {
+              "const": 0
+            },
+            "auto_execute_actions": {
+              "const": 0
+            },
+            "external_network_default": {
+              "const": false
+            },
+            "external_telemetry": {
+              "const": false
+            },
+            "irreversible_actions": {
+              "const": 0
+            }
+          },
+          "additionalProperties": true
+        },
+        "warnings": {
+          "type": "array"
+        },
+        "errors": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "requires_operator_approval",
+        "auto_execute",
+        "listener_registered",
+        "external_network_default",
+        "external_telemetry",
+        "irreversible_actions",
+        "command_templates",
+        "evidence_required"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "requires_operator_approval": {
+          "type": "boolean"
+        },
+        "auto_execute": {
+          "const": false
+        },
+        "listener_registered": {
+          "const": false
+        },
+        "external_network_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "irreversible_actions": {
+          "const": 0
+        },
+        "command_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

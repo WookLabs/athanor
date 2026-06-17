@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p24-reactive-channel-fixture",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "reactive_channels",
+      "summary": "Add a local-only reactive channel fixture gate that normalizes pushed CI and pull request review payloads into safe manual Athanor action recommendations without registering listeners.",
+      "expected_metrics": [
+        {
+          "metric": "reactive_channel_fixture.status",
+          "direction": "stay",
+          "target": "pass for committed local fake event fixtures"
+        },
+        {
+          "metric": "reactive_channel_fixture.auto_execute_actions",
+          "direction": "stay",
+          "target": "0"
+        },
+        {
+          "metric": "reactive_channels_events_score",
+          "direction": "increase",
+          "target": "at least 9.5/10 after pushed CI/review event fixtures are CI-visible"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/reactive_channel_fixture.py --fixture-root tests/fixtures/reactive_channels --json",
+          "expected": "status pass with auto_listeners 0, auto_execute_actions 0, and irreversible_actions 0"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_reactive_channel_fixture.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P24 tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p24-reactive-channel-fixture"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P24 adds local fake CI/review event fixtures, a read-only mapper, schema, docs, CI gate, and explicit listener/auto-execution safety metadata.",
+          "evidence_refs": [
+            "scripts/gates/reactive_channel_fixture.py",
+            "tests/fixtures/reactive_channels",
+            ".github/workflows/validate-plugin.yml"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and mapper if event normalization proves misleading; follow up with an opt-in authenticated listener only after a separate threat model."
+    }
+  ]
+}

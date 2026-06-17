@@ -1,0 +1,35 @@
+{
+  "id": "github-pr-review-changes-requested",
+  "channel": "github-pr-review",
+  "event_type": "pull_request_review",
+  "delivery_id": "evt-review-001",
+  "payload": {
+    "action": "submitted",
+    "repository": {
+      "full_name": "WookLabs/athanor"
+    },
+    "pull_request": {
+      "number": 42,
+      "html_url": "https://github.com/WookLabs/athanor/pull/42",
+      "head": {
+        "sha": "fedcba"
+      }
+    },
+    "review": {
+      "id": 777,
+      "state": "changes_requested",
+      "html_url": "https://github.com/WookLabs/athanor/pull/42#pullrequestreview-777"
+    }
+  },
+  "expect": {
+    "normalized_type": "review.changes_requested",
+    "pr_number": 42,
+    "action_ids": [
+      "plan-review-response"
+    ],
+    "command_tokens": [
+      "/athanor:review",
+      "gh pr view 42 --comments"
+    ]
+  }
+}

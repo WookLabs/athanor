@@ -513,6 +513,33 @@ def test_unreleased_documents_native_runtime_playbook():
     )
 
 
+def test_ci_runs_reactive_channel_fixture_gate():
+    """P24 reactive channel fixture should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Reactive channel fixture gate" in workflow
+    assert "python scripts/gates/reactive_channel_fixture.py" in workflow
+    assert "--fixture-root tests/fixtures/reactive_channels --json" in workflow
+
+
+def test_unreleased_documents_reactive_channel_fixture():
+    """The Unreleased story must name the P24 reactive channel fixture gate."""
+    section = _unreleased_section()
+    required = [
+        "Reactive channel fixture gate",
+        "scripts/gates/reactive_channel_fixture.py",
+        "local-only",
+        "dispatch-ci-watcher",
+        "plan-review-response",
+        "auto_execute",
+        "listener",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P24 reactive channel fixture; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")

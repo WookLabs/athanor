@@ -1,0 +1,37 @@
+{
+  "id": "github-workflow-run-failure",
+  "channel": "github-actions",
+  "event_type": "workflow_run",
+  "delivery_id": "evt-ci-fail-001",
+  "payload": {
+    "action": "completed",
+    "repository": {
+      "full_name": "WookLabs/athanor"
+    },
+    "workflow_run": {
+      "id": 1001,
+      "name": "Validate plugin manifest",
+      "conclusion": "failure",
+      "html_url": "https://github.com/WookLabs/athanor/actions/runs/1001",
+      "pull_requests": [
+        {
+          "number": 42,
+          "head": {
+            "sha": "abc123"
+          }
+        }
+      ]
+    }
+  },
+  "expect": {
+    "normalized_type": "ci.failed",
+    "pr_number": 42,
+    "action_ids": [
+      "dispatch-ci-watcher"
+    ],
+    "command_tokens": [
+      "@athanor-ci-watcher",
+      "gh pr checks 42 --watch"
+    ]
+  }
+}
