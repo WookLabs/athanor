@@ -86,7 +86,7 @@ git commit -m "test: cover live command trace emitters"
 - Modify: `scripts/evals/workflow_trace.py`
 - Modify: `schemas/workflow-trace.schema.json`
 
-- [ ] **Step 1: Preserve optional metadata in `validate_record`**
+- [x] **Step 1: Preserve optional metadata in `validate_record`**
 
 Extend `workflow_trace.py` with helpers:
 
@@ -136,7 +136,7 @@ Then, after the existing `normalized` dict is built, preserve:
     _optional_non_negative_int(record, normalized, "duration_ms")
 ```
 
-- [ ] **Step 2: Extend JSON schema**
+- [x] **Step 2: Extend JSON schema**
 
 Add optional properties:
 
@@ -152,7 +152,7 @@ Add optional properties:
 Keep `additionalProperties: false` and keep all existing required fields
 unchanged.
 
-- [ ] **Step 3: Run focused trace tests**
+- [x] **Step 3: Run focused trace tests**
 
 Run:
 
@@ -166,7 +166,7 @@ Expected:
   implemented.
 - Existing workflow trace tests continue to pass.
 
-- [ ] **Step 4: Commit metadata extension**
+- [x] **Step 4: Commit metadata extension**
 
 ```bash
 git add scripts/evals/workflow_trace.py schemas/workflow-trace.schema.json

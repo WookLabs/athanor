@@ -25,6 +25,7 @@ REQUIRED_FIELDS = {
     "status",
     "trace_id",
 }
+OPTIONAL_STRING_FIELDS = {"command", "session_id", "timestamp", "worker_id"}
 
 
 def _non_empty_string(value: Any, field: str) -> str:
@@ -37,6 +38,42 @@ def _positive_int(value: Any, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(f"{field} must be a positive integer")
     return value
+
+
+def _non_negative_int(value: Any, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{field} must be a non-negative integer")
+    return value
+
+
+def _optional_non_empty_string(
+    record: dict[str, Any],
+    normalized: dict[str, Any],
+    field: str,
+) -> None:
+    if field not in record:
+        return
+    normalized[field] = _non_empty_string(record.get(field), field)
+
+
+def _optional_positive_int(
+    record: dict[str, Any],
+    normalized: dict[str, Any],
+    field: str,
+) -> None:
+    if field not in record:
+        return
+    normalized[field] = _positive_int(record.get(field), field)
+
+
+def _optional_non_negative_int(
+    record: dict[str, Any],
+    normalized: dict[str, Any],
+    field: str,
+) -> None:
+    if field not in record:
+        return
+    normalized[field] = _non_negative_int(record.get(field), field)
 
 
 def validate_record(record: dict[str, Any]) -> dict[str, Any]:
@@ -78,6 +115,10 @@ def validate_record(record: dict[str, Any]) -> dict[str, Any]:
         "status": status,
         "message": _non_empty_string(record.get("message"), "message"),
     }
+    for field in sorted(OPTIONAL_STRING_FIELDS):
+        _optional_non_empty_string(record, normalized, field)
+    _optional_positive_int(record, normalized, "parent_seq")
+    _optional_non_negative_int(record, normalized, "duration_ms")
     if references:
         normalized["references"] = references
     if evidence:
@@ -125,7 +166,25 @@ class TraceWriter:
         message: str,
         references: list[str] | None = None,
         evidence: dict[str, Any] | None = None,
+        timestamp: str | None = None,
+        command: str | None = None,
+        session_id: str | None = None,
+        worker_id: str | None = None,
+        parent_seq: int | None = None,
+        duration_ms: int | None = None,
     ) -> dict[str, Any]:
+        optional_metadata: dict[str, Any] = {}
+        for key, value in {
+            "timestamp": timestamp,
+            "command": command,
+            "session_id": session_id,
+            "worker_id": worker_id,
+            "parent_seq": parent_seq,
+            "duration_ms": duration_ms,
+        }.items():
+            if value is not None:
+                optional_metadata[key] = value
+
         record = validate_record(
             {
                 "schema_version": 1,
@@ -138,6 +197,7 @@ class TraceWriter:
                 "message": message,
                 "references": [] if references is None else references,
                 "evidence": {} if evidence is None else evidence,
+                **optional_metadata,
             }
         )
         self.path.parent.mkdir(parents=True, exist_ok=True)
