@@ -87,6 +87,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   Athanor command leaders can write `.athanor/traces` JSONL records for
   `workflow.started`, worker/evidence events, escalations, and
   `workflow.finished` without enabling new default hooks or external telemetry.
+- **OTel-style trace export adapter.** Adds privacy-safe local JSON export via
+  `scripts/evals/export_otel_trace.py` and
+  `schemas/otel-trace-export.schema.json`, mapping Athanor workflow traces to
+  GenAI-style attributes such as `gen_ai.operation.name` without adding an
+  OpenTelemetry SDK dependency, hooks, collector export, or raw
+  message/evidence/reference content by default.
 
 ### Changed
 

@@ -279,3 +279,21 @@ def test_unreleased_documents_live_command_trace_emitter():
         "CHANGELOG [Unreleased] must explain P13 live command trace emission; "
         f"missing: {missing}"
     )
+
+
+def test_unreleased_documents_otel_trace_export_adapter():
+    """The Unreleased story must name the P14 local OTel trace export adapter."""
+    section = _unreleased_section()
+    required = [
+        "OTel-style trace export adapter",
+        "scripts/evals/export_otel_trace.py",
+        "schemas/otel-trace-export.schema.json",
+        "gen_ai.operation.name",
+        "privacy-safe",
+        "local JSON",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P14 OTel-style trace export; "
+        f"missing: {missing}"
+    )

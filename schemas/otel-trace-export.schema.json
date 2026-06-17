@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Athanor OTel-style trace export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_schema",
+    "exporter",
+    "otel_semconv",
+    "trace_id",
+    "privacy",
+    "spans"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "source_schema": {
+      "const": "athanor.workflow_trace.v1"
+    },
+    "exporter": {
+      "const": "athanor-otel-trace-export"
+    },
+    "otel_semconv": {
+      "const": "gen_ai.development.local"
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message_content",
+        "evidence_content",
+        "reference_content"
+      ],
+      "properties": {
+        "message_content": {
+          "type": "string",
+          "enum": ["included", "redacted"]
+        },
+        "evidence_content": {
+          "type": "string",
+          "enum": ["included", "redacted"]
+        },
+        "reference_content": {
+          "type": "string",
+          "enum": ["included", "redacted"]
+        }
+      }
+    },
+    "spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "span_id",
+          "trace_id",
+          "name",
+          "kind",
+          "status",
+          "attributes"
+        ],
+        "properties": {
+          "span_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$"
+          },
+          "parent_span_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$"
+          },
+          "trace_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "INTERNAL"
+          },
+          "status": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["ERROR", "OK"]
+              }
+            }
+          },
+          "start_time": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attributes": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

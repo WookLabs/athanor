@@ -1,9 +1,10 @@
 # Workflow Trace Evals
 
 P6 adds a local deterministic eval harness for Athanor workflow behavior. P13
-adds a local live command emitter and command-skill lifecycle anchors. The trace
-contract stays local-first: no external telemetry, new runtime hooks, or model
-grader is required.
+adds a local live command emitter and command-skill lifecycle anchors. P14 adds
+a local OTel-style export adapter over those traces. The trace contract stays
+local-first: no external telemetry, new runtime hooks, OpenTelemetry SDK, or
+model grader is required.
 
 ## Trace Records
 
@@ -86,6 +87,29 @@ anchors for `workflow.started`, command-specific dispatch/gate events, and
 `workflow.finished`. The emitter appends one record per invocation and preserves
 optional command/session metadata through `TraceWriter`.
 
+## OTel-Style Local Export
+
+P14 adds `scripts/evals/export_otel_trace.py` for converting Athanor JSONL
+traces into a local OTel GenAI-style JSON envelope:
+
+```bash
+python scripts/evals/export_otel_trace.py \
+  --trace-path .athanor/traces/2026-06-17-001.jsonl \
+  --output .athanor/traces/2026-06-17-001.otel.json \
+  --json
+```
+
+The exporter maps stable Athanor fields into attributes such as
+`gen_ai.operation.name`, `gen_ai.workflow.name`, `gen_ai.agent.name`,
+`gen_ai.conversation.id`, `gen_ai.tool.name`, and
+`gen_ai.evaluation.score.label` while keeping local-only details in the
+`athanor.*` namespace.
+
+Raw `message`, `evidence`, and `references` are redacted by default. Use
+`--include-message`, `--include-evidence`, and `--include-references` only when
+local policy allows raw trace content in the exported file. See
+`docs/otel-trace-export.md` and `schemas/otel-trace-export.schema.json`.
+
 ## Scenario Fixtures
 
 Scenario fixtures live under `tests/fixtures/workflow_evals/` and follow
@@ -133,5 +157,6 @@ before the broad pytest suite.
 
 P13 gives live `/athanor:*` command skills a local trace emitter and lifecycle
 anchors, but it does not claim exhaustive span coverage for every nested worker
-or subprocess. External telemetry export, OpenTelemetry vocabulary mapping, and
-hook-level automatic capture remain separate follow-up work.
+or subprocess. P14 maps captured traces to a local OTel-style JSON envelope, but
+it still does not perform OTLP export, network telemetry, SDK instrumentation,
+or hook-level automatic capture.
