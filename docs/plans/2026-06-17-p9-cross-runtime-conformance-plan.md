@@ -258,7 +258,7 @@ git commit -m "feat: add cross-runtime conformance gate"
 - Modify: `tests/test_regression_runtime_conformance.py`
 - Modify: `scripts/gates/runtime_conformance.py` only if the tests expose missing diagnostics.
 
-- [ ] **Step 1: Add failing drift tests using temp repos**
+- [x] **Step 1: Add failing drift tests using temp repos**
 
 Add tests for these cases:
 
@@ -301,7 +301,7 @@ Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: FAIL until the CLI reports these specific check IDs.
 
-- [ ] **Step 2: Make diagnostics stable**
+- [x] **Step 2: Make diagnostics stable**
 
 If needed, adjust the CLI so failures include these check IDs:
 
@@ -309,13 +309,13 @@ If needed, adjust the CLI so failures include these check IDs:
 - `hooks.enabled_runtime_manifest`
 - `codex.forbidden_manifest_keys`
 
-- [ ] **Step 3: Re-run runtime conformance tests**
+- [x] **Step 3: Re-run runtime conformance tests**
 
 Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/gates/runtime_conformance.py tests/test_regression_runtime_conformance.py

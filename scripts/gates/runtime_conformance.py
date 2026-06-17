@@ -52,6 +52,7 @@ def _check(
     *,
     expected: Any = None,
     actual: Any = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     item: dict[str, Any] = {
         "id": check_id,
@@ -62,7 +63,16 @@ def _check(
         item["expected"] = expected
     if actual is not None:
         item["actual"] = actual
+    if extra:
+        item.update(extra)
     checks.append(item)
+
+
+def _list_diff(expected: list[Any], actual: list[Any]) -> dict[str, Any]:
+    return {
+        "missing": [item for item in expected if item not in actual],
+        "unexpected": [item for item in actual if item not in expected],
+    }
 
 
 def _manifest_hook_triples(hooks_manifest: dict[str, Any]) -> list[dict[str, str]]:
@@ -163,6 +173,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "Claude manifest does not duplicate runtime hook or app surfaces",
         expected=[],
         actual=claude_present_forbidden,
+        extra={"missing": [], "unexpected": claude_present_forbidden},
     )
 
     expected_claude_skills = sorted(
@@ -177,6 +188,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "Claude skill directories match runtime contract",
         expected=expected_claude_skills,
         actual=actual_claude_skills,
+        extra=_list_diff(expected_claude_skills, actual_claude_skills),
     )
 
     expected_codex_name = str(codex_contract["name"])
@@ -201,6 +213,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "Codex companion manifest stays hook/MCP/app free",
         expected=[],
         actual=codex_present_forbidden,
+        extra={"missing": [], "unexpected": codex_present_forbidden},
     )
 
     expected_codex_skills = sorted(str(skill) for skill in codex_contract.get("skills", []))
@@ -212,6 +225,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "Codex companion skill directories match runtime contract",
         expected=expected_codex_skills,
         actual=actual_codex_skills,
+        extra=_list_diff(expected_codex_skills, actual_codex_skills),
     )
 
     catalog_triples = _catalog_enabled_triples(hook_catalog)
@@ -225,6 +239,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "Enabled catalog events match runtime contract",
         expected=expected_events,
         actual=actual_events,
+        extra=_list_diff(expected_events, actual_events),
     )
     _check(
         checks,
@@ -233,6 +248,7 @@ def build_report(repo_root: Path, contract_path: Path) -> tuple[dict[str, Any], 
         "hooks/hooks.json exactly matches enabled catalog hook entries",
         expected=catalog_triples,
         actual=manifest_triples,
+        extra=_list_diff(catalog_triples, manifest_triples),
     )
 
     errors = sum(1 for check in checks if check["status"] == "fail")
