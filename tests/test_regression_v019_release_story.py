@@ -376,3 +376,28 @@ def test_unreleased_documents_trace_memory_quality_gate():
         "CHANGELOG [Unreleased] must explain P17 trace-memory quality; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_harness_decision_ledger_gate():
+    """P18 harness decision ledger should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Harness decision ledger gate" in workflow
+    assert "python scripts/gates/harness_decision_ledger.py --json" in workflow
+
+
+def test_unreleased_documents_harness_decision_ledger():
+    """The Unreleased story must name the P18 harness decision ledger."""
+    section = _unreleased_section()
+    required = [
+        "Harness decision ledger",
+        "docs/harness-decisions/*.json",
+        "scripts/gates/harness_decision_ledger.py",
+        "expected metrics",
+        "observed results",
+        "rollback/follow-up decisions",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P18 harness decision ledger; "
+        f"missing: {missing}"
+    )

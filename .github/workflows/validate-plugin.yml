@@ -60,6 +60,9 @@ jobs:
       - name: Trace-memory quality gate
         shell: bash
         run: python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json
+      - name: Harness decision ledger gate
+        shell: bash
+        run: python scripts/gates/harness_decision_ledger.py --json
       - name: Durable loop fixture gate
         shell: bash
         run: python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json

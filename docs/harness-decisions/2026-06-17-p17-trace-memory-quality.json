@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p17-trace-memory-quality",
+      "date": "2026-06-17",
+      "status": "observed",
+      "change_type": "memory",
+      "summary": "Add read-only trace-memory quality gate.",
+      "expected_metrics": [
+        {
+          "metric": "trace_memory_quality.violations",
+          "direction": "stay_or_decrease",
+          "target": "0 violations on committed fixture gate"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json",
+          "expected": "status pass with 0 violations"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "Fixture gate passed with 0 violations and 1 decay warning.",
+          "evidence_refs": [
+            "tests/test_regression_trace_memory_quality.py",
+            "docs/trace-memory-quality.md"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "If the gate becomes noisy, keep it fixture-scoped in CI and revise the evidence contract before applying it to local user lessons."
+    }
+  ]
+}

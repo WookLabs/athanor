@@ -110,6 +110,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   lesson promotion, stale decay, quarantine, and with/without lesson
   comparisons are evidence-backed before memory can be treated as
   self-improving.
+- **Harness decision ledger.** Adds committed `docs/harness-decisions/*.json`
+  records plus `scripts/gates/harness_decision_ledger.py` so harness changes
+  declare expected metrics, verification commands, observed results, and
+  rollback/follow-up decisions before the harness can claim self-improvement.
 
 ### Changed
 

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p18-harness-decision-ledger",
+      "date": "2026-06-17",
+      "status": "observed",
+      "change_type": "harness",
+      "summary": "Add committed harness decision ledger and validation gate.",
+      "expected_metrics": [
+        {
+          "metric": "harness_decision_ledger.errors",
+          "direction": "stay_or_decrease",
+          "target": "0 errors on committed ledger gate"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "status pass with 0 errors"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "Focused P18 tests and the committed ledger gate passed with 0 errors.",
+          "evidence_refs": [
+            "tests/test_regression_harness_decision_ledger.py",
+            "docs/harness-decision-ledger.md"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "If ledger upkeep becomes noisy, keep the gate but narrow the CI requirement to observed harness changes only."
+    }
+  ]
+}
