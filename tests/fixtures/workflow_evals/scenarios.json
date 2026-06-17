@@ -277,6 +277,103 @@
           "trace_id": "scenario-lfg-goal"
         }
       ]
+    },
+    {
+      "description": "A durable lfg-goal loop stop records no-progress decision and escalates before finishing with concern.",
+      "graders": [
+        {
+          "id": "loop-decision-recorded",
+          "kind": "require_event",
+          "match": {
+            "event_type": "loop.decision",
+            "phase": "lfg-goal",
+            "status": "failure"
+          }
+        },
+        {
+          "id": "loop-decision-references-state",
+          "kind": "require_reference",
+          "match": {
+            "event_type": "loop.decision"
+          },
+          "reference": "state.json"
+        },
+        {
+          "id": "escalation-after-loop-decision",
+          "kind": "require_order",
+          "before": {
+            "event_type": "loop.decision"
+          },
+          "after": {
+            "event_type": "escalation.required"
+          }
+        },
+        {
+          "id": "no-progress-escalation-before-finish",
+          "kind": "require_order",
+          "before": {
+            "event_type": "escalation.required"
+          },
+          "after": {
+            "event_type": "workflow.finished"
+          }
+        },
+        {
+          "id": "no-false-success",
+          "kind": "forbid_event",
+          "match": {
+            "event_type": "workflow.finished",
+            "status": "pass"
+          }
+        }
+      ],
+      "id": "durable-loop-no-progress-escalates",
+      "min_score": 1.0,
+      "trace": [
+        {
+          "actor": "leader",
+          "event_type": "workflow.started",
+          "message": "durable lfg-goal loop resumed",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 1,
+          "status": "started",
+          "trace_id": "scenario-durable-loop"
+        },
+        {
+          "actor": "gate",
+          "event_type": "loop.decision",
+          "message": "stop_no_progress after repeated no-progress evidence",
+          "phase": "lfg-goal",
+          "references": [
+            ".athanor/goals/36470e54/state.json"
+          ],
+          "schema_version": 1,
+          "seq": 2,
+          "status": "failure",
+          "trace_id": "scenario-durable-loop"
+        },
+        {
+          "actor": "leader",
+          "event_type": "escalation.required",
+          "message": "leader must surface durable loop no-progress stop",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 3,
+          "status": "escalated",
+          "trace_id": "scenario-durable-loop"
+        },
+        {
+          "actor": "leader",
+          "event_type": "workflow.finished",
+          "message": "lfg-goal durable loop stopped with concern",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 4,
+          "status": "concern",
+          "trace_id": "scenario-durable-loop"
+        }
+      ]
     }
   ]
 }

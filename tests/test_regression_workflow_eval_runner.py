@@ -210,5 +210,6 @@ def test_committed_workflow_eval_scenarios_pass() -> None:
         "work-evidence-happy-path",
         "work-missing-evidence-escalates",
         "lfg-goal-receipt-loop",
+        "durable-loop-no-progress-escalates",
     }
     assert all(item["score"] == 1.0 for item in report["scenarios"])

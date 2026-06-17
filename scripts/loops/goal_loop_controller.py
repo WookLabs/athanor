@@ -70,6 +70,7 @@ REQUIRED_FIELDS = {
 }
 LEGACY_OPTIONAL_FIELDS = {"schema_version", "cycle_phase"}
 GOAL_ID_RE = re.compile(r"^[0-9a-f]{8}$")
+_UNCHANGED = object()
 
 
 class LoopStateError(ValueError):
@@ -344,8 +345,8 @@ def _decision(
     action: str,
     status: str,
     reason: str,
-    next_cycle_state: str | None = None,
-    next_cycle_phase: str | None = None,
+    next_cycle_state: Any = _UNCHANGED,
+    next_cycle_phase: Any = _UNCHANGED,
     extra_evidence: dict[str, Any] | None = None,
 ) -> LoopDecision:
     if status not in DECISION_STATUSES:
@@ -371,10 +372,10 @@ def _decision(
         status=status,
         reason=reason,
         next_cycle_state=state.cycle_state
-        if next_cycle_state is None
+        if next_cycle_state is _UNCHANGED
         else next_cycle_state,
         next_cycle_phase=state.cycle_phase
-        if next_cycle_phase is None
+        if next_cycle_phase is _UNCHANGED
         else next_cycle_phase,
         references=evidence.references,
         evidence=decision_evidence,

@@ -10,6 +10,7 @@ from scripts.evals.workflow_trace import load_trace
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "scripts" / "loops" / "run_goal_loop_controller.py"
+FIXTURE_RUNNER = REPO_ROOT / "scripts" / "loops" / "run_goal_loop_fixtures.py"
 
 
 def _write_json(path: Path, data: dict) -> None:
@@ -153,3 +154,29 @@ def test_durable_loop_evidence_schema_defines_eval_status() -> None:
     assert schema["properties"]["schema_version"]["const"] == 1
     assert "eval_status" in schema["required"]
     assert "missing" in schema["properties"]["eval_status"]["enum"]
+
+
+def test_committed_durable_loop_fixtures_pass() -> None:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(FIXTURE_RUNNER),
+            "--fixture-root",
+            str(REPO_ROOT / "tests" / "fixtures" / "durable_loops"),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    report = json.loads(proc.stdout)
+    assert report["status"] == "pass"
+    assert {item["id"] for item in report["scenarios"]} == {
+        "resume-after-receipt-validated",
+        "terminal-goal-complete-refuses-reentry",
+        "max-iterations-stops",
+        "no-progress-threshold-stops",
+        "missing-eval-evidence-escalates",
+    }

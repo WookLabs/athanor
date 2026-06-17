@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "id": "resume-after-receipt-validated",
+      "description": "A cycle paused after receipt validation resumes at Tier 1.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_in_progress",
+        "cycle_phase": "receipt_validated",
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "validator_status": "all_valid",
+        "tier1_passed": true,
+        "tier2_goal_met": false,
+        "tier3_user_response": null,
+        "progress_made": true,
+        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"]
+      },
+      "expected": {
+        "decision": {
+          "action": "run_tier1_check",
+          "status": "pass",
+          "next_cycle_state": "cycle_n_in_progress",
+          "next_cycle_phase": "receipt_validated"
+        },
+        "state": {
+          "cycle_state": "cycle_n_in_progress",
+          "cycle_phase": "receipt_validated",
+          "no_progress_count": 0
+        }
+      }
+    },
+    {
+      "id": "terminal-goal-complete-refuses-reentry",
+      "description": "A completed goal is terminal and refuses re-entry.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "goal_complete",
+        "cycle_phase": null,
+        "current_cycle": 3,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C003-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": {"judge_a": {"goal_met": true}, "judge_b": {"goal_met": true}},
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "progress_made": true,
+        "references": []
+      },
+      "expected": {
+        "decision": {
+          "action": "refuse_terminal_state",
+          "status": "skipped",
+          "next_cycle_state": "goal_complete",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "goal_complete",
+          "cycle_phase": null
+        }
+      }
+    },
+    {
+      "id": "max-iterations-stops",
+      "description": "A cycle complete at the hard iteration cap aborts with a max-iterations stop.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 5,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C005-lfg-receipt.md",
+        "last_validator_status": "completed_with_residuals",
+        "tier2_last_verdict": {"judge_a": {"goal_met": false}, "judge_b": {"goal_met": false}},
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "progress_made": true,
+        "references": [".athanor/goals/36470e54/receipts/C005-lfg-receipt.md"]
+      },
+      "expected": {
+        "decision": {
+          "action": "stop_max_iterations",
+          "status": "failure",
+          "next_cycle_state": "aborted",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "aborted",
+          "cycle_phase": null,
+          "stop_reason": "stop_max_iterations"
+        }
+      }
+    },
+    {
+      "id": "no-progress-threshold-stops",
+      "description": "A second no-progress cycle aborts with stop_no_progress.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_in_progress",
+        "cycle_phase": "not_started",
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C001-lfg-receipt.md",
+        "last_validator_status": "completed_with_residuals",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 1,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "progress_made": false,
+        "references": [".athanor/goals/36470e54/receipts/C001-lfg-receipt.md"]
+      },
+      "expected": {
+        "decision": {
+          "action": "stop_no_progress",
+          "status": "failure",
+          "next_cycle_state": "aborted",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "aborted",
+          "cycle_phase": null,
+          "no_progress_count": 2,
+          "stop_reason": "stop_no_progress"
+        }
+      }
+    },
+    {
+      "id": "missing-eval-evidence-escalates",
+      "description": "An evidence-gated transition refuses to advance when eval evidence is missing.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_in_progress",
+        "cycle_phase": "tier1_checked",
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "missing",
+        "progress_made": true,
+        "references": []
+      },
+      "expected": {
+        "decision": {
+          "action": "require_eval_evidence",
+          "status": "escalated",
+          "next_cycle_state": "cycle_n_in_progress",
+          "next_cycle_phase": "tier1_checked"
+        },
+        "state": {
+          "cycle_state": "cycle_n_in_progress",
+          "cycle_phase": "tier1_checked",
+          "stop_reason": null
+        }
+      }
+    }
+  ]
+}
