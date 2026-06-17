@@ -83,6 +83,14 @@ def test_catalog_documentation_names_every_catalog_entry():
         assert f"`{entry['id']}`" in doc
 
 
+def test_catalog_documentation_describes_executable_performance_gate():
+    doc = DOC_PATH.read_text(encoding="utf-8")
+    assert "performance_budget_ms" in doc
+    assert "scripts/gates/check_hook_performance_budget.py" in doc
+    assert "enabled" in doc
+    assert "CI" in doc
+
+
 def test_safety_corpus_catalog_entry_is_disabled_or_observe_only():
     entries = {entry["id"]: entry for entry in _catalog_entries()}
     entry = entries["pretool-safety-pattern-corpus"]

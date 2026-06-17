@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ALLOWED_EVENTS = {"Stop", "PreToolUse", "PostToolUse", "UserPromptSubmit"}
+CATALOG_PATH = REPO_ROOT / "hooks" / "catalog.json"
 REPLAYABLE_EVENTS = {"Stop", "PreToolUse", "PostToolUse"}
 
 _WINDOWS_HOME = re.compile(r"\b[A-Za-z]:\\Users\\[^\\/\s\"']+((?:\\[^\\\s\"']+)*)")
@@ -101,6 +101,33 @@ def _load_index(fixture_root: Path) -> dict:
     return parsed
 
 
+def _load_catalog(path: Path = CATALOG_PATH) -> dict:
+    parsed = _load_json(path)
+    if not isinstance(parsed, dict):
+        raise ValueError("hook catalog root must be an object")
+    hooks = parsed.get("hooks")
+    if not isinstance(hooks, list):
+        raise ValueError("hook catalog must contain hooks[]")
+    return parsed
+
+
+def _capture_only_events(catalog_path: Path = CATALOG_PATH) -> set[str]:
+    catalog = _load_catalog(catalog_path)
+    events: set[str] = set()
+    for entry in catalog["hooks"]:
+        if not isinstance(entry, dict):
+            continue
+        event = entry.get("event")
+        runtime_default = entry.get("runtime_default")
+        if isinstance(event, str) and runtime_default == "capture-only":
+            events.add(event)
+    return events
+
+
+def _allowed_events() -> set[str]:
+    return REPLAYABLE_EVENTS | _capture_only_events()
+
+
 def import_fixture(
     *,
     fixture_root: Path,
@@ -109,13 +136,10 @@ def import_fixture(
     payload_path: Path,
     expected_path: Path,
 ) -> dict:
-    if event not in ALLOWED_EVENTS:
+    allowed_events = _allowed_events()
+    if event not in allowed_events:
         raise ValueError(f"unsupported event {event!r}")
-    if event not in REPLAYABLE_EVENTS:
-        raise ValueError(
-            f"event {event!r} is not replayable yet; keep it in the spike "
-            "capture workflow until a replay hook exists"
-        )
+    replayable = event in REPLAYABLE_EVENTS
     index = _load_index(fixture_root)
     fixtures = index["fixtures"]
     if any(item.get("id") == fixture_id for item in fixtures if isinstance(item, dict)):
@@ -134,6 +158,7 @@ def import_fixture(
     fixture = {
         "id": fixture_id,
         "event": event,
+        "replayable": replayable,
         "source_level": "live-redacted",
         "redaction": {
             "applied": bool(applied_rules),
@@ -158,7 +183,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=REPO_ROOT / "tests" / "fixtures" / "hooks",
     )
     parser.add_argument("--id", required=True, help="Unique fixture id.")
-    parser.add_argument("--event", required=True, choices=sorted(ALLOWED_EVENTS))
+    parser.add_argument("--event", required=True, choices=sorted(_allowed_events()))
     parser.add_argument("--payload", required=True, type=Path)
     parser.add_argument("--expected-json", required=True, type=Path)
     return parser.parse_args(argv)

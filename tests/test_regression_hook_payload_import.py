@@ -171,7 +171,9 @@ def test_import_script_rejects_duplicate_fixture_id(tmp_path: Path) -> None:
     assert "duplicate fixture id" in proc.stderr
 
 
-def test_import_script_rejects_userpromptsubmit_until_replay_exists(tmp_path: Path) -> None:
+def test_import_script_accepts_capture_only_event_as_non_replayable(
+    tmp_path: Path,
+) -> None:
     fixture_root = tmp_path / "fixtures" / "hooks"
     _write_json(
         fixture_root / "index.json",
@@ -181,9 +183,17 @@ def test_import_script_rejects_userpromptsubmit_until_replay_exists(tmp_path: Pa
             "fixtures": [],
         },
     )
-    payload_path = tmp_path / "ups-payload.json"
+    payload_path = tmp_path / "sessionstart-payload.json"
     expected_path = tmp_path / "expected.json"
-    _write_json(payload_path, {"hook_event_name": "UserPromptSubmit", "prompt": "hello"})
+    _write_json(
+        payload_path,
+        {
+            "hook_event_name": "SessionStart",
+            "source": "startup",
+            "cwd": "C:\\Users\\alice\\work\\secret_repo",
+            "session_id": "capture-only-session",
+        },
+    )
     _write_json(expected_path, {"exit_code": 0, "evidence": {}})
 
     proc = subprocess.run(
@@ -193,9 +203,9 @@ def test_import_script_rejects_userpromptsubmit_until_replay_exists(tmp_path: Pa
             "--fixture-root",
             str(fixture_root),
             "--id",
-            "live-ups-shape",
+            "live-sessionstart-shape",
             "--event",
-            "UserPromptSubmit",
+            "SessionStart",
             "--payload",
             str(payload_path),
             "--expected-json",
@@ -206,8 +216,14 @@ def test_import_script_rejects_userpromptsubmit_until_replay_exists(tmp_path: Pa
         cwd=str(REPO_ROOT),
     )
 
-    assert proc.returncode == 1
-    assert "not replayable" in proc.stderr
+    assert proc.returncode == 0, proc.stderr
+    index = json.loads((fixture_root / "index.json").read_text(encoding="utf-8"))
+    fixture = index["fixtures"][0]
+    assert fixture["event"] == "SessionStart"
+    assert fixture["source_level"] == "live-redacted"
+    assert fixture["replayable"] is False
+    assert fixture["redaction"]["review_required"] is True
+    assert fixture["payload"]["cwd"] == "<REDACTED_HOME>/work/secret_repo"
 
 
 def test_corpus_doc_documents_live_redaction_import_workflow() -> None:

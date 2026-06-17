@@ -76,11 +76,17 @@ must still inspect the generated fixture, confirm the expected evidence subset
 is minimal, add capture provenance when committing the fixture, and run the
 replay gate before committing it.
 
-Only replayable events can be imported into the live-redacted fixture corpus:
-Stop, PreToolUse, and PostToolUse. Capture-first lifecycle events such as
-SessionStart, UserPromptSubmit, PreCompact, PermissionRequest,
-PostToolUseFailure, SubagentStop, and FileChanged remain spike-only until a
-registered replay hook exists for those events.
+Replayable events are imported with `replayable: true`: Stop, PreToolUse, and
+PostToolUse. Cataloged `capture-only` events such as SessionStart,
+UserPromptSubmit, PreCompact, PermissionRequest, PostToolUseFailure,
+SubagentStop, and FileChanged may also be imported after manual review, but the
+importer marks them `replayable: false`. This lets the corpus retain
+live-redacted shape evidence without pretending a replay handler or runtime
+policy hook exists.
+
+Do not fabricate live capture-only fixtures. A `live-redacted` fixture must
+come from an opt-in capture session, be manually reduced, and keep
+`redaction.review_required: true` plus the applied rules before it is committed.
 
 ## Replay
 
@@ -99,6 +105,11 @@ obvious API tokens, host-local home paths, Claude project slugs, private GitHub
 image URLs, or private key blocks fail the gate. `live-redacted` fixtures must
 include redaction metadata with `review_required: true` and a `rules` list, so a
 manually edited fixture cannot silently bypass provenance review.
+
+Capture-only fixtures are safety-validated before replay decisions. If a safe
+fixture is marked `replayable: false` and its event is still cataloged as
+`capture-only`, replay reports it as `skipped` with an explicit capture-only
+reason. Unsafe capture-only fixtures still fail the gate.
 
 ## Strict Deferral
 

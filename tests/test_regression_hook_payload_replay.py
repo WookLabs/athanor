@@ -20,7 +20,18 @@ HOOKS_JSON = REPO_ROOT / "hooks" / "hooks.json"
 CORPUS_DOC = REPO_ROOT / "docs" / "hook-payload-corpus.md"
 ROADMAP = REPO_ROOT / "docs" / "ROADMAP.md"
 
-ALLOWED_EVENTS = {"Stop", "PreToolUse", "PostToolUse", "UserPromptSubmit"}
+ALLOWED_EVENTS = {
+    "FileChanged",
+    "PermissionRequest",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PreCompact",
+    "PreToolUse",
+    "SessionStart",
+    "Stop",
+    "SubagentStop",
+    "UserPromptSubmit",
+}
 ALLOWED_SOURCE_LEVELS = {"synthetic", "live-redacted", "summary-only"}
 FORBIDDEN_FIXTURE_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
@@ -225,6 +236,47 @@ def test_replay_rejects_fixture_with_forbidden_secret_tokens(tmp_path):
     assert "forbidden fixture token" in report["results"][0]["errors"][0]
 
 
+def test_replay_skips_safe_capture_only_non_replayable_fixture(tmp_path):
+    fixture_root = tmp_path / "fixtures" / "hooks"
+    _write_temp_index(
+        fixture_root,
+        [
+            {
+                "id": "live-sessionstart-shape",
+                "event": "SessionStart",
+                "source_level": "live-redacted",
+                "replayable": False,
+                "redaction": {
+                    "applied": True,
+                    "review_required": True,
+                    "rules": ["home_path"],
+                },
+                "payload": {
+                    "hook_event_name": "SessionStart",
+                    "cwd": "<REDACTED_HOME>/work/secret_repo",
+                    "session_id": "capture-only-session",
+                },
+                "expected": {"exit_code": 0, "evidence": {}},
+            }
+        ],
+    )
+
+    proc = subprocess.run(
+        [sys.executable, str(REPLAY_SCRIPT), "--fixture-root", str(fixture_root), "--json"],
+        text=True,
+        capture_output=True,
+        cwd=str(REPO_ROOT),
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    report = json.loads(proc.stdout)
+    assert report["status"] == "pass"
+    skipped = [item for item in report["results"] if item["status"] == "skipped"]
+    assert len(skipped) == 1
+    assert skipped[0]["event"] == "SessionStart"
+    assert "capture-only" in skipped[0]["reason"]
+
+
 def test_hook_fixtures_do_not_contain_obvious_secret_or_local_path_tokens():
     raw = INDEX.read_text(encoding="utf-8")
     for pattern in FORBIDDEN_FIXTURE_PATTERNS:
@@ -244,6 +296,9 @@ def test_corpus_doc_records_fixture_provenance_and_strict_deferral():
     body = CORPUS_DOC.read_text(encoding="utf-8")
     assert "synthetic" in body
     assert "live-redacted" in body
+    assert "capture-only" in body
+    assert "replayable: false" in body
+    assert "skipped" in body
     assert "missing evidence" in body
     assert "concern" in body
     assert "strict" in body

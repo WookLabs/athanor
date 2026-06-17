@@ -67,3 +67,10 @@ Default hooks must stay narrow. The current target is a sub-500 ms budget per
 registered hook invocation on typical local repositories. Heavier hooks, such
 as focused test runners or broad linting, must start as opt-in catalog entries
 with explicit skip paths before any runtime registration.
+
+`performance_budget_ms` is executable metadata, not a documentation-only
+promise. `scripts/gates/check_hook_performance_budget.py` reads
+`hooks/catalog.json`, selects `enabled` hooks, reuses safe payload fixtures, and
+fails CI when an enabled hook is missing a sample or exceeds its declared
+budget. Capture-only and disabled entries keep budgets for design review, but
+they are not measured by the default CI gate until promoted to `enabled`.

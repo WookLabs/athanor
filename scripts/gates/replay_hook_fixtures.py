@@ -18,11 +18,13 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+CATALOG_PATH = REPO_ROOT / "hooks" / "catalog.json"
 HOOKS_DIR = REPO_ROOT / "scripts" / "hooks"
 STOP_SCRIPT = HOOKS_DIR / "stop_verify_claims.py"
 PRETOOL_SCRIPT = HOOKS_DIR / "pretool_dispatcher.py"
 POSTTOOL_SCRIPT = HOOKS_DIR / "posttool_evidence_sniffer.py"
 DEFAULT_SESSION_ID = "2026-06-16-001"
+REPLAYABLE_EVENTS = {"Stop", "PreToolUse", "PostToolUse"}
 FORBIDDEN_FIXTURE_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
     re.compile(r"BEGIN (?:RSA |OPENSSH |PRIVATE )?PRIVATE KEY"),
@@ -45,6 +47,36 @@ def _load_index(fixture_root: Path) -> dict:
     if not isinstance(fixtures, list):
         raise ValueError("fixture index must contain fixtures[]")
     return parsed
+
+
+def _load_catalog(path: Path = CATALOG_PATH) -> dict:
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"could not load hook catalog {path}: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("hook catalog root must be a JSON object")
+    hooks = parsed.get("hooks")
+    if not isinstance(hooks, list):
+        raise ValueError("hook catalog must contain hooks[]")
+    return parsed
+
+
+def _capture_only_events(catalog_path: Path = CATALOG_PATH) -> set[str]:
+    catalog = _load_catalog(catalog_path)
+    events: set[str] = set()
+    for entry in catalog["hooks"]:
+        if not isinstance(entry, dict):
+            continue
+        event = entry.get("event")
+        runtime_default = entry.get("runtime_default")
+        if isinstance(event, str) and runtime_default == "capture-only":
+            events.add(event)
+    return events
+
+
+def _allowed_events() -> set[str]:
+    return REPLAYABLE_EVENTS | _capture_only_events()
 
 
 def _write_json(path: Path, data: dict) -> None:
@@ -217,6 +249,26 @@ def replay_fixture(fixture: dict) -> dict:
             "errors": ["fixture must contain string event and object payload"],
         }
 
+    if fixture.get("replayable") is False:
+        if event in _capture_only_events():
+            return {
+                "id": fixture_id,
+                "event": event,
+                "source_level": fixture.get("source_level"),
+                "status": "skipped",
+                "reason": "capture-only fixture has no replay handler",
+                "errors": [],
+                "exit_code": None,
+            }
+        return {
+            "id": fixture_id,
+            "event": event,
+            "source_level": fixture.get("source_level"),
+            "status": "fail",
+            "errors": ["non-replayable fixture is not a cataloged capture-only event"],
+            "exit_code": None,
+        }
+
     with tempfile.TemporaryDirectory(prefix="athanor-hook-replay-") as tmp:
         project, session_dir = _make_project(Path(tmp), fixture)
         materialized = _materialize_payload(payload, project)
@@ -248,7 +300,7 @@ def replay_index(fixture_root: Path, event: str | None = None) -> dict:
         fixtures = [item for item in fixtures if item.get("event") == event]
 
     results = [replay_fixture(item) for item in fixtures]
-    status = "pass" if all(item["status"] == "pass" for item in results) else "fail"
+    status = "pass" if all(item["status"] in {"pass", "skipped"} for item in results) else "fail"
     return {
         "schema_version": 1,
         "status": status,
@@ -264,7 +316,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         type=Path,
         default=REPO_ROOT / "tests" / "fixtures" / "hooks",
     )
-    parser.add_argument("--event", choices=["Stop", "PreToolUse", "PostToolUse"])
+    parser.add_argument("--event", choices=sorted(_allowed_events()))
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     return parser.parse_args(argv)
 

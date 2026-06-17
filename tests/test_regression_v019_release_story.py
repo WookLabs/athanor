@@ -90,3 +90,11 @@ def test_ci_runs_hook_fixture_replay_as_named_gate():
     assert "Hook payload replay gate" in workflow
     assert "python scripts/gates/replay_hook_fixtures.py" in workflow
     assert "--fixture-root tests/fixtures/hooks --json" in workflow
+
+
+def test_ci_runs_hook_performance_budget_as_named_gate():
+    """Catalog hook budgets should be executable CI gates, not doc-only fields."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Hook performance budget gate" in workflow
+    assert "python scripts/gates/check_hook_performance_budget.py" in workflow
+    assert "--json" in workflow
