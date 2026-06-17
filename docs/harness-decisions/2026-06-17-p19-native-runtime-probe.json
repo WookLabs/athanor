@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p19-native-runtime-probe",
+      "date": "2026-06-17",
+      "status": "observed",
+      "change_type": "runtime",
+      "summary": "Add a read-only native runtime probe for Claude /goal, /loop, worktree, dynamic workflow, and agent-team readiness.",
+      "expected_metrics": [
+        {
+          "metric": "native_runtime_probe.fixture_failures",
+          "direction": "stay_or_decrease",
+          "target": "0 fixture expectation failures"
+        },
+        {
+          "metric": "native_runtime_probe.auto_launch_allowed",
+          "direction": "stay",
+          "target": "false for every native launch plan"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json",
+          "expected": "status pass with 3 fixture expectation passes"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_native_runtime_probe.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P19 tests pass"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P19 fixture gate and focused regression tests passed during implementation.",
+          "evidence_refs": [
+            "tests/test_regression_native_runtime_probe.py",
+            "tests/fixtures/native_runtime_probe"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and gate if dry-run plans become noisy; follow up with P20 scheduled maintenance profile."
+    }
+  ]
+}
+

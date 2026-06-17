@@ -114,6 +114,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   records plus `scripts/gates/harness_decision_ledger.py` so harness changes
   declare expected metrics, verification commands, observed results, and
   rollback/follow-up decisions before the harness can claim self-improvement.
+- **Native runtime probe.** Adds read-only
+  `scripts/gates/native_runtime_probe.py` fixture coverage for Claude `/goal`,
+  `/loop`, worktree, dynamic workflow, and agent team readiness. The probe
+  emits dry-run launch plans only, keeps `auto_launch_allowed: false`, and
+  fails profiles that try to make native runtime surfaces executable by default.
 
 ### Changed
 

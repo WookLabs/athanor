@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/native-runtime-probe-report.schema.json",
+  "title": "Athanor Native Runtime Probe Fixture Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "generated_at",
+    "fixtures"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "fixtures",
+        "passed",
+        "failed"
+      ],
+      "properties": {
+        "fixtures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "probe"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "probe": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "profile_id",
+              "status",
+              "summary",
+              "surfaces",
+              "launch_plans",
+              "warnings",
+              "errors"
+            ],
+            "properties": {
+              "schema_version": {
+                "const": 1
+              },
+              "profile_id": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail"
+                ]
+              },
+              "summary": {
+                "type": "object"
+              },
+              "surfaces": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "status",
+                    "evidence_refs",
+                    "auto_launch_requested"
+                  ],
+                  "properties": {
+                    "name": {
+                      "enum": [
+                        "goal",
+                        "loop",
+                        "worktree",
+                        "dynamic_workflow",
+                        "agent_team"
+                      ]
+                    },
+                    "status": {
+                      "enum": [
+                        "available",
+                        "documented",
+                        "manual",
+                        "unavailable",
+                        "unknown"
+                      ]
+                    },
+                    "evidence_refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "auto_launch_requested": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "launch_plans": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "backend",
+                    "surface_status",
+                    "mode",
+                    "auto_launch_allowed",
+                    "operator_approval_required",
+                    "cleanup_required"
+                  ],
+                  "properties": {
+                    "backend": {
+                      "enum": [
+                        "solo",
+                        "subagent-wave",
+                        "manual-worktree",
+                        "dynamic-workflow",
+                        "agent-team"
+                      ]
+                    },
+                    "surface_status": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "auto_launch_allowed": {
+                      "type": "boolean"
+                    },
+                    "operator_approval_required": {
+                      "type": "boolean"
+                    },
+                    "cleanup_required": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "warnings": {
+                "type": "array"
+              },
+              "errors": {
+                "type": "array"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

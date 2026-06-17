@@ -1,0 +1,45 @@
+{
+  "id": "runtime-available-dry-run",
+  "profile": {
+    "id": "runtime-available-dry-run",
+    "surfaces": {
+      "goal": {
+        "status": "available",
+        "evidence_refs": ["local claude cli present"]
+      },
+      "loop": {
+        "status": "available",
+        "evidence_refs": ["local claude cli present"]
+      },
+      "worktree": {
+        "status": "available",
+        "evidence_refs": ["git worktree list --porcelain"]
+      },
+      "dynamic_workflow": {
+        "status": "available",
+        "evidence_refs": ["local script runner present"]
+      },
+      "agent_team": {
+        "status": "available",
+        "evidence_refs": ["local claude cli present"]
+      }
+    },
+    "requested_backends": ["dynamic-workflow", "agent-team", "manual-worktree"]
+  },
+  "expect": {
+    "report_status": "pass",
+    "surface_statuses": {
+      "goal": "available",
+      "loop": "available",
+      "worktree": "available",
+      "dynamic_workflow": "available",
+      "agent_team": "available"
+    },
+    "launch_plan_modes": {
+      "dynamic-workflow": "dry-run-only",
+      "agent-team": "dry-run-only",
+      "manual-worktree": "dry-run-only"
+    },
+    "error_codes": []
+  }
+}

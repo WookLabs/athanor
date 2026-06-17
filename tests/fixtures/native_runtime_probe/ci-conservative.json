@@ -1,0 +1,45 @@
+{
+  "id": "ci-conservative",
+  "profile": {
+    "id": "ci-conservative",
+    "surfaces": {
+      "goal": {
+        "status": "documented",
+        "evidence_refs": ["Claude Code /goal documentation"]
+      },
+      "loop": {
+        "status": "documented",
+        "evidence_refs": ["Claude Code scheduled tasks /loop documentation"]
+      },
+      "worktree": {
+        "status": "manual",
+        "evidence_refs": ["git worktree list --porcelain"]
+      },
+      "dynamic_workflow": {
+        "status": "documented",
+        "evidence_refs": ["Claude Code dynamic workflows documentation"]
+      },
+      "agent_team": {
+        "status": "documented",
+        "evidence_refs": ["Claude Code agent teams documentation"]
+      }
+    },
+    "requested_backends": ["solo", "manual-worktree", "dynamic-workflow", "agent-team"]
+  },
+  "expect": {
+    "report_status": "pass",
+    "surface_statuses": {
+      "goal": "documented",
+      "loop": "documented",
+      "worktree": "manual",
+      "dynamic_workflow": "documented",
+      "agent_team": "documented"
+    },
+    "launch_plan_modes": {
+      "manual-worktree": "dry-run-only",
+      "dynamic-workflow": "dry-run-only",
+      "agent-team": "dry-run-only"
+    },
+    "error_codes": []
+  }
+}

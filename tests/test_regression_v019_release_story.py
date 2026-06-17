@@ -378,6 +378,34 @@ def test_unreleased_documents_trace_memory_quality_gate():
     )
 
 
+def test_ci_runs_native_runtime_probe_gate():
+    """P19 native runtime probe should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Native runtime probe gate" in workflow
+    assert "python scripts/gates/native_runtime_probe.py" in workflow
+    assert "--fixture-root tests/fixtures/native_runtime_probe --json" in workflow
+
+
+def test_unreleased_documents_native_runtime_probe():
+    """The Unreleased story must name the P19 native runtime probe."""
+    section = _unreleased_section()
+    required = [
+        "Native runtime probe",
+        "scripts/gates/native_runtime_probe.py",
+        "/goal",
+        "/loop",
+        "dynamic workflow",
+        "agent team",
+        "worktree",
+        "dry-run",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P19 native runtime probe; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
