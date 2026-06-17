@@ -16,17 +16,21 @@ trace-backed improvement loops, evals that can be rerun, short entrypoint
 knowledge with indexed deeper docs, native context isolation, and package
 surfaces that stay lean enough to ship.
 
-Against that frontier, Athanor's remaining gaps are now concentrated in three
+Against that frontier, Athanor's remaining gaps are now concentrated in two
 places:
 
-1. external benchmark/sandbox interop;
-2. operator-approved native runtime escalation;
-3. reactive event/channel compatibility.
+1. operator-approved native runtime escalation;
+2. reactive event/channel compatibility.
 
 P21, the package footprint policy gate, has now closed the lowest-risk
 sub-9.5 gap. The gate keeps packaging read-only, reports ship-profile budgets,
 classifies development-only candidates, and makes exclusion work explicit
 without silently deleting files.
+
+P22, the external eval/sandbox adapter, has now closed the external interop
+gap enough for the current 9.5 target. It exports packaged workflow episodes
+into inspect-like and harbor-like task, scorer, and sandbox metadata without
+installing external harnesses or enabling networked execution by default.
 
 ## External Sources Checked
 
@@ -139,9 +143,10 @@ Athanor is strong locally but incomplete externally:
 - local deterministic workflow scenarios pass;
 - portable episode packaging exists;
 - OTel-style export exists;
-- no Inspect/Harbor adapter exists;
-- no Docker/sandbox manifest is emitted by default;
-- no external benchmark runner is wired into CI.
+- an Inspect/Harbor-like adapter now exports task, scorer, and sandbox
+  metadata;
+- no Docker/sandbox runtime is installed by default;
+- no external benchmark runner is auto-launched in CI.
 
 This should remain optional. External sandbox dependencies should not become a
 default install or CI burden.
@@ -169,6 +174,8 @@ Commands run on 2026-06-18:
 python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json
 python scripts/gates/distribution_smoke.py --skip-claude --json
 python scripts/gates/package_footprint_policy.py --json
+python scripts/evals/package_workflow_episode.py --scenario-root tests/fixtures/workflow_evals --output-dir .athanor/episodes/workflow-evals --json
+python scripts/evals/export_external_eval_adapter.py --episode-root .athanor/episodes/workflow-evals --output-dir .athanor/external-evals/workflow-evals --json
 python scripts/gates/harness_decision_ledger.py --json
 python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json
 ```
@@ -178,11 +185,13 @@ Observed:
 - Maintenance profile: warn, 6/6 steps, 1 warning, 0 failures,
   `irreversible_actions: 0`.
 - Distribution smoke: pass, 7 checks in skip-Claude mode.
-- Package footprint policy: warn, 467 files, about 4.05 MB, 0 hard budget
+- Package footprint policy: warn, 475 files, about 4.1 MB, 0 hard budget
   failures, 20 development-only candidates, `irreversible_actions: 0`.
+- External eval adapter: pass, 2 compatibility profiles, network disabled,
+  external telemetry disabled, setup commands 0.
 - Agent surface: exactly `ci-watcher`, `codex-dispatcher`, `learner`,
   `releaser`.
-- Harness decision ledger: pass, 5 decisions.
+- Harness decision ledger: pass, 6 decisions after P22.
 - Native runtime probe fixtures: pass; dynamic workflow, agent team, and
   worktree are intentionally dry-run/operator-approved rather than
   auto-launched.
@@ -194,13 +203,13 @@ Observed:
 | Claude Code workflow plugin | 9.6 | Strong phase design, restrained visible surface, good extension fit. |
 | Local deterministic harness | 9.75 | CI gates, hook replay, schemas, and evidence checks are unusually strong. |
 | Loop-engineering platform | 9.6 | Durable goal loops, maintenance profile, trend snapshots, and no-progress exits exist. |
-| Harness-engineering platform | 9.6 | Strong feedback/control system; package policy and external adapters remain. |
+| Harness-engineering platform | 9.65 | Strong feedback/control system; package policy and external adapter are CI-visible. |
 | Hook/evidence discipline | 9.8 | Stop/PreToolUse/PostToolUse paths are the strongest area. |
 | Trace/eval discipline | 9.7 | Local traces, scenarios, OTel-style export, and episodes are solid. |
 | Memory quality | 9.55 | Structurally good; needs more real-run history over time. |
 | Distribution smoke | 9.65 | Manifest, loader-visible agents, package existence, and footprint policy are checked. |
 | Package footprint policy | 9.55 | Read-only budgets and dev-only classification now exist; actual exclusions remain future packaging work. |
-| External benchmark/sandbox interop | 9.3 | Portable local episodes exist; Inspect/Harbor/sandbox adapters do not. |
+| External benchmark/sandbox interop | 9.6 | Portable episodes now export inspect-like/harbor-like task, scorer, and local-only sandbox metadata. |
 | Native execution escalation | 9.35 | Safe dry-run posture; no operator-approved executable recipes yet. |
 | Reactive channels/events | 8.9 | Polling and CI gates exist; pushed event compatibility is absent. |
 | Knowledge surface freshness | 9.25 | Rich docs and cleanup gates exist; runtime/ship surface is too broad. |
@@ -219,13 +228,11 @@ Observed:
 
 ## What Is Missing
 
-1. External eval adapter for Inspect/Harbor-like ecosystems.
-2. Sandbox manifest export.
-3. Operator-approved worktree/dynamic-workflow/agent-team recipes.
-4. Local-only fake channel fixture for pushed CI/review events.
-5. Long-run history proving P17/P18/P20/P21 improve outcomes across many
+1. Operator-approved worktree/dynamic-workflow/agent-team recipes.
+2. Local-only fake channel fixture for pushed CI/review events.
+3. Long-run history proving P17/P18/P20/P21/P22 improve outcomes across many
    cycles.
-6. A short package-facing knowledge index distinct from full development
+4. A short package-facing knowledge index distinct from full development
    history.
 
 ## What Is Overbuilt
@@ -257,9 +264,12 @@ Target movement:
 
 ### P22: External Eval/Sandbox Adapter
 
-Export existing workflow episodes to an Inspect/Harbor-like layout with a
-manifest, task metadata, scorer metadata, and optional sandbox profile. Do not
-install Docker or run networked jobs by default.
+Status: implemented on branch `feat/p22-external-eval-sandbox-adapter`.
+
+Exports existing workflow episodes to an Inspect/Harbor-like layout with a
+manifest, task metadata, scorer metadata, and local-only sandbox profile. It
+does not install Docker, install Inspect or Harbor, or run networked jobs by
+default.
 
 Target movement:
 
@@ -296,9 +306,10 @@ Target movement:
 
 ## Decision
 
-Continue with P22 after P21 is merged.
+Continue with P23 after P22 is merged.
 
-Reason: P21 made the distinction between development repository, runtime
-plugin, and external eval package explicit. P22 should now export existing
-workflow episodes into an external-eval/sandbox layout without adding default
-network, Docker, or telemetry dependencies.
+Reason: P21 and P22 made the distinction between development repository,
+runtime plugin, and external eval package explicit. P23 should now convert the
+safe native-runtime probe posture into operator-approved playbooks for
+worktree, dynamic workflow, and agent-team lifecycle without default
+auto-launch.

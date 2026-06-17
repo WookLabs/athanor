@@ -99,6 +99,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   support so deterministic workflow scenarios can be packaged as portable local
   episodes with `deterministic_grader_kinds`, limits, privacy metadata, and
   `network_access` sandbox policy before broad pytest.
+- **External eval adapter.** Adds
+  `scripts/evals/export_external_eval_adapter.py` and
+  `schemas/external-eval-adapter.schema.json` to export packaged workflow
+  episodes into inspect-like and harbor-like task, scorer, and
+  `sandbox/manifest.json` metadata while keeping no default external execution,
+  no dependency installation, no network access, and no external telemetry.
 - **Distribution smoke gate.** Adds
   `scripts/gates/distribution_smoke.py` and a named CI gate that runs
   `claude plugin details` when available, verifies the live 4-agent loader

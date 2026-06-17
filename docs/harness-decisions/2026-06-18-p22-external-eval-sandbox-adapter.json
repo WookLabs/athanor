@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p22-external-eval-sandbox-adapter",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "eval_interop",
+      "summary": "Export packaged workflow eval episodes into an Inspect/Harbor-like metadata layout with explicit local-only sandbox policy and no default external execution.",
+      "expected_metrics": [
+        {
+          "metric": "external_eval_adapter.status",
+          "direction": "stay",
+          "target": "pass for committed workflow episode fixtures"
+        },
+        {
+          "metric": "external_eval_adapter.network_access",
+          "direction": "stay",
+          "target": "false"
+        },
+        {
+          "metric": "external_benchmark_sandbox_interop_score",
+          "direction": "increase",
+          "target": "at least 9.5/10 after task/scorer/sandbox export is CI-visible"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/evals/export_external_eval_adapter.py --episode-root .athanor/episodes/workflow-evals --output-dir .athanor/external-evals/workflow-evals --json",
+          "expected": "status pass with external_execution.default_enabled false"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_external_eval_adapter.py tests/test_regression_workflow_eval_episode.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P22 tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p22-external-eval-sandbox-adapter"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P22 adds the external eval adapter exporter, schema, operator docs, CI gate, and local-only sandbox metadata.",
+          "evidence_refs": [
+            "scripts/evals/export_external_eval_adapter.py",
+            "docs/external-eval-adapter.md",
+            ".github/workflows/validate-plugin.yml"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and exporter if the adapter format becomes misleading; follow up with exact Inspect or Harbor translation only after operator-approved external benchmark runs."
+    }
+  ]
+}

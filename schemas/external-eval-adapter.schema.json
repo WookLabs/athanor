@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Athanor external eval adapter manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "adapter",
+    "compatibility_profiles",
+    "episode",
+    "artifacts",
+    "external_execution",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "adapter": {
+      "const": "athanor-external-eval-adapter"
+    },
+    "compatibility_profiles": {
+      "type": "array",
+      "items": {
+        "enum": ["inspect-like", "harbor-like"]
+      },
+      "minItems": 2
+    },
+    "episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "manifest", "scenario_root", "scenario_ids"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "scorer", "sandbox"],
+      "properties": {
+        "task": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scorer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sandbox": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "external_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_enabled", "dependencies", "install_commands", "runner_command"],
+      "properties": {
+        "default_enabled": {
+          "const": false
+        },
+        "dependencies": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "install_commands": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "runner_command": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_telemetry", "external_upload", "raw_trace_content"],
+      "properties": {
+        "external_telemetry": {
+          "const": false
+        },
+        "external_upload": {
+          "const": false
+        },
+        "raw_trace_content": {
+          "enum": ["synthetic_fixture", "redacted", "included"]
+        }
+      }
+    }
+  }
+}

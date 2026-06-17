@@ -459,6 +459,33 @@ def test_unreleased_documents_package_footprint_policy_gate():
     )
 
 
+def test_ci_runs_external_eval_adapter_gate():
+    """P22 external eval adapter should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "External eval adapter gate" in workflow
+    assert "python scripts/evals/export_external_eval_adapter.py" in workflow
+    assert "--episode-root .athanor/episodes/workflow-evals" in workflow
+    assert "--output-dir .athanor/external-evals/workflow-evals --json" in workflow
+
+
+def test_unreleased_documents_external_eval_adapter():
+    """The Unreleased story must name the P22 external eval adapter."""
+    section = _unreleased_section()
+    required = [
+        "External eval adapter",
+        "scripts/evals/export_external_eval_adapter.py",
+        "inspect-like",
+        "harbor-like",
+        "sandbox/manifest.json",
+        "no default external execution",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P22 external eval adapter; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
