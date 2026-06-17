@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "claude_plugin": {
+    "name": "athanor",
+    "manifest": ".claude-plugin/plugin.json",
+    "marketplace": ".claude-plugin/marketplace.json",
+    "hook_manifest": "hooks/hooks.json",
+    "native_skills": [
+      "analyze",
+      "debug",
+      "discuss",
+      "lfg",
+      "lfg-goal",
+      "plan",
+      "review",
+      "scope-drift",
+      "setup",
+      "verification-before-completion",
+      "work"
+    ],
+    "vendored_claude_only_skills": [
+      "ce-test-browser"
+    ]
+  },
+  "codex_companion": {
+    "name": "athanor-codex",
+    "manifest": "plugins/athanor-codex/.codex-plugin/plugin.json",
+    "marketplace": ".agents/plugins/marketplace.json",
+    "skills": [
+      "athanor-analyze",
+      "athanor-ci-watch",
+      "athanor-debug",
+      "athanor-discuss",
+      "athanor-lfg",
+      "athanor-lfg-goal",
+      "athanor-plan",
+      "athanor-release",
+      "athanor-review",
+      "athanor-scope-drift",
+      "athanor-setup",
+      "athanor-verify",
+      "athanor-work"
+    ],
+    "forbidden_manifest_keys": [
+      "hooks",
+      "mcpServers",
+      "apps"
+    ]
+  },
+  "hook_catalog": {
+    "catalog": "hooks/catalog.json",
+    "enabled_runtime_events": [
+      "PostToolUse",
+      "PreToolUse",
+      "Stop"
+    ],
+    "allow_capture_only": true
+  }
+}

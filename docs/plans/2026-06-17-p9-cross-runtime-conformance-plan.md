@@ -41,7 +41,7 @@ P9 must improve cross-runtime portability without expanding runtime behavior:
 - Create: `docs/runtime-conformance.md`
 - Test: `tests/test_regression_runtime_conformance.py`
 
-- [ ] **Step 1: Write failing contract/documentation tests**
+- [x] **Step 1: Write failing contract/documentation tests**
 
 Add tests that assert:
 
@@ -74,7 +74,7 @@ Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: FAIL because the contract and docs do not exist.
 
-- [ ] **Step 2: Add `docs/runtime-surface-contract.json`**
+- [x] **Step 2: Add `docs/runtime-surface-contract.json`**
 
 Use this initial content:
 
@@ -140,7 +140,7 @@ Use this initial content:
 }
 ```
 
-- [ ] **Step 3: Add `docs/runtime-conformance.md`**
+- [x] **Step 3: Add `docs/runtime-conformance.md`**
 
 The doc must state:
 
@@ -151,13 +151,13 @@ The doc must state:
 - Codex companion must stay hook/MCP/app free;
 - CI runs the Cross-runtime conformance gate before broad pytest.
 
-- [ ] **Step 4: Re-run Task 1 tests**
+- [x] **Step 4: Re-run Task 1 tests**
 
 Run: `python -m pytest tests/test_regression_runtime_conformance.py -q`
 
 Expected: PASS for the two contract/documentation tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/runtime-surface-contract.json docs/runtime-conformance.md tests/test_regression_runtime_conformance.py
@@ -425,4 +425,3 @@ git diff --check
 - Spec coverage: P9 covers the deep-research gap for cross-runtime portability by adding an executable verifier and CI gate, while leaving hook expansion and generation out of scope.
 - Placeholder scan: no `TBD`, `TODO`, or open-ended implementation step remains.
 - Type consistency: contract paths and expected check IDs match the planned tests and CLI behavior.
-
