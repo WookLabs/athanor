@@ -27,7 +27,15 @@ from scripts.gates.hook_installer import (
 )
 
 INSTALLABLE_EVIDENCE = {"live-redacted", "replay-gated"}
-SUMMARY_KEYS = ("already-present", "would-add", "applied", "blocked", "conflict")
+SUMMARY_KEYS = (
+    "already-present",
+    "would-add",
+    "applied",
+    "removed",
+    "already-absent",
+    "blocked",
+    "conflict",
+)
 VALID_MODES = {"apply", "dry-run", "remove"}
 
 
@@ -278,6 +286,80 @@ def _apply_actions(
     return actions, _write_settings_atomic(settings_path, next_settings)
 
 
+def _remove_actions(
+    actions: list[dict[str, Any]],
+    settings: dict[str, Any],
+    settings_path: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    next_settings = copy.deepcopy(settings)
+    hooks = next_settings.get("hooks")
+    changed = False
+
+    for action in actions:
+        event = str(action.get("event", ""))
+        matcher = str(action.get("matcher", ""))
+        command = str(action.get("command", ""))
+        removed_count = 0
+
+        if isinstance(hooks, dict):
+            event_entries = hooks.get(event)
+            if isinstance(event_entries, list):
+                next_event_entries: list[Any] = []
+                for matcher_entry in event_entries:
+                    if not isinstance(matcher_entry, dict):
+                        next_event_entries.append(matcher_entry)
+                        continue
+
+                    entry_matcher = matcher_entry.get("matcher", "")
+                    if not isinstance(entry_matcher, str):
+                        entry_matcher = ""
+                    handlers = matcher_entry.get("hooks")
+                    if entry_matcher != matcher or not isinstance(handlers, list):
+                        next_event_entries.append(matcher_entry)
+                        continue
+
+                    next_handlers: list[Any] = []
+                    entry_removed = 0
+                    for handler in handlers:
+                        if (
+                            isinstance(handler, dict)
+                            and handler.get("type") == "command"
+                            and handler.get("command") == command
+                        ):
+                            entry_removed += 1
+                            continue
+                        next_handlers.append(handler)
+
+                    if entry_removed == 0:
+                        next_event_entries.append(matcher_entry)
+                        continue
+                    removed_count += entry_removed
+                    if next_handlers:
+                        next_entry = copy.deepcopy(matcher_entry)
+                        next_entry["hooks"] = next_handlers
+                        next_event_entries.append(next_entry)
+
+                if removed_count:
+                    changed = True
+                    if next_event_entries:
+                        hooks[event] = next_event_entries
+                    else:
+                        hooks.pop(event, None)
+
+        action.pop("proposed_entry", None)
+        if removed_count:
+            action["status"] = "removed"
+            action["reason"] = "exact Athanor hook entry removed from settings"
+            action["removed_count"] = removed_count
+        else:
+            action["status"] = "already-absent"
+            action["reason"] = "exact Athanor hook entry was not present in settings"
+
+    if not changed:
+        return actions, []
+    return actions, _write_settings_atomic(settings_path, next_settings)
+
+
 def build_report(
     *,
     repo_root: Path,
@@ -335,18 +417,10 @@ def build_report(
         for entry in entries
     ]
     writes: list[dict[str, str]] = []
-    if mode == "remove":
-        return _error_report(
-            "remove mode is not implemented yet",
-            mode,
-            repo_root,
-            catalog_path,
-            hooks_path,
-            settings_path,
-            trust_state_path,
-        ), 1
     if mode == "apply":
         actions, writes = _apply_actions(actions, settings, settings_path)
+    elif mode == "remove":
+        actions, writes = _remove_actions(actions, settings, settings_path)
 
     return {
         "schema_version": 2,

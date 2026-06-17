@@ -74,15 +74,15 @@ compatibility. Default mode remains `dry-run`.
 - Extend installer CLI and module.
 - Add `tests/test_regression_hook_installer_remove.py`
 
-- [ ] Write failing tests for:
+- [x] Write failing tests for:
   - exact Athanor hook removal;
   - unrelated same-event hooks preserved;
   - empty event arrays removed;
   - backup creation;
   - no-op remove reports `already-absent`;
   - invalid settings JSON exits without write.
-- [ ] Implement `--mode remove`.
-- [ ] Run remove tests.
+- [x] Implement `--mode remove`.
+- [x] Run remove tests.
 
 ## Task 5: Docs, CI Story, And Changelog
 
