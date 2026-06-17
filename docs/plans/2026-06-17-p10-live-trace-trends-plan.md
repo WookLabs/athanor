@@ -436,7 +436,7 @@ git commit -m "feat: collect local observability trend snapshots"
 - Create: `scripts/observability/report_trends.py`
 - Modify: `docs/plans/2026-06-17-p10-live-trace-trends-plan.md`
 
-- [ ] **Step 1: Write failing trend reporter tests**
+- [x] **Step 1: Write failing trend reporter tests**
 
 Append to `tests/test_regression_observability_trends.py`:
 
@@ -535,7 +535,7 @@ def test_report_trends_exits_two_for_missing_history(tmp_path: Path) -> None:
     assert "history does not exist" in proc.stderr
 ```
 
-- [ ] **Step 2: Run reporter tests to verify RED**
+- [x] **Step 2: Run reporter tests to verify RED**
 
 Run:
 
@@ -545,7 +545,7 @@ python -m pytest tests/test_regression_observability_trends.py::test_report_tren
 
 Expected: FAIL because `report_trends.py` and report schema do not exist.
 
-- [ ] **Step 3: Add trend report schema**
+- [x] **Step 3: Add trend report schema**
 
 Create `schemas/observability-trend-report.schema.json` with:
 
@@ -612,7 +612,7 @@ Create `schemas/observability-trend-report.schema.json` with:
 }
 ```
 
-- [ ] **Step 4: Implement trend reporter**
+- [x] **Step 4: Implement trend reporter**
 
 Create `scripts/observability/report_trends.py` with:
 
@@ -746,7 +746,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 5: Run reporter tests to verify GREEN**
+- [x] **Step 5: Run reporter tests to verify GREEN**
 
 Run:
 
@@ -756,7 +756,7 @@ python -m pytest tests/test_regression_observability_trends.py::test_report_tren
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit reporter**
+- [x] **Step 6: Commit reporter**
 
 ```bash
 git add scripts/observability/report_trends.py schemas/observability-trend-report.schema.json tests/test_regression_observability_trends.py docs/plans/2026-06-17-p10-live-trace-trends-plan.md

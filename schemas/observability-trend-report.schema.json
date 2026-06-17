@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athanor observability trend report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_count",
+    "git",
+    "workflow_eval",
+    "hook_performance",
+    "durable_loop",
+    "concerns"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "snapshot_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_sha", "latest_sha", "latest_branch"],
+      "properties": {
+        "first_sha": {
+          "type": "string"
+        },
+        "latest_sha": {
+          "type": "string"
+        },
+        "latest_branch": {
+          "type": "string"
+        }
+      }
+    },
+    "workflow_eval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latest_mean_score",
+        "mean_score_delta",
+        "latest_failed_scenarios"
+      ],
+      "properties": {
+        "latest_mean_score": {
+          "type": "number"
+        },
+        "mean_score_delta": {
+          "type": "number"
+        },
+        "latest_failed_scenarios": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hook_performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latest_max_budget_ratio",
+        "max_budget_ratio_delta",
+        "slowest_latest_hook"
+      ],
+      "properties": {
+        "latest_max_budget_ratio": {
+          "type": "number"
+        },
+        "max_budget_ratio_delta": {
+          "type": "number"
+        },
+        "slowest_latest_hook": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "durable_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latest_actions",
+        "latest_decision_statuses",
+        "failure_or_escalation_count"
+      ],
+      "properties": {
+        "latest_actions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "latest_decision_statuses": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "failure_or_escalation_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
