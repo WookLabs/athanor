@@ -494,7 +494,7 @@ git add CHANGELOG.md tests/test_regression_v019_release_story.py docs/plans/2026
 git commit -m "docs: record live command trace verification"
 ```
 
-- [ ] **Step 7: Merge and push**
+- [x] **Step 7: Merge and push**
 
 ```bash
 git checkout main
