@@ -158,14 +158,22 @@ def evaluate_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
 
 def evaluate_root(scenario_root: Path) -> dict[str, Any]:
     scenarios: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
     for path in _scenario_files(scenario_root):
         parsed = _load_json(path)
+        if parsed.get("schema_version") != 1:
+            raise ValueError(f"scenario file schema_version must be 1: {path}")
         raw_scenarios = parsed.get("scenarios")
         if not isinstance(raw_scenarios, list):
             raise ValueError(f"scenario file must contain scenarios[]: {path}")
         for scenario in raw_scenarios:
             if not isinstance(scenario, dict):
                 raise ValueError(f"scenario entry must be an object: {path}")
+            scenario_id = scenario.get("id")
+            if isinstance(scenario_id, str):
+                if scenario_id in seen_ids:
+                    raise ValueError(f"duplicate scenario id: {scenario_id}")
+                seen_ids.add(scenario_id)
             result = evaluate_scenario(scenario)
             result["file"] = str(path)
             scenarios.append(result)

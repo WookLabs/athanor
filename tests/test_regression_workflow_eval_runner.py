@@ -141,6 +141,65 @@ def test_eval_runner_fails_when_required_escalation_is_missing(tmp_path: Path) -
     assert scenario["graders"][0]["status"] == "fail"
 
 
+def test_eval_runner_rejects_unsupported_scenario_schema_version(tmp_path: Path) -> None:
+    scenario_root = tmp_path / "scenarios"
+    _write_json(
+        scenario_root / "bad-version.json",
+        {
+            "schema_version": 2,
+            "scenarios": [
+                {
+                    "id": "bad-version",
+                    "description": "schema drift should fail loud",
+                    "min_score": 1.0,
+                    "trace": [_record(1, "workflow.started", "started")],
+                    "graders": [
+                        {
+                            "id": "requires-start",
+                            "kind": "require_event",
+                            "match": {"event_type": "workflow.started"},
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+    proc = _run_eval(scenario_root)
+
+    assert proc.returncode == 2
+    assert "schema_version" in proc.stderr
+
+
+def test_eval_runner_rejects_duplicate_scenario_ids(tmp_path: Path) -> None:
+    scenario_root = tmp_path / "scenarios"
+    scenario = {
+        "id": "duplicate-id",
+        "description": "duplicate scenario ids should fail loud",
+        "min_score": 1.0,
+        "trace": [_record(1, "workflow.started", "started")],
+        "graders": [
+            {
+                "id": "requires-start",
+                "kind": "require_event",
+                "match": {"event_type": "workflow.started"},
+            }
+        ],
+    }
+    _write_json(
+        scenario_root / "duplicates.json",
+        {
+            "schema_version": 1,
+            "scenarios": [scenario, dict(scenario)],
+        },
+    )
+
+    proc = _run_eval(scenario_root)
+
+    assert proc.returncode == 2
+    assert "duplicate scenario id" in proc.stderr
+
+
 def test_committed_workflow_eval_scenarios_pass() -> None:
     proc = _run_eval(REPO_ROOT / "tests" / "fixtures" / "workflow_evals")
 
