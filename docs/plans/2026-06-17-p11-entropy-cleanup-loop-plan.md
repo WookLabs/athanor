@@ -42,7 +42,7 @@
 **Files:**
 - Create: `tests/test_regression_entropy_cleanup.py`
 
-- [ ] **Step 1: Add failing tests for the P11 report gate**
+- [x] **Step 1: Add failing tests for the P11 report gate**
 
 Create `tests/test_regression_entropy_cleanup.py` with:
 
@@ -202,7 +202,7 @@ def test_runtime_conformance_failure_is_reported_as_mirror_failure(tmp_path: Pat
     assert "codex.skills" in check["details"]["failed_checks"]
 ```
 
-- [ ] **Step 2: Run tests to verify RED**
+- [x] **Step 2: Run tests to verify RED**
 
 Run:
 
@@ -214,7 +214,7 @@ Expected:
 
 - FAIL because `scripts/gates/entropy_cleanup.py` and `schemas/entropy-cleanup-report.schema.json` do not exist.
 
-- [ ] **Step 3: Commit RED tests**
+- [x] **Step 3: Commit RED tests**
 
 ```bash
 git add tests/test_regression_entropy_cleanup.py
@@ -232,7 +232,7 @@ git commit -m "test: cover entropy cleanup report gate"
 - Modify: `hooks/catalog.json`
 - Modify: `tests/test_regression_hook_catalog.py`
 
-- [ ] **Step 1: Add report schema**
+- [x] **Step 1: Add report schema**
 
 Create `schemas/entropy-cleanup-report.schema.json` with:
 
@@ -297,7 +297,7 @@ Create `schemas/entropy-cleanup-report.schema.json` with:
 }
 ```
 
-- [ ] **Step 2: Extend hook catalog schema for candidate lifecycle metadata**
+- [x] **Step 2: Extend hook catalog schema for candidate lifecycle metadata**
 
 Modify `schemas/hook-catalog.schema.json` so hook entries allow:
 
@@ -315,7 +315,7 @@ Modify `schemas/hook-catalog.schema.json` so hook entries allow:
 Keep these fields optional at schema level because only `capture-only` entries
 need them, and the entropy gate enforces that conditional policy.
 
-- [ ] **Step 3: Add candidate lifecycle metadata to capture-only hook entries**
+- [x] **Step 3: Add candidate lifecycle metadata to capture-only hook entries**
 
 In `hooks/catalog.json`, add to every entry where `"runtime_default": "capture-only"`:
 
@@ -327,7 +327,7 @@ In `hooks/catalog.json`, add to every entry where `"runtime_default": "capture-o
 Use the same date for all current candidates because they were introduced by
 the current ref/deep-research hook expansion pass.
 
-- [ ] **Step 4: Extend hook catalog regression coverage**
+- [x] **Step 4: Extend hook catalog regression coverage**
 
 Add this test to `tests/test_regression_hook_catalog.py`:
 
@@ -341,7 +341,7 @@ def test_capture_only_hooks_carry_candidate_lifecycle_metadata():
         assert entry["review_after_days"] >= 0
 ```
 
-- [ ] **Step 5: Implement `scripts/gates/entropy_cleanup.py`**
+- [x] **Step 5: Implement `scripts/gates/entropy_cleanup.py`**
 
 Implement these public functions:
 
@@ -383,7 +383,7 @@ def _add_check(checks: list[dict[str, Any]], check_id: str, category: str, statu
     checks.append(item)
 ```
 
-- [ ] **Step 6: Run GREEN verification for entropy tests**
+- [x] **Step 6: Run GREEN verification for entropy tests**
 
 Run:
 
@@ -395,7 +395,7 @@ Expected:
 
 - PASS.
 
-- [ ] **Step 7: Run CLI smoke**
+- [x] **Step 7: Run CLI smoke**
 
 Run:
 
@@ -409,7 +409,7 @@ Expected:
 - JSON parses.
 - `summary.errors` is `0`.
 
-- [ ] **Step 8: Commit implementation**
+- [x] **Step 8: Commit implementation**
 
 ```bash
 git add schemas/entropy-cleanup-report.schema.json schemas/hook-catalog.schema.json hooks/catalog.json scripts/gates/entropy_cleanup.py tests/test_regression_entropy_cleanup.py tests/test_regression_hook_catalog.py
@@ -426,7 +426,7 @@ git commit -m "feat: report harness entropy cleanup signals"
 - Modify: `CHANGELOG.md`
 - Modify: `tests/test_regression_v019_release_story.py`
 
-- [ ] **Step 1: Add failing release-story tests**
+- [x] **Step 1: Add failing release-story tests**
 
 Append to `tests/test_regression_v019_release_story.py`:
 
@@ -455,7 +455,7 @@ def test_unreleased_documents_entropy_cleanup_loop():
     )
 ```
 
-- [ ] **Step 2: Run release-story tests to verify RED**
+- [x] **Step 2: Run release-story tests to verify RED**
 
 Run:
 
@@ -467,7 +467,7 @@ Expected:
 
 - FAIL because the CI step and changelog story are not wired yet.
 
-- [ ] **Step 3: Add operator docs**
+- [x] **Step 3: Add operator docs**
 
 Create `docs/entropy-cleanup.md` with:
 
@@ -497,7 +497,7 @@ historical cleanup work into a release blocker. Use `--strict` when a scheduled
 cleanup run or release pass intentionally wants a zero-warning queue.
 ```
 
-- [ ] **Step 4: Add CI gate**
+- [x] **Step 4: Add CI gate**
 
 In `.github/workflows/validate-plugin.yml`, after the Observability trend
 snapshot gate, add:
@@ -508,7 +508,7 @@ snapshot gate, add:
         run: python scripts/gates/entropy_cleanup.py --json
 ```
 
-- [ ] **Step 5: Add changelog story**
+- [x] **Step 5: Add changelog story**
 
 In `CHANGELOG.md` under `[Unreleased]`, add:
 
@@ -519,7 +519,7 @@ In `CHANGELOG.md` under `[Unreleased]`, add:
   drift as structured cleanup actions before P12 expands live orchestration.
 ```
 
-- [ ] **Step 6: Run docs/release GREEN verification**
+- [x] **Step 6: Run docs/release GREEN verification**
 
 Run:
 
@@ -531,7 +531,7 @@ Expected:
 
 - PASS.
 
-- [ ] **Step 7: Commit docs and CI wiring**
+- [x] **Step 7: Commit docs and CI wiring**
 
 ```bash
 git add docs/entropy-cleanup.md .github/workflows/validate-plugin.yml CHANGELOG.md tests/test_regression_v019_release_story.py
@@ -545,7 +545,7 @@ git commit -m "docs: wire entropy cleanup gate into release story"
 **Files:**
 - Modify: `docs/plans/2026-06-17-p11-entropy-cleanup-loop-plan.md`
 
-- [ ] **Step 1: Run focused verification**
+- [x] **Step 1: Run focused verification**
 
 ```bash
 python -m pytest tests/test_regression_entropy_cleanup.py tests/test_regression_hook_catalog.py tests/test_regression_runtime_conformance.py tests/test_regression_v019_release_story.py -q
@@ -561,7 +561,7 @@ Expected:
 - Runtime conformance exits `0`.
 - `git diff --check` exits `0`.
 
-- [ ] **Step 2: Run full regression suite**
+- [x] **Step 2: Run full regression suite**
 
 ```bash
 python -m pytest tests\ -q
@@ -571,7 +571,7 @@ Expected:
 
 - PASS with the existing skip/xpass profile.
 
-- [ ] **Step 3: Mark verification steps complete and commit**
+- [x] **Step 3: Mark verification steps complete and commit**
 
 ```bash
 git add docs/plans/2026-06-17-p11-entropy-cleanup-loop-plan.md
@@ -606,4 +606,3 @@ git branch --delete feat/p11-entropy-cleanup-loop
 - Placeholder scan: no placeholders or deferred implementation notes remain.
 - Type consistency: report fields match the schema and test expectations.
 - Scope control: P12 runtime adapters, external telemetry, scheduled tasks, and automatic deletion remain out of scope.
-
