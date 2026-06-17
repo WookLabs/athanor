@@ -60,6 +60,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   trusted no-clobber settings writes with backups, and supports
   `--mode remove` for exact Athanor hook removal while keeping capture-only
   hooks blocked by policy.
+- **Cross-runtime conformance gate.** Adds a read-only runtime-surface contract
+  and `scripts/gates/runtime_conformance.py` so Claude Code plugin
+  metadata, Codex companion skills, and `hooks/catalog.json` enabled runtime
+  hooks fail CI on drift before any generator or settings writer expands the
+  surface.
 
 ### Changed
 

@@ -165,3 +165,26 @@ def test_unreleased_documents_trust_aware_hook_installer():
         "CHANGELOG [Unreleased] must explain the trust-aware installer path; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_cross_runtime_conformance_gate():
+    """Cross-runtime drift should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Cross-runtime conformance gate" in workflow
+    assert "python scripts/gates/runtime_conformance.py --json" in workflow
+
+
+def test_unreleased_documents_cross_runtime_conformance_gate():
+    """The Unreleased story must name the P9 conformance gate."""
+    section = _unreleased_section()
+    required = [
+        "Cross-runtime conformance gate",
+        "runtime-surface contract",
+        "Codex companion",
+        "hooks/catalog.json",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain the cross-runtime gate; "
+        f"missing: {missing}"
+    )

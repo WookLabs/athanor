@@ -330,7 +330,7 @@ git commit -m "test: lock cross-runtime drift failures"
 - Modify: `CHANGELOG.md`
 - Modify: `docs/plans/2026-06-17-p9-cross-runtime-conformance-plan.md`
 
-- [ ] **Step 1: Add failing release-story tests**
+- [x] **Step 1: Add failing release-story tests**
 
 Add tests:
 
@@ -356,7 +356,7 @@ Run: `python -m pytest tests/test_regression_v019_release_story.py -q`
 
 Expected: FAIL until CI and changelog are updated.
 
-- [ ] **Step 2: Add CI step**
+- [x] **Step 2: Add CI step**
 
 Add this before broad pytest:
 
@@ -366,7 +366,7 @@ Add this before broad pytest:
         run: python scripts/gates/runtime_conformance.py --json
 ```
 
-- [ ] **Step 3: Add changelog entry**
+- [x] **Step 3: Add changelog entry**
 
 Add an Unreleased bullet:
 
@@ -378,7 +378,7 @@ Add an Unreleased bullet:
   surface.
 ```
 
-- [ ] **Step 4: Re-run release-story and conformance tests**
+- [x] **Step 4: Re-run release-story and conformance tests**
 
 Run:
 
@@ -390,7 +390,7 @@ git diff --check
 
 Expected: all commands exit 0.
 
-- [ ] **Step 5: Mark Task 1-4 checkboxes and commit**
+- [x] **Step 5: Mark Task 1-4 checkboxes and commit**
 
 ```bash
 git add .github/workflows/validate-plugin.yml tests/test_regression_v019_release_story.py CHANGELOG.md docs/plans/2026-06-17-p9-cross-runtime-conformance-plan.md
