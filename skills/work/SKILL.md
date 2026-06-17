@@ -66,6 +66,28 @@ forward-compat anchor),
 
 **If no plan.md:** `⚠ 실행할 플랜이 없습니다. 먼저 /athanor:plan으로 계획을 세워주세요.`
 
+### P13 Live Trace Emission
+
+After Step 0 resolves `<LATEST>`, emit `workflow.started`:
+
+```bash
+python scripts/evals/emit_workflow_trace.py \
+  --session-id "<LATEST>" \
+  --command work \
+  --phase work \
+  --event-type workflow.started \
+  --actor leader \
+  --status started \
+  --message "work execution started" \
+  --json
+```
+
+Emit `agent.dispatched` for each solo worker or team wave, emit
+`verifier.result` when evidence gates run, emit `escalation.required` for
+missing evidence/blockers, and emit `workflow.finished` before the final
+summary. Use `scripts/evals/emit_workflow_trace.py` and the default
+`.athanor/traces/<session-id>.jsonl` path.
+
 ### Step 0.5: Task Splitter Dispatch
 
 **See `references/splitter.md`** for the full Splitter dispatch prompt,

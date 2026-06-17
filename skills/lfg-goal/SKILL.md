@@ -112,6 +112,28 @@ across sessions, or goals you want versioned in git.
 
 Both forms produce the same downstream state. Choice is ergonomic only.
 
+### P13 Live Trace Emission
+
+After the goal id and active cycle session are known, emit `workflow.started`:
+
+```bash
+python scripts/evals/emit_workflow_trace.py \
+  --session-id "<LATEST>" \
+  --command lfg-goal \
+  --phase lfg-goal \
+  --event-type workflow.started \
+  --actor leader \
+  --status started \
+  --message "lfg-goal loop started" \
+  --json
+```
+
+Emit `loop.decision` after each durable controller decision, emit
+`gate.evaluated` for receipt, Tier 1, Tier 2, and Tier 3 gates, and emit
+`workflow.finished` before a terminal goal outcome. Use
+`scripts/evals/emit_workflow_trace.py` and the default
+`.athanor/traces/<session-id>.jsonl` path.
+
 ## Architecture: Validated Receipt-Ledger Loop
 
 The skill's three-layer architecture is the **Validated Receipt-Ledger

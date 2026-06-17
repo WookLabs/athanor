@@ -1,9 +1,9 @@
 # Workflow Trace Evals
 
-P6 adds a local deterministic eval harness for Athanor workflow behavior. It
-does not instrument every live skill yet and it does not enable new runtime
-hooks. It defines the trace and scenario contract that later loop work can
-consume.
+P6 adds a local deterministic eval harness for Athanor workflow behavior. P13
+adds a local live command emitter and command-skill lifecycle anchors. The trace
+contract stays local-first: no external telemetry, new runtime hooks, or model
+grader is required.
 
 ## Trace Records
 
@@ -25,6 +25,13 @@ Required fields:
 
 Optional fields:
 
+- `timestamp`: UTC event time from live command emission
+- `command`: command family such as `plan`, `work`, `review`, `lfg`, or
+  `lfg-goal`
+- `session_id`: Athanor session id used for the default trace path
+- `worker_id`: optional leader or worker identifier
+- `parent_seq`: optional parent event sequence number
+- `duration_ms`: optional non-negative event duration
 - `references`: repo-relative paths or stable ids, such as
   `.hook-state/test-evidence.jsonl`
 - `evidence`: deterministic JSON evidence fields
@@ -52,6 +59,32 @@ writer.append(
     references=[".hook-state/test-evidence.jsonl"],
 )
 ```
+
+## Live Command Emission
+
+P13 adds `scripts/evals/emit_workflow_trace.py` so live command skills can append
+P6-compatible JSONL records without installing hooks or external telemetry. When
+`--trace-path` is omitted, the emitter writes
+`.athanor/traces/<session-id>.jsonl`.
+
+Example:
+
+```bash
+python scripts/evals/emit_workflow_trace.py \
+  --session-id "2026-06-17-001" \
+  --command work \
+  --phase work \
+  --event-type workflow.started \
+  --actor leader \
+  --status started \
+  --message "work execution started" \
+  --json
+```
+
+Core command skills (`plan`, `work`, `review`, `lfg`, and `lfg-goal`) carry
+anchors for `workflow.started`, command-specific dispatch/gate events, and
+`workflow.finished`. The emitter appends one record per invocation and preserves
+optional command/session metadata through `TraceWriter`.
 
 ## Scenario Fixtures
 
@@ -98,7 +131,7 @@ before the broad pytest suite.
 
 ## Boundary
 
-P6 does not claim that live `/athanor:*` commands emit complete traces yet. It
-creates the local trace/eval contract and CI gate. P7 can then build a durable
-loop controller that consumes scenario reports instead of relying on raw
-optimism.
+P13 gives live `/athanor:*` command skills a local trace emitter and lifecycle
+anchors, but it does not claim exhaustive span coverage for every nested worker
+or subprocess. External telemetry export, OpenTelemetry vocabulary mapping, and
+hook-level automatic capture remain separate follow-up work.

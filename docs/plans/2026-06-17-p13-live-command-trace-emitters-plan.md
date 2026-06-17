@@ -346,7 +346,7 @@ git commit -m "feat: emit live command workflow traces"
 - Modify: `skills/lfg-goal/SKILL.md`
 - Modify: `docs/workflow-trace-evals.md`
 
-- [ ] **Step 1: Add skill trace anchors**
+- [x] **Step 1: Add skill trace anchors**
 
 Add a short `### P13 Live Trace Emission` section to each skill. Each section
 must name `scripts/evals/emit_workflow_trace.py`, `workflow.started`, and
@@ -386,7 +386,7 @@ Use the same pattern for:
 - `lfg-goal`: `lfg-goal`, `loop.decision`, `gate.evaluated`,
   `workflow.finished`
 
-- [ ] **Step 2: Update docs**
+- [x] **Step 2: Update docs**
 
 Add a `Live Command Emission` section to `docs/workflow-trace-evals.md` with:
 
@@ -395,7 +395,7 @@ Add a `Live Command Emission` section to `docs/workflow-trace-evals.md` with:
 - command lifecycle anchors;
 - note that P13 is local-first and does not add external telemetry or hooks.
 
-- [ ] **Step 3: Run docs/anchor tests**
+- [x] **Step 3: Run docs/anchor tests**
 
 Run:
 
@@ -407,7 +407,7 @@ Expected:
 
 - PASS.
 
-- [ ] **Step 4: Commit docs and skill anchors**
+- [x] **Step 4: Commit docs and skill anchors**
 
 ```bash
 git add skills/plan/SKILL.md skills/work/SKILL.md skills/review/SKILL.md skills/lfg/SKILL.md skills/lfg-goal/SKILL.md docs/workflow-trace-evals.md tests/test_regression_live_command_trace_emitters.py
