@@ -124,6 +124,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   packages entropy cleanup, distribution smoke, observability snapshots,
   native runtime probe, and harness decision ledger checks into one operator
   report with zero irreversible actions by default.
+- **Package footprint policy gate.** Adds read-only
+  `scripts/gates/package_footprint_policy.py` plus
+  `schemas/package-footprint-policy-report.schema.json` to classify the
+  default ship profile, report package budgets and largest files, surface
+  dev-only candidates such as tests, plans, archives, architecture research,
+  and CI metadata, and recommend `exclude-from-ship-profile` without deleting
+  or moving files.
 
 ### Changed
 

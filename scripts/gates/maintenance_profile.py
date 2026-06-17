@@ -25,6 +25,9 @@ from scripts.gates.native_runtime_probe import (  # noqa: E402
     build_live_profile,
     build_probe as build_native_probe,
 )
+from scripts.gates.package_footprint_policy import (  # noqa: E402
+    build_report as build_package_footprint_report,
+)
 from scripts.observability.collect_trend_snapshot import (  # noqa: E402
     DEFAULT_HOOK_CATALOG,
     DEFAULT_HOOK_FIXTURES,
@@ -151,6 +154,7 @@ def build_report(
         max_always_on_tokens=2200,
         timeout=20,
     )
+    package_footprint = build_package_footprint_report(repo_root=repo_root)
     snapshot = collect_snapshot(
         workflow_scenario_root=DEFAULT_WORKFLOW_SCENARIOS,
         hook_catalog=DEFAULT_HOOK_CATALOG,
@@ -169,6 +173,7 @@ def build_report(
     distribution_command = "python scripts/gates/distribution_smoke.py --json"
     if skip_claude:
         distribution_command = "python scripts/gates/distribution_smoke.py --skip-claude --json"
+    package_footprint_command = "python scripts/gates/package_footprint_policy.py --json"
 
     steps = [
         _step(
@@ -186,6 +191,14 @@ def build_report(
             status=str(distribution.get("status", "fail")),
             summary=_distribution_summary(distribution),
             report=distribution,
+        ),
+        _step(
+            step_id="package-footprint-policy",
+            title="Package footprint policy",
+            command=package_footprint_command,
+            status=str(package_footprint.get("status", "fail")),
+            summary=dict(package_footprint.get("summary", {})),
+            report=package_footprint,
         ),
         _step(
             step_id="observability-snapshot",

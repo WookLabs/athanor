@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/package-footprint-policy-report.schema.json",
+  "title": "Athanor Package Footprint Policy Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "generated_at",
+    "profile",
+    "budgets",
+    "summary",
+    "package",
+    "classifications",
+    "dev_only_candidates",
+    "recommendations",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry"
+      ],
+      "properties": {
+        "id": {
+          "const": "default-read-only-ship-footprint"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "budgets": {
+      "type": "object",
+      "required": [
+        "max_files",
+        "max_total_bytes",
+        "max_large_file_bytes",
+        "candidate_limit"
+      ],
+      "properties": {
+        "max_files": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_total_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_large_file_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "candidate_limit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "checks",
+        "warnings",
+        "failures",
+        "dev_only_candidates",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dev_only_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "package": {
+      "type": "object",
+      "required": [
+        "file_count",
+        "total_bytes",
+        "excluded_dirs",
+        "largest_files"
+      ],
+      "properties": {
+        "file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_dirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "largest_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "bytes"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "classifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "bucket",
+          "files",
+          "bytes"
+        ],
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dev_only_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "bytes",
+          "bucket",
+          "reason",
+          "recommended_action"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "recommended_action": {
+            "const": "exclude-from-ship-profile"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -57,6 +57,9 @@ jobs:
       - name: Distribution smoke gate
         shell: bash
         run: python scripts/gates/distribution_smoke.py --json
+      - name: Package footprint policy gate
+        shell: bash
+        run: python scripts/gates/package_footprint_policy.py --json
       - name: Trace-memory quality gate
         shell: bash
         run: python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json

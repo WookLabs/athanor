@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p21-package-footprint-policy",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "distribution",
+      "summary": "Add a read-only package footprint policy gate that classifies ship-profile buckets, reports budgets, and surfaces dev-only candidates without mutating files.",
+      "expected_metrics": [
+        {
+          "metric": "package_footprint_policy.failures",
+          "direction": "stay_or_decrease",
+          "target": "0 hard budget failures in the default report"
+        },
+        {
+          "metric": "package_footprint_policy.irreversible_actions",
+          "direction": "stay",
+          "target": "0 irreversible actions"
+        },
+        {
+          "metric": "distribution_ship_discipline_score",
+          "direction": "increase",
+          "target": "at least 9.5/10 after ship-profile classification is CI-visible"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/package_footprint_policy.py --json",
+          "expected": "status warn or pass with 0 failures and 0 irreversible actions"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_package_footprint_policy.py tests/test_regression_v019_release_story.py tests/test_regression_maintenance_profile.py -q",
+          "expected": "focused P21 tests pass"
+        },
+        {
+          "command": "python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json",
+          "expected": "maintenance profile includes package-footprint-policy as a read-only step"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P21 adds the policy gate, schema, operator docs, CI step, and maintenance profile integration.",
+          "evidence_refs": [
+            "scripts/gates/package_footprint_policy.py",
+            "docs/package-footprint-policy.md",
+            ".github/workflows/validate-plugin.yml"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI and maintenance profile steps if the warning signal is too noisy; follow up with an explicit package exclusion profile only after operator review."
+    }
+  ]
+}

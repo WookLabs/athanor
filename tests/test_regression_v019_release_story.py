@@ -434,6 +434,31 @@ def test_unreleased_documents_maintenance_profile_gate():
     )
 
 
+def test_ci_runs_package_footprint_policy_gate():
+    """P21 package footprint policy should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Package footprint policy gate" in workflow
+    assert "python scripts/gates/package_footprint_policy.py --json" in workflow
+
+
+def test_unreleased_documents_package_footprint_policy_gate():
+    """The Unreleased story must name the P21 package footprint policy."""
+    section = _unreleased_section()
+    required = [
+        "Package footprint policy gate",
+        "scripts/gates/package_footprint_policy.py",
+        "ship profile",
+        "dev-only candidates",
+        "read-only",
+        "exclude-from-ship-profile",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P21 package footprint policy; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
