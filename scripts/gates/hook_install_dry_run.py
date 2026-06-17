@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Read-only hook installer planner for Athanor.
+"""Hook installer planner for Athanor.
 
-P4 intentionally stops before any settings mutation. This command reads the
-catalog, the plugin-local hooks manifest, and optionally a Claude settings file,
-then reports what would be added, blocked, or conflicted.
+The default mode remains read-only. P8 adds trusted apply behavior while keeping
+dry-run output as the shared report shape for later remove support.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
+from datetime import datetime, timezone
 import json
 import sys
 from pathlib import Path
@@ -26,7 +27,8 @@ from scripts.gates.hook_installer import (
 )
 
 INSTALLABLE_EVIDENCE = {"live-redacted", "replay-gated"}
-SUMMARY_KEYS = ("already-present", "would-add", "blocked", "conflict")
+SUMMARY_KEYS = ("already-present", "would-add", "applied", "blocked", "conflict")
+VALID_MODES = {"apply", "dry-run", "remove"}
 
 
 def _read_json(path: Path, label: str, *, missing_ok: bool = False) -> tuple[dict[str, Any] | None, str | None]:
@@ -94,6 +96,15 @@ def _settings_event_count(settings: dict[str, Any], event: str) -> int:
     if not isinstance(entries, list):
         return 0
     return len(entries)
+
+
+def _summarize(actions: list[dict[str, Any]]) -> dict[str, int]:
+    summary = {key: 0 for key in SUMMARY_KEYS}
+    for action in actions:
+        status = action.get("status")
+        if status in summary:
+            summary[str(status)] += 1
+    return summary
 
 
 def _catalog_entries(catalog: dict[str, Any], includes: list[str]) -> tuple[list[dict[str, Any]] | None, str | None]:
@@ -207,6 +218,66 @@ def _plan_action(
     return action
 
 
+def _write_settings_atomic(settings_path: Path, settings: dict[str, Any]) -> list[dict[str, str]]:
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    writes: list[dict[str, str]] = []
+    if settings_path.is_file():
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        backup_path = settings_path.with_name(f"{settings_path.name}.bak-{stamp}")
+        backup_path.write_text(settings_path.read_text(encoding="utf-8"), encoding="utf-8")
+        writes.append({"kind": "backup", "path": str(backup_path.resolve())})
+
+    temp_path = settings_path.with_name(f".{settings_path.name}.tmp")
+    temp_path.write_text(
+        json.dumps(settings, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temp_path.replace(settings_path)
+    writes.append({"kind": "settings", "path": str(settings_path.resolve())})
+    return writes
+
+
+def _apply_actions(
+    actions: list[dict[str, Any]],
+    settings: dict[str, Any],
+    settings_path: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    next_settings = copy.deepcopy(settings)
+    changed = False
+
+    for action in actions:
+        if action.get("status") != "would-add":
+            continue
+        if action.get("trust_status") != "trusted":
+            action["status"] = "blocked"
+            action["reason"] = f"trust state is not trusted: {action.get('trust_reason', '')}"
+            action.pop("proposed_entry", None)
+            continue
+
+        hooks = next_settings.setdefault("hooks", {})
+        if not isinstance(hooks, dict):
+            action["status"] = "blocked"
+            action["reason"] = "settings hooks must be an object"
+            action.pop("proposed_entry", None)
+            continue
+        event = str(action.get("event", ""))
+        event_entries = hooks.setdefault(event, [])
+        if not isinstance(event_entries, list):
+            action["status"] = "blocked"
+            action["reason"] = "settings event hooks must be an array"
+            action.pop("proposed_entry", None)
+            continue
+
+        event_entries.append(action["proposed_entry"])
+        action["status"] = "applied"
+        action["reason"] = "trusted hook entry written to settings"
+        changed = True
+
+    if not changed:
+        return actions, []
+    return actions, _write_settings_atomic(settings_path, next_settings)
+
+
 def build_report(
     *,
     repo_root: Path,
@@ -215,28 +286,31 @@ def build_report(
     settings_path: Path,
     trust_state_path: Path | None = None,
     includes: list[str],
+    mode: str = "dry-run",
 ) -> tuple[dict[str, Any], int]:
+    if mode not in VALID_MODES:
+        mode = "dry-run"
     if trust_state_path is None:
         trust_state_path = repo_root / ".athanor" / "hook-installer-trust.json"
 
     catalog, error = _read_json(catalog_path, "catalog")
     if error:
         return _error_report(
-            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+            error, mode, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
         ), 1
     assert catalog is not None
 
     hooks, error = _read_json(hooks_path, "hooks")
     if error:
         return _error_report(
-            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+            error, mode, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
         ), 1
     assert hooks is not None
 
     settings, error = _read_json(settings_path, "settings", missing_ok=True)
     if error:
         return _error_report(
-            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+            error, mode, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
         ), 1
     assert settings is not None
 
@@ -244,13 +318,13 @@ def build_report(
         trust_state = load_trust_state(trust_state_path)
     except HookInstallerTrustError as exc:
         return _error_report(
-            str(exc), repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+            str(exc), mode, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
         ), 1
 
     entries, error = _catalog_entries(catalog, includes)
     if error:
         return _error_report(
-            error, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
+            error, mode, repo_root, catalog_path, hooks_path, settings_path, trust_state_path
         ), 1
     assert entries is not None
 
@@ -260,30 +334,39 @@ def build_report(
         _plan_action(entry, runtime_hooks, settings_hooks, settings, repo_root, trust_state)
         for entry in entries
     ]
-    summary = {key: 0 for key in SUMMARY_KEYS}
-    for action in actions:
-        status = action.get("status")
-        if status in summary:
-            summary[str(status)] += 1
+    writes: list[dict[str, str]] = []
+    if mode == "remove":
+        return _error_report(
+            "remove mode is not implemented yet",
+            mode,
+            repo_root,
+            catalog_path,
+            hooks_path,
+            settings_path,
+            trust_state_path,
+        ), 1
+    if mode == "apply":
+        actions, writes = _apply_actions(actions, settings, settings_path)
 
     return {
         "schema_version": 2,
         "status": "ok",
-        "mode": "dry-run",
+        "mode": mode,
         "repo_root": str(repo_root),
         "catalog_path": str(catalog_path),
         "hooks_path": str(hooks_path),
         "settings_path": str(settings_path),
         "trust_state_path": str(trust_state_path),
         "includes": includes,
-        "summary": summary,
+        "summary": _summarize(actions),
         "actions": actions,
-        "writes": [],
+        "writes": writes,
     }, 0
 
 
 def _error_report(
     error: str,
+    mode: str,
     repo_root: Path,
     catalog_path: Path,
     hooks_path: Path,
@@ -293,7 +376,7 @@ def _error_report(
     return {
         "schema_version": 2,
         "status": "error",
-        "mode": "dry-run",
+        "mode": mode,
         "repo_root": str(repo_root),
         "catalog_path": str(catalog_path),
         "hooks_path": str(hooks_path),
@@ -333,13 +416,19 @@ def _format_human(report: dict[str, Any]) -> str:
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Preview Athanor hook settings changes without writing files.",
+        description="Preview or apply Athanor hook settings changes.",
     )
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
     parser.add_argument("--catalog", help="Hook catalog JSON path.")
     parser.add_argument("--hooks", help="Runtime hooks JSON path.")
     parser.add_argument("--settings", help="Claude settings JSON path.")
     parser.add_argument("--trust-state", help="Hook installer trust state JSON path.")
+    parser.add_argument(
+        "--mode",
+        choices=sorted(VALID_MODES),
+        default="dry-run",
+        help="Installer operation mode. Defaults to dry-run.",
+    )
     parser.add_argument(
         "--include",
         action="append",
@@ -373,6 +462,7 @@ def main(argv: list[str] | None = None) -> int:
         settings_path=settings_path,
         trust_state_path=trust_state_path,
         includes=list(args.include),
+        mode=args.mode,
     )
     if args.json:
         sys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + "\n")

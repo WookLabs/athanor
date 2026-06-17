@@ -57,7 +57,7 @@ compatibility. Default mode remains `dry-run`.
 - Extend installer CLI and module.
 - Add `tests/test_regression_hook_installer_apply.py`
 
-- [ ] Write failing tests for:
+- [x] Write failing tests for:
   - trusted `would-add` hook writes settings;
   - settings parent directory creation;
   - atomic temp+replace write;
@@ -65,8 +65,8 @@ compatibility. Default mode remains `dry-run`.
   - capture-only include stays blocked;
   - untrusted include stays blocked;
   - existing non-matching event hooks block apply with no write.
-- [ ] Implement `--mode apply`.
-- [ ] Run apply tests.
+- [x] Implement `--mode apply`.
+- [x] Run apply tests.
 
 ## Task 4: Remove Mode
 
