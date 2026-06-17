@@ -211,3 +211,27 @@ def test_unreleased_documents_observability_trends():
         "CHANGELOG [Unreleased] must explain P10 observability trends; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_entropy_cleanup_report_gate():
+    """P11 entropy cleanup should run before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Entropy cleanup report gate" in workflow
+    assert "python scripts/gates/entropy_cleanup.py --json" in workflow
+
+
+def test_unreleased_documents_entropy_cleanup_loop():
+    """The Unreleased story must name the P11 entropy cleanup loop."""
+    section = _unreleased_section()
+    required = [
+        "Entropy cleanup report gate",
+        "scripts/gates/entropy_cleanup.py",
+        "capture-only hook candidates",
+        "ref freshness",
+        "read-only",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P11 entropy cleanup; "
+        f"missing: {missing}"
+    )

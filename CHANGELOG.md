@@ -71,6 +71,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   workflow eval scores, hook latency ratios, durable loop actions, and
   escalations can be tracked in local `.athanor/observability/trends.jsonl`
   history without enabling new hooks or external telemetry.
+- **Entropy cleanup report gate.** Adds read-only
+  `scripts/gates/entropy_cleanup.py` plus
+  `schemas/entropy-cleanup-report.schema.json` to surface stale plans,
+  capture-only hook candidates, ref freshness, and runtime
+  mirror/conformance drift as structured cleanup actions before P12 expands
+  live orchestration.
 
 ### Changed
 
