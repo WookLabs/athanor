@@ -399,14 +399,14 @@ git commit -m "docs: wire cross-runtime conformance into CI story"
 
 ## Task 5: Verification And Merge
 
-- [ ] Run targeted gate:
+- [x] Run targeted gate:
 
 ```bash
 python scripts/gates/runtime_conformance.py --json
 python -m pytest tests/test_regression_runtime_conformance.py tests/test_regression_cross_runtime_hook_matrix.py tests/test_regression_codex_companion.py -q
 ```
 
-- [ ] Run release and workflow gates:
+- [x] Run release and workflow gates:
 
 ```bash
 python scripts/check_release_ready.py --ci
