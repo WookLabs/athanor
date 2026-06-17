@@ -1,8 +1,8 @@
 # Current Workflow, Loop, And Harness Research Comparison
 
 Date: 2026-06-18
-Local branch: `feat/p21-package-footprint-policy`
-Local baseline commit: `2aa88e6`
+Local branch: `feat/p23-native-runtime-playbook`
+Local baseline commit: `e783ff3`
 
 ## Executive Verdict
 
@@ -16,11 +16,10 @@ trace-backed improvement loops, evals that can be rerun, short entrypoint
 knowledge with indexed deeper docs, native context isolation, and package
 surfaces that stay lean enough to ship.
 
-Against that frontier, Athanor's remaining gaps are now concentrated in two
-places:
+Against that frontier, Athanor's remaining gap is now concentrated in one
+place:
 
-1. operator-approved native runtime escalation;
-2. reactive event/channel compatibility.
+1. reactive event/channel compatibility.
 
 P21, the package footprint policy gate, has now closed the lowest-risk
 sub-9.5 gap. The gate keeps packaging read-only, reports ship-profile budgets,
@@ -32,6 +31,11 @@ gap enough for the current 9.5 target. It exports packaged workflow episodes
 into inspect-like and harbor-like task, scorer, and sandbox metadata without
 installing external harnesses or enabling networked execution by default.
 
+P23, the native runtime playbook, has now closed the native escalation gap
+enough for the current 9.5 target. It converts dry-run probe plans into
+operator-approved recipes for manual worktree, dynamic workflow, and
+agent-team lifecycles while keeping `auto_execute: false`.
+
 ## External Sources Checked
 
 - OpenAI, "Harness engineering: leveraging Codex in an agent-first world",
@@ -42,6 +46,10 @@ installing external harnesses or enabling networked execution by default.
 - OpenAI Cookbook, "Build an Agent Improvement Loop with Traces, Evals, and
   Codex", 2026:
   https://developers.openai.com/cookbook/examples/agents_sdk/agent_improvement_loop
+- OpenAI Developers, "Run long horizon tasks with Codex", 2026:
+  https://developers.openai.com/blog/run-long-horizon-tasks-with-codex
+- OpenAI Agents SDK docs, traces, guardrails, and observability, 2026:
+  https://developers.openai.com/api/docs/guides/agents
 - OpenAI, "The next evolution of the Agents SDK", 2026-04-15:
   https://openai.com/index/the-next-evolution-of-the-agents-sdk/
 - Anthropic, "Demystifying evals for AI agents", 2026-01-09:
@@ -52,7 +60,9 @@ installing external harnesses or enabling networked execution by default.
   2026-06-16:
   https://www.anthropic.com/research/claude-code-expertise
 - Claude Code docs, hooks:
-  https://code.claude.com/docs/en/hooks-guide
+  https://code.claude.com/docs/en/hooks
+- Claude Code docs, memory:
+  https://code.claude.com/docs/en/memory
 - Claude Code docs, plugins reference:
   https://code.claude.com/docs/en/plugins-reference
 - Claude Code docs, subagents:
@@ -65,8 +75,18 @@ installing external harnesses or enabling networked execution by default.
   https://docs.langchain.com/oss/python/langgraph/overview
 - Terminal-Bench, "Introducing Terminal-Bench 2.0 and Harbor", 2025-11-07:
   https://www.tbench.ai/news/announcement-2-0
+- Terminal-Bench, 2026 benchmark site:
+  https://www.tbench.ai/
+- Terminal-Bench paper, 2026:
+  https://arxiv.org/html/2601.11868v1
 - Harbor docs, "Running Terminal-Bench":
   https://www.harborframework.com/docs/tutorials/running-terminal-bench
+- Harbor framework:
+  https://www.harborframework.com/
+- Martin Fowler, "Harness engineering for coding agent users", 2026:
+  https://martinfowler.com/articles/harness-engineering.html
+- MindStudio, "What Is Loop Engineering?", 2026-06-09:
+  https://www.mindstudio.ai/blog/what-is-loop-engineering-ai-coding-agents
 - Microsoft AutoGen research page:
   https://www.microsoft.com/en-us/research/project/autogen/
 
@@ -85,9 +105,11 @@ only four loader-visible agents, and moves heavier process into skills,
 reference docs, and deterministic scripts. This is stronger than most plugin
 collections that accumulate commands without a routing policy.
 
-Remaining gap: native dynamic-workflow, agent-team, and worktree surfaces are
-detected and documented, but still dry-run/manual by design. That is safe, but
-it means Athanor is not yet a first-class native runtime orchestrator.
+P23 result: native dynamic-workflow, agent-team, and worktree surfaces remain
+dry-run/manual by default, but they now have checked operator-approved
+preflight, launch-template, evidence, and cleanup recipes. That is the right
+boundary for a local-first plugin; a real launcher should remain future work
+until approved runs prove value.
 
 ### 2. Loop Engineering
 
@@ -96,6 +118,12 @@ clear exit conditions. OpenAI's agent-improvement-loop framing is especially
 relevant: traces preserve what happened, feedback explains what mattered, evals
 make the expectation reusable, and Codex can implement the next harness
 change.
+
+The newer loop-engineering writing is directionally useful but less precise
+than the primary engineering sources: a production loop needs termination
+logic, error classification, and real adaptation instead of repeating the same
+failed action. Athanor's no-progress exits and deterministic fixture gates are
+therefore more important than adding a visible "loop" label.
 
 Athanor qualifies as loop engineering:
 
@@ -118,6 +146,12 @@ garbage collection. LangChain's Terminal-Bench result shows the same theme:
 performance changed materially through self-verification, tracing, and harness
 changes rather than model changes.
 
+The recurring external pattern is now clear: a harness must make the agent's
+environment legible, executable, constrained, and observable. Fowler's "outer
+harness" framing also matches Athanor's design: improve first-pass success and
+then catch mistakes before human review. That argues for P23 playbooks and P24
+event fixtures, not for more default commands.
+
 Athanor is aligned here:
 
 - hooks are evidence-bound and replayed;
@@ -137,6 +171,12 @@ Anthropic's eval guidance and Harbor/Terminal-Bench converge on repeatable
 agent trials, verified tasks, graders, containerized execution, and frameworks
 that can run at scale. OpenAI's 2026 Agents SDK direction adds native sandbox
 execution and portable manifests for files and outputs.
+
+Terminal-Bench's 2026 paper describes tasks in Harbor format and execution
+through the Harbor harness for agents including Claude Code and Codex CLI.
+That validates P22's adapter shape: Athanor should be able to describe its
+tasks and scorers in external-harness terms without making external sandbox
+execution mandatory.
 
 Athanor is strong locally but incomplete externally:
 
@@ -158,6 +198,11 @@ labor: humans decide what to build and agents decide how to execute. The more
 domain expertise the user brings, the more useful work the agent can do per
 instruction.
 
+Claude Code's current memory docs make the same split operational: persistent
+instructions and auto memory guide behavior, but hooks are needed when a rule
+must actually block or enforce. Athanor is aligned because high-risk behavior
+is enforced by hooks and gates rather than hidden in broad instructions.
+
 Athanor is built around that same premise. Its best feature is not autonomous
 launching; it is forcing the human to preserve intent and evidence through
 plans, reviews, receipts, and verifiable gates.
@@ -178,6 +223,7 @@ python scripts/evals/package_workflow_episode.py --scenario-root tests/fixtures/
 python scripts/evals/export_external_eval_adapter.py --episode-root .athanor/episodes/workflow-evals --output-dir .athanor/external-evals/workflow-evals --json
 python scripts/gates/harness_decision_ledger.py --json
 python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json
+python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json
 ```
 
 Observed:
@@ -185,16 +231,18 @@ Observed:
 - Maintenance profile: warn, 6/6 steps, 1 warning, 0 failures,
   `irreversible_actions: 0`.
 - Distribution smoke: pass, 7 checks in skip-Claude mode.
-- Package footprint policy: warn, 475 files, about 4.1 MB, 0 hard budget
+- Package footprint policy: warn, 482 files, about 4.13 MB, 0 hard budget
   failures, 20 development-only candidates, `irreversible_actions: 0`.
 - External eval adapter: pass, 2 compatibility profiles, network disabled,
   external telemetry disabled, setup commands 0.
 - Agent surface: exactly `ci-watcher`, `codex-dispatcher`, `learner`,
   `releaser`.
-- Harness decision ledger: pass, 6 decisions after P22.
+- Harness decision ledger: pass, 7 decisions after P23.
 - Native runtime probe fixtures: pass; dynamic workflow, agent team, and
   worktree are intentionally dry-run/operator-approved rather than
   auto-launched.
+- Native runtime playbook fixtures: pass; 3 fixtures, 7 recipes,
+  `auto_executable_recipes: 0`, `irreversible_actions: 0`.
 
 ## Scorecard
 
@@ -210,7 +258,7 @@ Observed:
 | Distribution smoke | 9.65 | Manifest, loader-visible agents, package existence, and footprint policy are checked. |
 | Package footprint policy | 9.55 | Read-only budgets and dev-only classification now exist; actual exclusions remain future packaging work. |
 | External benchmark/sandbox interop | 9.6 | Portable episodes now export inspect-like/harbor-like task, scorer, and local-only sandbox metadata. |
-| Native execution escalation | 9.35 | Safe dry-run posture; no operator-approved executable recipes yet. |
+| Native execution escalation | 9.6 | Operator-approved worktree/dynamic-workflow/agent-team recipes now exist; default auto-execution stays blocked. |
 | Reactive channels/events | 8.9 | Polling and CI gates exist; pushed event compatibility is absent. |
 | Knowledge surface freshness | 9.25 | Rich docs and cleanup gates exist; runtime/ship surface is too broad. |
 
@@ -228,11 +276,10 @@ Observed:
 
 ## What Is Missing
 
-1. Operator-approved worktree/dynamic-workflow/agent-team recipes.
-2. Local-only fake channel fixture for pushed CI/review events.
-3. Long-run history proving P17/P18/P20/P21/P22 improve outcomes across many
+1. Local-only fake channel fixture for pushed CI/review events.
+2. Long-run history proving P17/P18/P20/P21/P22/P23 improve outcomes across many
    cycles.
-4. A short package-facing knowledge index distinct from full development
+3. A short package-facing knowledge index distinct from full development
    history.
 
 ## What Is Overbuilt
@@ -277,6 +324,8 @@ Target movement:
 
 ### P23: Native Runtime Playbook
 
+Status: implemented on branch `feat/p23-native-runtime-playbook`.
+
 Add operator-approved recipes for worktree creation/cleanup, dynamic workflow
 fanout, and agent-team lifecycle fixtures. Keep auto-launch blocked by
 default.
@@ -306,10 +355,9 @@ Target movement:
 
 ## Decision
 
-Continue with P23 after P22 is merged.
+Continue with P24 after P23 is merged.
 
-Reason: P21 and P22 made the distinction between development repository,
-runtime plugin, and external eval package explicit. P23 should now convert the
-safe native-runtime probe posture into operator-approved playbooks for
-worktree, dynamic workflow, and agent-team lifecycle without default
-auto-launch.
+Reason: P21, P22, and P23 made the distinction between development
+repository, runtime plugin, external eval package, and native runtime
+escalation explicit. P24 should now add local-only reactive channel fixtures
+for pushed CI/review events without enabling a default listener.

@@ -87,6 +87,9 @@ jobs:
       - name: Native runtime probe gate
         shell: bash
         run: python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json
+      - name: Native runtime playbook gate
+        shell: bash
+        run: python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json
       - name: Maintenance profile gate
         shell: bash
         run: python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json

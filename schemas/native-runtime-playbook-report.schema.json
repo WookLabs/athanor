@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/native-runtime-playbook-report.schema.json",
+  "title": "Athanor Native Runtime Playbook Fixture Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "auto_executable_recipes",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "fixtures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auto_executable_recipes": {
+          "type": "integer",
+          "const": 0
+        },
+        "irreversible_actions": {
+          "type": "integer",
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "playbook"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "playbook": {
+            "$ref": "#/$defs/playbook"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "safety": {
+      "$ref": "#/$defs/safety"
+    },
+    "recipes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recipe"
+      }
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "errors": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "playbook": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "profile_id",
+        "status",
+        "summary",
+        "safety",
+        "recipes",
+        "warnings",
+        "errors"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "profile_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "summary": {
+          "type": "object",
+          "required": [
+            "recipes",
+            "auto_executable_recipes",
+            "irreversible_actions"
+          ],
+          "properties": {
+            "recipes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "native_recipes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "operator_approval_required": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "auto_executable_recipes": {
+              "type": "integer",
+              "const": 0
+            },
+            "irreversible_actions": {
+              "type": "integer",
+              "const": 0
+            }
+          },
+          "additionalProperties": true
+        },
+        "safety": {
+          "$ref": "#/$defs/safety"
+        },
+        "recipes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recipe"
+          }
+        },
+        "warnings": {
+          "type": "array"
+        },
+        "errors": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "read_only_report",
+        "executes_commands",
+        "writes_runtime_state",
+        "auto_launch_allowed",
+        "external_telemetry",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "read_only_report": {
+          "const": true
+        },
+        "executes_commands": {
+          "const": false
+        },
+        "writes_runtime_state": {
+          "const": false
+        },
+        "auto_launch_allowed": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "recipe": {
+      "type": "object",
+      "required": [
+        "backend",
+        "surface_status",
+        "dry_run_source_mode",
+        "auto_execute",
+        "operator_approval_required",
+        "mutates_files_by_default",
+        "external_telemetry",
+        "approval_prompt",
+        "preflight_commands",
+        "manual_commands",
+        "evidence_required",
+        "cleanup_commands"
+      ],
+      "properties": {
+        "backend": {
+          "enum": [
+            "solo",
+            "subagent-wave",
+            "manual-worktree",
+            "dynamic-workflow",
+            "agent-team"
+          ]
+        },
+        "surface": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "surface_status": {
+          "type": "string"
+        },
+        "dry_run_source_mode": {
+          "type": "string"
+        },
+        "auto_execute": {
+          "const": false
+        },
+        "operator_approval_required": {
+          "type": "boolean"
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "approval_prompt": {
+          "type": "string"
+        },
+        "preflight_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manual_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cleanup_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

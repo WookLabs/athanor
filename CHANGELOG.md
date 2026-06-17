@@ -105,6 +105,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   episodes into inspect-like and harbor-like task, scorer, and
   `sandbox/manifest.json` metadata while keeping no default external execution,
   no dependency installation, no network access, and no external telemetry.
+- **Native runtime playbook.** Adds
+  `scripts/gates/native_runtime_playbook.py` and
+  `schemas/native-runtime-playbook-report.schema.json` to turn native runtime
+  probe dry-runs into operator-approved recipes for `manual-worktree`,
+  `dynamic-workflow`, and `agent-team` lifecycles while keeping
+  `auto_execute: false`, explicit cleanup, and zero irreversible actions by
+  default.
 - **Distribution smoke gate.** Adds
   `scripts/gates/distribution_smoke.py` and a named CI gate that runs
   `claude plugin details` when available, verifies the live 4-agent loader

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p23-native-runtime-playbook",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "native_runtime_escalation",
+      "summary": "Convert native runtime probe dry-run plans into operator-approved playbooks for manual worktree, dynamic workflow, and agent-team lifecycles without enabling default auto-execution.",
+      "expected_metrics": [
+        {
+          "metric": "native_runtime_playbook.status",
+          "direction": "stay",
+          "target": "pass for committed native runtime probe fixtures"
+        },
+        {
+          "metric": "native_runtime_playbook.auto_executable_recipes",
+          "direction": "stay",
+          "target": "0"
+        },
+        {
+          "metric": "native_execution_escalation_score",
+          "direction": "increase",
+          "target": "at least 9.5/10 after operator-approved recipes are CI-visible"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json",
+          "expected": "status pass with auto_executable_recipes 0 and irreversible_actions 0"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_native_runtime_playbook.py tests/test_regression_native_runtime_probe.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P23 tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p23-native-runtime-playbook"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P23 adds a read-only native runtime playbook gate, schema, operator docs, CI step, and explicit approval/cleanup recipes.",
+          "evidence_refs": [
+            "scripts/gates/native_runtime_playbook.py",
+            "docs/native-runtime-playbook.md",
+            ".github/workflows/validate-plugin.yml"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and playbook gate if the recipes prove misleading; follow up with an explicit apply-mode launcher only after operator-approved runs produce useful evidence."
+    }
+  ]
+}

@@ -486,6 +486,33 @@ def test_unreleased_documents_external_eval_adapter():
     )
 
 
+def test_ci_runs_native_runtime_playbook_gate():
+    """P23 native runtime playbook should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Native runtime playbook gate" in workflow
+    assert "python scripts/gates/native_runtime_playbook.py" in workflow
+    assert "--fixture-root tests/fixtures/native_runtime_probe --json" in workflow
+
+
+def test_unreleased_documents_native_runtime_playbook():
+    """The Unreleased story must name the P23 native runtime playbook."""
+    section = _unreleased_section()
+    required = [
+        "Native runtime playbook",
+        "scripts/gates/native_runtime_playbook.py",
+        "operator-approved",
+        "manual-worktree",
+        "dynamic-workflow",
+        "agent-team",
+        "auto_execute",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P23 native runtime playbook; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
