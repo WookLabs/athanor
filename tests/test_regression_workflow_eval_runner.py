@@ -139,3 +139,17 @@ def test_eval_runner_fails_when_required_escalation_is_missing(tmp_path: Path) -
     scenario = report["scenarios"][0]
     assert scenario["status"] == "fail"
     assert scenario["graders"][0]["status"] == "fail"
+
+
+def test_committed_workflow_eval_scenarios_pass() -> None:
+    proc = _run_eval(REPO_ROOT / "tests" / "fixtures" / "workflow_evals")
+
+    assert proc.returncode == 0, proc.stderr
+    report = json.loads(proc.stdout)
+    assert report["status"] == "pass"
+    assert {item["id"] for item in report["scenarios"]} == {
+        "work-evidence-happy-path",
+        "work-missing-evidence-escalates",
+        "lfg-goal-receipt-loop",
+    }
+    assert all(item["score"] == 1.0 for item in report["scenarios"])

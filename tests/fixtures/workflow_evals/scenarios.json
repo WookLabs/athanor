@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "description": "A /athanor:work run records verifier evidence before finishing successfully.",
+      "graders": [
+        {
+          "id": "work-started",
+          "kind": "require_event",
+          "match": {
+            "event_type": "workflow.started",
+            "phase": "work",
+            "status": "started"
+          }
+        },
+        {
+          "id": "verifier-passed",
+          "kind": "require_event",
+          "match": {
+            "event_type": "verifier.result",
+            "status": "pass"
+          }
+        },
+        {
+          "id": "verifier-references-test-evidence",
+          "kind": "require_reference",
+          "match": {
+            "event_type": "verifier.result"
+          },
+          "reference": "test-evidence.jsonl"
+        },
+        {
+          "id": "verification-before-finish",
+          "kind": "require_order",
+          "before": {
+            "event_type": "verifier.result"
+          },
+          "after": {
+            "event_type": "workflow.finished"
+          }
+        },
+        {
+          "id": "no-escalation-on-happy-path",
+          "kind": "forbid_event",
+          "match": {
+            "event_type": "escalation.required"
+          }
+        }
+      ],
+      "id": "work-evidence-happy-path",
+      "min_score": 1.0,
+      "trace": [
+        {
+          "actor": "leader",
+          "event_type": "workflow.started",
+          "message": "work execution started",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 1,
+          "status": "started",
+          "trace_id": "scenario-work-happy"
+        },
+        {
+          "actor": "worker",
+          "event_type": "agent.dispatched",
+          "message": "executor dispatched",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 2,
+          "status": "started",
+          "trace_id": "scenario-work-happy"
+        },
+        {
+          "actor": "gate",
+          "event_type": "verifier.result",
+          "message": "pytest evidence matched ATHANOR_RESULT",
+          "phase": "work",
+          "references": [
+            ".athanor/sessions/2026-06-17-001/.hook-state/test-evidence.jsonl"
+          ],
+          "schema_version": 1,
+          "seq": 3,
+          "status": "pass",
+          "trace_id": "scenario-work-happy"
+        },
+        {
+          "actor": "leader",
+          "event_type": "workflow.finished",
+          "message": "work finished with verified evidence",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 4,
+          "status": "pass",
+          "trace_id": "scenario-work-happy"
+        }
+      ]
+    },
+    {
+      "description": "A /athanor:work run with missing evidence records an escalation before finishing with concern.",
+      "graders": [
+        {
+          "id": "missing-evidence-concern",
+          "kind": "require_event",
+          "match": {
+            "event_type": "verifier.result",
+            "status": "concern"
+          }
+        },
+        {
+          "id": "escalation-required",
+          "kind": "require_event",
+          "match": {
+            "event_type": "escalation.required",
+            "status": "escalated"
+          }
+        },
+        {
+          "id": "escalation-after-verifier",
+          "kind": "require_order",
+          "before": {
+            "event_type": "verifier.result"
+          },
+          "after": {
+            "event_type": "escalation.required"
+          }
+        },
+        {
+          "id": "no-false-success-finish",
+          "kind": "forbid_event",
+          "match": {
+            "event_type": "workflow.finished",
+            "status": "pass"
+          }
+        }
+      ],
+      "id": "work-missing-evidence-escalates",
+      "min_score": 1.0,
+      "trace": [
+        {
+          "actor": "leader",
+          "event_type": "workflow.started",
+          "message": "work execution started",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 1,
+          "status": "started",
+          "trace_id": "scenario-work-escalates"
+        },
+        {
+          "actor": "gate",
+          "event_type": "verifier.result",
+          "message": "test evidence missing in warn mode",
+          "phase": "work",
+          "references": [
+            ".athanor/sessions/2026-06-17-002/.hook-state/test-evidence.jsonl"
+          ],
+          "schema_version": 1,
+          "seq": 2,
+          "status": "concern",
+          "trace_id": "scenario-work-escalates"
+        },
+        {
+          "actor": "leader",
+          "event_type": "escalation.required",
+          "message": "leader must surface missing evidence concern",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 3,
+          "status": "escalated",
+          "trace_id": "scenario-work-escalates"
+        },
+        {
+          "actor": "leader",
+          "event_type": "workflow.finished",
+          "message": "work finished with concern, not success",
+          "phase": "work",
+          "schema_version": 1,
+          "seq": 4,
+          "status": "concern",
+          "trace_id": "scenario-work-escalates"
+        }
+      ]
+    },
+    {
+      "description": "A /athanor:lfg-goal cycle validates the receipt before judge verdict and loop completion.",
+      "graders": [
+        {
+          "id": "receipt-validator-ran",
+          "kind": "require_event",
+          "match": {
+            "event_type": "gate.evaluated",
+            "phase": "lfg-goal",
+            "status": "pass"
+          }
+        },
+        {
+          "id": "receipt-reference-present",
+          "kind": "require_reference",
+          "match": {
+            "event_type": "gate.evaluated"
+          },
+          "reference": "receipt.md"
+        },
+        {
+          "id": "judge-after-receipt",
+          "kind": "require_order",
+          "before": {
+            "event_type": "gate.evaluated"
+          },
+          "after": {
+            "event_type": "judge.result"
+          }
+        },
+        {
+          "id": "judge-before-finish",
+          "kind": "require_order",
+          "before": {
+            "event_type": "judge.result"
+          },
+          "after": {
+            "event_type": "workflow.finished"
+          }
+        },
+        {
+          "id": "no-invalid-receipt",
+          "kind": "forbid_event",
+          "match": {
+            "event_type": "gate.evaluated",
+            "status": "failure"
+          }
+        }
+      ],
+      "id": "lfg-goal-receipt-loop",
+      "min_score": 1.0,
+      "trace": [
+        {
+          "actor": "leader",
+          "event_type": "workflow.started",
+          "message": "lfg-goal cycle started",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 1,
+          "status": "started",
+          "trace_id": "scenario-lfg-goal"
+        },
+        {
+          "actor": "gate",
+          "event_type": "gate.evaluated",
+          "message": "receipt validator returned all_valid",
+          "phase": "lfg-goal",
+          "references": [
+            ".athanor/goals/36470e54/receipts/C001-lfg-receipt.md"
+          ],
+          "schema_version": 1,
+          "seq": 2,
+          "status": "pass",
+          "trace_id": "scenario-lfg-goal"
+        },
+        {
+          "actor": "worker",
+          "event_type": "judge.result",
+          "message": "tier 2 judge accepted goal evidence",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 3,
+          "status": "pass",
+          "trace_id": "scenario-lfg-goal"
+        },
+        {
+          "actor": "leader",
+          "event_type": "workflow.finished",
+          "message": "lfg-goal cycle finished after receipt and judge checks",
+          "phase": "lfg-goal",
+          "schema_version": 1,
+          "seq": 4,
+          "status": "pass",
+          "trace_id": "scenario-lfg-goal"
+        }
+      ]
+    }
+  ]
+}
