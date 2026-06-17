@@ -46,7 +46,7 @@
 - Create: `scripts/observability/collect_trend_snapshot.py`
 - Modify: `docs/plans/2026-06-17-p10-live-trace-trends-plan.md`
 
-- [ ] **Step 1: Write failing collector tests**
+- [x] **Step 1: Write failing collector tests**
 
 Create `tests/test_regression_observability_trends.py` with:
 
@@ -115,7 +115,7 @@ def test_collect_snapshot_append_writes_one_jsonl_record(tmp_path: Path) -> None
     assert records == [stdout_snapshot]
 ```
 
-- [ ] **Step 2: Run collector tests to verify RED**
+- [x] **Step 2: Run collector tests to verify RED**
 
 Run:
 
@@ -125,13 +125,13 @@ python -m pytest tests/test_regression_observability_trends.py::test_collect_sna
 
 Expected: FAIL because `scripts/observability/collect_trend_snapshot.py` and the snapshot schema do not exist.
 
-- [ ] **Step 3: Add snapshot schema**
+- [x] **Step 3: Add snapshot schema**
 
 Create `schemas/observability-trend-snapshot.schema.json` with draft-07 schema:
 
 ```json
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Athanor observability trend snapshot",
   "type": "object",
   "additionalProperties": false,
@@ -208,7 +208,7 @@ Create `schemas/observability-trend-snapshot.schema.json` with draft-07 schema:
 }
 ```
 
-- [ ] **Step 4: Implement collector**
+- [x] **Step 4: Implement collector**
 
 Create `scripts/observability/__init__.py`:
 
@@ -411,7 +411,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 5: Run collector tests to verify GREEN**
+- [x] **Step 5: Run collector tests to verify GREEN**
 
 Run:
 
@@ -421,7 +421,7 @@ python -m pytest tests/test_regression_observability_trends.py::test_collect_sna
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit collector**
+- [x] **Step 6: Commit collector**
 
 ```bash
 git add scripts/observability/__init__.py scripts/observability/collect_trend_snapshot.py schemas/observability-trend-snapshot.schema.json tests/test_regression_observability_trends.py docs/plans/2026-06-17-p10-live-trace-trends-plan.md
@@ -551,7 +551,7 @@ Create `schemas/observability-trend-report.schema.json` with:
 
 ```json
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Athanor observability trend report",
   "type": "object",
   "additionalProperties": false,

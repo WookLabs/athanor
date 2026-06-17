@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athanor observability trend snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "captured_at",
+    "git",
+    "workflow_eval",
+    "hook_performance",
+    "durable_loop"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "captured_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "sha"],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        }
+      }
+    },
+    "workflow_eval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "scenario_count",
+        "min_score",
+        "mean_score",
+        "failed_scenarios"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "scenario_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "min_score": {
+          "type": "number"
+        },
+        "mean_score": {
+          "type": "number"
+        },
+        "failed_scenarios": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hook_performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "hook_count", "max_budget_ratio", "hooks"],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "hook_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_budget_ratio": {
+          "type": "number"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "event",
+              "max_ms",
+              "budget_ms",
+              "budget_ratio",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "event": {
+                "type": "string"
+              },
+              "max_ms": {
+                "type": ["number", "null"]
+              },
+              "budget_ms": {
+                "type": ["number", "null"]
+              },
+              "budget_ratio": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "durable_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "scenario_count", "actions", "decision_statuses"],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "scenario_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "decision_statuses": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}
