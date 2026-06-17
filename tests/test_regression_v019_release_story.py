@@ -406,6 +406,34 @@ def test_unreleased_documents_native_runtime_probe():
     )
 
 
+def test_ci_runs_maintenance_profile_gate():
+    """P20 maintenance profile should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Maintenance profile gate" in workflow
+    assert "python scripts/gates/maintenance_profile.py" in workflow
+    assert "--skip-claude --ref-warn-days 99999 --samples 1 --json" in workflow
+
+
+def test_unreleased_documents_maintenance_profile_gate():
+    """The Unreleased story must name the P20 maintenance profile."""
+    section = _unreleased_section()
+    required = [
+        "Maintenance profile gate",
+        "scripts/gates/maintenance_profile.py",
+        "/loop",
+        "entropy cleanup",
+        "distribution smoke",
+        "observability",
+        "native runtime probe",
+        "read-only",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P20 maintenance profile; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")

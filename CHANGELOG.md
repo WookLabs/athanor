@@ -119,6 +119,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   `/loop`, worktree, dynamic workflow, and agent team readiness. The probe
   emits dry-run launch plans only, keeps `auto_launch_allowed: false`, and
   fails profiles that try to make native runtime surfaces executable by default.
+- **Maintenance profile gate.** Adds read-only
+  `scripts/gates/maintenance_profile.py` as a CI and `/loop` profile that
+  packages entropy cleanup, distribution smoke, observability snapshots,
+  native runtime probe, and harness decision ledger checks into one operator
+  report with zero irreversible actions by default.
 
 ### Changed
 

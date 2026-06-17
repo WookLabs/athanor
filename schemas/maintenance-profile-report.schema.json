@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/maintenance-profile-report.schema.json",
+  "title": "Athanor Maintenance Profile Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "generated_at",
+    "profile",
+    "summary",
+    "operator",
+    "steps"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry"
+      ],
+      "properties": {
+        "id": {
+          "const": "weekly-read-only"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "steps",
+        "passed",
+        "warnings",
+        "failures",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "operator": {
+      "type": "object",
+      "required": [
+        "profile",
+        "ci_command",
+        "loop_prompt"
+      ],
+      "properties": {
+        "profile": {
+          "const": "weekly-read-only"
+        },
+        "ci_command": {
+          "type": "string"
+        },
+        "loop_prompt": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "read_only",
+          "command",
+          "summary",
+          "report"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ]
+          },
+          "read_only": {
+            "const": true
+          },
+          "command": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object"
+          },
+          "report": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

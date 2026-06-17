@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p20-maintenance-profile",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "maintenance",
+      "summary": "Add a read-only maintenance profile gate that packages entropy cleanup, distribution smoke, observability snapshot, native runtime probe, and harness decision ledger checks.",
+      "expected_metrics": [
+        {
+          "metric": "maintenance_profile.failures",
+          "direction": "stay_or_decrease",
+          "target": "0 failures in CI-safe maintenance profile"
+        },
+        {
+          "metric": "maintenance_profile.irreversible_actions",
+          "direction": "stay",
+          "target": "0 irreversible actions"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json",
+          "expected": "status pass or warn with 0 failures and 0 irreversible actions"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_maintenance_profile.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P20 tests pass"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P20 profile gate and focused regression tests passed during implementation.",
+          "evidence_refs": [
+            "tests/test_regression_maintenance_profile.py",
+            "docs/maintenance-profile.md"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and profile gate if the composite report becomes too noisy; follow up with package-footprint policy."
+    }
+  ]
+}
+
