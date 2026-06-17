@@ -1,0 +1,23 @@
+{
+  "id": "solo-small-patch",
+  "request": {
+    "task": "Adjust one documentation typo",
+    "risk": "low",
+    "estimated_files": 1,
+    "parallel_workers": 0,
+    "same_file_risk": "low",
+    "long_running": false,
+    "requires_isolation": false,
+    "requires_peer_coordination": false,
+    "requires_rerunnable_script": false,
+    "requires_human_review": false
+  },
+  "expect": {
+    "recommended_backend": "solo",
+    "isolation": "current-checkout",
+    "reason_ids": [
+      "small-task",
+      "low-conflict"
+    ]
+  }
+}

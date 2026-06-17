@@ -1,0 +1,27 @@
+{
+  "id": "manual-worktree-conflict",
+  "request": {
+    "task": "Have several workers modify the same runtime files",
+    "risk": "high",
+    "estimated_files": 8,
+    "parallel_workers": 4,
+    "same_file_risk": "high",
+    "long_running": false,
+    "requires_isolation": true,
+    "requires_peer_coordination": false,
+    "requires_rerunnable_script": false,
+    "requires_human_review": true,
+    "capabilities": {
+      "worktree": "manual",
+      "subagent_wave": "available"
+    }
+  },
+  "expect": {
+    "recommended_backend": "manual-worktree",
+    "isolation": "worktree-required",
+    "reason_ids": [
+      "same-file-conflict",
+      "isolation-required"
+    ]
+  }
+}

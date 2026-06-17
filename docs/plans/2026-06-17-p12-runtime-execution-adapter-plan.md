@@ -243,7 +243,7 @@ git commit -m "test: cover runtime execution adapter"
 - Create: `schemas/runtime-execution-adapter-report.schema.json`
 - Create: `tests/fixtures/runtime_execution/*.json`
 
-- [ ] **Step 1: Add report schema**
+- [x] **Step 1: Add report schema**
 
 Create `schemas/runtime-execution-adapter-report.schema.json` with:
 
@@ -338,7 +338,7 @@ Create `schemas/runtime-execution-adapter-report.schema.json` with:
 }
 ```
 
-- [ ] **Step 2: Add committed fixtures**
+- [x] **Step 2: Add committed fixtures**
 
 Create these six files:
 
@@ -515,7 +515,7 @@ Create these six files:
 }
 ```
 
-- [ ] **Step 3: Commit schema and fixtures**
+- [x] **Step 3: Commit schema and fixtures**
 
 ```bash
 git add schemas/runtime-execution-adapter-report.schema.json tests/fixtures/runtime_execution

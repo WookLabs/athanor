@@ -1,0 +1,30 @@
+{
+  "id": "agent-team-fallback",
+  "request": {
+    "task": "Compare competing debugging hypotheses with independent reviewers",
+    "risk": "medium",
+    "estimated_files": 4,
+    "parallel_workers": 3,
+    "same_file_risk": "low",
+    "long_running": false,
+    "requires_isolation": false,
+    "requires_peer_coordination": true,
+    "requires_rerunnable_script": false,
+    "requires_human_review": true,
+    "capabilities": {
+      "agent_team": "unknown",
+      "subagent_wave": "available"
+    }
+  },
+  "expect": {
+    "recommended_backend": "subagent-wave",
+    "fallback_backend": "agent-team",
+    "isolation": "current-checkout",
+    "warning_ids": [
+      "agent-team-unknown"
+    ],
+    "blocked_capabilities": [
+      "agent_team"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "subagent-wave-parallel",
+  "request": {
+    "task": "Review three independent modules and summarize findings",
+    "risk": "medium",
+    "estimated_files": 6,
+    "parallel_workers": 3,
+    "same_file_risk": "low",
+    "long_running": false,
+    "requires_isolation": false,
+    "requires_peer_coordination": false,
+    "requires_rerunnable_script": false,
+    "requires_human_review": true,
+    "capabilities": {
+      "subagent_wave": "available"
+    }
+  },
+  "expect": {
+    "recommended_backend": "subagent-wave",
+    "isolation": "current-checkout",
+    "reason_ids": [
+      "bounded-parallelism"
+    ]
+  }
+}

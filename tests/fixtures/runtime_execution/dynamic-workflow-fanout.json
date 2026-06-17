@@ -1,0 +1,30 @@
+{
+  "id": "dynamic-workflow-fanout",
+  "request": {
+    "task": "Run a codebase-wide migration audit with reusable orchestration",
+    "risk": "medium",
+    "estimated_files": 45,
+    "parallel_workers": 8,
+    "same_file_risk": "low",
+    "long_running": true,
+    "requires_isolation": false,
+    "requires_peer_coordination": false,
+    "requires_rerunnable_script": true,
+    "requires_human_review": true,
+    "capabilities": {
+      "dynamic_workflow": "available",
+      "subagent_wave": "available"
+    }
+  },
+  "expect": {
+    "recommended_backend": "dynamic-workflow",
+    "isolation": "current-checkout",
+    "required_capabilities": [
+      "dynamic_workflow"
+    ],
+    "reason_ids": [
+      "large-fanout",
+      "rerunnable-script"
+    ]
+  }
+}

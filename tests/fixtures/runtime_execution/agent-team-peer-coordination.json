@@ -1,0 +1,29 @@
+{
+  "id": "agent-team-peer-coordination",
+  "request": {
+    "task": "Coordinate frontend, backend, and verification teammates on a feature review",
+    "risk": "medium",
+    "estimated_files": 9,
+    "parallel_workers": 3,
+    "same_file_risk": "low",
+    "long_running": false,
+    "requires_isolation": false,
+    "requires_peer_coordination": true,
+    "requires_rerunnable_script": false,
+    "requires_human_review": true,
+    "capabilities": {
+      "agent_team": "available",
+      "subagent_wave": "available"
+    }
+  },
+  "expect": {
+    "recommended_backend": "agent-team",
+    "isolation": "current-checkout",
+    "required_capabilities": [
+      "agent_team"
+    ],
+    "reason_ids": [
+      "peer-coordination"
+    ]
+  }
+}

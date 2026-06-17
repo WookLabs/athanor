@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/runtime-execution-adapter-report.schema.json",
+  "title": "Athanor Runtime Execution Adapter Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "generated_at",
+    "fixtures"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "fixtures",
+        "passed",
+        "failed"
+      ],
+      "properties": {
+        "fixtures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "recommendation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "recommendation": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "request_id",
+              "recommended_backend",
+              "isolation",
+              "risk_level",
+              "confidence",
+              "reasons",
+              "warnings",
+              "required_capabilities",
+              "blocked_capabilities",
+              "notes"
+            ],
+            "properties": {
+              "schema_version": {
+                "const": 1
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "recommended_backend": {
+                "enum": [
+                  "solo",
+                  "subagent-wave",
+                  "dynamic-workflow",
+                  "agent-team",
+                  "manual-worktree"
+                ]
+              },
+              "fallback_backend": {
+                "enum": [
+                  "solo",
+                  "subagent-wave",
+                  "dynamic-workflow",
+                  "agent-team",
+                  "manual-worktree"
+                ]
+              },
+              "isolation": {
+                "enum": [
+                  "current-checkout",
+                  "worktree-recommended",
+                  "worktree-required"
+                ]
+              },
+              "risk_level": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "confidence": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "reasons": {
+                "type": "array"
+              },
+              "warnings": {
+                "type": "array"
+              },
+              "required_capabilities": {
+                "type": "array"
+              },
+              "blocked_capabilities": {
+                "type": "array"
+              },
+              "notes": {
+                "type": "array"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
