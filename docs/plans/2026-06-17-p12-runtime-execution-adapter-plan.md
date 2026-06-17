@@ -45,7 +45,7 @@
 **Files:**
 - Create: `tests/test_regression_runtime_execution_adapter.py`
 
-- [ ] **Step 1: Add failing regression tests**
+- [x] **Step 1: Add failing regression tests**
 
 Create `tests/test_regression_runtime_execution_adapter.py` with:
 
@@ -215,7 +215,7 @@ def test_invalid_request_exits_two(tmp_path: Path) -> None:
     assert "unsupported risk" in proc.stderr
 ```
 
-- [ ] **Step 2: Run tests to verify RED**
+- [x] **Step 2: Run tests to verify RED**
 
 Run:
 
@@ -228,7 +228,7 @@ Expected:
 - FAIL because `scripts/gates/runtime_execution_adapter.py`, schema, and
   fixtures do not exist.
 
-- [ ] **Step 3: Commit RED tests**
+- [x] **Step 3: Commit RED tests**
 
 ```bash
 git add tests/test_regression_runtime_execution_adapter.py
