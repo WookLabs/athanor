@@ -65,6 +65,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   metadata, Codex companion skills, and `hooks/catalog.json` enabled runtime
   hooks fail CI on drift before any generator or settings writer expands the
   surface.
+- **Observability trend snapshots.** Adds
+  `scripts/observability/collect_trend_snapshot.py`,
+  `scripts/observability/report_trends.py`, and trace-to-scenario promotion so
+  workflow eval scores, hook latency ratios, durable loop actions, and
+  escalations can be tracked in local `.athanor/observability/trends.jsonl`
+  history without enabling new hooks or external telemetry.
 
 ### Changed
 

@@ -55,6 +55,9 @@ jobs:
       - name: Cross-runtime conformance gate
         shell: bash
         run: python scripts/gates/runtime_conformance.py --json
+      - name: Observability trend snapshot gate
+        shell: bash
+        run: python scripts/observability/collect_trend_snapshot.py --json --samples 1
       - name: Hook installer regression gate
         shell: bash
         run: python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q

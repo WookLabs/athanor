@@ -188,3 +188,26 @@ def test_unreleased_documents_cross_runtime_conformance_gate():
         "CHANGELOG [Unreleased] must explain the cross-runtime gate; "
         f"missing: {missing}"
     )
+
+
+def test_ci_runs_observability_trend_snapshot_gate():
+    """P10 observability snapshots should be checked before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Observability trend snapshot gate" in workflow
+    assert "python scripts/observability/collect_trend_snapshot.py --json --samples 1" in workflow
+
+
+def test_unreleased_documents_observability_trends():
+    """The Unreleased story must name local observability trend tooling."""
+    section = _unreleased_section()
+    required = [
+        "Observability trend snapshots",
+        "scripts/observability/collect_trend_snapshot.py",
+        "trace-to-scenario promotion",
+        ".athanor/observability/trends.jsonl",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P10 observability trends; "
+        f"missing: {missing}"
+    )

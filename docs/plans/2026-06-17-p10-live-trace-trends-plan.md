@@ -1037,7 +1037,7 @@ git commit -m "feat: promote workflow traces into eval scenarios"
 - Modify: `tests/test_regression_v019_release_story.py`
 - Modify: `docs/plans/2026-06-17-p10-live-trace-trends-plan.md`
 
-- [ ] **Step 1: Add failing release-story tests**
+- [x] **Step 1: Add failing release-story tests**
 
 Append to `tests/test_regression_v019_release_story.py`:
 
@@ -1065,7 +1065,7 @@ def test_unreleased_documents_observability_trends():
     )
 ```
 
-- [ ] **Step 2: Run release-story tests to verify RED**
+- [x] **Step 2: Run release-story tests to verify RED**
 
 Run:
 
@@ -1075,7 +1075,7 @@ python -m pytest tests/test_regression_v019_release_story.py::test_ci_runs_obser
 
 Expected: FAIL until workflow and changelog are updated.
 
-- [ ] **Step 3: Add documentation**
+- [x] **Step 3: Add documentation**
 
 Create `docs/observability-trends.md` covering:
 
@@ -1123,7 +1123,7 @@ python scripts/observability/promote_trace_scenario.py \
 Review the generated fixture before committing it.
 ````
 
-- [ ] **Step 4: Add CI gate**
+- [x] **Step 4: Add CI gate**
 
 In `.github/workflows/validate-plugin.yml`, add before broad pytest:
 
@@ -1133,7 +1133,7 @@ In `.github/workflows/validate-plugin.yml`, add before broad pytest:
         run: python scripts/observability/collect_trend_snapshot.py --json --samples 1
 ```
 
-- [ ] **Step 5: Add changelog entry**
+- [x] **Step 5: Add changelog entry**
 
 In `CHANGELOG.md` Unreleased Added, add:
 
@@ -1146,7 +1146,7 @@ In `CHANGELOG.md` Unreleased Added, add:
   history without enabling new hooks or external telemetry.
 ```
 
-- [ ] **Step 6: Run docs/release tests**
+- [x] **Step 6: Run docs/release tests**
 
 Run:
 
@@ -1158,7 +1158,7 @@ git diff --check
 
 Expected: all commands exit 0.
 
-- [ ] **Step 7: Commit documentation and CI**
+- [x] **Step 7: Commit documentation and CI**
 
 ```bash
 git add docs/observability-trends.md .github/workflows/validate-plugin.yml CHANGELOG.md tests/test_regression_v019_release_story.py docs/plans/2026-06-17-p10-live-trace-trends-plan.md
