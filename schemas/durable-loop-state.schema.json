@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Athanor durable loop state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "goal_id",
+    "cycle_state",
+    "cycle_phase",
+    "current_cycle",
+    "max_iterations",
+    "no_progress_threshold",
+    "last_receipt_path",
+    "last_validator_status",
+    "tier2_last_verdict",
+    "aborted_reason",
+    "no_progress_count",
+    "stop_reason",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "cycle_state": {
+      "type": "string",
+      "enum": [
+        "aborted",
+        "bootstrapping",
+        "cycle_n_complete",
+        "cycle_n_in_progress",
+        "goal_complete",
+        "scope_change_pending"
+      ]
+    },
+    "cycle_phase": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "lfg_done_seen",
+        "not_started",
+        "receipt_validated",
+        "tier1_checked",
+        "tier2_checked",
+        "tier3_pending",
+        "tier3_ratified"
+      ]
+    },
+    "current_cycle": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_iterations": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "no_progress_threshold": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "last_receipt_path": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "last_validator_status": {
+      "type": "string",
+      "enum": [
+        "all_valid",
+        "completed_with_residuals",
+        "invalid_steps_present",
+        "not_yet_run"
+      ]
+    },
+    "tier2_last_verdict": {
+      "type": ["object", "null"]
+    },
+    "aborted_reason": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "no_progress_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stop_reason": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
