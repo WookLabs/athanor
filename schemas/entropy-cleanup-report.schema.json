@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wooklabs.github.io/athanor/schemas/entropy-cleanup-report.schema.json",
+  "title": "Athanor Entropy Cleanup Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "generated_at",
+    "categories",
+    "checks",
+    "actions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "checks",
+        "warnings",
+        "errors",
+        "actions"
+      ],
+      "properties": {
+        "checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "categories": {
+      "type": "object",
+      "required": [
+        "plans",
+        "hook_candidates",
+        "refs",
+        "mirrors"
+      ],
+      "additionalProperties": true
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "plans",
+              "hook_candidates",
+              "refs",
+              "mirrors"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "category",
+          "target",
+          "recommendation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warn",
+              "fail"
+            ]
+          },
+          "category": {
+            "enum": [
+              "plans",
+              "hook_candidates",
+              "refs",
+              "mirrors"
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -122,3 +122,12 @@ def test_capture_first_lifecycle_events_are_cataloged_as_capture_only():
         else:
             assert "hook_payload_capture.py" in entry["command"]
             assert f"--event {event}" in entry["command"]
+
+
+def test_capture_only_hooks_carry_candidate_lifecycle_metadata():
+    for entry in _catalog_entries():
+        if entry["runtime_default"] != "capture-only":
+            continue
+        assert entry["candidate_since"].count("-") == 2
+        assert isinstance(entry["review_after_days"], int)
+        assert entry["review_after_days"] >= 0
