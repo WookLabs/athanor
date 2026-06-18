@@ -1,0 +1,382 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athanor.local/schemas/organization-work-item-registry-report.schema.json",
+  "title": "Athanor Organization Work-Item Registry Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "generated_at",
+    "profile",
+    "summary",
+    "model",
+    "registry",
+    "offices",
+    "work_items",
+    "checks",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": ["pass", "warn", "fail"]
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry",
+        "auto_runtime_launch"
+      ],
+      "properties": {
+        "id": {
+          "const": "organization-work-item-registry"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "auto_runtime_launch": {
+          "const": false
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checks",
+        "errors",
+        "warnings",
+        "items",
+        "active_items",
+        "blocked_items",
+        "completed_items",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "stage_order"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "files"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "offices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/office"
+      }
+    },
+    "work_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/work_item"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      }
+    }
+  },
+  "$defs": {
+    "office": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "work_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "title",
+        "status",
+        "created_at",
+        "updated_at",
+        "target_score",
+        "current_stage",
+        "owner_office",
+        "owner_role",
+        "source_refs",
+        "acceptance_criteria",
+        "artifacts",
+        "stage_history",
+        "safety"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "target_score": {
+          "type": ["number", "integer", "null"]
+        },
+        "current_stage": {
+          "type": "string"
+        },
+        "owner_office": {
+          "type": "string"
+        },
+        "owner_role": {
+          "type": "string"
+        },
+        "source_refs": {
+          "type": "array"
+        },
+        "acceptance_criteria": {
+          "type": "array"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "stage_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage_history"
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mutates_files_by_default",
+            "external_telemetry",
+            "irreversible_actions"
+          ],
+          "properties": {
+            "mutates_files_by_default": {
+              "type": ["boolean", "null"]
+            },
+            "external_telemetry": {
+              "type": ["boolean", "null"]
+            },
+            "irreversible_actions": {
+              "type": ["integer", "null"]
+            }
+          }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "path", "kind", "status", "exists"],
+      "properties": {
+        "stage": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "stage_history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "order",
+        "status",
+        "owner_role",
+        "artifact_refs",
+        "receipt_ref",
+        "decided_at"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string"
+        },
+        "order": {
+          "type": ["integer", "null"]
+        },
+        "status": {
+          "type": "string"
+        },
+        "owner_role": {
+          "type": "string"
+        },
+        "artifact_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref_report"
+          }
+        },
+        "receipt_ref": {
+          "$ref": "#/$defs/ref_report"
+        },
+        "decided_at": {
+          "type": "string"
+        }
+      }
+    },
+    "ref_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "exists", "status"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": ["pass", "fail"]
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "status", "message"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["pass", "warn", "fail"]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "message", "path"],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "item_id": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

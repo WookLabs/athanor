@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.18.8/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.19.0/schemas/athanor-config.schema.json",
   "version": "1.0",
   "codex": {
     "enabled": true,

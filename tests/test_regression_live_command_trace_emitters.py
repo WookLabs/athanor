@@ -11,6 +11,7 @@ from scripts.evals.workflow_trace import TraceWriter, load_trace
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EMITTER = REPO_ROOT / "scripts" / "evals" / "emit_workflow_trace.py"
 CORE_SKILLS = [
+    REPO_ROOT / "skills" / "assess" / "SKILL.md",
     REPO_ROOT / "skills" / "plan" / "SKILL.md",
     REPO_ROOT / "skills" / "work" / "SKILL.md",
     REPO_ROOT / "skills" / "review" / "SKILL.md",

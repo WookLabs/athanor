@@ -3,7 +3,7 @@
 Pins:
   (a) CLAUDE.md contains the canonical `## Session Lookup Convention` section
       with the lexicographic-selection rule + Bash reference.
-  (b) All 6 session-touching skills reference the canonical section and do
+  (b) All session-touching skills reference the canonical section and do
       NOT carry the old "today's date" prose that caused per-skill drift.
 
 The literal phrase `today's date` MAY appear in the canonical "stale-session
@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 
-SESSION_SKILLS = ["work", "plan", "discuss", "analyze", "debug", "review"]
+SESSION_SKILLS = ["work", "plan", "discuss", "analyze", "assess", "debug", "review"]
 
 
 def _skill_path(name: str) -> Path:
@@ -82,8 +82,8 @@ def test_session_convention_includes_bash_reference():
     )
 
 
-def test_all_6_skills_reference_convention():
-    """Each of the 6 session-touching skills must reference the canonical convention."""
+def test_all_session_skills_reference_convention():
+    """Each session-touching skill must reference the canonical convention."""
     missing = []
     for skill in SESSION_SKILLS:
         path = _skill_path(skill)
@@ -93,7 +93,7 @@ def test_all_6_skills_reference_convention():
             missing.append(skill)
     assert not missing, (
         f"These session-touching skills do NOT reference "
-        f"'Session Lookup Convention': {missing}. v0.7.7 M4 requires all 6 "
+        f"'Session Lookup Convention': {missing}. v0.7.7 M4 requires all "
         f"to defer to the canonical CLAUDE.md section."
     )
 

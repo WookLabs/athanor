@@ -86,6 +86,25 @@ migration guide. LFG users with strong scope-lock requirements should
 be aware that Codex stage writes are on the honour system within this
 release line.
 
+### P26 Organization Operating Model Overlay
+
+Before Step 1, align the run with `docs/organization-operating-model.md`.
+The LFG leader routes the existing 9-step pipeline through that P26
+office/stage graph: intake, requirements, research, planning,
+design-review, execution, verification, release, postmortem, and
+memory-update. This overlay does not add a default live listener,
+registered agents, or external telemetry; it clarifies accountable
+owner roles and keeps the existing receipt obligations explicit.
+
+When a run needs an organization-stage handoff artifact, use
+`scripts/gates/organization_stage_receipt.py` after the relevant LFG evidence
+exists. Preview without writes by omitting `--emit`; write only with `--emit`,
+and update a work item only with `--apply-work-item-update`.
+
+When a postmortem lesson should become operating policy or a gate, record it in
+`docs/policy-promotions/*.json` and validate it with
+`scripts/gates/policy_promotion_ledger.py` before treating it as policy.
+
 ### Step 1 — Invoke `/athanor:plan` (cross-model adversarial)
 
 Invoke the `/athanor:plan` skill with the user's feature description.

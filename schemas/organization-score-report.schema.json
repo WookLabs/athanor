@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athanor.local/schemas/organization-score-report.schema.json",
+  "title": "Athanor Organization Score Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "generated_at", "profile", "summary", "score", "inputs", "dimensions", "residual_gaps", "errors"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["pass", "fail"]},
+    "generated_at": {"type": "string", "minLength": 1},
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "mutates_files_by_default", "external_telemetry", "auto_runtime_launch"],
+      "properties": {
+        "id": {"const": "organization-score"},
+        "description": {"type": "string"},
+        "mutates_files_by_default": {"const": false},
+        "external_telemetry": {"const": false},
+        "auto_runtime_launch": {"const": false}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_score", "current_score", "inputs", "dimensions", "warnings", "failures", "irreversible_actions"],
+      "properties": {
+        "target_score": {"type": "number"},
+        "current_score": {"type": "number"},
+        "inputs": {"type": "integer", "minimum": 0},
+        "dimensions": {"type": "integer", "minimum": 0},
+        "warnings": {"type": "integer", "minimum": 0},
+        "failures": {"type": "integer", "minimum": 0},
+        "irreversible_actions": {"const": 0}
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "current", "method"],
+      "properties": {
+        "target": {"type": "number"},
+        "current": {"type": "number"},
+        "method": {"type": "string"}
+      }
+    },
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/input"}},
+    "dimensions": {"type": "array", "items": {"$ref": "#/$defs/dimension"}},
+    "residual_gaps": {"type": "array", "items": {"$ref": "#/$defs/gap"}},
+    "errors": {"type": "array", "items": {"type": "object", "additionalProperties": true}}
+  },
+  "$defs": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "command", "summary", "safety"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "status": {"enum": ["pass", "warn", "fail"]},
+        "command": {"type": "string"},
+        "summary": {"type": "object", "additionalProperties": true},
+        "safety": {"type": "object", "additionalProperties": true}
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "weight", "score", "status", "signals"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "weight": {"type": "number"},
+        "score": {"type": "number"},
+        "status": {"enum": ["pass", "warn", "fail"]},
+        "signals": {"type": "object", "additionalProperties": true}
+      }
+    },
+    "gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "blocking_9_8", "reason"],
+      "properties": {
+        "id": {"type": "string"},
+        "blocking_9_8": {"type": "boolean"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}

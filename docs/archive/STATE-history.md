@@ -1219,6 +1219,29 @@ dispatcher runs kernel FIRST.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
+## Archived from STATE.md (2026-06-18, v0.19.0 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.3 — Cleanup Audit + ref Adoption
+
+**v0.18.3** (released 2026-06-06) — Plugin-hygiene cleanup + 2 ref-pattern
+adoptions, from the ref-update audit. No identity-invariant change.
+
+1. **Cleanup.** README deep/lite-plan→`--depth=`; discuss `--new-session`
+   broken-promise dropped; agent model drift fixed (CLAUDE.md §Effort maps
+   all 11 agents to actual tier); STATE.md trimmed 28→5 Previous (v0.15.0…
+   v0.7.9 → `docs/archive/STATE-history.md`); Memory 2-tier honesty label.
+2. **ref adoption.** Approach-altitude gate in `/athanor:plan` (CE v3.11.1);
+   review lens-persona section carving (STOP-Read) in `/athanor:review`
+   (gstack v1.56) — 418→311 lines, behavior preserved.
+3. **Verified false-positives.** B-6 concepts orphan + B-8 defense label
+   were oversights (no change); autoresearch dangerous-cmd/privacy-block
+   already covered by the PreToolUse kernel guard.
+
+16 new regression tests, all RED→GREEN. Full suite 932 passed, 0 failed.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
 ## Archived from STATE.md (2026-06-12, v0.18.8 bounded-history trim — cap 5 Previous)
 
 ## Previous Phase: v0.18.2 — lfg/lfg-goal Doc-Lifecycle Audit + Cleanup

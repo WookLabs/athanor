@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "id": "p28-runtime-stage-receipt-adapter",
+  "title": "Add runtime organization stage receipt adapter",
+  "status": "completed",
+  "created_at": "2026-06-18",
+  "updated_at": "2026-06-18",
+  "target_score": 9.8,
+  "source_refs": [
+    "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+    "docs/organization-work-item-registry.md",
+    "docs/organization-stage-receipts.md"
+  ],
+  "acceptance_criteria": [
+    "A schema-backed receipt contract records organization stage handoffs.",
+    "A read-only default gate validates committed stage receipts.",
+    "A local adapter can emit receipts only with --emit.",
+    "A work item can advance stages only with --apply-work-item-update.",
+    "LFG-goal-backed receipts point to validator-style source receipt output."
+  ],
+  "current_stage": "release",
+  "owner_office": "release",
+  "owner_role": "releaser",
+  "artifacts": [
+    {
+      "stage": "requirements",
+      "path": "docs/organization-stage-receipts.md",
+      "kind": "operator-contract",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "scripts/gates/organization_stage_receipt.py",
+      "kind": "gate",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "schemas/organization-stage-receipt.schema.json",
+      "kind": "schema",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "schemas/organization-stage-receipt-report.schema.json",
+      "kind": "schema",
+      "status": "current"
+    },
+    {
+      "stage": "verification",
+      "path": "tests/test_regression_organization_stage_receipt.py",
+      "kind": "test",
+      "status": "current"
+    },
+    {
+      "stage": "release",
+      "path": "docs/organization-stage-receipts/p28-runtime-stage-receipt-adapter-release.json",
+      "kind": "stage-receipt",
+      "status": "current"
+    }
+  ],
+  "stage_history": [
+    {
+      "stage": "intake",
+      "status": "completed",
+      "owner_role": "intake-lead",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "triage",
+      "status": "completed",
+      "owner_role": "requirements-steward",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "requirements",
+      "status": "completed",
+      "owner_role": "requirements-steward",
+      "artifact_refs": [
+        "docs/organization-stage-receipts.md"
+      ],
+      "receipt_ref": "docs/organization-stage-receipts.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "research",
+      "status": "completed",
+      "owner_role": "research-lead",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-workflow-loop-harness-p26-research.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-workflow-loop-harness-p26-research.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "planning",
+      "status": "completed",
+      "owner_role": "planner",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "design-review",
+      "status": "completed",
+      "owner_role": "design-reviewer",
+      "artifact_refs": [
+        "docs/organization-stage-receipts.md"
+      ],
+      "receipt_ref": "docs/organization-stage-receipts.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "execution",
+      "status": "completed",
+      "owner_role": "executor",
+      "artifact_refs": [
+        "scripts/gates/organization_stage_receipt.py",
+        "schemas/organization-stage-receipt.schema.json",
+        "schemas/organization-stage-receipt-report.schema.json"
+      ],
+      "receipt_ref": "scripts/gates/organization_stage_receipt.py",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "verification",
+      "status": "completed",
+      "owner_role": "verification-lead",
+      "artifact_refs": [
+        "tests/test_regression_organization_stage_receipt.py"
+      ],
+      "receipt_ref": "tests/test_regression_organization_stage_receipt.py",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "release",
+      "status": "completed",
+      "owner_role": "releaser",
+      "artifact_refs": [
+        "docs/organization-stage-receipts/p28-runtime-stage-receipt-adapter-release.json"
+      ],
+      "receipt_ref": "docs/organization-stage-receipts/p28-runtime-stage-receipt-adapter-release.json",
+      "decided_at": "2026-06-18"
+    }
+  ],
+  "safety": {
+    "mutates_files_by_default": false,
+    "external_telemetry": false,
+    "irreversible_actions": 0
+  }
+}

@@ -143,6 +143,7 @@ def test_hook_mode_valid_payload_has_empty_stdout(tmp_path):
 
 
 def test_print_settings_snippet_covers_core_hooks_and_does_not_mutate_repo():
+    claude_dir_existed = (REPO_ROOT / ".claude").exists()
     proc = subprocess.run(
         [
             sys.executable,
@@ -172,7 +173,7 @@ def test_print_settings_snippet_covers_core_hooks_and_does_not_mutate_repo():
         assert f'--event "{event_name}"' in command
         assert ".athanor" in command
         assert "hook-payloads" in command
-    assert not (REPO_ROOT / ".claude").exists()
+    assert (REPO_ROOT / ".claude").exists() is claude_dir_existed
 
 
 def test_print_settings_snippet_covers_capture_first_lifecycle_events():

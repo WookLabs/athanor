@@ -14,8 +14,8 @@ but the four athanor identity invariants survive intact:
   4. Stop hook runtime gate — `scripts/hooks/stop_verify_claims.py` fires
      on every Stop event with whitelist + paraphrase + homoglyph detection.
 
-The 9 athanor-native Thin Leader skills (post-v0.17.0 / S07 collapse of
-deep-plan + lite-plan into `/athanor:plan --depth=`) must continue to
+The current athanor-native Thin Leader skills (post-v0.17.0 / S07 collapse of
+deep-plan + lite-plan into `/athanor:plan --depth=`, plus assess) must continue to
 exist at depth 1 under `skills/` for Claude Code auto-discovery. The
 companion-fix arc (v0.11.3 → v0.11.7) scripts continue to live in
 `scripts/hooks/`.
@@ -33,16 +33,17 @@ SKILLS_DIR = REPO_ROOT / "skills"
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 HOOK_SCRIPTS_DIR = REPO_ROOT / "scripts" / "hooks"
 
-# 9 athanor-native Thin Leader skills (per CLAUDE.md §Commands table).
+# Current athanor-native Thin Leader skills (per CLAUDE.md §Commands table).
 # v0.17.0 / S07 collapsed `deep-plan` + `lite-plan` into `/athanor:plan
 # --depth=<value>` (see `docs/v0.17.0-migration.md`); the tuple shrinks
-# 10 → 9 in lockstep with the directory removal — atomic update per the
-# S07 acceptance contract.
+# in lockstep with command-surface changes.
 NATIVE_THIN_LEADER_SKILLS = (
+    "assess",
     "analyze",
     "debug",
     "discuss",
     "lfg",
+    "lfg-goal",
     "plan",
     "review",
     "setup",
@@ -50,9 +51,8 @@ NATIVE_THIN_LEADER_SKILLS = (
 )
 
 
-def test_10_thin_leader_skills_present():
-    """MUST: all athanor-native Thin Leader skill directories exist (9 as of
-    v0.17.0; was 10 before the S07 collapse).
+def test_thin_leader_skills_present():
+    """MUST: all athanor-native Thin Leader skill directories exist.
 
     Each skill ships at `skills/<name>/SKILL.md` for Claude Code depth-1
     auto-discovery. Missing any one means a regression in the native
@@ -70,8 +70,8 @@ def test_10_thin_leader_skills_present():
     assert not missing, (
         f"MUST: {len(missing)} of {len(NATIVE_THIN_LEADER_SKILLS)} athanor-"
         f"native Thin Leader skill directories absent: {missing!r}. "
-        f"v0.12.0 preserved all 10; v0.17.0 / S07 collapsed deep-plan + "
-        f"lite-plan into /athanor:plan --depth= leaving 9."
+        f"the current command surface is reflected in CLAUDE.md and "
+        f"docs/runtime-surface-contract.json."
     )
     assert not no_skill_md, (
         f"MUST: athanor-native skill(s) missing SKILL.md: {no_skill_md!r}. "

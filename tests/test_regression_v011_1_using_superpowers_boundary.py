@@ -31,9 +31,9 @@ layer composed of the existing four.
 
 v0.17.0 / S07 scope contraction: `deep-plan` + `lite-plan` were
 collapsed into `/athanor:plan --depth=<value>`; their skill directories
-were removed. The native Thin Leader roster shrank 11 → 9 (analyze,
-debug, discuss, lfg, lfg-goal, plan, review, setup, work). The boundary
-preamble lives only in the surviving 9 skills now.
+were removed. The native Thin Leader roster shrank 11 → 9. The later
+`assess` skill extends the current boundary roster to 10 (assess, analyze,
+debug, discuss, lfg, lfg-goal, plan, review, setup, work).
 
 v0.17.0 / S04 scope shift (hoist): the verbatim 6-line boundary
 subsection that was inlined in each of the native skill preambles
@@ -60,11 +60,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 
-# 9 native Thin Leader skills — R2 scope (post-S07).
+# 10 native Thin Leader skills — R2 scope (post-S07 plus assess).
 # v0.13.0 added `lfg-goal` per plan §Subtask 11 (11-entry roster).
 # v0.17.0 / S07 collapsed `deep-plan` + `lite-plan` into `/athanor:plan
-# --depth=<value>` — the boundary lives only in the surviving 9 skills now.
+# --depth=<value>`. The assess skill later joined this boundary roster.
 NATIVE_THIN_LEADER_SKILLS = (
+    "assess",
     "analyze",
     "debug",
     "discuss",
@@ -193,7 +194,7 @@ def test_claude_md_canonical_anchor_contains_full_signal_set():
     )
 
 
-# ---- 9 native Thin Leader SKILL.md pointers (v0.17.0 / S04 hoist) ----
+# ---- native Thin Leader SKILL.md pointers (v0.17.0 / S04 hoist) ----
 
 
 def test_each_native_thin_leader_skill_has_pointer_heading():
@@ -201,7 +202,7 @@ def test_each_native_thin_leader_skill_has_pointer_heading():
     the `### using-superpowers boundary` pointer heading exactly once.
     v0.13.0 extended the list 10 → 11 by adding `lfg-goal`; v0.17.0 / S07
     contracted the list 11 → 9 by collapsing `deep-plan` + `lite-plan`
-    into `/athanor:plan --depth=<value>`."""
+    into `/athanor:plan --depth=<value>`; assess later extends it to 10."""
     failures: list[str] = []
     for skill_name in NATIVE_THIN_LEADER_SKILLS:
         skill_md = SKILLS_DIR / skill_name / "SKILL.md"

@@ -5,7 +5,7 @@ Locks the v0.17.0 static dedup state at v0.18.0 release time:
 **UserPromptSubmit (UPS) is NOT registered as a runtime hook in v0.18.0.**
 
 The v0.17.0 / S04 hoist established a static dedup pattern for the
-`using-superpowers boundary` declaration: 9 athanor-native Thin Leader
+`using-superpowers boundary` declaration: 10 athanor-native Thin Leader
 skills each carry a 2-line POINTER (heading + 1-line "See CLAUDE.md …")
 and the canonical prose lives in ONE place — CLAUDE.md §"using-superpowers
 boundary (v0.11.1) — canonical declaration". UPS-driven runtime dedup
@@ -19,8 +19,8 @@ while allowing the deliberate v0.19.0 PostToolUse evidence-only addition:
   1. `hooks/hooks.json` does NOT register a `UserPromptSubmit` entry —
      only `Stop` (v0.7.8+), `PreToolUse` (v0.16.0+), and the
      `PostToolUse` evidence sniffer (v0.19.0+).
-  2. CLAUDE.md still uses the 9-pointer + 1-canonical static dedup
-     pattern (9 skills with `### using-superpowers boundary` pointers
+    2. CLAUDE.md still uses the 10-pointer + 1-canonical static dedup
+     pattern (10 skills with `### using-superpowers boundary` pointers
      plus the canonical heading in CLAUDE.md).
   3. No UPS-related hook scripts in `scripts/hooks/` — `capability_probe.py`
      may MENTION UPS for forward-compat documentation, but no script
@@ -128,10 +128,11 @@ def test_hooks_json_raw_string_does_not_mention_user_prompt_submit():
 # ---------------------------------------------------------------------------
 
 
-# The 9 athanor-native Thin Leader skills that each carry a pointer to
+# The athanor-native Thin Leader skills that each carry a pointer to
 # the canonical declaration. Locked here so accidental skill renames
 # show up as test failures.
 _THIN_LEADER_SKILLS = [
+    "assess",
     "analyze",
     "debug",
     "discuss",
@@ -155,9 +156,9 @@ def test_claude_md_canonical_declaration_heading_present():
 
 
 def test_skills_each_carry_a_boundary_pointer():
-    """Each of the 9 Thin Leader skills must carry a pointer subsection
+    """Each Thin Leader skill must carry a pointer subsection
     `### using-superpowers boundary` (without the canonical-declaration
-    suffix). This is the 9 in the 9+1 static dedup pattern."""
+    suffix). This is the pointer side of the static dedup pattern."""
     missing: list[str] = []
     for skill in _THIN_LEADER_SKILLS:
         skill_md = REPO_ROOT / "skills" / skill / "SKILL.md"
@@ -177,9 +178,9 @@ def test_skills_each_carry_a_boundary_pointer():
     )
 
 
-def test_pointer_count_is_nine():
-    """Sanity: exactly 9 skills carry the pointer, matching the
-    canonical declaration's "9 native Thin Leader skill" enumeration."""
+def test_pointer_count_is_ten():
+    """Sanity: exactly 10 skills carry the pointer, matching the
+    canonical declaration's current native Thin Leader skill enumeration."""
     found = 0
     for skill_dir in (REPO_ROOT / "skills").iterdir():
         if not skill_dir.is_dir():
@@ -199,10 +200,10 @@ def test_pointer_count_is_nine():
                     "canonical declaration" not in stripped:
                 found += 1
                 break
-    assert found == 9, (
-        f"expected exactly 9 `### using-superpowers boundary` pointers "
-        f"(one per Thin Leader skill); got {found}. The 9+1 static dedup "
-        f"pattern is locked at v0.18.0 — adjust this count only when a "
+    assert found == 10, (
+        f"expected exactly 10 `### using-superpowers boundary` pointers "
+        f"(one per Thin Leader skill); got {found}. The 10+1 static dedup "
+        f"pattern is current — adjust this count only when a "
         f"native skill is genuinely added/removed."
     )
 

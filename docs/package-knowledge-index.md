@@ -12,7 +12,8 @@ without scanning repo-local development history.
 - Runtime instructions: [CLAUDE](../CLAUDE.md).
 - User commands: `/athanor:plan`, `/athanor:work`, `/athanor:review`,
   `/athanor:lfg`, `/athanor:lfg-goal`, `/athanor:setup`,
-  `/athanor:discuss`, `/athanor:analyze`, `/athanor:debug`.
+  `/athanor:discuss`, `/athanor:analyze`, `/athanor:assess`,
+  `/athanor:debug`.
 - Registered agents: `learner`, `releaser`, `ci-watcher`,
   `codex-dispatcher`.
 
@@ -39,6 +40,21 @@ without scanning repo-local development history.
 - Reactive channel fixtures:
   [doc](reactive-channel-fixtures.md),
   [gate](../scripts/gates/reactive_channel_fixture.py).
+- Organization operating model:
+  [doc](organization-operating-model.md),
+  [gate](../scripts/gates/organization_operating_model.py).
+- Organization work-item registry:
+  [doc](organization-work-item-registry.md),
+  [gate](../scripts/gates/organization_work_item_registry.py).
+- Organization stage receipts:
+  [doc](organization-stage-receipts.md),
+  [gate](../scripts/gates/organization_stage_receipt.py).
+- Policy promotion ledger:
+  [doc](policy-promotion-ledger.md),
+  [gate](../scripts/gates/policy_promotion_ledger.py).
+- Organization score:
+  [doc](organization-score.md),
+  [gate](../scripts/gates/organization_score.py).
 
 Run this index gate:
 

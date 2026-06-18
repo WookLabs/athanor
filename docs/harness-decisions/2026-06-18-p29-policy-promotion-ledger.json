@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p29-policy-promotion-ledger",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "policy_promotion",
+      "summary": "Add a read-only policy promotion ledger so learning governance can promote lessons into candidate_policy, policy, gate_candidate, gate, or retired states with owner, evidence, acceptance criteria, rollback, tests, and schema-backed checks.",
+      "expected_metrics": [
+        {
+          "metric": "policy_promotion_ledger.status",
+          "direction": "stay",
+          "target": "pass"
+        },
+        {
+          "metric": "policy_promotion_ledger.gate_promotions",
+          "direction": "stay_or_increase",
+          "target": "at least 1"
+        },
+        {
+          "metric": "policy_promotion_ledger.retired_promotions",
+          "direction": "stay_or_increase",
+          "target": "at least 1"
+        },
+        {
+          "metric": "system_maturity_score",
+          "direction": "increase",
+          "target": "9.74 after P29"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/policy_promotion_ledger.py --json",
+          "expected": "status pass with at least one gate promotion, at least one retired promotion, and irreversible_actions 0"
+        },
+        {
+          "command": "python scripts/gates/organization_stage_receipt.py --json",
+          "expected": "stage receipts include the P29 release receipt and remain read-only by default"
+        },
+        {
+          "command": "python scripts/gates/organization_work_item_registry.py --json",
+          "expected": "registry accepts the P29 work item and P29 release receipt_ref"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_policy_promotion_ledger.py tests/test_regression_package_knowledge_index.py tests/test_regression_organization_operating_model.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P29 policy promotion and integration tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p29-policy-promotion-ledger"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P29 adds a policy promotion ledger document, committed promotion records for gate and retirement paths, a schema-backed read-only promotion gate, CI/package-index integration, and a P29 work item with stage receipt evidence.",
+          "evidence_refs": [
+            "docs/policy-promotion-ledger.md",
+            "docs/policy-promotions/p29-policy-promotion-gate.json",
+            "docs/policy-promotions/legacy-prose-only-policy-notes.json",
+            "schemas/policy-promotion-ledger-report.schema.json",
+            "scripts/gates/policy_promotion_ledger.py",
+            "tests/test_regression_policy_promotion_ledger.py",
+            "docs/organization-work-items/p29-policy-promotion-gate.json",
+            "docs/organization-stage-receipts/p29-policy-promotion-gate-release.json",
+            "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step, package-index refs, policy promotion docs/records, and P29 work-item/receipt if the ledger blocks valid governance work; follow up with an organization score gate that computes maturity from evidence."
+    }
+  ]
+}

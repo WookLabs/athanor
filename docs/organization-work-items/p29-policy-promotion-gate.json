@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "id": "p29-policy-promotion-gate",
+  "title": "Add policy promotion ledger gate",
+  "status": "completed",
+  "created_at": "2026-06-18",
+  "updated_at": "2026-06-18",
+  "target_score": 9.8,
+  "source_refs": [
+    "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+    "docs/organization-operating-model.md",
+    "docs/policy-promotion-ledger.md"
+  ],
+  "acceptance_criteria": [
+    "Policy promotion records follow the incident-to-retired lifecycle.",
+    "Gate candidates and gates require gate_refs, test_refs, and schema_refs.",
+    "Policies and later states require rollback plans.",
+    "Retired policy records require retired_reason and replacement_refs.",
+    "The package-facing index and CI run the policy promotion ledger gate."
+  ],
+  "current_stage": "release",
+  "owner_office": "release",
+  "owner_role": "releaser",
+  "artifacts": [
+    {
+      "stage": "requirements",
+      "path": "docs/policy-promotion-ledger.md",
+      "kind": "operator-contract",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "scripts/gates/policy_promotion_ledger.py",
+      "kind": "gate",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "schemas/policy-promotion-ledger-report.schema.json",
+      "kind": "schema",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "docs/policy-promotions/p29-policy-promotion-gate.json",
+      "kind": "promotion-record",
+      "status": "current"
+    },
+    {
+      "stage": "execution",
+      "path": "docs/policy-promotions/legacy-prose-only-policy-notes.json",
+      "kind": "retirement-record",
+      "status": "current"
+    },
+    {
+      "stage": "verification",
+      "path": "tests/test_regression_policy_promotion_ledger.py",
+      "kind": "test",
+      "status": "current"
+    },
+    {
+      "stage": "release",
+      "path": "docs/organization-stage-receipts/p29-policy-promotion-gate-release.json",
+      "kind": "stage-receipt",
+      "status": "current"
+    }
+  ],
+  "stage_history": [
+    {
+      "stage": "intake",
+      "status": "completed",
+      "owner_role": "intake-lead",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "triage",
+      "status": "completed",
+      "owner_role": "requirements-steward",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "requirements",
+      "status": "completed",
+      "owner_role": "requirements-steward",
+      "artifact_refs": [
+        "docs/policy-promotion-ledger.md"
+      ],
+      "receipt_ref": "docs/policy-promotion-ledger.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "research",
+      "status": "completed",
+      "owner_role": "research-lead",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-workflow-loop-harness-p26-research.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-workflow-loop-harness-p26-research.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "planning",
+      "status": "completed",
+      "owner_role": "planner",
+      "artifact_refs": [
+        "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+      ],
+      "receipt_ref": "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "design-review",
+      "status": "completed",
+      "owner_role": "design-reviewer",
+      "artifact_refs": [
+        "docs/policy-promotion-ledger.md"
+      ],
+      "receipt_ref": "docs/policy-promotion-ledger.md",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "execution",
+      "status": "completed",
+      "owner_role": "executor",
+      "artifact_refs": [
+        "scripts/gates/policy_promotion_ledger.py",
+        "schemas/policy-promotion-ledger-report.schema.json",
+        "docs/policy-promotions/p29-policy-promotion-gate.json",
+        "docs/policy-promotions/legacy-prose-only-policy-notes.json"
+      ],
+      "receipt_ref": "scripts/gates/policy_promotion_ledger.py",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "verification",
+      "status": "completed",
+      "owner_role": "verification-lead",
+      "artifact_refs": [
+        "tests/test_regression_policy_promotion_ledger.py"
+      ],
+      "receipt_ref": "tests/test_regression_policy_promotion_ledger.py",
+      "decided_at": "2026-06-18"
+    },
+    {
+      "stage": "release",
+      "status": "completed",
+      "owner_role": "releaser",
+      "artifact_refs": [
+        "docs/organization-stage-receipts/p29-policy-promotion-gate-release.json"
+      ],
+      "receipt_ref": "docs/organization-stage-receipts/p29-policy-promotion-gate-release.json",
+      "decided_at": "2026-06-18"
+    }
+  ],
+  "safety": {
+    "mutates_files_by_default": false,
+    "external_telemetry": false,
+    "irreversible_actions": 0
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p27-organization-work-item-registry",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "organization_state_registry",
+      "summary": "Add a read-only organization work-item registry so Athanor can track current stage, owner, artifacts, and receipt-backed handoffs for score-driven system maturity work toward 9.8.",
+      "expected_metrics": [
+        {
+          "metric": "organization_work_item_registry.status",
+          "direction": "stay",
+          "target": "pass"
+        },
+        {
+          "metric": "organization_work_item_registry.active_items",
+          "direction": "stay_or_increase",
+          "target": "at least 1 while maturity work is active"
+        },
+        {
+          "metric": "organization_work_item_registry.irreversible_actions",
+          "direction": "stay",
+          "target": "0"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/organization_work_item_registry.py --json",
+          "expected": "status pass with active_items at least 1, errors 0, and irreversible_actions 0"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_organization_work_item_registry.py tests/test_regression_package_knowledge_index.py tests/test_regression_organization_operating_model.py tests/test_regression_v019_release_story.py -q",
+          "expected": "focused P27 registry and integration tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p27-organization-work-item-registry"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P27 adds a committed organization work-item registry, a schema-backed read-only registry gate, CI/package-index integration, and a current 9.8-maturity work item with ordered stage history and receipt_ref handoffs.",
+          "evidence_refs": [
+            "docs/organization-work-item-registry.md",
+            "docs/organization-work-items/p27-system-maturity-98.json",
+            "docs/architecture/2026-06-18-p27-system-maturity-98-design.md",
+            "docs/architecture/2026-06-18-system-maturity-98-scorecard.md",
+            "scripts/gates/organization_work_item_registry.py",
+            "tests/test_regression_organization_work_item_registry.py"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step and registry refs if the committed registry becomes noisy; follow up with runtime receipt emission and a policy promotion gate."
+    }
+  ]
+}

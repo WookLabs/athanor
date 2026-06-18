@@ -1,10 +1,4 @@
-"""Release-story regression tests for the v0.19 evidence branch.
-
-The xhigh audit item 8 says not to bump the plugin version unless this branch
-is explicitly being shipped as v0.19.0. Until that release pass happens, the
-Unreleased changelog section must carry the branch story so the runtime changes
-are not invisible while the manifests remain pinned to the current release.
-"""
+"""Release-story regression tests for the v0.19 evidence branch."""
 from __future__ import annotations
 
 import json
@@ -23,16 +17,16 @@ HOOK_INSTALLER_DOC = REPO_ROOT / "docs" / "hook-installer.md"
 def _unreleased_section() -> str:
     body = CHANGELOG.read_text(encoding="utf-8")
     match = re.search(
-        r"^##\s+\[Unreleased\]\s*\n(.*?)(?=^##\s+\[|\Z)",
+        r"^##\s+\[0\.19\.0\]\s+.*?\n(.*?)(?=^##\s+\[|\Z)",
         body,
         re.MULTILINE | re.DOTALL,
     )
-    assert match, "CHANGELOG.md must contain an [Unreleased] section"
+    assert match, "CHANGELOG.md must contain a [0.19.0] release section"
     return match.group(1)
 
 
-def test_unreleased_documents_v019_evidence_branch_story():
-    """Unreleased must name the evidence-branch changes before release bump."""
+def test_v019_release_documents_evidence_branch_story():
+    """The release entry must name the evidence-branch changes."""
     section = _unreleased_section()
     required = [
         "PostToolUse",
@@ -40,7 +34,7 @@ def test_unreleased_documents_v019_evidence_branch_story():
         "hooks.evidence.mode",
         "UserPromptSubmit spike",
         "hook payload capture harness",
-        "release-specific pass",
+        "release bumps manifests",
     ]
     missing = [token for token in required if token not in section]
     assert not missing, (
@@ -49,11 +43,11 @@ def test_unreleased_documents_v019_evidence_branch_story():
     )
 
 
-def test_v019_branch_does_not_bump_plugin_version_before_release_pass():
-    """Version bump is deferred until explicitly shipping the release."""
+def test_v019_release_bumps_plugin_version():
+    """The release pass bumps the plugin manifest."""
     version = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
-    assert version == "0.18.8"
-    assert "release-specific pass" in _unreleased_section()
+    assert version == "0.19.0"
+    assert "Ships the v0.19.0" in _unreleased_section()
 
 
 def test_state_known_gaps_do_not_claim_ci_is_ubuntu_only():
@@ -562,6 +556,137 @@ def test_unreleased_documents_package_knowledge_index():
     missing = [token for token in required if token not in section]
     assert not missing, (
         "CHANGELOG [Unreleased] must explain P25 package knowledge index; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_organization_operating_model_gate():
+    """P26 organization operating model should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Organization operating model gate" in workflow
+    assert "python scripts/gates/organization_operating_model.py --json" in workflow
+
+
+def test_unreleased_documents_organization_operating_model():
+    """The Unreleased story must name the P26 organization operating model."""
+    section = _unreleased_section()
+    required = [
+        "Organization operating model",
+        "docs/organization-operating-model.md",
+        "scripts/gates/organization_operating_model.py",
+        "office/stage graph",
+        "receipt",
+        "learning governance",
+        "no default live listener",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P26 organization operating model; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_organization_work_item_registry_gate():
+    """P27 organization work-item registry should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Organization work-item registry gate" in workflow
+    assert "python scripts/gates/organization_work_item_registry.py --json" in workflow
+
+
+def test_unreleased_documents_organization_work_item_registry():
+    """The Unreleased story must name the P27 organization work-item registry."""
+    section = _unreleased_section()
+    required = [
+        "Organization work-item registry",
+        "docs/organization-work-item-registry.md",
+        "scripts/gates/organization_work_item_registry.py",
+        "stage history",
+        "receipt_ref",
+        "9.8",
+        "work-item",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P27 organization work-item registry; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_organization_stage_receipt_gate():
+    """P28 organization stage receipts should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Organization stage receipt gate" in workflow
+    assert "python scripts/gates/organization_stage_receipt.py --json" in workflow
+
+
+def test_unreleased_documents_organization_stage_receipts():
+    """The Unreleased story must name the P28 organization stage receipt adapter."""
+    section = _unreleased_section()
+    required = [
+        "Organization stage receipts",
+        "docs/organization-stage-receipts.md",
+        "scripts/gates/organization_stage_receipt.py",
+        "--emit",
+        "--apply-work-item-update",
+        "lfg-goal",
+        "stage receipt",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P28 organization stage receipts; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_policy_promotion_ledger_gate():
+    """P29 policy promotion ledger should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Policy promotion ledger gate" in workflow
+    assert "python scripts/gates/policy_promotion_ledger.py --json" in workflow
+
+
+def test_unreleased_documents_policy_promotion_ledger():
+    """The Unreleased story must name the P29 policy promotion ledger."""
+    section = _unreleased_section()
+    required = [
+        "Policy promotion ledger",
+        "docs/policy-promotion-ledger.md",
+        "scripts/gates/policy_promotion_ledger.py",
+        "candidate_policy",
+        "gate_candidate",
+        "retired",
+        "rollback",
+        "schema-backed",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P29 policy promotion ledger; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_organization_score_gate():
+    """P30 organization score should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Organization score gate" in workflow
+    assert "python scripts/gates/organization_score.py --json" in workflow
+
+
+def test_unreleased_documents_organization_score_gate():
+    """The Unreleased story must name the P30 organization score gate."""
+    section = _unreleased_section()
+    required = [
+        "Organization score gate",
+        "docs/organization-score.md",
+        "scripts/gates/organization_score.py",
+        "9.8",
+        "weighted dimensions",
+        "residual gaps",
+        "scorecard prose",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain P30 organization score gate; "
         f"missing: {missing}"
     )
 

@@ -5,7 +5,7 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**v0.18.8** — 9 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
+**v0.19.0** — 10 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Goal-aligned assessment. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
 
 Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
 
@@ -98,6 +98,7 @@ You:     /athanor:work --team
 | `/athanor:setup` | — | Health check and configuration |
 | `/athanor:discuss` | Plan | Decision brainstorming (researcher + devil's advocate + critic) |
 | `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers simultaneously) |
+| `/athanor:assess` | Plan | Goal-aligned 100-point assessment with overbuilt/underbuilt findings |
 | `/athanor:debug` | Plan | Triage-first parallel failure diagnosis |
 | `/athanor:plan` | Plan | Tiered planning via `--depth=standard`(default)`/deep/lite` (+ `--no-review`) |
 | `/athanor:work` | Execute | Grinding through every subtask until done |
@@ -106,8 +107,8 @@ You:     /athanor:work --team
 | `/athanor:lfg-goal` | Execute | Goal-driven macro Ralph loop over a durable goal ledger |
 
 ```
-/athanor:discuss  →  /athanor:analyze  →  /athanor:debug (optional)
-   "What?"              "Where?"              "Why broken?"
+/athanor:discuss  →  /athanor:analyze  →  /athanor:assess  →  /athanor:debug (optional)
+   "What?"              "Where?"              "How good?"          "Why broken?"
 
                   →  /athanor:plan (--depth=standard/deep/lite)  →  /athanor:work
                         "How?"                                       "Do it."
@@ -245,7 +246,7 @@ Athanor recommends (does not require) the following companion plugins:
 /plugin install superpowers@superpowers-marketplace
 ```
 
-**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 13 skills (`athanor-analyze`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
+**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 14 skills (`athanor-analyze`, `athanor-assess`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
 
 ```
 codex plugin marketplace add <path-to-athanor>/.agents/plugins/marketplace.json

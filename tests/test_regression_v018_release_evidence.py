@@ -74,8 +74,8 @@ def test_changelog_v018_mentions_freeze():
     )
 
 
-def test_state_md_current_phase_is_v018():
-    """MUST — docs/STATE.md `## Current Phase` heading references v0.18.0."""
+def test_state_md_current_phase_is_v018_or_later():
+    """MUST — docs/STATE.md `## Current Phase` heading references v0.18+."""
     body = STATE_MD.read_text(encoding="utf-8")
     pattern = re.compile(
         r"^##\s+Current Phase[^\n]*\n",
@@ -84,8 +84,8 @@ def test_state_md_current_phase_is_v018():
     m = pattern.search(body)
     assert m, "docs/STATE.md must have a `## Current Phase` heading"
     heading_line = m.group(0)
-    assert "0.18.0" in heading_line or "0.18." in heading_line, (
-        f"docs/STATE.md `## Current Phase` heading must reference v0.18.0; "
+    assert "0.18.0" in heading_line or "0.18." in heading_line or "0.19." in heading_line, (
+        f"docs/STATE.md `## Current Phase` heading must reference v0.18+; "
         f"got {heading_line!r}"
     )
 

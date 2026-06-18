@@ -24,6 +24,7 @@ CODEX_LFG_GOAL_SKILL = (
 )
 EXPECTED_SKILLS = {
     "athanor-analyze",
+    "athanor-assess",
     "athanor-debug",
     "athanor-discuss",
     "athanor-lfg",

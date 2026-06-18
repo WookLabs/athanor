@@ -30,6 +30,7 @@ skill bodies are loaded.
 ## Skills
 
 - `athanor-analyze` — analyze codebase surface before planning.
+- `athanor-assess` — score a target against a goal with weighted dimensions.
 - `athanor-discuss` — clarify intent or synthesize a decision.
 - `athanor-plan` — produce a decision-complete implementation plan.
 - `athanor-work` — execute an accepted plan with verification discipline.

@@ -128,6 +128,7 @@ def test_hook_mode_valid_payload_has_empty_stdout(tmp_path):
 
 
 def test_print_settings_snippet_does_not_mutate_repo(tmp_path):
+    claude_dir_existed = (REPO_ROOT / ".claude").exists()
     proc = subprocess.run(
         [
             sys.executable,
@@ -147,7 +148,7 @@ def test_print_settings_snippet_does_not_mutate_repo(tmp_path):
     snippet = json.loads(proc.stdout)
     command = snippet["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
     assert str(SPIKE_SCRIPT) in command
-    assert not (REPO_ROOT / ".claude").exists()
+    assert (REPO_ROOT / ".claude").exists() is claude_dir_existed
 
 
 def test_repo_hooks_json_still_does_not_register_userpromptsubmit():

@@ -219,8 +219,8 @@ def check_f_marketplace_skill_count() -> tuple[bool, str]:
     itself, not per-skill rows). The gate's job is to (1) prove the file
     parses, (2) assert plugins[0].name == 'athanor' (the marketplace points
     at THIS plugin — a real structural invariant), and (3) report the
-    on-disk product surface count (9 native + 2 internal + 1 vendored KEEP
-    = 12). The count is reported, not hard-pinned, so adding/removing a
+    on-disk product surface count (10 native + 2 internal + 1 vendored KEEP
+    = 13). The count is reported, not hard-pinned, so adding/removing a
     skill does not require touching a brittle magic number here; a future
     per-skill expansion of marketplace.json will be cross-checked against it.
     """

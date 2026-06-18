@@ -5,8 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-06-18
+
 ### Added
 
+- **Assessment skill.** Adds `skills/assess/SKILL.md` and
+  `plugins/athanor-codex/skills/athanor-assess/SKILL.md` so Athanor can
+  evaluate a target against a user goal with 100-point weighted dimensions,
+  confidence, overbuilt and underbuilt findings, add/remove guidance, and a
+  Priority Plan before implementation starts.
 - **v0.19 evidence branch candidate.** Adds the PostToolUse test-evidence
   path, Freeze D2 evidence follow-up, hook payload corpus replay gate, and
   log-only UserPromptSubmit spike harness while keeping runtime blocking
@@ -124,6 +131,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   workers can start from README.md or CLAUDE.md, find current operator gates
   and safety contracts, and avoid repo-local development history while the
   broader ship profile remains explicit.
+- **Organization operating model.** Adds
+  `docs/organization-operating-model.md` and read-only
+  `scripts/gates/organization_operating_model.py` so `/athanor:lfg` and
+  `/athanor:lfg-goal` route work through a company-like office/stage graph
+  with owner roles, receipt requirements, learning governance, no default live listener, and no registered-agent expansion.
+- **Organization work-item registry.** Adds
+  `docs/organization-work-item-registry.md` and read-only
+  `scripts/gates/organization_work_item_registry.py` so 9.8-score work can
+  carry durable work-item state, ordered stage history, `receipt_ref`
+  handoffs, owners, artifacts, and safety metadata before broad tests.
+- **Organization stage receipts.** Adds
+  `docs/organization-stage-receipts.md` and
+  `scripts/gates/organization_stage_receipt.py` so lfg-goal evidence can
+  become a schema-backed stage receipt; the adapter writes only with `--emit`
+  and advances work-items only with `--apply-work-item-update`.
+- **Policy promotion ledger.** Adds `docs/policy-promotion-ledger.md` and
+  read-only `scripts/gates/policy_promotion_ledger.py` so lessons move through
+  `incident -> lesson -> candidate_policy -> policy -> gate_candidate -> gate -> retired`
+  with owners, evidence, acceptance criteria, rollback, schema-backed tests,
+  and explicit retirement instead of accumulating prose policy.
+- **Organization score gate.** Adds `docs/organization-score.md` and read-only
+  `scripts/gates/organization_score.py` so the 9.8 maturity claim is computed
+  from organization evidence inputs, weighted dimensions, CI coverage,
+  package-boundary warnings, and explicit residual gaps instead of scorecard prose.
 - **Distribution smoke gate.** Adds
   `scripts/gates/distribution_smoke.py` and a named CI gate that runs
   `claude plugin details` when available, verifies the live 4-agent loader
@@ -176,10 +207,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Release Notes
 
-- This branch intentionally does not bump `.claude-plugin/plugin.json` beyond
-  v0.18.8. A release-specific pass should decide whether these Unreleased
-  changes ship as v0.19.0 and then update manifests, schema URLs, README, STATE,
-  migration notes, and release evidence atomically.
+- Ships the v0.19.0 evidence, loop, harness, organization-model, and assessment
+  branch. The release bumps manifests, schema URLs, README, STATE, and release
+  tests in the same pass so the marketplace surface and runtime evidence stay
+  aligned.
 
 ## [0.18.8] — 2026-06-12
 

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "p30-organization-score",
+      "date": "2026-06-18",
+      "status": "observed",
+      "change_type": "organization_score",
+      "summary": "Add a read-only organization score gate that computes the 9.8 maturity score from current evidence gates instead of maintaining it as prose.",
+      "expected_metrics": [
+        {
+          "metric": "organization_score.status",
+          "direction": "stay",
+          "target": "pass"
+        },
+        {
+          "metric": "organization_score.current",
+          "direction": "increase",
+          "target": ">= 9.8"
+        },
+        {
+          "metric": "organization_score.input_failures",
+          "direction": "stay",
+          "target": "0"
+        }
+      ],
+      "verification_commands": [
+        {
+          "command": "python scripts/gates/organization_score.py --json",
+          "expected": "status pass with current_score at least 9.8 and irreversible_actions 0"
+        },
+        {
+          "command": "python -m pytest tests/test_regression_organization_score.py -q",
+          "expected": "P30 score gate regression tests pass"
+        },
+        {
+          "command": "python scripts/gates/harness_decision_ledger.py --json",
+          "expected": "ledger includes p30-organization-score"
+        }
+      ],
+      "observed_results": [
+        {
+          "status": "pass",
+          "summary": "P30 adds an evidence-computed score gate, schema, package index/CI integration, organization work item, and release receipt.",
+          "evidence_refs": [
+            "docs/organization-score.md",
+            "schemas/organization-score-report.schema.json",
+            "scripts/gates/organization_score.py",
+            "tests/test_regression_organization_score.py",
+            "docs/organization-work-items/p30-organization-score.json",
+            "docs/organization-stage-receipts/p30-organization-score-release.json",
+            "docs/architecture/2026-06-18-system-maturity-98-scorecard.md"
+          ]
+        }
+      ],
+      "decision": "keep",
+      "rollback_or_follow_up": "Rollback by removing the CI step, package-index refs, score gate, schema, P30 work item, and release receipt. Follow up by reducing package-footprint warnings and hardening sandbox/runtime evidence."
+    }
+  ]
+}

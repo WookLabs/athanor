@@ -21,6 +21,11 @@ REQUIRED_DOCS = {
     "docs/native-runtime-probe.md",
     "docs/native-runtime-playbook.md",
     "docs/reactive-channel-fixtures.md",
+    "docs/organization-operating-model.md",
+    "docs/organization-work-item-registry.md",
+    "docs/organization-stage-receipts.md",
+    "docs/policy-promotion-ledger.md",
+    "docs/organization-score.md",
 }
 REQUIRED_GATES = {
     "scripts/gates/distribution_smoke.py",
@@ -30,6 +35,11 @@ REQUIRED_GATES = {
     "scripts/gates/native_runtime_probe.py",
     "scripts/gates/native_runtime_playbook.py",
     "scripts/gates/reactive_channel_fixture.py",
+    "scripts/gates/organization_operating_model.py",
+    "scripts/gates/organization_work_item_registry.py",
+    "scripts/gates/organization_stage_receipt.py",
+    "scripts/gates/policy_promotion_ledger.py",
+    "scripts/gates/organization_score.py",
 }
 
 

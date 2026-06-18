@@ -16,7 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 from scripts.gates.distribution_smoke import _package_footprint  # noqa: E402
 
 DEFAULT_MAX_FILES = 600
-DEFAULT_MAX_TOTAL_BYTES = 4_500_000
+DEFAULT_MAX_TOTAL_BYTES = 4_750_000
 DEFAULT_MAX_LARGE_FILE_BYTES = 250_000
 DEFAULT_CANDIDATE_LIMIT = 20
 

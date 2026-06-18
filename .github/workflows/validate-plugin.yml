@@ -66,6 +66,21 @@ jobs:
       - name: Package knowledge index gate
         shell: bash
         run: python scripts/gates/package_knowledge_index.py --json
+      - name: Organization operating model gate
+        shell: bash
+        run: python scripts/gates/organization_operating_model.py --json
+      - name: Organization work-item registry gate
+        shell: bash
+        run: python scripts/gates/organization_work_item_registry.py --json
+      - name: Organization stage receipt gate
+        shell: bash
+        run: python scripts/gates/organization_stage_receipt.py --json
+      - name: Policy promotion ledger gate
+        shell: bash
+        run: python scripts/gates/policy_promotion_ledger.py --json
+      - name: Organization score gate
+        shell: bash
+        run: python scripts/gates/organization_score.py --json
       - name: Trace-memory quality gate
         shell: bash
         run: python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json

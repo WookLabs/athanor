@@ -6,6 +6,7 @@
     "marketplace": ".claude-plugin/marketplace.json",
     "hook_manifest": "hooks/hooks.json",
     "native_skills": [
+      "assess",
       "analyze",
       "debug",
       "discuss",
@@ -28,6 +29,7 @@
     "marketplace": ".agents/plugins/marketplace.json",
     "skills": [
       "athanor-analyze",
+      "athanor-assess",
       "athanor-ci-watch",
       "athanor-debug",
       "athanor-discuss",

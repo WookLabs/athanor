@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "p29-policy-promotion-gate-release",
+  "work_item_id": "p29-policy-promotion-gate",
+  "stage": "release",
+  "owner_office": "release",
+  "owner_role": "releaser",
+  "decision": "completed",
+  "source": "lfg-goal",
+  "summary": "P29 adds a schema-backed policy promotion ledger gate so learning governance can promote or retire policy state with owner, evidence, rollback, tests, and schemas.",
+  "created_at": "2026-06-18T00:00:00Z",
+  "evidence_refs": [
+    "docs/policy-promotion-ledger.md",
+    "docs/policy-promotions/p29-policy-promotion-gate.json",
+    "docs/policy-promotions/legacy-prose-only-policy-notes.json",
+    "schemas/policy-promotion-ledger-report.schema.json",
+    "scripts/gates/policy_promotion_ledger.py",
+    "tests/test_regression_policy_promotion_ledger.py"
+  ],
+  "source_receipts": [
+    "tests/fixtures/lfg_goal/receipt_valid.md"
+  ],
+  "commands": [
+    {
+      "command": "python -m pytest tests/test_regression_policy_promotion_ledger.py -q",
+      "exit_code": 0,
+      "evidence": "Focused P29 tests validate lifecycle order, gate test/schema requirements, rollback, and retirement requirements."
+    }
+  ],
+  "safety": {
+    "mutates_files_by_default": false,
+    "external_telemetry": false,
+    "auto_runtime_launch": false,
+    "irreversible_actions": 0,
+    "requires_explicit_emit": true,
+    "requires_explicit_work_item_update": true
+  }
+}

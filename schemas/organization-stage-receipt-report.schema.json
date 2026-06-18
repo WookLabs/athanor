@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athanor.local/schemas/organization-stage-receipt-report.schema.json",
+  "title": "Athanor Organization Stage Receipt Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "generated_at",
+    "profile",
+    "summary",
+    "model",
+    "registry",
+    "receipt_root",
+    "receipts",
+    "emitted_receipts",
+    "planned_receipt",
+    "work_item_updates",
+    "checks",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": ["pass", "warn", "fail"]
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry",
+        "auto_runtime_launch",
+        "requires_explicit_emit",
+        "requires_explicit_work_item_update"
+      ],
+      "properties": {
+        "id": {
+          "const": "organization-stage-receipt"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "auto_runtime_launch": {
+          "const": false
+        },
+        "requires_explicit_emit": {
+          "const": true
+        },
+        "requires_explicit_work_item_update": {
+          "const": true
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checks",
+        "errors",
+        "warnings",
+        "receipts",
+        "emitted_receipts",
+        "work_item_updates",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "receipts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "emitted_receipts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "work_item_updates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      }
+    },
+    "model": {
+      "$ref": "#/$defs/path_with_stage_order"
+    },
+    "registry": {
+      "$ref": "#/$defs/root_report"
+    },
+    "receipt_root": {
+      "$ref": "#/$defs/root_report"
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/receipt_report"
+      }
+    },
+    "emitted_receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/receipt_report"
+      }
+    },
+    "planned_receipt": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/planned_receipt"
+        }
+      ]
+    },
+    "work_item_updates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/work_item_update"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      }
+    }
+  },
+  "$defs": {
+    "path_with_stage_order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "stage_order"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "root_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "files"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "receipt_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "work_item_id",
+        "stage",
+        "owner_office",
+        "owner_role",
+        "decision",
+        "source",
+        "evidence_refs",
+        "source_receipts",
+        "commands",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "work_item_id": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string"
+        },
+        "owner_office": {
+          "type": "string"
+        },
+        "owner_role": {
+          "type": "string"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref_report"
+          }
+        },
+        "source_receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref_report"
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/command_report"
+          }
+        },
+        "status": {
+          "enum": ["pass", "fail"]
+        }
+      }
+    },
+    "planned_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "id", "work_item_id", "stage", "decision", "source", "will_write"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "work_item_id": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "will_write": {
+          "type": "boolean"
+        }
+      }
+    },
+    "work_item_update": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "work_item_id", "completed_stage", "receipt_ref", "next_stage"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "work_item_id": {
+          "type": "string"
+        },
+        "completed_stage": {
+          "type": "string"
+        },
+        "receipt_ref": {
+          "type": "string"
+        },
+        "next_stage": {
+          "type": "string"
+        }
+      }
+    },
+    "ref_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "exists", "status"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": ["pass", "fail"]
+        }
+      }
+    },
+    "command_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "exit_code", "evidence"],
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": ["integer", "null"]
+        },
+        "evidence": {
+          "type": "string"
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "status", "message"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["pass", "warn", "fail"]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "message", "path"],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

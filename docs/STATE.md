@@ -4,7 +4,36 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
+## Current Phase: v0.19.0 — Evidence Harness + Organization Assessment
+
+**v0.19.0** (released 2026-06-18) — Ships the evidence-harness,
+loop-engineering, organization-operating-model, and goal-aligned assessment
+branch. The plugin surface adds `/athanor:assess` and the Codex companion
+mirror adds `athanor-assess`; the broader runtime remains conservative: new
+gates are local/read-only or opt-in unless an operator explicitly applies
+state changes.
+
+1. **Assessment skill.** Adds a reusable 100-point, weighted, goal-aligned
+   analysis skill that scores detailed dimensions, records confidence, calls
+   out overbuilt/underbuilt parts, and produces add/remove/priority guidance
+   before implementation work starts.
+2. **Evidence and loop harness.** Promotes the PostToolUse evidence sniffer,
+   live-redacted hook corpus, fixture replay, durable loop controller,
+   runtime conformance, observability snapshots, workflow episode packaging,
+   native runtime probes, and external-eval adapters into committed gates and
+   docs without enabling unsafe live execution by default.
+3. **Organization operating model.** Adds office/stage routing, work-item
+   registry, stage receipts, policy-promotion ledger, package knowledge index,
+   package-footprint policy, and computed organization score gate so the
+   "company-like" operating model is evidence-backed instead of prose-only.
+
+Release verification closed with the focused release gates, distribution smoke,
+runtime/package/organization gates, and the full pytest suite.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
 
 **v0.18.8** (released 2026-06-12) — Ships the **athanor-codex companion plugin**
 (the window's one additive feature) plus a two-round Fable 5 audit (PR #53,
@@ -14,8 +43,8 @@ independent `0.1.0+codex.*` version). No identity-invariant change.
 
 1. **athanor-codex companion** (`plugins/athanor-codex/`). A second-runtime
    mirror of the athanor native skill set for the Codex CLI — 13 prefix-safe
-   skills (discuss/analyze/plan/work/lfg/lfg-goal/review/debug/ci-watch/release/
-   scope-drift/verify/setup), no Claude hooks, repo-local marketplace entry. P9
+   skills (discuss/analyze/plan/work/lfg/lfg-goal/review/debug/ci-watch/
+   release/scope-drift/verify/setup), no Claude hooks, repo-local marketplace entry. P9
    pins lfg-goal UNDETERMINED non-blocking parity both ways.
 2. **Hook hardening (security).** P14 removes a dead `DEPRECATION_SENTINEL`
    Stop-gate bypass; P13 segment-scopes the force-push guard (`feature/main-update`
@@ -133,27 +162,6 @@ advisory + gate surfaces. No identity-invariant change.
 4 new regression tests; full suite 939 passed, 0 failed. An adversarial
 Workflow review (4 lenses) caught + fixed a SKILL.md three→four-axis sync miss
 pre-release.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.3 — Cleanup Audit + ref Adoption
-
-**v0.18.3** (released 2026-06-06) — Plugin-hygiene cleanup + 2 ref-pattern
-adoptions, from the ref-update audit. No identity-invariant change.
-
-1. **Cleanup.** README deep/lite-plan→`--depth=`; discuss `--new-session`
-   broken-promise dropped; agent model drift fixed (CLAUDE.md §Effort maps
-   all 11 agents to actual tier); STATE.md trimmed 28→5 Previous (v0.15.0…
-   v0.7.9 → `docs/archive/STATE-history.md`); Memory 2-tier honesty label.
-2. **ref adoption.** Approach-altitude gate in `/athanor:plan` (CE v3.11.1);
-   review lens-persona section carving (STOP-Read) in `/athanor:review`
-   (gstack v1.56) — 418→311 lines, behavior preserved.
-3. **Verified false-positives.** B-6 concepts orphan + B-8 defense label
-   were oversights (no change); autoresearch dangerous-cmd/privacy-block
-   already covered by the PreToolUse kernel guard.
-
-16 new regression tests, all RED→GREEN. Full suite 932 passed, 0 failed.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.

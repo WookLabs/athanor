@@ -32,6 +32,11 @@ REQUIRED_REFS: tuple[tuple[str, str, str], ...] = (
     ("native_runtime_probe_doc", "doc", "docs/native-runtime-probe.md"),
     ("native_runtime_playbook_doc", "doc", "docs/native-runtime-playbook.md"),
     ("reactive_channel_fixture_doc", "doc", "docs/reactive-channel-fixtures.md"),
+    ("organization_operating_model_doc", "doc", "docs/organization-operating-model.md"),
+    ("organization_work_item_registry_doc", "doc", "docs/organization-work-item-registry.md"),
+    ("organization_stage_receipts_doc", "doc", "docs/organization-stage-receipts.md"),
+    ("policy_promotion_ledger_doc", "doc", "docs/policy-promotion-ledger.md"),
+    ("organization_score_doc", "doc", "docs/organization-score.md"),
     ("distribution_smoke_gate", "gate", "scripts/gates/distribution_smoke.py"),
     ("package_footprint_gate", "gate", "scripts/gates/package_footprint_policy.py"),
     ("maintenance_profile_gate", "gate", "scripts/gates/maintenance_profile.py"),
@@ -39,6 +44,11 @@ REQUIRED_REFS: tuple[tuple[str, str, str], ...] = (
     ("native_runtime_probe_gate", "gate", "scripts/gates/native_runtime_probe.py"),
     ("native_runtime_playbook_gate", "gate", "scripts/gates/native_runtime_playbook.py"),
     ("reactive_channel_fixture_gate", "gate", "scripts/gates/reactive_channel_fixture.py"),
+    ("organization_operating_model_gate", "gate", "scripts/gates/organization_operating_model.py"),
+    ("organization_work_item_registry_gate", "gate", "scripts/gates/organization_work_item_registry.py"),
+    ("organization_stage_receipt_gate", "gate", "scripts/gates/organization_stage_receipt.py"),
+    ("policy_promotion_ledger_gate", "gate", "scripts/gates/policy_promotion_ledger.py"),
+    ("organization_score_gate", "gate", "scripts/gates/organization_score.py"),
 )
 
 ENTRY_POINTS = ("README.md", "CLAUDE.md")
