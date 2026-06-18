@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.19.1] — 2026-06-18
+
+### Fixed
+
+- **CI dependency install order.** The validation workflow now installs
+  `pytest`, `jsonschema`, and `pyyaml` immediately after Python setup so the
+  hook-installer regression gate can run before the broad pytest step on fresh
+  GitHub Actions runners.
+
 ## [0.19.0] — 2026-06-18
 
 ### Added

@@ -4,9 +4,11 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.19.0 — Evidence Harness + Organization Assessment
+## Current Phase: v0.19.1 — CI Dependency Install Hotfix
 
-**v0.19.0** (released 2026-06-18) — Ships the evidence-harness,
+**v0.19.1** (released 2026-06-18) — Patch release for the v0.19 deployment:
+the validation workflow now installs Python test dependencies before the hook
+installer regression gate. It carries the v0.19.0 evidence-harness,
 loop-engineering, organization-operating-model, and goal-aligned assessment
 branch. The plugin surface adds `/athanor:assess` and the Codex companion
 mirror adds `athanor-assess`; the broader runtime remains conservative: new

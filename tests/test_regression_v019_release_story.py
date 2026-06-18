@@ -46,7 +46,7 @@ def test_v019_release_documents_evidence_branch_story():
 def test_v019_release_bumps_plugin_version():
     """The release pass bumps the plugin manifest."""
     version = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
-    assert version == "0.19.0"
+    assert version.startswith("0.19.")
     assert "Ships the v0.19.0" in _unreleased_section()
 
 
