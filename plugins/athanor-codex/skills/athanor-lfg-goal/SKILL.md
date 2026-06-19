@@ -1,6 +1,6 @@
 ---
 name: athanor-lfg-goal
-description: Run bounded goal-driven Athanor LFG cycles in Codex using a durable goal ledger, per-cycle receipts, and 3-tier completion verification.
+description: Run bounded goal-driven Athanor LFG cycles in Codex using a durable goal ledger, per-cycle receipts, optional assessment score-target loops, and 3-tier completion verification.
 ---
 
 # Athanor LFG Goal
@@ -15,6 +15,27 @@ This skill adapts Athanor's Validated Receipt-Ledger Loop for Codex. It wraps
 `<promise>DONE</promise>` from one cycle is insufficient by itself; completion
 requires a validated receipt and user-visible goal decision.
 
+## Score-Target Mode
+
+Use score-target mode when the user asks to raise a multi-lens assessment score,
+100-point maturity score, team-structure score, or similar rubric until it
+reaches a target. The mode is selected by explicit goal wording, a
+`## Score target` section in the goal file, or flags such as
+`--score-target 95 --min-dimension 90`.
+
+When active:
+
+1. Run `athanor-assess` at bootstrap to create the baseline scorecard.
+2. Record `target_overall_score`, `target_min_dimension_score`,
+   `max_allowed_regression`, baseline/latest assessment refs, and score history
+   in `.athanor/goals/<goal-id>/goal.md`.
+3. After every validated LFG cycle, run `athanor-assess` again.
+4. If the target is not reached, queue the next cycle around the lowest-scoring
+   dimensions, weak-evidence gaps, and highest-impact Priority Plan items.
+5. Do not mark complete until the latest scorecard reaches the overall target,
+   every non-waived dimension meets the floor, and no dimension regresses beyond
+   the allowed limit.
+
 ## Goal Bootstrap
 
 1. Accept either inline goal text or a `--goal-file` path.
@@ -22,7 +43,9 @@ requires a validated receipt and user-visible goal decision.
 3. Define locked G-markers with observable acceptance criteria.
 4. Record `maxIterations` from `athanor.json` `lfgGoal.maxIterations` when
    available; default to 5 if absent.
-5. Initialize a cycle queue and state file if the goal is new.
+5. If score-target mode is active, record score-target policy and baseline
+   assessment evidence.
+6. Initialize a cycle queue and state file if the goal is new.
 
 ## Cycle Flow
 
@@ -36,6 +59,9 @@ For each cycle `CNNN`:
 5. The receipt must cover the LFG steps: plan, work, review, review-fix,
    residual handoff, browser test, commit-push-PR, CI watch, and DONE.
 6. Mark G-markers closed only when receipt evidence supports them.
+7. In score-target mode, reassess after the receipt. Continue iterating when
+   the final score, lowest dimension, or evidence confidence is still below the
+   ledger target.
 
 ## Receipt Validator Contract
 
@@ -84,10 +110,13 @@ status, `undetermined_count`, and `aggregate_status`.
 Completion is a 3-tier check, not a model assertion:
 
 - Tier 1 mechanical: ledger arithmetic, verify command, test evidence, no
-  unresolved required markers.
+  unresolved required markers. In score-target mode, parse the latest
+  assessment report and require final score >= target, every non-waived
+  dimension >= floor, and no over-limit regression.
 - Tier 2 adversarial: independent review of ledger, receipts, diff, and tests.
   Use Codex sub-agents only when explicitly authorized; otherwise run a local
-  adversarial pass and label it as non-parallel.
+  adversarial pass and label it as non-parallel. In score-target mode, check
+  for inflated scores, weak evidence, overbuilt work, and hidden low dimensions.
 - Tier 3 user ratification: ask the user to choose `yes`,
   `continue-iterating`, or `abort` when evidence says the goal may be complete.
 

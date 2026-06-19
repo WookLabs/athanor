@@ -1,0 +1,400 @@
+{
+  "schema_version": 1,
+  "registered_agents": [
+    {
+      "name": "ci-watcher",
+      "path": "agents/ci-watcher.md",
+      "purpose": "CI watch, failure analysis, autofix retry loop",
+      "allowed_dispatchers": [
+        "lfg",
+        "lfg-goal"
+      ]
+    },
+    {
+      "name": "codex-dispatcher",
+      "path": "agents/codex-dispatcher.md",
+      "purpose": "Safe Codex CLI dispatch with timeout and stdin handling",
+      "allowed_dispatchers": [
+        "plan",
+        "review",
+        "lfg",
+        "lfg-goal"
+      ]
+    },
+    {
+      "name": "learner",
+      "path": "agents/learner.md",
+      "purpose": "Extract reusable lessons after work and release loops",
+      "allowed_dispatchers": [
+        "work",
+        "lfg",
+        "lfg-goal"
+      ]
+    },
+    {
+      "name": "releaser",
+      "path": "agents/releaser.md",
+      "purpose": "Release ceremony automation",
+      "allowed_dispatchers": [
+        "lfg",
+        "lfg-goal"
+      ]
+    }
+  ],
+  "reference_roles": [
+    {
+      "name": "analyst",
+      "path": "docs/agent-roles/analyst.md",
+      "owner_skills": [
+        "analyze",
+        "assess",
+        "debug",
+        "setup"
+      ]
+    },
+    {
+      "name": "cleaner",
+      "path": "docs/agent-roles/cleaner.md",
+      "owner_skills": [
+        "lfg",
+        "lfg-goal",
+        "work"
+      ]
+    },
+    {
+      "name": "critic",
+      "path": "docs/agent-roles/critic.md",
+      "owner_skills": [
+        "assess",
+        "discuss",
+        "lfg-goal",
+        "plan",
+        "review",
+        "scope-drift",
+        "verification-before-completion"
+      ]
+    },
+    {
+      "name": "executor",
+      "path": "docs/agent-roles/executor.md",
+      "owner_skills": [
+        "debug",
+        "lfg",
+        "lfg-goal",
+        "setup",
+        "work"
+      ]
+    },
+    {
+      "name": "planner",
+      "path": "docs/agent-roles/planner.md",
+      "owner_skills": [
+        "lfg",
+        "lfg-goal",
+        "plan"
+      ]
+    },
+    {
+      "name": "researcher",
+      "path": "docs/agent-roles/researcher.md",
+      "owner_skills": [
+        "analyze",
+        "discuss"
+      ]
+    },
+    {
+      "name": "reviewer",
+      "path": "docs/agent-roles/reviewer.md",
+      "owner_skills": [
+        "assess",
+        "debug",
+        "lfg",
+        "lfg-goal",
+        "plan",
+        "review",
+        "scope-drift",
+        "verification-before-completion"
+      ]
+    }
+  ],
+  "skill_routes": [
+    {
+      "skill": "analyze",
+      "leader_kind": "analysis-router",
+      "artifacts": [
+        ".athanor/sessions/{id}/analyze.md"
+      ],
+      "reference_roles": [
+        "analyst",
+        "researcher"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "assess",
+        "debug",
+        "plan",
+        "review"
+      ]
+    },
+    {
+      "skill": "assess",
+      "leader_kind": "evaluation-leader",
+      "artifacts": [
+        ".athanor/sessions/{id}/assess.md"
+      ],
+      "reference_roles": [
+        "analyst",
+        "critic",
+        "reviewer"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "lfg-goal",
+        "plan",
+        "review"
+      ]
+    },
+    {
+      "skill": "ce-test-browser",
+      "leader_kind": "vendored-browser-verification",
+      "artifacts": [
+        "browser verification report"
+      ],
+      "reference_roles": [],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "debug",
+      "leader_kind": "systematic-debugging",
+      "artifacts": [
+        ".athanor/sessions/{id}/debug.md"
+      ],
+      "reference_roles": [
+        "analyst",
+        "executor",
+        "reviewer"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "discuss",
+      "leader_kind": "decision-synthesis",
+      "artifacts": [
+        ".athanor/sessions/{id}/discuss.md"
+      ],
+      "reference_roles": [
+        "critic",
+        "researcher"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "analyze",
+        "plan",
+        "prompt-gen"
+      ]
+    },
+    {
+      "skill": "lfg",
+      "leader_kind": "ship-pipeline",
+      "artifacts": [
+        "plan",
+        "work-log",
+        "review",
+        "pull-request"
+      ],
+      "reference_roles": [
+        "cleaner",
+        "executor",
+        "planner",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "ci-watcher",
+        "codex-dispatcher",
+        "learner",
+        "releaser"
+      ],
+      "next_skill_handoffs": [
+        "ce-test-browser",
+        "plan",
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "lfg-goal",
+      "leader_kind": "score-target-goal-loop",
+      "artifacts": [
+        "GOAL.md",
+        "cycle receipt",
+        "score report"
+      ],
+      "reference_roles": [
+        "cleaner",
+        "critic",
+        "executor",
+        "planner",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "ci-watcher",
+        "codex-dispatcher",
+        "learner",
+        "releaser"
+      ],
+      "next_skill_handoffs": [
+        "assess",
+        "plan",
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "plan",
+      "leader_kind": "tiered-planning",
+      "artifacts": [
+        ".athanor/sessions/{id}/plan.md"
+      ],
+      "reference_roles": [
+        "critic",
+        "planner",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "codex-dispatcher"
+      ],
+      "next_skill_handoffs": [
+        "lfg",
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "prompt-gen",
+      "leader_kind": "intake-framing",
+      "artifacts": [
+        ".athanor/sessions/{id}/prompt-gen.md"
+      ],
+      "reference_roles": [],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "analyze",
+        "assess",
+        "debug",
+        "discuss",
+        "lfg",
+        "lfg-goal",
+        "plan",
+        "review",
+        "setup",
+        "work"
+      ]
+    },
+    {
+      "skill": "review",
+      "leader_kind": "multi-lens-review",
+      "artifacts": [
+        ".athanor/sessions/{id}/review.md"
+      ],
+      "reference_roles": [
+        "critic",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "codex-dispatcher"
+      ],
+      "next_skill_handoffs": [
+        "lfg",
+        "work"
+      ]
+    },
+    {
+      "skill": "scope-drift",
+      "leader_kind": "scope-integrity-check",
+      "artifacts": [
+        "scope drift report"
+      ],
+      "reference_roles": [
+        "critic",
+        "reviewer"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "setup",
+      "leader_kind": "runtime-setup",
+      "artifacts": [
+        "setup report"
+      ],
+      "reference_roles": [
+        "analyst",
+        "executor"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "plan",
+        "work"
+      ]
+    },
+    {
+      "skill": "verification-before-completion",
+      "leader_kind": "completion-evidence-gate",
+      "artifacts": [
+        "verification evidence"
+      ],
+      "reference_roles": [
+        "critic",
+        "reviewer"
+      ],
+      "registered_agents": [],
+      "next_skill_handoffs": [
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "work",
+      "leader_kind": "implementation-orchestrator",
+      "artifacts": [
+        ".athanor/sessions/{id}/work-log.md"
+      ],
+      "reference_roles": [
+        "cleaner",
+        "executor"
+      ],
+      "registered_agents": [
+        "learner"
+      ],
+      "next_skill_handoffs": [
+        "lfg",
+        "review"
+      ]
+    }
+  ],
+  "registration_policy": {
+    "default_for_new_skill": "skill_route",
+    "new_registered_agent_requires": [
+      "standalone_invocation_need",
+      "session_path_independent_prompt",
+      "documented_reuse_across_two_or_more_skills",
+      "topology_contract_update"
+    ],
+    "reference_role_requires": [
+      "inline_prompt_reuse",
+      "documented_owner_skill",
+      "no_name_frontmatter"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.19.1/schemas/athanor-config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/v0.19.2/schemas/athanor-config.schema.json",
   "version": "1.0",
   "codex": {
     "enabled": true,
@@ -53,6 +53,12 @@
     "archiveOnComplete": true,
     "goalRetentionDays": 30,
     "goalsDir": ".athanor/goals",
+    "scoreTarget": {
+      "enabled": false,
+      "targetOverall": 95,
+      "targetMinDimension": 90,
+      "maxAllowedRegression": 2
+    },
     "dryRun": false
   },
   "review": {

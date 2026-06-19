@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.19.1/schemas/athanor-config.schema.json",
+  "$id": "https://raw.githubusercontent.com/WookLabs/athanor/v0.19.2/schemas/athanor-config.schema.json",
   "title": "Athanor Runtime Configuration",
   "description": "JSON Schema for athanor.json — the Athanor runtime configuration file at the project root. Root is permissive (additionalProperties: true) so user installs may add unknown fields without validation errors; sub-objects with known shape are strict (additionalProperties: false) but always permit a `_doc` string sibling that acts as inline schema documentation.",
   "type": "object",
@@ -281,6 +281,35 @@
         "goalsDir": {
           "type": "string",
           "description": "Root directory for goal ledgers; relative to the project root. Default .athanor/goals."
+        },
+        "scoreTarget": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional score-target policy for lfg-goal loops that repeatedly run /athanor:assess and continue cycles until the assessment score reaches the declared target.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "When true, lfg-goal runs assessment scorecards at bootstrap and after each cycle; default false."
+            },
+            "targetOverall": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Default overall assessment score target on a 0-100 scale when score-target mode is enabled."
+            },
+            "targetMinDimension": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Default minimum acceptable score for every non-waived assessment dimension."
+            },
+            "maxAllowedRegression": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Maximum allowed per-dimension score regression between assessment reports before completion is blocked."
+            }
+          }
         },
         "dryRun": {
           "type": "boolean",

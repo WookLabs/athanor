@@ -5,6 +5,45 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Prompt generation skill.** Adds `/athanor:prompt-gen` and Codex
+  companion `athanor-prompt-gen` to refine vague user requests into
+  structured prompts, recommend the next Athanor skill, and prepare
+  cleaner `/athanor:plan` inputs without starting implementation.
+- **Agent topology gate.** Adds `docs/agent-topology.md`,
+  `docs/agent-topology-contract.json`, and
+  `scripts/gates/agent_topology.py` to lock the 4 registered agents,
+  7 reference roles, every skill route, and `prompt-gen` intake-framing
+  status before broad regression tests.
+- **lfg-goal score-target optimization loop.** `/athanor:lfg-goal` now
+  supports opt-in score-target goals that run `/athanor:assess` at
+  bootstrap and after each validated LFG cycle, then keep iterating on
+  the lowest-scoring dimensions, weak-evidence gaps, and Priority Plan
+  items until the overall score and per-dimension floor pass. The
+  score-target contract is mirrored in the Codex companion skill,
+  `goal.md` template, Tier 2 judge rubric, config defaults, schema, and
+  regression tests.
+
+## [0.19.2] — 2026-06-19
+
+### Added
+
+- **Prompt generation skill.** Ships `/athanor:prompt-gen` and Codex
+  companion `athanor-prompt-gen` as a request-framing surface that recommends
+  the next Athanor skill before implementation starts.
+- **lfg-goal score-target optimization loop.** Publishes the opt-in
+  score-target goal loop across Claude and Codex skill surfaces, config
+  defaults, schema, templates, rubrics, and regression tests.
+- **Agent topology gate.** Adds the topology contract, documentation, CI gate,
+  and regression coverage that lock the 4 registered agents, 7 reference roles,
+  skill routes, and `prompt-gen` intake-framing status.
+
+### Changed
+
+- **Claude plugin release metadata.** Bumps the Claude plugin release surface to
+  `0.19.2` so user-scope plugin updates detect and install this package.
+
 ## [0.19.1] — 2026-06-18
 
 ### Fixed
@@ -23,6 +62,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   evaluate a target against a user goal with 100-point weighted dimensions,
   confidence, overbuilt and underbuilt findings, add/remove guidance, and a
   Priority Plan before implementation starts.
+- **Agent topology gate.** Adds `docs/agent-topology.md`,
+  `docs/agent-topology-contract.json`, and
+  `scripts/gates/agent_topology.py` to lock the 4 registered agents,
+  7 reference roles, every skill route, and `prompt-gen` intake-framing
+  status before broad regression tests.
 - **v0.19 evidence branch candidate.** Adds the PostToolUse test-evidence
   path, Freeze D2 evidence follow-up, hook payload corpus replay gate, and
   log-only UserPromptSubmit spike harness while keeping runtime blocking

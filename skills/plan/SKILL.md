@@ -19,9 +19,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Task
 You are the Athanor plan leader. You orchestrate **tiered planning**:
 from single-planner review (standard) to full adversarial cross-model planning (deep).
 A critic synthesizes and refines the best elements. You follow the **Thin Leader** pattern.
-
 This is Athanor's **killer feature**.
-
 ### using-superpowers boundary
 
 See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration" for the canonical text.
@@ -134,15 +132,17 @@ plans run cleanly):
 - `requirements.md` — **NEW (v0.9.0)** clarify-mode origin requirements
   doc (R-IDs / A-IDs / F-IDs / AE-IDs) from `/athanor:discuss` clarify
   mode.
+- `prompt-gen.md` — refined prompt from `/athanor:prompt-gen`; prefer it when present.
 - `discuss.md` — synthesis-mode discussion output.
 
-Ordering when multiple present: `analyze.md` → `requirements.md` →
-`discuss.md` (code-grounded → origin intent → option synthesis). When
+Ordering when multiple present: `analyze.md` → `prompt-gen.md` → `requirements.md` → `discuss.md`. When
 `requirements.md` is present, Planner A MUST cite-back origin R-IDs /
 A-IDs / F-IDs / AE-IDs in phase `Verify:` MUST/SHOULD bullets — compounds
 with v0.8.0 Spec-then-TDD discipline. Downstream Critic axis (C) R-ID
 traceback rubric (Step 4 + `references/critic-rubric.md`) verifies
 cite-back.
+
+**Prompt-gen preflight:** if `/athanor:plan` receives a request lacking target, desired outcome, success criteria, or depth, and no `prompt-gen.md` or `requirements.md` exists, stop before planner dispatch and recommend `/athanor:prompt-gen "<original request>"`. Do not invent product behavior; if the user says "best effort", proceed with labelled assumptions.
 
 **Approach-altitude gate:** recognize explicit "plan the approach / 방법부터
 계획 / don't build yet" → method-level plan (`references/approach-altitude.md`);

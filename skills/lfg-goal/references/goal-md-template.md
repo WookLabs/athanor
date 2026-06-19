@@ -40,6 +40,29 @@ MANDATORY. Single Bash one-liner returning baseline test count for cross-cycle d
 
 Example: `pytest --collect-only -q | tail -1`
 
+### `## Score target`
+
+OPTIONAL. Include this section when the goal is to raise a multi-lens
+assessment score through repeated cycles.
+
+Required fields when present:
+
+- `enabled`: `true`
+- `assessment_skill`: `/athanor:assess`
+- `target_overall_score`: integer 0-100
+- `target_min_dimension_score`: integer 0-100
+- `max_allowed_regression`: integer 0-100
+- `baseline_assessment_ref`: path to the bootstrap assess report
+- `latest_assessment_ref`: path to the latest assess report
+- `score_history`: append-only cycle score list
+- `waived_dimensions`: empty list unless the user explicitly accepts a
+  dimension below the floor
+
+Completion requires the latest assessment final score to meet
+`target_overall_score`, every non-waived dimension to meet
+`target_min_dimension_score`, and no dimension to regress by more than
+`max_allowed_regression`.
+
 ### `## Cycle queue`
 
 Upcoming cycle work items. Initially empty; leader populates after Tier 1/2 checks. Row shape: `| cycle | targets | status |`.

@@ -12,7 +12,12 @@ Athanor's planning discipline without Claude `Task` dispatch or hook runtime.
 
 1. Ground the plan in repo facts first: inspect relevant files, tests,
    manifests, docs, and prior `.athanor/sessions/*/plan.md` when present.
+   If `.athanor/sessions/*/prompt-gen.md` exists, treat it as the refined
+   user-intent prompt.
 2. State the goal, current state, constraints, and non-goals before the plan.
+   If target, desired outcome, success criteria, or depth are too vague, stop
+   and recommend `athanor-prompt-gen` before planning instead of inventing
+   product behavior.
 3. Choose the smallest useful depth:
    - `lite`: straightforward, low-risk changes.
    - `standard`: default; include risks, tests, and verification.

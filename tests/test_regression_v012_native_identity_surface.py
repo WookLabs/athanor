@@ -15,7 +15,7 @@ but the four athanor identity invariants survive intact:
      on every Stop event with whitelist + paraphrase + homoglyph detection.
 
 The current athanor-native Thin Leader skills (post-v0.17.0 / S07 collapse of
-deep-plan + lite-plan into `/athanor:plan --depth=`, plus assess) must continue to
+deep-plan + lite-plan into `/athanor:plan --depth=`, plus assess and prompt-gen) must continue to
 exist at depth 1 under `skills/` for Claude Code auto-discovery. The
 companion-fix arc (v0.11.3 → v0.11.7) scripts continue to live in
 `scripts/hooks/`.
@@ -45,6 +45,7 @@ NATIVE_THIN_LEADER_SKILLS = (
     "lfg",
     "lfg-goal",
     "plan",
+    "prompt-gen",
     "review",
     "setup",
     "work",

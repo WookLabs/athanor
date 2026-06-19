@@ -2,8 +2,8 @@
 policy + flat skill layout.
 
 D2 policy from the plan:
-- Athanor-native skills (plan, work, debug, setup, discuss, analyze,
-  review, scope-drift, verification-before-completion) keep the
+- Athanor-native skills (plan, prompt-gen, work, debug, setup, discuss,
+  analyze, review, lfg, lfg-goal, scope-drift, verification-before-completion) keep the
   unprefixed slot at `skills/<name>/`. v0.17.0 / S07 collapsed
   `deep-plan` + `lite-plan` into `/athanor:plan --depth=`, removing
   them from this set; see `docs/v0.17.0-migration.md`.
@@ -27,9 +27,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 
 ATHANOR_NATIVE = {
-    "analyze", "assess", "debug", "discuss", "plan",
-    "review", "scope-drift", "setup", "verification-before-completion",
-    "work",
+    "analyze", "assess", "debug", "discuss", "lfg", "lfg-goal", "plan",
+    "prompt-gen", "review", "scope-drift", "setup",
+    "verification-before-completion", "work",
 }
 
 

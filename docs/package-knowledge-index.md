@@ -1,6 +1,6 @@
 # Package Knowledge Index
 
-Last reviewed: 2026-06-18.
+Last reviewed: 2026-06-19.
 
 This is the short package-facing map for Athanor's current runtime and
 operator surface. Use it first when a packaged worker needs current context
@@ -13,9 +13,11 @@ without scanning repo-local development history.
 - User commands: `/athanor:plan`, `/athanor:work`, `/athanor:review`,
   `/athanor:lfg`, `/athanor:lfg-goal`, `/athanor:setup`,
   `/athanor:discuss`, `/athanor:analyze`, `/athanor:assess`,
-  `/athanor:debug`.
+  `/athanor:debug`, `/athanor:prompt-gen`.
 - Registered agents: `learner`, `releaser`, `ci-watcher`,
   `codex-dispatcher`.
+- Agent topology: [doc](agent-topology.md),
+  [gate](../scripts/gates/agent_topology.py).
 
 ## Operator Gate Map
 

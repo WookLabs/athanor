@@ -5,7 +5,7 @@ Locks the v0.17.0 static dedup state at v0.18.0 release time:
 **UserPromptSubmit (UPS) is NOT registered as a runtime hook in v0.18.0.**
 
 The v0.17.0 / S04 hoist established a static dedup pattern for the
-`using-superpowers boundary` declaration: 10 athanor-native Thin Leader
+`using-superpowers boundary` declaration: 11 athanor-native Thin Leader
 skills each carry a 2-line POINTER (heading + 1-line "See CLAUDE.md …")
 and the canonical prose lives in ONE place — CLAUDE.md §"using-superpowers
 boundary (v0.11.1) — canonical declaration". UPS-driven runtime dedup
@@ -139,6 +139,7 @@ _THIN_LEADER_SKILLS = [
     "lfg",
     "lfg-goal",
     "plan",
+    "prompt-gen",
     "review",
     "setup",
     "work",
@@ -178,8 +179,8 @@ def test_skills_each_carry_a_boundary_pointer():
     )
 
 
-def test_pointer_count_is_ten():
-    """Sanity: exactly 10 skills carry the pointer, matching the
+def test_pointer_count_is_eleven():
+    """Sanity: exactly 11 skills carry the pointer, matching the
     canonical declaration's current native Thin Leader skill enumeration."""
     found = 0
     for skill_dir in (REPO_ROOT / "skills").iterdir():
@@ -200,9 +201,9 @@ def test_pointer_count_is_ten():
                     "canonical declaration" not in stripped:
                 found += 1
                 break
-    assert found == 10, (
-        f"expected exactly 10 `### using-superpowers boundary` pointers "
-        f"(one per Thin Leader skill); got {found}. The 10+1 static dedup "
+    assert found == 11, (
+        f"expected exactly 11 `### using-superpowers boundary` pointers "
+        f"(one per Thin Leader skill); got {found}. The 11+1 static dedup "
         f"pattern is current — adjust this count only when a "
         f"native skill is genuinely added/removed."
     )

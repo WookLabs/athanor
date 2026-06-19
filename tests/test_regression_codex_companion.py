@@ -30,6 +30,7 @@ EXPECTED_SKILLS = {
     "athanor-lfg",
     "athanor-lfg-goal",
     "athanor-plan",
+    "athanor-prompt-gen",
     "athanor-ci-watch",
     "athanor-release",
     "athanor-review",
@@ -72,6 +73,7 @@ def test_codex_companion_manifest_is_codex_native():
     assert "discuss" in manifest["interface"]["longDescription"].lower()
     assert "release" in manifest["interface"]["longDescription"].lower()
     assert "ci" in manifest["interface"]["longDescription"].lower()
+    assert "prompt" in manifest["interface"]["longDescription"].lower()
 
 
 def test_codex_companion_marketplace_selector():
@@ -189,6 +191,25 @@ def test_codex_analyze_skill_absorbs_fast_analysis_contract():
     ]
     for token in required_tokens:
         assert token in text, f"athanor-analyze missing contract token: {token!r}"
+
+
+def test_codex_prompt_gen_skill_absorbs_prompt_routing_contract():
+    text = (CODEX_PLUGIN_ROOT / "skills" / "athanor-prompt-gen" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    required_tokens = [
+        "Generated Prompt",
+        "Recommended Next Skill",
+        "Success Criteria",
+        "Open Questions",
+        "athanor-plan",
+        "athanor-lfg-goal",
+        "Do not implement",
+        "Do not silently call the recommended skill",
+    ]
+    for token in required_tokens:
+        assert token in text, f"athanor-prompt-gen missing contract token: {token!r}"
 
 
 def test_codex_verify_skill_absorbs_completion_evidence_contract():

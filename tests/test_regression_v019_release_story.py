@@ -691,6 +691,32 @@ def test_unreleased_documents_organization_score_gate():
     )
 
 
+def test_ci_runs_agent_topology_gate():
+    """Agent topology drift should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "Agent topology gate" in workflow
+    assert "python scripts/gates/agent_topology.py --json" in workflow
+
+
+def test_unreleased_documents_agent_topology_gate():
+    """The Unreleased story must name the agent topology gate."""
+    section = _unreleased_section()
+    required = [
+        "Agent topology gate",
+        "docs/agent-topology.md",
+        "docs/agent-topology-contract.json",
+        "scripts/gates/agent_topology.py",
+        "4 registered",
+        "7 reference",
+        "prompt-gen",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain the agent topology gate; "
+        f"missing: {missing}"
+    )
+
+
 def test_ci_runs_harness_decision_ledger_gate():
     """P18 harness decision ledger should fail before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")

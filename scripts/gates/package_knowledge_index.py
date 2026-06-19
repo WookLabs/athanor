@@ -37,6 +37,7 @@ REQUIRED_REFS: tuple[tuple[str, str, str], ...] = (
     ("organization_stage_receipts_doc", "doc", "docs/organization-stage-receipts.md"),
     ("policy_promotion_ledger_doc", "doc", "docs/policy-promotion-ledger.md"),
     ("organization_score_doc", "doc", "docs/organization-score.md"),
+    ("agent_topology_doc", "doc", "docs/agent-topology.md"),
     ("distribution_smoke_gate", "gate", "scripts/gates/distribution_smoke.py"),
     ("package_footprint_gate", "gate", "scripts/gates/package_footprint_policy.py"),
     ("maintenance_profile_gate", "gate", "scripts/gates/maintenance_profile.py"),
@@ -49,6 +50,7 @@ REQUIRED_REFS: tuple[tuple[str, str, str], ...] = (
     ("organization_stage_receipt_gate", "gate", "scripts/gates/organization_stage_receipt.py"),
     ("policy_promotion_ledger_gate", "gate", "scripts/gates/policy_promotion_ledger.py"),
     ("organization_score_gate", "gate", "scripts/gates/organization_score.py"),
+    ("agent_topology_gate", "gate", "scripts/gates/agent_topology.py"),
 )
 
 ENTRY_POINTS = ("README.md", "CLAUDE.md")

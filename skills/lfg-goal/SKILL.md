@@ -1,17 +1,12 @@
 ---
 name: lfg-goal
 description: >
-  Goal-Driven Validated Ralph Loop — run /athanor:lfg in a bounded N-cycle
-  macro loop bound to a durable goal ledger. Each cycle ends not on a
-  bare <promise>DONE</promise> sentinel but on a dispatched
-  receipt-validator that runs 9 externally-verifiable Bash checks against
-  the cycle's actual artifacts. Goal completion requires a 3-tier check
-  (mechanical + adversarial cross-model judge dispatch + blocking user
-  ratification). Wraps athanor's existing /athanor:lfg verbatim; does NOT
-  modify it. Built for hands-off multi-cycle execution toward a stated
-  outcome with externally-verifiable progress receipts.
-  '목표 달성까지 돌려', 'ralph loop', 'goal-driven ship',
-  '/athanor:lfg-goal', 'athanor lfg-goal', 'iterate until goal met'.
+  Goal-driven /athanor:lfg macro loop with durable goal ledger,
+  receipt validation, 3-tier completion check, and optional
+  /athanor:assess score-target optimization until overall and
+  per-dimension scores reach the declared target. Triggers:
+  /athanor:lfg-goal, 목표 달성까지 돌려, iterate until goal met,
+  점수를 목표까지 올려, 100점 평가 점수 개선, score target loop.
 user-invocable: true
 allowed-tools: Bash, Read, Write, Task, AskUserQuestion, Skill
 ---
@@ -32,7 +27,8 @@ commitment #1.
 This skill is invoked when the user wants hands-off multi-cycle work
 toward a stated outcome (a "goal") rather than a single feature ship.
 Typical triggers: "목표 달성까지 돌려", "iterate until goal met",
-"keep going until done", "/athanor:lfg-goal".
+"keep going until done", "점수를 목표까지 올려",
+"100점 평가 점수 개선", "/athanor:lfg-goal".
 
 The four v0.10.0 athanor identity invariants — Thin Leader, cross-model
 adversarial planning, Spec-then-TDD discipline, Stop hook runtime gate
@@ -51,6 +47,8 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
   use `/athanor:lfg` directly.
 - For one-off planning without execution — use `/athanor:plan`
   (optionally `--depth=lite`).
+- For a one-shot 100-point report without iterative execution —
+  use `/athanor:assess`.
 - For casual conversation or exploratory questions —
   use `/athanor:discuss`.
 - For a one-shot review without commit/push — use `/athanor:review`.
@@ -66,8 +64,9 @@ verbatim once per cycle and adds an honesty layer on top:
 | Scope | Single feature → ship | Bounded N-cycle iteration → goal completion |
 | Cycle bound | None — one pass through 9 steps | `lfgGoal.maxIterations` (default 5) |
 | Goal ledger | None — implicit in user prompt | `.athanor/goals/<id>/goal.md` durable ledger with G-markers |
+| Score-target loop | N/A | Optional `/athanor:assess` scorecard loop; repeat until `target_overall_score` and `target_min_dimension_score` pass |
 | Per-cycle DONE signal | `<promise>DONE</promise>` from Step 9 | Dispatched receipt-validator runs 9 Bash verification commands; produces `CNNN-lfg-receipt.md` with per-step status enum |
-| Goal-level completion | N/A (no goal concept) | 3-tier check: Tier 1 mechanical + Tier 2 adversarial cross-model judges + Tier 3 BLOCKING user ratification |
+| Goal-level completion | N/A (no goal concept) | 3-tier check: Tier 1 mechanical + optional score-target arithmetic + Tier 2 adversarial cross-model judges + Tier 3 BLOCKING user ratification |
 | Scope-drift between cycles | N/A | `/athanor:scope-drift` auto-fires (`lfgGoal.scopeDriftAutoCheck: true` default) |
 | Release strategy | Single PR + tag | Per-cycle PRs + tags (`consolidateCycles: false` default per D9); opt-in single-PR mode available |
 | When to choose | Known scope, single ship | Multi-cycle work, goal stated in outcome terms |
@@ -112,6 +111,28 @@ across sessions, or goals you want versioned in git.
 
 Both forms produce the same downstream state. Choice is ergonomic only.
 
+### Score-target form
+
+```
+/athanor:lfg-goal --score-target 95 --min-dimension 90 "raise the plugin's multi-lens assessment score without overbuilding"
+```
+
+Score-target mode is opt-in. It is selected by either:
+
+- explicit flags: `--score-target <0-100>` and optional
+  `--min-dimension <0-100>`;
+- a `## Score target` section in the `--goal-file`; or
+- direct user wording such as "다각도 분석 점수를 높게 끌어올릴 때까지"
+  or "iterate until the assessment score reaches X".
+
+When score-target mode is active, the leader dispatches `/athanor:assess`
+at bootstrap to establish a baseline scorecard, then again after each
+validated cycle. The next cycle targets the lowest-scoring dimensions
+and highest-impact Priority Plan items from the latest assessment. A
+high final score alone is not enough: every dimension must meet the
+declared floor unless the user explicitly waives that dimension in
+`goal.md`.
+
 ### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
 ## Architecture: Validated Receipt-Ledger Loop
@@ -122,8 +143,9 @@ leader has to defeat all three to declare false completion.
 
 - **Layer 1 — Goal Ledger.** Durable `.athanor/goals/<id>/goal.md` is
   the source of truth. G-markers, acceptance criteria, scope-change
-  audit, stop conditions. Locked after bootstrap; mid-flight changes
-  go through the explicit `scope_change` flow.
+  audit, optional score-target policy, stop conditions. Locked after
+  bootstrap; mid-flight changes go through the explicit `scope_change`
+  flow.
 - **Layer 2 — Per-Cycle Receipts.** After each cycle's `/athanor:lfg`
   invocation, a dispatched **receipt-validator** worker (clean context)
   runs 9 externally-verifiable Bash commands — one per lfg step — and
@@ -194,9 +216,27 @@ checks exit 0>
 <project-specific count command, e.g.
 `pytest --collect-only -q tests/ | tail -1`>
 
+## Score target (optional)
+- enabled: true | false
+- assessment_skill: /athanor:assess
+- target_overall_score: 95
+- target_min_dimension_score: 90
+- max_allowed_regression: 2
+- baseline_assessment_ref: .athanor/sessions/<session-id>/assess.md
+- latest_assessment_ref: .athanor/sessions/<session-id>/assess.md
+- score_history:
+  - C000 baseline: <score> / 100
+  - C001: <score> / 100
+- dimension_floor_policy: every scored dimension must be >=
+  target_min_dimension_score unless a user-waived dimension is listed
+- next_cycle_policy: target the lowest-scoring dimensions first, then
+  the highest-impact Priority Plan items from latest_assessment_ref
+
 ## Stop conditions
 - complete: all G-markers checked AND each has closed_by:CNNN with
-  validator-passed receipt
+  validator-passed receipt AND, when Score target is enabled, latest
+  assessment score passes target_overall_score plus
+  target_min_dimension_score
 - invalid_cycle: receipt aggregate=invalid for `noProgressThreshold`
   consecutive cycles
 - blocked: explicit user abort via Tier 3 prompt
@@ -219,6 +259,10 @@ status: complete
   AND every G-marker checked [x]
   AND every checked marker has closed_by: CNNN with evidence refs
   AND every closing CNNN has validator-passed receipt
+  AND if Score target enabled:
+      latest /athanor:assess report final score >= target_overall_score
+      AND every non-waived dimension score >= target_min_dimension_score
+      AND no dimension regressed more than max_allowed_regression
   AND Tier-2 judges (A + B) both returned goal_met: true
   AND Tier-3 user ratification = yes
 ```
@@ -310,6 +354,13 @@ PASS requires **all** of:
    required by markers)`. If `goal.md` omits the test-count command,
    this signal is `unknown` (not PASS).
 5. **No new TODO/FIXME** tagged with the goal-id in the cycle diff.
+6. **Score-target arithmetic** (only when `## Score target` is
+   enabled). Parse `latest_assessment_ref` from `/athanor:assess`:
+   final score must be `>= target_overall_score`; every non-waived
+   dimension score must be `>= target_min_dimension_score`; and no
+   dimension may regress by more than `max_allowed_regression` points
+   from the previous scorecard. Missing scorecard, missing confidence,
+   or an unparseable scoring table is NOT PASS.
 
 ### Tier 2 — Adversarial Cross-Model Judge Dispatch
 
@@ -319,6 +370,9 @@ athanor identity #2 (cross-model adversarial planning):
 - **Judge A** — Claude opus, structured rubric: R-ID coverage per
   marker (PASS / PARTIAL / FAIL), AE-ID coverage per marker, scope-creep
   flag (diff items outside G-markers), residual gap (free-form prose).
+  In score-target mode, also audit the latest `/athanor:assess`
+  scorecard for inflated scoring, weak evidence, underbuilt dimensions,
+  overbuilt additions, and regressions hidden by the weighted average.
   Cannot infer completion from DONE sentinel, PR existence, or
   self-reported work logs alone — must cite ledger evidence.
 - **Judge B** — Codex via Bash (gated on `codex.enabled: true`), same
@@ -340,6 +394,9 @@ ONE blocking prompt:
 Goal-status: cycle N complete; receipt-validator: all_valid;
 Tier 1 mechanical: PASS; Tier 2 cross-model: Judge A = goal_met,
 Judge B = goal_met (or split — show both).
+Score target: final=<score>/100 target=<target_overall_score>/100;
+lowest_dimension=<dimension>:<score>/100 floor=<target_min_dimension_score>/100
+when score-target mode is enabled.
 
 Confirm goal is achieved? [yes / continue-iterating / abort]
 ```
@@ -478,7 +535,13 @@ function lfg_goal_loop(goal_input | --goal-file path):
     bootstrap_goal_ledger(goal_id, goal_input)
     # Dispatches /athanor:plan with goal-shaped prompt template
     # Output: goal.md draft (markers + cycle queue + verify-command +
-    #         test-count-command)
+    #         test-count-command + optional score-target block)
+    if score_target_enabled(goal.md):
+      baseline = invoke_skill("athanor:assess",
+          target=goal_target,
+          goal=goal_statement,
+          decision_use="score-target baseline for lfg-goal")
+      record_score_history(goal_id, "C000", baseline)
     user_confirm_goal_shape()   # single blocking checkpoint
     write_bootstrap_receipt(goal_id)
   else:
@@ -524,6 +587,17 @@ function lfg_goal_loop(goal_input | --goal-file path):
 
     # else: all_valid — proceed to tier checks directly
 
+    # ── Score-target reassessment (optional) ──
+    if score_target_enabled(goal.md):
+      assessment = invoke_skill("athanor:assess",
+          target=goal_target,
+          goal=score_target_goal(goal.md),
+          decision_use="score-target progress check for lfg-goal")
+      record_score_history(goal_id, cycle, assessment)
+      if not score_target_reached(goal.md, assessment):
+        enqueue_next_cycle_from_lowest_dimensions(goal_id, assessment)
+        continue
+
     # ── Auto scope-drift between cycles ──
     if cycle < lfgGoal.maxIterations AND lfgGoal.scopeDriftAutoCheck:
       drift = invoke_skill("athanor:scope-drift", target=goal.md)
@@ -535,6 +609,8 @@ function lfg_goal_loop(goal_input | --goal-file path):
     tier1 = run_tier1_mechanical(goal_id, cycle)
     if not tier1.pass:
       log "tier 1 fail: <signal>"
+      if score_target_enabled(goal.md) and tier1.fail_signal == "score-target":
+        enqueue_next_cycle_from_lowest_dimensions(goal_id, latest_assessment)
       continue
 
     # ── Tier 2 adversarial cross-model ──
@@ -578,6 +654,51 @@ function lfg_goal_loop(goal_input | --goal-file path):
   remain.
 - `/athanor:lfg` is **unchanged**. The wrapper does not couple to the
   inner pipeline. Receipt-validator reads what lfg already produces.
+
+## Score-Target Optimization Loop
+
+Score-target mode turns `/athanor:assess` from a one-shot report into
+the evaluator for the macro loop. It does not replace G-markers,
+receipts, or user ratification; it adds a measurable improvement target
+to the existing completion gate.
+
+**Inputs.** The goal ledger records `target_overall_score`,
+`target_min_dimension_score`, `max_allowed_regression`,
+`baseline_assessment_ref`, `latest_assessment_ref`, and score history.
+Default score target values come from `lfgGoal.scoreTarget` unless the
+user passes explicit flags or writes a `## Score target` section in a
+goal file.
+
+**Cycle delta selection.** When the latest assessment misses the target,
+the next cycle MUST target:
+
+1. every dimension below `target_min_dimension_score`, ordered lowest
+   score first;
+2. any high-impact Priority Plan item tied to those dimensions;
+3. any weak-evidence item that prevents confidence from reaching medium
+   or high.
+
+The leader records the selected dimensions in the cycle queue and the
+cycle requirements injected into `/athanor:lfg`. The loop MUST NOT chase
+cosmetic score increases that the latest assessment labels as overbuilt,
+remove/simplify candidates, or weak evidence.
+
+**Progress accounting.** A score-target cycle counts as progress when
+at least one of these holds:
+
+- final score improves over the previous assessment;
+- the lowest non-waived dimension score improves;
+- a weak-evidence item is converted into a test, gate, receipt, command
+  output, or concrete file reference;
+- a Priority Plan item from the latest assessment is closed with
+  receipt evidence.
+
+If none hold, increment the existing no-progress counter.
+
+**Completion.** Score-target mode can only complete when the latest
+assessment passes both the overall target and dimension floor, Tier 1
+parses that scorecard mechanically, Tier 2 judges confirm the score is
+evidence-backed rather than inflated, and Tier 3 user ratifies.
 
 ## Auto Scope-Drift Between Cycles
 
@@ -639,7 +760,6 @@ Baked into `athanor.json` and `templates/athanor.json`:
 
 ```json
 "lfgGoal": {
-  "_doc": "Configuration for /athanor:lfg-goal — goal-driven macro Ralph loop wrapping /athanor:lfg with dispatched receipt validation + adversarial 3-tier goal-completion check. See skills/lfg-goal/SKILL.md.",
   "maxIterations": 5,
   "noProgressThreshold": 2,
   "userConfirmAfter": 3,
@@ -650,6 +770,12 @@ Baked into `athanor.json` and `templates/athanor.json`:
   "archiveOnComplete": true,
   "goalRetentionDays": 30,
   "goalsDir": ".athanor/goals",
+  "scoreTarget": {
+    "enabled": false,
+    "targetOverall": 95,
+    "targetMinDimension": 90,
+    "maxAllowedRegression": 2
+  },
   "dryRun": false
 }
 ```
@@ -683,6 +809,11 @@ Other defaults:
 - `goalsDir: ".athanor/goals"` — storage location per D7.
 - `goalRetentionDays: 30` — cleaner ages out abandoned / blocked /
   max-iter goal directories after 30 days (D13).
+- `scoreTarget.enabled: false` — score-target mode is opt-in through
+  flags, direct goal wording, or `goal.md`. Defaults are
+  `targetOverall: 95`, `targetMinDimension: 90`, and
+  `maxAllowedRegression: 2` when the mode is enabled without explicit
+  numeric values.
 
 ## Per-cycle commit / release strategy (D9)
 
