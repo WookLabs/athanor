@@ -26,6 +26,8 @@ Leader (thin router) ── 파일 안 읽음, 분석 안 함, 코드 안 씀
   ├── /athanor:analyze ──→ worker(들) ──→ 결과 brief
   ├── /athanor:debug      ──→ worker(들) ──→ 결과 brief
   ├── /athanor:plan       ──→ worker(들) ──→ 결과 brief   (--depth={deep|standard|lite})
+  ├── /athanor:deep-plan  ──→ /athanor:plan --depth=deep thin wrapper
+  ├── /athanor:lite-plan  ──→ /athanor:plan --depth=lite thin wrapper
   ├── /athanor:work       ──→ worker(들) ──→ 결과 brief
   └── /athanor:setup   ──→ worker      ──→ 결과 brief
 ```
@@ -45,6 +47,7 @@ Leader 컨텍스트에는 dispatch 기록 + 결과 brief만 쌓이므로,
 │                                                          │
 │  /athanor:discuss → /athanor:analyze → /athanor:debug    │
 │  → /athanor:plan --depth={deep|standard|lite}            │
+│    (/athanor:deep-plan and /athanor:lite-plan are thin wrappers) │
 │  → 사용자 확정                                            │
 │                                                          │
 └────────────────────────┬─────────────────────────────────┘
@@ -148,13 +151,18 @@ Execution Mode 전환은 사용자 확정 후에만 발생한다.
 
 3단계 티어로 프로젝트 규모와 복잡도에 맞는 플래닝 깊이를 선택한다.
 
+`/athanor:deep-plan` and `/athanor:lite-plan` are thin wrapper entrypoints for
+discoverability. They force `--depth=deep` or `--depth=lite` respectively, then
+delegate to the canonical `/athanor:plan` protocol and normal `plan.md`
+artifacts.
+
 **Plan Tiers:**
 
 | Tier | Command | Planner A | Planner B / Review | Use Case |
 |------|---------|-----------|-------------------|----------|
-| Deep | `/athanor:plan --depth=deep` | Claude (standard) | Codex CLI (contrarian) + 교차 리뷰 | 대규모 아키텍처, 위험한 변경 |
+| Deep | `/athanor:deep-plan` or `/athanor:plan --depth=deep` | Claude (standard) | Codex CLI (contrarian) + 교차 리뷰 | 대규모 아키텍처, 위험한 변경 |
 | Standard | `/athanor:plan` | Claude (standard) | Codex CLI review (단방향) | 일반적인 기능 구현 (default) |
-| Lite | `/athanor:plan --depth=lite` | Claude (standard) | 없음 (리뷰 스킵) | 소규모 변경, 빠른 작업 |
+| Lite | `/athanor:lite-plan` or `/athanor:plan --depth=lite` | Claude (standard) | 없음 (리뷰 스킵) | 소규모 변경, 빠른 작업 |
 
 **Deep Tier 흐름:**
 ```
@@ -324,10 +332,13 @@ Discovery brief 내용:
 ### 2-Tier Architecture
 
 **Current implementation boundary:** shipped memory is local lesson files under
-`.athanor/lessons/` plus Learner/Cleaner dispatch prompts. Permanent persistence
-to mem-search is unimplemented and remains tracked in `docs/STATE.md` Known
-gaps; this section describes the intended 2-tier model without claiming a
-mem-search writer exists.
+`.athanor/lessons/` plus Learner/Cleaner dispatch prompts. Local read-only
+recall is provided by `docs/memory-index.md` and
+`scripts/gates/memory_index.py`; goal/session resume summaries use
+`docs/handoff-artifact.md`. Permanent persistence to mem-search is
+unimplemented and remains tracked in `docs/STATE.md` Known gaps; this section
+describes the intended 2-tier model without claiming a mem-search writer
+exists.
 
 **영구 메모리 (Permanent)**
 - 아키텍처 결정, 프로젝트 목표, 고정 구조/규칙
@@ -359,7 +370,8 @@ cleaner는:
 - 태그 없음 → working으로 간주
 
 mem-search 영구 저장은 아직 unimplemented이므로 permanent 승격은 local
-`.athanor/lessons/` frontmatter 상태만 의미한다.
+`.athanor/lessons/` frontmatter 상태만 의미한다. 검색과 요약 재사용은
+read-only memory-index와 compact handoff artifact를 통해 수행한다.
 
 ---
 

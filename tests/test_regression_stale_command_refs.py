@@ -1,20 +1,21 @@
-"""Regression — no dead command/flag references in user-facing docs.
+"""Regression — no stale command/flag references in user-facing docs.
 
 Context
 -------
 The ref-adoption + cleanup audit (v0.18.3) found two stale references that
 survived earlier surface changes:
 
-- `README.md` advertised `/athanor:deep-plan` and `/athanor:lite-plan` as
-  live commands, but v0.17.0 (S07) folded both into
-  `/athanor:plan --depth={deep|lite}`. CLAUDE.md and the plan skill use the
-  flag form; only README lagged.
+- `README.md` once advertised `/athanor:deep-plan` and `/athanor:lite-plan`
+  as independent commands after v0.17.0 (S07) folded both into
+  `/athanor:plan --depth={deep|lite}`. They are live again as thin wrappers,
+  but user-facing docs must identify them as wrappers over the canonical
+  `/athanor:plan` depth pipeline.
 - `skills/discuss/SKILL.md` promised the `--new-session` flag, which was
   reclassified a broken-promise in v0.11.7 (originally a v0.8.0 release-note
   promise, never implemented). CLAUDE.md §Session Lookup Convention already
   drops the flag from the stale-session announcement; discuss lagged.
 
-These tests lock the dead references out so they can't drift back in.
+These tests lock stale independent-command framing out so it can't drift back in.
 Static text reads only — no subprocess, no file mutation.
 """
 from __future__ import annotations
@@ -27,67 +28,55 @@ DISCUSS = REPO_ROOT / "skills" / "discuss" / "SKILL.md"
 DESIGN = REPO_ROOT / "docs" / "DESIGN.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 
-# `/athanor:plan` is the ONE skill allowed to name the dead commands — its
-# body explains the v0.17.0 (S07) collapse ("former /athanor:deep-plan +
-# /athanor:lite-plan skills ... folded into this"). Every other skill must
-# use the flag form in user-facing guidance.
-_DEAD_PLAN_COMMANDS = ("/athanor:deep-plan", "/athanor:lite-plan")
-_HISTORICAL_REF_SKILLS = {"plan"}
+_LIVE_PLAN_WRAPPERS = ("/athanor:deep-plan", "/athanor:lite-plan")
+_WRAPPER_SKILLS = {"deep-plan", "lite-plan"}
+_ALLOWED_PLAN_REFERENCE_SKILLS = {"plan", "prompt-gen", *_WRAPPER_SKILLS}
 
 
-def test_readme_no_dead_plan_commands() -> None:
-    """MUST — README uses /athanor:plan --depth=, not deep-plan/lite-plan."""
+def test_readme_documents_plan_wrappers_as_depth_aliases() -> None:
+    """MUST — README names the wrappers and the canonical depth form."""
     body = README.read_text(encoding="utf-8")
-    for dead in ("/athanor:deep-plan", "/athanor:lite-plan"):
-        assert dead not in body, (
-            f"README.md references the dead command {dead!r}; v0.17.0 folded "
-            f"it into '/athanor:plan --depth='. Use the flag form."
-        )
+    for command in _LIVE_PLAN_WRAPPERS:
+        assert command in body, f"README.md must document live wrapper {command!r}."
     assert "--depth=" in body, (
         "README.md must document the '--depth=' flag form of /athanor:plan."
     )
-
-
-def test_design_no_dead_plan_commands() -> None:
-    """MUST — docs/DESIGN.md uses the --depth= flag form, not deep-plan/lite-plan.
-
-    v0.18.7 plugin-diet: DESIGN.md (referenced by README/STATE/ROADMAP) still
-    showed the v0.17.0-removed `/athanor:deep-plan` / `/athanor:lite-plan`
-    commands in its pipeline diagrams + tier table. Lock the dead forms out.
-    """
-    body = DESIGN.read_text(encoding="utf-8")
-    for dead in ("/athanor:deep-plan", "/athanor:lite-plan"):
-        assert dead not in body, (
-            f"docs/DESIGN.md references the dead command {dead!r}; v0.17.0 (S07) "
-            f"folded it into '/athanor:plan --depth='. Use the flag form."
-        )
-    assert "--depth=" in body, (
-        "docs/DESIGN.md must document the '--depth=' flag form of /athanor:plan."
+    assert "thin wrapper" in body.lower(), (
+        "README.md must identify deep/lite plan commands as thin wrappers, "
+        "not independent planning implementations."
     )
 
 
-def test_no_skill_recommends_dead_plan_commands() -> None:
-    """MUST — no skill (except plan's migration prose) names the dead
-    `/athanor:deep-plan` / `/athanor:lite-plan` commands.
+def test_design_documents_plan_wrappers_as_depth_aliases() -> None:
+    """MUST — docs/DESIGN.md names wrappers as aliases over --depth=."""
+    body = DESIGN.read_text(encoding="utf-8")
+    for command in _LIVE_PLAN_WRAPPERS:
+        assert command in body, f"docs/DESIGN.md must document live wrapper {command!r}."
+    assert "--depth=" in body, (
+        "docs/DESIGN.md must document the '--depth=' flag form of /athanor:plan."
+    )
+    assert "thin wrapper" in body.lower(), (
+        "docs/DESIGN.md must identify deep/lite plan commands as thin wrappers, "
+        "not independent planning implementations."
+    )
 
-    v0.18.8 audit found six skills still *recommending* the removed
-    commands as live invocations in their "다음 단계" / "When NOT to invoke"
-    blocks: analyze, debug, discuss, setup, lfg, lfg-goal. v0.17.0 (S07)
-    folded both into `/athanor:plan --depth={deep|lite}`. Lock every skill
-    body to the flag form; only `plan` may name the old commands (to explain
-    the collapse).
+
+def test_only_plan_and_wrapper_skills_name_plan_wrappers() -> None:
+    """MUST — routing suggestions use `/athanor:plan --depth=` unless they
+    are the canonical plan skill or one of the thin wrapper SKILL.md files.
     """
     offenders: list[str] = []
     for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
-        if skill_md.parent.name in _HISTORICAL_REF_SKILLS:
+        if skill_md.parent.name in _ALLOWED_PLAN_REFERENCE_SKILLS:
             continue
         body = skill_md.read_text(encoding="utf-8")
-        for dead in _DEAD_PLAN_COMMANDS:
-            if dead in body:
-                offenders.append(f"{skill_md.parent.name}: {dead}")
+        for command in _LIVE_PLAN_WRAPPERS:
+            if command in body:
+                offenders.append(f"{skill_md.parent.name}: {command}")
     assert not offenders, (
-        "Skills must use '/athanor:plan --depth=' not the v0.17.0-removed "
-        f"commands. Offenders: {offenders}"
+        "Skills outside plan/deep-plan/lite-plan must route planning depth "
+        f"through '/athanor:plan --depth=' to avoid duplicate entrypoint drift. "
+        f"Offenders: {offenders}"
     )
 
 

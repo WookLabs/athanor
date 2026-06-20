@@ -22,6 +22,7 @@ GRADER_KINDS = {
     "require_order",
     "require_reference",
 }
+SCENARIO_METADATA_FIELDS = {"retry_id", "resume_id"}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -89,15 +90,26 @@ def _require_reference(trace: list[dict[str, Any]], grader: dict[str, Any]) -> t
     return False, f"reference {reference!r} was not found"
 
 
+def _scorer_id(grader: dict[str, Any], kind: Any) -> str:
+    scorer_id = grader.get("scorer_id")
+    if isinstance(scorer_id, str) and scorer_id:
+        return scorer_id
+    if isinstance(kind, str) and kind:
+        return f"deterministic.{kind}"
+    return "deterministic.<missing-kind>"
+
+
 def evaluate_grader(trace: list[dict[str, Any]], grader: dict[str, Any]) -> dict[str, Any]:
     grader_id = grader.get("id")
     kind = grader.get("kind")
     if not isinstance(grader_id, str) or not grader_id:
         grader_id = "<missing-id>"
+    scorer_id = _scorer_id(grader, kind)
     if kind not in GRADER_KINDS:
         return {
             "id": grader_id,
             "kind": kind,
+            "scorer_id": scorer_id,
             "status": "fail",
             "reason": f"unsupported grader kind: {kind!r}",
         }
@@ -114,6 +126,7 @@ def evaluate_grader(trace: list[dict[str, Any]], grader: dict[str, Any]) -> dict
     return {
         "id": grader_id,
         "kind": kind,
+        "scorer_id": scorer_id,
         "status": "pass" if ok else "fail",
         "reason": reason,
     }
@@ -126,6 +139,43 @@ def _validate_trace(raw_trace: Any) -> list[dict[str, Any]]:
         [validate_record(item) for item in raw_trace],
         key=lambda item: item["seq"],
     )
+
+
+def _validate_scenario_metadata(scenario_id: str, raw_metadata: Any) -> dict[str, str] | None:
+    if raw_metadata is None:
+        return None
+    if not isinstance(raw_metadata, dict):
+        raise ValueError(f"scenario {scenario_id}: metadata must be an object")
+    extra_fields = sorted(set(raw_metadata) - SCENARIO_METADATA_FIELDS)
+    if extra_fields:
+        joined = ", ".join(extra_fields)
+        raise ValueError(f"scenario {scenario_id}: unsupported metadata field(s): {joined}")
+    metadata: dict[str, str] = {}
+    for key in sorted(SCENARIO_METADATA_FIELDS):
+        if key not in raw_metadata:
+            continue
+        value = raw_metadata[key]
+        if not isinstance(value, str) or not value:
+            raise ValueError(f"scenario {scenario_id}: metadata.{key} must be a non-empty string")
+        metadata[key] = value
+    return metadata
+
+
+def _reduce_grader_results(graders: list[dict[str, Any]]) -> dict[str, Any]:
+    score_provenance = [
+        {
+            "grader_id": grader["id"],
+            "scorer_id": grader["scorer_id"],
+            "status": grader["status"],
+            "contribution": 1 if grader["status"] == "pass" else 0,
+        }
+        for grader in graders
+    ]
+    return {
+        "method": "pass_ratio",
+        "sample_limit": len(graders),
+        "score_provenance": score_provenance,
+    }
 
 
 def evaluate_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
@@ -147,14 +197,19 @@ def evaluate_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     total = len(graders)
     score = round(passed / total, 3)
     status = "pass" if score >= float(min_score) else "fail"
-    return {
+    result = {
         "id": scenario_id,
         "status": status,
         "score": score,
         "passed": passed,
         "total": total,
         "graders": graders,
+        "reducer": _reduce_grader_results(graders),
     }
+    metadata = _validate_scenario_metadata(scenario_id, scenario.get("metadata"))
+    if metadata is not None:
+        result["metadata"] = metadata
+    return result
 
 
 def evaluate_root(scenario_root: Path) -> dict[str, Any]:

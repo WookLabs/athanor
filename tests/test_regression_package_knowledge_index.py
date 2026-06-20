@@ -16,6 +16,7 @@ INDEX = REPO_ROOT / "docs" / "package-knowledge-index.md"
 REQUIRED_DOCS = {
     "docs/distribution-smoke.md",
     "docs/package-footprint-policy.md",
+    "docs/package-footprint-reduction.md",
     "docs/maintenance-profile.md",
     "docs/harness-decision-ledger.md",
     "docs/native-runtime-probe.md",
@@ -24,8 +25,16 @@ REQUIRED_DOCS = {
     "docs/organization-operating-model.md",
     "docs/organization-work-item-registry.md",
     "docs/organization-stage-receipts.md",
+    "docs/work-item-stage-transitions.md",
     "docs/policy-promotion-ledger.md",
     "docs/organization-score.md",
+    "docs/memory-index.md",
+    "docs/memory-retrieval-eval.md",
+    "docs/workflow-trace-evals.md",
+    "docs/handoff-artifact.md",
+    "docs/durable-loop-controller.md",
+    "docs/catalog-admission-policy.md",
+    "docs/codex-mirror-source-map.md",
 }
 REQUIRED_GATES = {
     "scripts/gates/distribution_smoke.py",
@@ -38,8 +47,15 @@ REQUIRED_GATES = {
     "scripts/gates/organization_operating_model.py",
     "scripts/gates/organization_work_item_registry.py",
     "scripts/gates/organization_stage_receipt.py",
+    "scripts/gates/work_item_stage.py",
     "scripts/gates/policy_promotion_ledger.py",
     "scripts/gates/organization_score.py",
+    "scripts/gates/memory_index.py",
+    "scripts/gates/memory_retrieval_eval.py",
+    "scripts/evals/workflow_trace_query.py",
+    "scripts/loops/loop_run_log.py",
+    "scripts/gates/catalog_admission.py",
+    "scripts/gates/codex_mirror_parity.py",
 }
 
 

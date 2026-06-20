@@ -1,13 +1,10 @@
 ---
 name: plan
 description: >
-  Tiered planning pipeline with `--depth={standard|deep|lite}` + `--no-review`.
-  Standard tier = Claude plan + Codex review + refinement Critic (default).
-  '딥 플랜', 'deep plan', '심층', '교차 모델 계획', '풀 플랜' → deep tier
-  (Claude + Codex cross-planning + 4-input Synthesis Critic).
-  '라이트 플랜', 'lite plan', '간단한 계획', '빠른', 'quick plan' → lite tier
-  (Claude plan only; review + critic skipped).
-  '플랜', '계획 세워줘', '플랜 짜줘', '작업 계획', '구현 계획' 요청 시 사용.
+  Tiered planning via `--depth={standard|deep|lite}` + `--no-review`.
+  Deep triggers: "딥 플랜", "deep plan", "심층", "교차 모델 계획", "풀 플랜".
+  Lite triggers: "라이트 플랜", "lite plan", "간단한 계획", "빠른", "quick plan".
+  General: "플랜", "계획 세워줘", "작업 계획", "구현 계획".
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, Task
 ---
@@ -49,11 +46,11 @@ code, rubric text, and templates live under `skills/plan/references/`:
   Readiness, four axes A/B/C/D).
 - `references/presentation.md` — Step 5 presentation template + UNRESOLVED
   conflict handler.
-- `references/depth-flag-dispatch.md` — v0.17.0 **active** handler for
-  `--depth={standard|deep|lite}` + `--no-review`. S07 collapsed the
-  former `/athanor:deep-plan` + `/athanor:lite-plan` skills into this
-  one unified `/athanor:plan` invocation with flag dispatch (see
-  `docs/v0.17.0-migration.md`).
+- `references/depth-flag-dispatch.md` — active handler for
+  `--depth={standard|deep|lite}` + `--no-review`. `/athanor:deep-plan`
+  and `/athanor:lite-plan` are restored thin wrappers that force the
+  matching tier, while this skill remains the canonical protocol owner
+  (see `docs/v0.17.0-migration.md`).
 - `references/approach-altitude.md` — Step 1 approach-altitude gate (plan-the-approach vs plan-the-deliverable recognition).
 
 ---
@@ -171,8 +168,9 @@ Resolve `tier` in this order (full handler in
 2. **Trigger-keyword fallback:** deep = "딥 플랜" / "deep plan" /
    "심층" / "교차 모델 계획" / "풀 플랜"; lite = "라이트 플랜" /
    "lite plan" / "간단한 계획" / "빠른" / "quick plan"; standard =
-   default. S07 collapsed the legacy `/athanor:deep-plan` and
-   `/athanor:lite-plan` slots into this single skill.
+   default. `/athanor:deep-plan` and `/athanor:lite-plan` now use thin
+   wrapper SKILL.md files that bind `tier=deep` or `tier=lite` before
+   entering this same protocol.
 
 ### Tier Dispatch Table
 

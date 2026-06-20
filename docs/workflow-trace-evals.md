@@ -126,6 +126,28 @@ These are harness-quality evals. They score whether workflow decisions,
 evidence production, stopping conditions, and escalation behavior are present in
 the trace.
 
+## Eval Profile
+
+Athanor uses a small local eval profile so trace results stay inspectable:
+
+- `Task`: the workflow behavior being checked, such as `work` evidence or an
+  `lfg-goal` receipt loop.
+- `Trace Fixture`: the local synthetic or captured JSON trace records used as
+  the sample under test.
+- `Scorer`: one deterministic grader applied to the trace. Runner output gives
+  every grader result a `scorer_id`; fixtures may set it explicitly, otherwise
+  the runner derives `deterministic.<grader-kind>`.
+- `Reducer`: the local aggregation step that turns scorer results into a
+  scenario score. The default reducer is `pass_ratio` and records
+  `sample_limit` plus `score_provenance` for each grader contribution.
+
+Scenario metadata may include `retry_id` and `resume_id` to connect a sample to
+a rerun or resumed loop. These identifiers are provenance only; they do not
+change scoring.
+
+The policy is explicit: model-graded evals are optional and are not required for default local gates.
+The default runner remains deterministic, offline, and local-first.
+
 ## Portable Episodes
 
 P15 adds `scripts/evals/package_workflow_episode.py` and
@@ -176,6 +198,29 @@ its `min_score`.
 
 The GitHub Actions workflow runs this as the named `Workflow scenario eval gate`
 before the broad pytest suite.
+
+## Trace Query CLI
+
+Use `scripts/evals/workflow_trace_query.py` for local read-only replay and
+inspection of JSONL workflow traces:
+
+```bash
+python scripts/evals/workflow_trace_query.py \
+  --trace-path tests/fixtures/workflow_trace_query/base.jsonl \
+  --mode timeline \
+  --json
+```
+
+Supported modes:
+
+- `timeline`: replay public trace rows in sequence order.
+- `stats`: aggregate counts by status, phase, actor, and event type.
+- `search`: return summary rows matching query terms without full raw records.
+- `diff`: compare two traces by sequence number and report added, removed, and
+  changed events.
+
+The query CLI does not mutate files, install hooks, upload traces, or expose a
+model-graded judgment. It is an operator aid for inspecting local evidence.
 
 ## Boundary
 

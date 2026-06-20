@@ -26,6 +26,10 @@ usable standalone invocation path.
 request, emits `prompt-gen.md`, and recommends the next skill. It should not
 execute, plan the solution, or silently invoke the recommended skill.
 
+`deep-plan` and `lite-plan` are planning-wrapper skills, not new agents. They
+bind the requested planning tier, then delegate to the canonical `plan`
+protocol and normal `plan.md` artifact path.
+
 ## Scorecard
 
 | Area | Current | Target | Notes |

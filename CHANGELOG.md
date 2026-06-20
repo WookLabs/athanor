@@ -11,6 +11,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   companion `athanor-prompt-gen` to refine vague user requests into
   structured prompts, recommend the next Athanor skill, and prepare
   cleaner `/athanor:plan` inputs without starting implementation.
+- **Plan depth wrapper skills.** Restores `/athanor:deep-plan` and
+  `/athanor:lite-plan` as thin wrappers over `/athanor:plan --depth=deep`
+  and `/athanor:plan --depth=lite`, plus Codex companion mirrors
+  `athanor-deep-plan` and `athanor-lite-plan`. `/athanor:plan` remains the
+  canonical protocol owner and `--depth=` compatibility stays live.
 - **Agent topology gate.** Adds `docs/agent-topology.md`,
   `docs/agent-topology-contract.json`, and
   `scripts/gates/agent_topology.py` to lock the 4 registered agents,
@@ -24,6 +29,31 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   score-target contract is mirrored in the Codex companion skill,
   `goal.md` template, Tier 2 judge rubric, config defaults, schema, and
   regression tests.
+- **346-ref optimization gate bundle.** Adds the local-first optimization
+  bundle from the 346-ref analysis while keeping the 4 registered agents and
+  current 13 native commands: `scripts/gates/catalog_admission.py`,
+  `scripts/gates/memory_index.py`, `scripts/gates/memory_retrieval_eval.py`,
+  `scripts/evals/workflow_trace_query.py`,
+  `scripts/gates/codex_mirror_parity.py`,
+  `scripts/gates/work_item_stage.py`, and package
+  `ship_profile_decisions` keep ref absorption, memory, trace replay, Codex
+  mirror parity, work-item stages, and ship-profile reduction gated by
+  read-only evidence.
+
+## [0.19.3] — 2026-06-20
+
+### Added
+
+- **346-ref optimization release.** Ships the local-first ref optimization
+  gates for catalog admission, memory index, memory retrieval eval, workflow
+  trace query, Codex mirror parity, work-item stage transitions, and
+  package-footprint reduction while keeping historical refs repo-local and out
+  of default packaged context.
+
+### Changed
+
+- **Claude plugin release metadata.** Bumps the Claude plugin release surface to
+  `0.19.3` so user/local plugin updates detect the ref optimization package.
 
 ## [0.19.2] — 2026-06-19
 
@@ -67,6 +97,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   `scripts/gates/agent_topology.py` to lock the 4 registered agents,
   7 reference roles, every skill route, and `prompt-gen` intake-framing
   status before broad regression tests.
+- **346-ref optimization gate bundle.** Adds the local-first optimization
+  bundle from the 346-ref analysis without growing the 4 registered agents or
+  11 native commands: `scripts/gates/catalog_admission.py`,
+  `scripts/gates/memory_index.py`, `scripts/gates/memory_retrieval_eval.py`,
+  `scripts/evals/workflow_trace_query.py`,
+  `scripts/gates/codex_mirror_parity.py`,
+  `scripts/gates/work_item_stage.py`, and package
+  `ship_profile_decisions` keep ref absorption, memory, trace replay, Codex
+  mirror parity, work-item stages, and ship-profile reduction gated by
+  read-only evidence.
 - **v0.19 evidence branch candidate.** Adds the PostToolUse test-evidence
   path, Freeze D2 evidence follow-up, hook payload corpus replay gate, and
   log-only UserPromptSubmit spike harness while keeping runtime blocking

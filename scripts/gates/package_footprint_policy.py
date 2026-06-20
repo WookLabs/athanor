@@ -29,6 +29,16 @@ DEV_ONLY_PREFIXES: tuple[tuple[str, str], ...] = (
     (".github/", "CI workflows are repository operations, not runtime plugin surface"),
 )
 
+SHIP_PROFILE_EXCLUSIONS: tuple[tuple[str, str, str], ...] = (
+    ("docs/plans/", "development_history", "implementation plans are repo-local execution history"),
+    ("docs/archive/", "development_history", "archived docs are repo-local audit history"),
+    ("tests/", "tests", "regression tests are verified in CI but not required at runtime"),
+    ("docs/architecture/", "development_history", "deep architecture analysis is retained outside the default runtime package"),
+    ("ref/", "reference_radar", "external reference clones are radar inputs, not shipped plugin content"),
+    ("docs/goals-completed/", "development_history", "completed goal receipts are repo-local audit history"),
+    (".github/", "development_ci", "repository workflows are CI operations, not runtime plugin content"),
+)
+
 
 def _iso_now() -> str:
     return (
@@ -101,6 +111,13 @@ def _candidate_reason(path: str) -> str | None:
     return None
 
 
+def _ship_profile_exclusion_reason(path: str) -> str | None:
+    for prefix, _bucket, reason in SHIP_PROFILE_EXCLUSIONS:
+        if path.startswith(prefix):
+            return reason
+    return None
+
+
 def _file_records(repo_root: Path) -> list[dict[str, Any]]:
     footprint = _package_footprint(repo_root)
     records: list[dict[str, Any]] = []
@@ -131,6 +148,45 @@ def _classifications(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         summary["files"] += 1
         summary["bytes"] += record["bytes"]
     return sorted(buckets.values(), key=lambda item: item["bucket"])
+
+
+def _ship_profile_decisions() -> list[dict[str, Any]]:
+    decisions: list[dict[str, Any]] = []
+    for prefix, bucket, reason in SHIP_PROFILE_EXCLUSIONS:
+        decisions.append(
+            {
+                "path_prefix": prefix,
+                "bucket": bucket,
+                "ship_profile_action": "exclude",
+                "repo_local_retention": "keep",
+                "deletion_allowed_by_policy": False,
+                "reason": reason,
+                "evidence_gate": "scripts/gates/package_footprint_policy.py --json",
+            }
+        )
+    return decisions
+
+
+def _ship_profile_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    included = []
+    excluded = []
+    for record in records:
+        reason = _ship_profile_exclusion_reason(record["path"])
+        if reason is None:
+            included.append(record)
+        else:
+            excluded.append({**record, "reason": reason})
+    largest_files = sorted(
+        ({"path": record["path"], "bytes": record["bytes"]} for record in included),
+        key=lambda item: (-int(item["bytes"]), item["path"]),
+    )[:10]
+    return {
+        "file_count": len(included),
+        "total_bytes": sum(int(record["bytes"]) for record in included),
+        "excluded_files": len(excluded),
+        "excluded_bytes": sum(int(record["bytes"]) for record in excluded),
+        "largest_files": largest_files,
+    }
 
 
 def _dev_only_candidates(
@@ -178,31 +234,33 @@ def build_report(
     footprint = _package_footprint(repo_root)
     records = _file_records(repo_root)
     classifications = _classifications(records)
+    ship_profile = _ship_profile_summary(records)
+    ship_profile_decisions = _ship_profile_decisions()
     dev_only_candidates = _dev_only_candidates(records, limit=candidate_limit)
     largest_files = sorted(
         ({"path": record["path"], "bytes": record["bytes"]} for record in records),
         key=lambda item: (-int(item["bytes"]), item["path"]),
     )[:10]
     over_large = [
-        item for item in largest_files if int(item["bytes"]) > max_large_file_bytes
+        item for item in ship_profile["largest_files"] if int(item["bytes"]) > max_large_file_bytes
     ]
 
     checks: list[dict[str, Any]] = []
     _check(
         checks,
         "footprint.file_budget",
-        "pass" if footprint["file_count"] <= max_files else "fail",
+        "pass" if ship_profile["file_count"] <= max_files else "fail",
         "package file count stays within the ship-profile budget",
         expected={"max_files": max_files},
-        actual=footprint["file_count"],
+        actual=ship_profile["file_count"],
     )
     _check(
         checks,
         "footprint.total_bytes_budget",
-        "pass" if footprint["total_bytes"] <= max_total_bytes else "fail",
+        "pass" if ship_profile["total_bytes"] <= max_total_bytes else "fail",
         "package total bytes stay within the ship-profile budget",
         expected={"max_total_bytes": max_total_bytes},
-        actual=footprint["total_bytes"],
+        actual=ship_profile["total_bytes"],
     )
     _check(
         checks,
@@ -218,6 +276,13 @@ def build_report(
         "warn" if dev_only_candidates else "pass",
         "development-only candidates are reported for ship-profile review",
         actual=len(dev_only_candidates),
+    )
+    _check(
+        checks,
+        "footprint.ship_profile_decisions",
+        "pass",
+        "default ship-profile exclusions are explicit and repo-local retention is preserved",
+        actual=len(ship_profile_decisions),
     )
     _check(
         checks,
@@ -251,16 +316,20 @@ def build_report(
             "warnings": warnings,
             "failures": failures,
             "dev_only_candidates": len(dev_only_candidates),
+            "ship_profile_exclusions": len(ship_profile_decisions),
             "irreversible_actions": 0,
         },
         "package": {
             **footprint,
             "largest_files": largest_files,
         },
+        "ship_profile": ship_profile,
+        "ship_profile_decisions": ship_profile_decisions,
         "classifications": classifications,
         "dev_only_candidates": dev_only_candidates,
         "recommendations": [
             "Keep development history repo-local, but exclude it from the default marketplace ship profile where packaging supports it.",
+            "Apply the explicit ship_profile_decisions before enforcing package size budgets.",
             "Review dev-only candidates before deleting or moving files; this gate never mutates the repository.",
             "Treat tests, docs/plans, docs/archive, docs/architecture, docs/goals-completed, and .github as ship-profile review candidates.",
         ],

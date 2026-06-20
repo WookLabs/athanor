@@ -1219,6 +1219,30 @@ dispatcher runs kernel FIRST.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
+## Archived from STATE.md (2026-06-20, v0.19.3 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.4 — Engineering-Quality Principle (complexity + fail-loud)
+
+**v0.18.4** (released 2026-06-06) — Codifies the "Engineering quality"
+principle (low complexity + fail-loud over silent fallback) across athanor's
+advisory + gate surfaces. No identity-invariant change.
+
+1. **Principle (CLAUDE.md §Core Principle)**: works is the floor; minimize
+   complexity; **no indiscriminate fallback** — surface errors, don't swallow
+   them into a fallback. band 175→178.
+2. **Advisory wiring (user code)**: plan Critic axis (D) simplicity & fail-loud
+   (synced across rubric + all variants + SKILL.md four-axis); review
+   maintainability silent-failure lens strengthened (fail-loud explicit).
+3. **Gate (athanor's own code)**: pretool_dispatcher fail-loud breadcrumb on
+   unparseable stdin (was silent).
+
+4 new regression tests; full suite 939 passed, 0 failed. An adversarial
+Workflow review (4 lenses) caught + fixed a SKILL.md three→four-axis sync miss
+pre-release.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
 ## Archived from STATE.md (2026-06-18, v0.19.0 bounded-history trim — cap 5 Previous)
 
 ## Previous Phase: v0.18.3 — Cleanup Audit + ref Adoption

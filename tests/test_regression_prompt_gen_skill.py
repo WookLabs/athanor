@@ -66,6 +66,8 @@ def test_claude_prompt_gen_protocol_has_prompt_and_routing_contract() -> None:
         "/athanor:plan --depth=lite",
         "/athanor:plan --depth=standard",
         "/athanor:plan --depth=deep",
+        "/athanor:lite-plan",
+        "/athanor:deep-plan",
         "/athanor:lfg-goal",
         "Do not implement",
         "Do not silently call the recommended next skill",
@@ -89,6 +91,8 @@ def test_codex_prompt_gen_companion_exists_and_states_runtime_limits() -> None:
         "Generated Prompt",
         "Recommended Next Skill",
         "athanor-plan",
+        "athanor-lite-plan",
+        "athanor-deep-plan",
         "athanor-lfg-goal",
         "Do not claim Claude hooks",
         "Do not silently call the recommended skill",
@@ -103,13 +107,13 @@ def test_runtime_contract_and_docs_list_prompt_gen_surface() -> None:
 
     readme = README.read_text(encoding="utf-8")
     assert "/athanor:prompt-gen" in readme
-    assert "Ships 15 skills" in readme
+    assert "Ships 17 skills" in readme
     assert "athanor-prompt-gen" in readme
 
     claude = CLAUDE_MD.read_text(encoding="utf-8")
-    assert "11 user-invocable" in claude
+    assert "13 user-invocable" in claude
     assert "| `/athanor:prompt-gen` |" in claude
-    assert "11 native Thin Leader skills" in claude
+    assert "13 native Thin Leader skills" in claude
     assert "prompt-gen" in claude
 
 

@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athanor Memory Index Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "generated_at",
+    "profile",
+    "summary",
+    "source_root",
+    "records",
+    "search",
+    "detail",
+    "context",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": ["pass", "fail"]
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "source_records",
+        "records",
+        "duplicates",
+        "errors",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "source_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_root": {
+      "type": "string"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/public_record"
+      }
+    },
+    "search": {
+      "type": ["object", "null"],
+      "required": ["query", "limit", "results"],
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/public_record"
+              },
+              {
+                "type": "object",
+                "required": ["score"],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "detail": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/detail_record"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context": {
+      "type": ["object", "null"],
+      "required": ["budget_tokens", "tokens_estimate", "record_ids", "text"],
+      "properties": {
+        "budget_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokens_estimate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "record_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "message"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "public_record": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "source_path",
+        "content_hash",
+        "title",
+        "summary",
+        "tokens_estimate"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": ["lesson", "trace", "goal", "completed_goal"]
+        },
+        "source_path": {
+          "type": "string"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tokens_estimate": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "detail_record": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/public_record"
+        },
+        {
+          "type": "object",
+          "required": ["full_content"],
+          "properties": {
+            "full_content": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

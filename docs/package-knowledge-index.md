@@ -1,6 +1,6 @@
 # Package Knowledge Index
 
-Last reviewed: 2026-06-19.
+Last reviewed: 2026-06-20.
 
 This is the short package-facing map for Athanor's current runtime and
 operator surface. Use it first when a packaged worker needs current context
@@ -13,7 +13,8 @@ without scanning repo-local development history.
 - User commands: `/athanor:plan`, `/athanor:work`, `/athanor:review`,
   `/athanor:lfg`, `/athanor:lfg-goal`, `/athanor:setup`,
   `/athanor:discuss`, `/athanor:analyze`, `/athanor:assess`,
-  `/athanor:debug`, `/athanor:prompt-gen`.
+  `/athanor:debug`, `/athanor:prompt-gen`, `/athanor:deep-plan`,
+  `/athanor:lite-plan`.
 - Registered agents: `learner`, `releaser`, `ci-watcher`,
   `codex-dispatcher`.
 - Agent topology: [doc](agent-topology.md),
@@ -26,6 +27,7 @@ without scanning repo-local development history.
   [gate](../scripts/gates/distribution_smoke.py).
 - Package footprint policy:
   [doc](package-footprint-policy.md),
+  [reduction](package-footprint-reduction.md),
   [gate](../scripts/gates/package_footprint_policy.py).
 - Maintenance profile:
   [doc](maintenance-profile.md),
@@ -51,12 +53,35 @@ without scanning repo-local development history.
 - Organization stage receipts:
   [doc](organization-stage-receipts.md),
   [gate](../scripts/gates/organization_stage_receipt.py).
+- Work-item stage transitions:
+  [doc](work-item-stage-transitions.md),
+  [gate](../scripts/gates/work_item_stage.py).
 - Policy promotion ledger:
   [doc](policy-promotion-ledger.md),
   [gate](../scripts/gates/policy_promotion_ledger.py).
 - Organization score:
   [doc](organization-score.md),
   [gate](../scripts/gates/organization_score.py).
+- Memory index:
+  [doc](memory-index.md),
+  [gate](../scripts/gates/memory_index.py).
+- Memory retrieval eval:
+  [doc](memory-retrieval-eval.md),
+  [gate](../scripts/gates/memory_retrieval_eval.py).
+- Workflow trace inspection:
+  [doc](workflow-trace-evals.md),
+  [query](../scripts/evals/workflow_trace_query.py).
+- Handoff artifact contract:
+  [doc](handoff-artifact.md).
+- Durable loop controller:
+  [doc](durable-loop-controller.md),
+  [run-log helper](../scripts/loops/loop_run_log.py).
+- Catalog admission:
+  [doc](catalog-admission-policy.md),
+  [gate](../scripts/gates/catalog_admission.py).
+- Codex mirror parity:
+  [doc](codex-mirror-source-map.md),
+  [gate](../scripts/gates/codex_mirror_parity.py).
 
 Run this index gate:
 

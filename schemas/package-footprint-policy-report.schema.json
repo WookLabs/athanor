@@ -11,6 +11,8 @@
     "budgets",
     "summary",
     "package",
+    "ship_profile",
+    "ship_profile_decisions",
     "classifications",
     "dev_only_candidates",
     "recommendations",
@@ -108,6 +110,10 @@
           "type": "integer",
           "minimum": 0
         },
+        "ship_profile_exclusions": {
+          "type": "integer",
+          "minimum": 0
+        },
         "irreversible_actions": {
           "const": 0
         }
@@ -159,6 +165,94 @@
         }
       },
       "additionalProperties": false
+    },
+    "ship_profile": {
+      "type": "object",
+      "required": [
+        "file_count",
+        "total_bytes",
+        "excluded_files",
+        "excluded_bytes",
+        "largest_files"
+      ],
+      "properties": {
+        "file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "largest_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "bytes"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ship_profile_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path_prefix",
+          "bucket",
+          "ship_profile_action",
+          "repo_local_retention",
+          "deletion_allowed_by_policy",
+          "reason",
+          "evidence_gate"
+        ],
+        "properties": {
+          "path_prefix": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "ship_profile_action": {
+            "const": "exclude"
+          },
+          "repo_local_retention": {
+            "const": "keep"
+          },
+          "deletion_allowed_by_policy": {
+            "const": false
+          },
+          "reason": {
+            "type": "string"
+          },
+          "evidence_gate": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "classifications": {
       "type": "array",

@@ -14,9 +14,9 @@ but the four athanor identity invariants survive intact:
   4. Stop hook runtime gate — `scripts/hooks/stop_verify_claims.py` fires
      on every Stop event with whitelist + paraphrase + homoglyph detection.
 
-The current athanor-native Thin Leader skills (post-v0.17.0 / S07 collapse of
-deep-plan + lite-plan into `/athanor:plan --depth=`, plus assess and prompt-gen) must continue to
-exist at depth 1 under `skills/` for Claude Code auto-discovery. The
+The current athanor-native Thin Leader skills (deep-plan + lite-plan restored
+as thin wrappers over `/athanor:plan --depth=`, plus assess and prompt-gen)
+must continue to exist at depth 1 under `skills/` for Claude Code auto-discovery. The
 companion-fix arc (v0.11.3 → v0.11.7) scripts continue to live in
 `scripts/hooks/`.
 
@@ -34,16 +34,17 @@ CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 HOOK_SCRIPTS_DIR = REPO_ROOT / "scripts" / "hooks"
 
 # Current athanor-native Thin Leader skills (per CLAUDE.md §Commands table).
-# v0.17.0 / S07 collapsed `deep-plan` + `lite-plan` into `/athanor:plan
-# --depth=<value>` (see `docs/v0.17.0-migration.md`); the tuple shrinks
-# in lockstep with command-surface changes.
+# v0.17.0 / S07 collapsed `deep-plan` + `lite-plan`; the current surface
+# restores them as thin wrappers over `/athanor:plan --depth=<value>`.
 NATIVE_THIN_LEADER_SKILLS = (
     "assess",
     "analyze",
     "debug",
+    "deep-plan",
     "discuss",
     "lfg",
     "lfg-goal",
+    "lite-plan",
     "plan",
     "prompt-gen",
     "review",

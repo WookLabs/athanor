@@ -29,12 +29,10 @@ Thin Leader contract. Per D11 (decisions.md 2026-05-22-002), lfg-goal
 does NOT introduce a fifth identity invariant — it is an orchestration
 layer composed of the existing four.
 
-v0.17.0 / S07 scope contraction: `deep-plan` + `lite-plan` were
-collapsed into `/athanor:plan --depth=<value>`; their skill directories
-were removed. The native Thin Leader roster shrank 11 → 9. The later
-`assess` skill extended the boundary roster to 10; `prompt-gen` extends it to
-11 (assess, analyze, debug, discuss, lfg, lfg-goal, plan, prompt-gen, review,
-setup, work).
+v0.17.0 / S07 scope contraction collapsed `deep-plan` + `lite-plan` into
+`/athanor:plan --depth=<value>`. The current surface restores those slots as
+thin wrappers over the canonical plan protocol, so the native Thin Leader
+roster includes them again.
 
 v0.17.0 / S04 scope shift (hoist): the verbatim 6-line boundary
 subsection that was inlined in each of the native skill preambles
@@ -61,17 +59,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 
-# 11 native Thin Leader skills — R2 scope (post-S07 plus assess + prompt-gen).
+# 13 native Thin Leader skills — R2 scope (post-S07 wrappers restored, plus
+# assess + prompt-gen).
 # v0.13.0 added `lfg-goal` per plan §Subtask 11 (11-entry roster).
-# v0.17.0 / S07 collapsed `deep-plan` + `lite-plan` into `/athanor:plan
-# --depth=<value>`. The assess skill later joined this boundary roster.
+# v0.17.0 / S07 collapsed `deep-plan` + `lite-plan`; they are now restored as
+# thin wrappers that delegate to `/athanor:plan`.
 NATIVE_THIN_LEADER_SKILLS = (
     "assess",
     "analyze",
     "debug",
+    "deep-plan",
     "discuss",
     "lfg",
     "lfg-goal",
+    "lite-plan",
     "plan",
     "prompt-gen",
     "review",
@@ -203,8 +204,8 @@ def test_each_native_thin_leader_skill_has_pointer_heading():
     """MUST (R2, v0.17.0 / S04 hoist): each native Thin Leader skill carries
     the `### using-superpowers boundary` pointer heading exactly once.
     v0.13.0 extended the list 10 → 11 by adding `lfg-goal`; v0.17.0 / S07
-    contracted the list 11 → 9 by collapsing `deep-plan` + `lite-plan`
-    into `/athanor:plan --depth=<value>`; assess and prompt-gen later extend it."""
+    collapsed `deep-plan` + `lite-plan`, and the current surface restores
+    them as thin wrappers; assess and prompt-gen later extend it."""
     failures: list[str] = []
     for skill_name in NATIVE_THIN_LEADER_SKILLS:
         skill_md = SKILLS_DIR / skill_name / "SKILL.md"

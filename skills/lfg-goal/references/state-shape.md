@@ -29,10 +29,30 @@ Goal-loop state shape — the JSON written to `.athanor/goals/<goal_id>/state.js
   - `not_yet_run` — receipt-validator has not yet been dispatched for this cycle
 - `tier2_last_verdict` — object `{judge_a: {goal_met: bool}, judge_b: {goal_met: bool}}` OR null (null until Tier 2 first dispatched)
 - `aborted_reason` — string (one-line cause) OR null
+- `acting_on` — goal id currently claimed by the loop runner. If a caller
+  requests a different id, the run-log helper reports a lock conflict instead
+  of silently continuing.
+- `loop_run_log` — path to the append-only run log JSONL file, relative to the
+  goal directory unless absolute. Default: `run-log.jsonl`.
+- `budget.max_cycles` — per-goal cycle budget checked before another cycle.
+- `budget.max_wall_minutes` — wall-time budget hint checked by the run-log
+  inspector when the caller supplies elapsed minutes.
+- `budget.max_token_estimate` — token estimate budget hint checked by the
+  run-log inspector when the caller supplies token estimates.
+- `min_attempts` — minimum attempt count before risky or score-target work can
+  be treated as ready for final evaluation.
+- `last_evaluator_role` — last evaluator role that inspected the goal, such as
+  `judge-a`, `judge-b`, `critic`, or `operator`.
+- `lock_status` — enum: `active | conflict | released`.
 
 ## Update protocol
 
 `state.json` is overwritten atomically after each cycle phase transition. Use the write-temp-then-rename pattern to avoid partial writes on crash. Each `cycle_phase` transition triggers an atomic write — the file always reflects the last successfully completed phase.
+
+Append-only run log records are written separately to `loop_run_log`; they are
+not folded into `state.json`. Use `scripts/loops/loop_run_log.py inspect` to
+check lock status, budget warnings, and the min-attempt gate before starting or
+finishing a cycle.
 
 ## Resume semantics
 

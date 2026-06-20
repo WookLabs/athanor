@@ -50,7 +50,13 @@ Analyze the completed work session and extract reusable lessons.
    by repeated access, include at least one `trace_refs`, `eval_refs`, or
    `evidence_refs` entry so `scripts/gates/trace_memory_quality.py` can verify
    the promotion is evidence-backed.
-6. Report your results as:
+6. Emit memory-indexable fields for each lesson so future workers can cite
+   searchable lesson ids instead of copying broad session history. Required
+   fields: `stable_id`, `source_artifact_path`, `summary`, `evidence_refs`,
+   `confidence`, `stale_after`, and `safe_to_inject_summary`. The
+   safe-to-inject summary is the only prose that should be injected into a
+   compact worker prompt by default.
+7. Report your results as:
 
 ATHANOR_RESULT
 status: success

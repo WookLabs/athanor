@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "goal_id": "36470e54",
+  "cycle_state": "cycle_n_in_progress",
+  "cycle_phase": "not_started",
+  "current_cycle": 2,
+  "max_iterations": 5,
+  "no_progress_threshold": 2,
+  "last_receipt_path": null,
+  "last_validator_status": "not_yet_run",
+  "tier2_last_verdict": null,
+  "aborted_reason": null,
+  "no_progress_count": 0,
+  "stop_reason": null,
+  "updated_at": "2026-06-20T00:00:00Z",
+  "acting_on": "36470e54",
+  "loop_run_log": "run-log.jsonl",
+  "budget": {
+    "max_cycles": 3,
+    "max_wall_minutes": 120,
+    "max_token_estimate": 50000
+  },
+  "min_attempts": 2,
+  "last_evaluator_role": "judge-a",
+  "lock_status": "active"
+}

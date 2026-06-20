@@ -4,7 +4,23 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.19.2 — Prompt, Goal, and Topology Patch
+## Current Phase: v0.19.3 — Ref Optimization Release
+
+**v0.19.3** (released 2026-06-20) — Patch release for the 346-ref
+optimization pass. The plugin surface stays conservative: 4 registered agents,
+13 native commands, and no new default live execution. The release packages the
+local-first gate bundle for catalog admission, memory index, memory retrieval
+eval, workflow trace query, Codex mirror parity, work-item stage transition, and
+ship-profile reduction while keeping `ref/` plus historical planning,
+architecture, and test evidence repo-local rather than default packaged context.
+
+Release verification closed with Claude/Codex manifest validation, distribution
+smoke, topology/package/mirror gates, and focused regression coverage.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.19.2 — Prompt, Goal, and Topology Patch
 
 **v0.19.2** (released 2026-06-19) — Patch release for the v0.19 deployment:
 the validation workflow dependency fix remains in place, and the prompt
@@ -32,6 +48,13 @@ explicitly applies state changes.
    registry, stage receipts, policy-promotion ledger, package knowledge index,
    package-footprint policy, and computed organization score gate so the
    "company-like" operating model is evidence-backed instead of prose-only.
+5. **346-ref optimization.** The follow-up optimization pass keeps
+   the 4 registered agents and 11 native commands intact while adding local
+   gates for catalog admission, memory index, memory retrieval eval, workflow trace query,
+   Codex mirror parity, work-item stage transition, and
+   ship-profile reduction. The gate bundle is intentionally read-only and
+   keeps `ref/` plus historical planning, architecture, and test evidence
+   repo-local rather than default packaged context.
 
 Release verification closed with the focused release gates, distribution smoke,
 runtime/package/organization gates, and the full pytest suite.
@@ -150,28 +173,6 @@ own code is gated — the honest enforcement boundary.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
-## Previous Phase: v0.18.4 — Engineering-Quality Principle (complexity + fail-loud)
-
-**v0.18.4** (released 2026-06-06) — Codifies the "Engineering quality"
-principle (low complexity + fail-loud over silent fallback) across athanor's
-advisory + gate surfaces. No identity-invariant change.
-
-1. **Principle (CLAUDE.md §Core Principle)**: works is the floor; minimize
-   complexity; **no indiscriminate fallback** — surface errors, don't swallow
-   them into a fallback. band 175→178.
-2. **Advisory wiring (user code)**: plan Critic axis (D) simplicity & fail-loud
-   (synced across rubric + all variants + SKILL.md four-axis); review
-   maintainability silent-failure lens strengthened (fail-loud explicit).
-3. **Gate (athanor's own code)**: pretool_dispatcher fail-loud breadcrumb on
-   unparseable stdin (was silent).
-
-4 new regression tests; full suite 939 passed, 0 failed. An adversarial
-Workflow review (4 lenses) caught + fixed a SKILL.md three→four-axis sync miss
-pre-release.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 
 ### Foundation — v0.1.0 ~ v0.5.x (2026-04-08 ~ 2026-04-14)
@@ -221,7 +222,7 @@ Spec-then-TDD / Stop hook gate.
 
 ## Known gaps (다음 작업 후보)
 
-- Memory 2-tier (`permanent → mem-search`)이 디자인 문서에는 있으나 실제 구현은 frontmatter `importance` 마킹뿐 — mem-search MCP에 영구 저장하는 코드 부재.
+- Memory 2-tier (`permanent → mem-search`) still has no mem-search MCP writer. Current implemented boundary is local `.athanor/lessons` frontmatter plus the read-only memory index (`docs/memory-index.md`) and compact handoff contract (`docs/handoff-artifact.md`).
 
 ## Command-hook Stop blocking spike (2026-05-18)
 

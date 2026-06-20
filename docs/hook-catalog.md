@@ -18,6 +18,23 @@ trust-state fields in a schema v2 report, and always emits `writes: []`.
 Trusted apply and exact-entry remove operations are documented in
 [docs/hook-installer.md](hook-installer.md).
 
+## Operator Flow
+
+The intended review path is:
+
+`list -> info -> preview -> dry-run install -> explicit apply`
+
+List metadata should be enough to scan candidates: `id`, `event`,
+`runtime_default`, `policy_mode`, `evidence_level`, `risk`, and performance
+budget.
+
+Info metadata should be enough to decide whether a candidate can move forward:
+`description`, `source_refs` or pattern-level `source_ref`, dependencies,
+evidence level, `promotion_condition`, and the exact command when one exists.
+
+Preview and dry-run install remain read-only. Explicit apply is the only path
+that can write settings, and it still requires trusted hook fingerprints.
+
 ## Runtime Defaults
 
 - `enabled`: registered in `hooks/hooks.json` now.

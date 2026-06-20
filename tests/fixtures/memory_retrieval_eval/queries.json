@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "queries": [
+    {
+      "id": "release-evidence",
+      "query": "release evidence",
+      "gold_ids": ["lesson:release-evidence"],
+      "top_k": 2
+    },
+    {
+      "id": "workflow-finished",
+      "query": "workflow finished",
+      "gold_ids": ["trace:workflow-finished"],
+      "top_k": 2
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{"actor":"leader","event_type":"workflow.started","message":"work execution started","phase":"work","schema_version":1,"seq":1,"status":"started","trace_id":"query-base"}
+{"actor":"worker","event_type":"agent.dispatched","message":"executor dispatched","phase":"work","schema_version":1,"seq":2,"status":"started","trace_id":"query-base"}
+{"actor":"gate","event_type":"verifier.result","message":"pytest evidence matched","phase":"work","references":[".athanor/sessions/demo/.hook-state/test-evidence.jsonl"],"schema_version":1,"seq":3,"status":"pass","trace_id":"query-base"}
+{"actor":"leader","event_type":"workflow.finished","message":"work finished with verified evidence","phase":"work","schema_version":1,"seq":4,"status":"pass","trace_id":"query-base"}

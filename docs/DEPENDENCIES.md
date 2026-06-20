@@ -26,7 +26,7 @@ Install superpowers via `/plugin install superpowers@claude-plugins-official`. I
 The `scope-drift` skill compares working-tree changes against the canonical plan-of-record. The plan-of-record is determined by:
 
 1. **Latest session selection**: lexicographic-descending sort of `.athanor/sessions/{YYYY-MM-DD}-{NNN}/` directories; pick first.
-2. **Plan file**: within the selected session, the intent source is `plan.md` (single canonical name since v0.17.0/S07 collapsed `deep-plan.md`/`lite-plan.md` into `/athanor:plan --depth=`).
+2. **Plan file**: within the selected session, the intent source is `plan.md` (single canonical name since v0.17.0/S07 collapsed `deep-plan.md`/`lite-plan.md`; restored `/athanor:deep-plan` and `/athanor:lite-plan` wrappers still delegate to `/athanor:plan --depth=` and do not create tier-specific plan files).
 3. **Plan-revision rule**: latest mtime of the chosen file wins. Override: `canonical: true` YAML frontmatter pins a specific revision.
 4. **Self-reference exclusion** (excluded from drift scan):
    - `.athanor/sessions/**/*`

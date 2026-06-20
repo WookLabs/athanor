@@ -181,6 +181,37 @@ Goal-level lessons that should become operating policy must flow through
 `scripts/gates/policy_promotion_ledger.py`; do not treat prose lessons as
 active policy without that promotion state.
 
+### Run Log, Budget, And Lock
+
+Each goal run SHOULD maintain an append-only run log at the `loop_run_log`
+path recorded in `state.json` (default `run-log.jsonl`). Use
+`scripts/loops/loop_run_log.py append` when a cycle starts, finishes, or emits
+an evaluator decision. Use `scripts/loops/loop_run_log.py inspect` before
+starting another cycle or declaring final readiness.
+
+The inspect report checks:
+
+- lock conflict: `acting_on` must match the requested goal id;
+- budget posture: `budget.max_cycles`, `budget.max_wall_minutes`, and
+  `budget.max_token_estimate` should not be exhausted;
+- min-attempt gate: risky or high score-target work must meet `min_attempts`
+  before final evaluation is treated as ready.
+
+The helper is local and append-only. It does not delete records, rewrite prior
+records, invoke external services, or perform irreversible actions.
+
+### Compact Handoff Artifact
+
+When a goal run spans sessions, compaction, or operator handoff, write a
+compact handoff artifact using `docs/handoff-artifact.md`. Keep it small and
+reference-first. It must name the current goal, recent decisions, active plan
+or work item, latest run-log reference, relevant memory ids, resume command,
+and open risks. Use memory ids plus `safe_to_inject_summary` from Learner
+records instead of pasting full session transcripts.
+
+This artifact is part of resume hygiene only. Do not add a new command, new
+registered agent, or default live listener for handoff creation in this task.
+
 ## Goal Ledger Format
 
 `.athanor/goals/<id>/goal.md` shape:

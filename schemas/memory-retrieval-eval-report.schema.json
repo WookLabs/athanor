@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athanor Memory Retrieval Eval Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "profile",
+    "source",
+    "thresholds",
+    "summary",
+    "queries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "enum": ["pass", "fail"]
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "mutates_files_by_default",
+        "external_telemetry",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "id": {
+          "const": "memory-retrieval-eval"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mutates_files_by_default": {
+          "const": false
+        },
+        "external_telemetry": {
+          "const": false
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["fixture_root", "query_file", "source_records", "records"],
+      "properties": {
+        "fixture_root": {
+          "type": "string"
+        },
+        "query_file": {
+          "type": "string"
+        },
+        "source_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "required": ["min_hit_rate", "min_average_recall_at_k"],
+      "properties": {
+        "min_hit_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_average_recall_at_k": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "queries",
+        "failures",
+        "hit_rate",
+        "average_precision_at_k",
+        "average_recall_at_k",
+        "irreversible_actions"
+      ],
+      "properties": {
+        "queries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hit_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "average_precision_at_k": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "average_recall_at_k": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "irreversible_actions": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "queries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "query",
+          "top_k",
+          "gold_ids",
+          "retrieved_ids",
+          "hit",
+          "precision_at_k",
+          "recall_at_k",
+          "missing_gold_ids",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "gold_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "retrieved_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hit": {
+            "type": "boolean"
+          },
+          "precision_at_k": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "recall_at_k": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "missing_gold_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "enum": ["pass", "fail"]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
