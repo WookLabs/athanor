@@ -24,6 +24,20 @@
             "type": "string",
             "minLength": 1
           },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "retry_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "resume_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
           "min_score": {
             "type": "number",
             "minimum": 0,
@@ -41,6 +55,7 @@
             "minItems": 1,
             "items": {
               "type": "object",
+              "additionalProperties": false,
               "required": ["id", "kind"],
               "properties": {
                 "id": {
@@ -55,6 +70,10 @@
                     "require_order",
                     "require_reference"
                   ]
+                },
+                "scorer_id": {
+                  "type": "string",
+                  "minLength": 1
                 },
                 "match": {
                   "type": "object"

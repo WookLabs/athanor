@@ -34,6 +34,8 @@ skill bodies are loaded.
 - `athanor-prompt-gen` — refine vague requests into prompts and recommend the next skill.
 - `athanor-discuss` — clarify intent or synthesize a decision.
 - `athanor-plan` — produce a decision-complete implementation plan.
+- `athanor-deep-plan` — thin wrapper for `athanor-plan --depth=deep`.
+- `athanor-lite-plan` — thin wrapper for `athanor-plan --depth=lite`.
 - `athanor-work` — execute an accepted plan with verification discipline.
 - `athanor-lfg` — run the end-to-end plan/work/review/PR/CI pipeline.
 - `athanor-lfg-goal` — iterate LFG cycles against a durable goal ledger.
@@ -51,3 +53,11 @@ This is not a Claude runtime port. Codex does not receive Athanor's
 Claude Stop hook, Claude PreToolUse Kernel Guard, Freeze enforcement, or
 Claude Task worker dispatch from this companion. Skills should state those
 limits instead of claiming hook-backed enforcement.
+
+The manual mirror source of truth is
+`docs/codex-mirror-source-map.md`. After changing a Claude skill, Codex skill,
+or registered agent mirror, run:
+
+```bash
+python scripts/gates/codex_mirror_parity.py --json
+```

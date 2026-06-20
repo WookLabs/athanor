@@ -2,11 +2,12 @@
 policy + flat skill layout.
 
 D2 policy from the plan:
-- Athanor-native skills (plan, prompt-gen, work, debug, setup, discuss,
-  analyze, review, lfg, lfg-goal, scope-drift, verification-before-completion) keep the
-  unprefixed slot at `skills/<name>/`. v0.17.0 / S07 collapsed
-  `deep-plan` + `lite-plan` into `/athanor:plan --depth=`, removing
-  them from this set; see `docs/v0.17.0-migration.md`.
+- Athanor-native skills (plan, deep-plan, lite-plan, prompt-gen, work,
+  debug, setup, discuss, analyze, review, lfg, lfg-goal, scope-drift,
+  verification-before-completion) keep the unprefixed slot at
+  `skills/<name>/`. v0.17.0 / S07 collapsed `deep-plan` + `lite-plan`
+  into `/athanor:plan --depth=`, then the current surface restored them as
+  thin wrappers over the canonical plan protocol.
 - CE-vendored skills land at `skills/ce-<name>/` (depth 1) for Claude Code
   auto-discovery; e.g., `/athanor:ce-plan`.
 - Superpowers-vendored skills land at `skills/sp-<name>/` (depth 1);
@@ -27,8 +28,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 
 ATHANOR_NATIVE = {
-    "analyze", "assess", "debug", "discuss", "lfg", "lfg-goal", "plan",
-    "prompt-gen", "review", "scope-drift", "setup",
+    "analyze", "assess", "debug", "deep-plan", "discuss", "lfg", "lfg-goal",
+    "lite-plan", "plan", "prompt-gen", "review", "scope-drift", "setup",
     "verification-before-completion", "work",
 }
 

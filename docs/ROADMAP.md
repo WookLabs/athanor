@@ -240,15 +240,17 @@
 > 목표: 사용할수록 똑똑해지는 Athanor
 >
 > Current boundary: local `.athanor/lessons/` frontmatter is implemented through
-> Learner/Cleaner dispatch prompts. mem-search permanent persistence is
-> unimplemented; see `docs/STATE.md` Known gaps.
+> Learner/Cleaner dispatch prompts. Read-only local recall is implemented by
+> `docs/memory-index.md`; compact resume context is covered by
+> `docs/handoff-artifact.md`. mem-search permanent persistence is unimplemented;
+> see `docs/STATE.md` Known gaps.
 
 ### 8.1 Learner Agent
 - [x] learner.md 에이전트 정의 작성
 - [x] 세션 결과 분석 로직 (성공/실패/패턴)
 - [x] structured lesson 추출
 - [x] 기존 lesson과 중복 체크
-- [ ] mem-search에 lesson 저장 (deferred; local `.athanor/lessons/` only)
+- [ ] mem-search에 lesson 저장 (deferred; local `.athanor/lessons/` plus read-only memory-index only)
 
 ### 8.2 Memory Decay + Access Count
 - [x] working memory에 access_count 메타데이터 추가

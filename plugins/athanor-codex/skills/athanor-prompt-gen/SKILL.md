@@ -36,6 +36,8 @@ or a recommendation for which Athanor skill should run next.
 | scoring, maturity, overbuilt/underbuilt | `athanor-assess` |
 | failures or regressions | `athanor-debug` |
 | implementation plan | `athanor-plan` |
+| low-risk quick plan | `athanor-lite-plan` or `athanor-plan --depth=lite` |
+| deep architecture or high-risk plan | `athanor-deep-plan` or `athanor-plan --depth=deep` |
 | accepted plan execution | `athanor-work` |
 | review diff or PR | `athanor-review` |
 | end-to-end ship | `athanor-lfg` |

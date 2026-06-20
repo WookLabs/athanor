@@ -5,6 +5,9 @@ repo-local development history from the default ship profile so a valid plugin
 package does not silently become a large archive of plans, tests, and CI
 history.
 
+The current reduction decision is tracked in
+`docs/package-footprint-reduction.md`.
+
 ## Run
 
 ```text
@@ -57,6 +60,10 @@ The default dev-only candidates are:
 Each candidate is reported with `recommended_action:
 exclude-from-ship-profile`. This is a recommendation for a future packaging
 profile, not a deletion instruction.
+
+The report also emits `ship_profile` and `ship_profile_decisions`. Budget
+checks apply to the default ship profile after explicit exclusions, while the
+full repo-local scan remains visible for audit and cleanup planning.
 
 ## Read-Only Policy
 

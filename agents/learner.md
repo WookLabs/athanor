@@ -73,6 +73,25 @@ evidence_refs: []
 {What happened that taught this lesson}
 ```
 
+### Step 2.5: Emit Memory-Indexable Fields
+
+Each lesson is also a memory-indexable record. Do not create or dispatch a
+separate memory-indexer agent; the Learner owns this export inside the lesson
+file. Include enough structured fields for local search and safe handoff use:
+
+- `stable_id`: a stable id such as `{skill}-{YYYY-MM-DD}-{NNN}` matching the
+  lesson file stem.
+- `source_artifact_path`: source artifact path for the session, release diff,
+  RCA, receipt, or discovery that produced the lesson.
+- `summary`: one sentence describing the reusable lesson.
+- `evidence_refs`: evidence refs such as concrete file paths, receipt ids,
+  trace ids, or command outputs supporting the lesson.
+- `confidence`: `high`, `medium`, or `low`, aligned with the frontmatter.
+- `stale_after`: stale-after hint in ISO date or duration form when the lesson
+  is likely to expire.
+- `safe_to_inject_summary`: safe-to-inject summary that can be copied into a
+  future worker handoff without leaking unrelated context.
+
 **Importance classification:**
 - `permanent`: Architecture decisions, patterns that always apply, critical failures to avoid
 - `working`: Task-specific findings, temporary optimizations, context-dependent observations

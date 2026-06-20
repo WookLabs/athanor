@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "wi-blocking-dependency",
+      "title": "Blocking dependency fixture",
+      "owner": "planner",
+      "stage": "work",
+      "dependencies": [],
+      "required_evidence": [],
+      "approval_state": "not_required",
+      "intervention_state": "none",
+      "created_at": "2026-06-20T00:00:00Z",
+      "updated_at": "2026-06-20T00:00:00Z"
+    },
+    {
+      "id": "wi-missing-evidence",
+      "title": "Missing evidence fixture",
+      "owner": "executor",
+      "stage": "review",
+      "dependencies": [
+        "wi-blocking-dependency"
+      ],
+      "required_evidence": [
+        "evidence/required.txt"
+      ],
+      "approval_state": "requested",
+      "intervention_state": "guide",
+      "created_at": "2026-06-20T00:00:00Z",
+      "updated_at": "2026-06-20T00:01:00Z"
+    }
+  ]
+}

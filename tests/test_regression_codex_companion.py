@@ -8,6 +8,8 @@ entry without changing Athanor's Claude hooks or command surface.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -16,6 +18,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CODEX_PLUGIN_ROOT = REPO_ROOT / "plugins" / "athanor-codex"
 CODEX_MANIFEST = CODEX_PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
 CODEX_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
+CODEX_MIRROR_SOURCE_MAP = REPO_ROOT / "docs" / "codex-mirror-source-map.md"
+CODEX_MIRROR_PARITY_GATE = REPO_ROOT / "scripts" / "gates" / "codex_mirror_parity.py"
 PARENT_RECEIPT_VALIDATOR = (
     REPO_ROOT / "skills" / "lfg-goal" / "references" / "receipt-validator.md"
 )
@@ -26,9 +30,11 @@ EXPECTED_SKILLS = {
     "athanor-analyze",
     "athanor-assess",
     "athanor-debug",
+    "athanor-deep-plan",
     "athanor-discuss",
     "athanor-lfg",
     "athanor-lfg-goal",
+    "athanor-lite-plan",
     "athanor-plan",
     "athanor-prompt-gen",
     "athanor-ci-watch",
@@ -54,6 +60,18 @@ def _load_skill_frontmatter(skill_name: str) -> dict:
     frontmatter = yaml.safe_load(text[4:end])
     assert isinstance(frontmatter, dict)
     return frontmatter
+
+
+def _run_mirror_report(*extra_args: str) -> dict:
+    result = subprocess.run(
+        [sys.executable, "scripts/gates/codex_mirror_parity.py", "--json", *extra_args],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
 
 
 def test_codex_companion_manifest_is_codex_native():
@@ -104,6 +122,97 @@ def test_codex_companion_exposes_only_prefix_safe_skills():
         assert frontmatter["name"] == skill_name
         assert frontmatter["description"].strip()
         assert skill_name.startswith("athanor-")
+
+
+def test_codex_mirror_source_map_lists_all_claude_and_codex_surfaces():
+    assert CODEX_MIRROR_SOURCE_MAP.is_file()
+    assert CODEX_MIRROR_PARITY_GATE.is_file()
+
+    text = CODEX_MIRROR_SOURCE_MAP.read_text(encoding="utf-8")
+    required_tokens = [
+        "skills/assess/SKILL.md",
+        "plugins/athanor-codex/skills/athanor-assess/SKILL.md",
+        "skills/prompt-gen/SKILL.md",
+        "plugins/athanor-codex/skills/athanor-prompt-gen/SKILL.md",
+        "skills/deep-plan/SKILL.md",
+        "plugins/athanor-codex/skills/athanor-deep-plan/SKILL.md",
+        "skills/lite-plan/SKILL.md",
+        "plugins/athanor-codex/skills/athanor-lite-plan/SKILL.md",
+        "skills/ce-test-browser/SKILL.md",
+        "Claude-only",
+        "agents/releaser.md",
+        "plugins/athanor-codex/skills/athanor-release/SKILL.md",
+        "agents/ci-watcher.md",
+        "plugins/athanor-codex/skills/athanor-ci-watch/SKILL.md",
+        "Unsupported Claude-only runtime surfaces",
+        "Claude Stop hook",
+        "Claude PreToolUse",
+        "Claude Task",
+    ]
+    for token in required_tokens:
+        assert token in text, f"mirror source map missing token: {token!r}"
+
+
+def test_codex_mirror_parity_gate_reports_current_source_map_pass():
+    report = _run_mirror_report()
+
+    assert report["schema_version"] == 1
+    assert report["status"] == "pass"
+    assert report["summary"]["missing_mirror_rows"] == 0
+    assert report["summary"]["unexpected_mirror_rows"] == 0
+    assert report["summary"]["stale_version_refs"] == 0
+    assert report["summary"]["description_anchor_mismatches"] == 0
+    assert report["summary"]["unsupported_claude_only_surfaces"] >= 4
+    assert report["profile"] == {
+        "id": "codex-mirror-parity",
+        "description": "Read-only verifier for the Claude-to-Codex mirror source map.",
+        "mutates_files_by_default": False,
+        "external_telemetry": False,
+        "irreversible_actions": 0,
+    }
+
+    rows = {row["codex_surface"]: row for row in report["rows"]}
+    assert rows["athanor-assess"]["status"] == "mirror"
+    assert rows["athanor-assess"]["claude_surface"] == "assess"
+    assert rows["athanor-prompt-gen"]["status"] == "mirror"
+    assert rows["athanor-prompt-gen"]["claude_surface"] == "prompt-gen"
+    assert rows["athanor-release"]["status"] == "codex-agent-mirror"
+    assert rows["athanor-ci-watch"]["status"] == "codex-agent-mirror"
+
+
+def test_codex_mirror_parity_gate_fails_when_source_map_drops_prompt_gen(tmp_path):
+    source_copy = tmp_path / "codex-mirror-source-map.md"
+    body = CODEX_MIRROR_SOURCE_MAP.read_text(encoding="utf-8")
+    filtered = "\n".join(
+        line
+        for line in body.splitlines()
+        if "prompt-gen" not in line and "athanor-prompt-gen" not in line
+    )
+    source_copy.write_text(filtered + "\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/gates/codex_mirror_parity.py",
+            "--json",
+            "--source-map",
+            str(source_copy),
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["status"] == "fail"
+    assert "prompt-gen" in report["checks_by_id"]["mirror.expected_claude_surfaces"][
+        "missing"
+    ]
+    assert "athanor-prompt-gen" in report["checks_by_id"]["mirror.expected_codex_surfaces"][
+        "missing"
+    ]
 
 
 def test_codex_companion_keeps_claude_runtime_separate():

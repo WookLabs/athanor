@@ -5,7 +5,7 @@ Locks the v0.17.0 static dedup state at v0.18.0 release time:
 **UserPromptSubmit (UPS) is NOT registered as a runtime hook in v0.18.0.**
 
 The v0.17.0 / S04 hoist established a static dedup pattern for the
-`using-superpowers boundary` declaration: 11 athanor-native Thin Leader
+`using-superpowers boundary` declaration: 13 athanor-native Thin Leader
 skills each carry a 2-line POINTER (heading + 1-line "See CLAUDE.md …")
 and the canonical prose lives in ONE place — CLAUDE.md §"using-superpowers
 boundary (v0.11.1) — canonical declaration". UPS-driven runtime dedup
@@ -19,8 +19,8 @@ while allowing the deliberate v0.19.0 PostToolUse evidence-only addition:
   1. `hooks/hooks.json` does NOT register a `UserPromptSubmit` entry —
      only `Stop` (v0.7.8+), `PreToolUse` (v0.16.0+), and the
      `PostToolUse` evidence sniffer (v0.19.0+).
-    2. CLAUDE.md still uses the 10-pointer + 1-canonical static dedup
-     pattern (10 skills with `### using-superpowers boundary` pointers
+    2. CLAUDE.md still uses the 13-pointer + 1-canonical static dedup
+     pattern (13 skills with `### using-superpowers boundary` pointers
      plus the canonical heading in CLAUDE.md).
   3. No UPS-related hook scripts in `scripts/hooks/` — `capability_probe.py`
      may MENTION UPS for forward-compat documentation, but no script
@@ -35,7 +35,7 @@ should be flipped or removed:
 
   - The `hooks.json` assertion should change to require UPS presence.
   - The static dedup pattern in CLAUDE.md should be revisited (the
-    9 pointers may collapse into a UPS injection contract).
+    13 pointers may collapse into a UPS injection contract).
   - The "no UPS in scripts/hooks/" check should be relaxed to allow
     the new UPS handler.
 
@@ -76,7 +76,7 @@ def test_hooks_json_does_not_register_user_prompt_submit():
     v0.18.0 ships only `Stop` (claim verification, since v0.7.8) and
     `PreToolUse` (kernel + freeze dispatcher, since v0.16.0/v0.18.0). UPS
     runtime dedup is deferred to v0.18.2 pending live spike — until that
-    ships, the static dedup pattern (9 pointers + 1 canonical) is the
+    ships, the static dedup pattern (13 pointers + 1 canonical) is the
     sole mechanism for the using-superpowers boundary.
     """
     assert HOOKS_JSON.is_file(), f"hooks.json missing at {HOOKS_JSON}"
@@ -152,7 +152,7 @@ def test_claude_md_canonical_declaration_heading_present():
     assert "using-superpowers boundary (v0.11.1) — canonical declaration" in text, (
         "CLAUDE.md must keep the single canonical heading "
         "`### using-superpowers boundary (v0.11.1) — canonical declaration`; "
-        "this is the SOURCE in the 9-pointer + 1-canonical static dedup pattern."
+        "this is the SOURCE in the 13-pointer + 1-canonical static dedup pattern."
     )
 
 
@@ -180,7 +180,7 @@ def test_skills_each_carry_a_boundary_pointer():
 
 
 def test_pointer_count_is_eleven():
-    """Sanity: exactly 11 skills carry the pointer, matching the
+    """Sanity: exactly 13 skills carry the pointer, matching the
     canonical declaration's current native Thin Leader skill enumeration."""
     found = 0
     for skill_dir in (REPO_ROOT / "skills").iterdir():
@@ -201,9 +201,9 @@ def test_pointer_count_is_eleven():
                     "canonical declaration" not in stripped:
                 found += 1
                 break
-    assert found == 11, (
-        f"expected exactly 11 `### using-superpowers boundary` pointers "
-        f"(one per Thin Leader skill); got {found}. The 11+1 static dedup "
+    assert found == 13, (
+        f"expected exactly 13 `### using-superpowers boundary` pointers "
+        f"(one per Thin Leader skill); got {found}. The 13+1 static dedup "
         f"pattern is current — adjust this count only when a "
         f"native skill is genuinely added/removed."
     )

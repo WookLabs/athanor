@@ -125,13 +125,13 @@ def test_runtime_contract_and_docs_list_assess_surface() -> None:
 
     readme = README.read_text(encoding="utf-8")
     assert "/athanor:assess" in readme
-    assert "Ships 15 skills" in readme
+    assert "Ships 17 skills" in readme
     assert "athanor-assess" in readme
 
     claude = CLAUDE_MD.read_text(encoding="utf-8")
-    assert "11 user-invocable" in claude
+    assert "13 user-invocable" in claude
     assert "| `/athanor:assess` |" in claude
-    assert "11 native Thin Leader skills" in claude
+    assert "13 native Thin Leader skills" in claude
     assert "assess, analyze" in claude
 
 

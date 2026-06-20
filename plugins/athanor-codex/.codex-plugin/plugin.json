@@ -1,7 +1,7 @@
 {
   "name": "athanor-codex",
-  "version": "0.1.0+codex.20260619130024",
-  "description": "Codex-native companion skills for Athanor prompt generation, discuss, analyze, assessment, planning, work execution, LFG pipelines, release ceremony, CI watching, review, debugging, scope drift checks, verification, and setup diagnostics.",
+  "version": "0.1.0+codex.20260620024451",
+  "description": "Codex-native companion skills for Athanor prompt generation, discuss, analyze, assessment, planning, deep/lite planning wrappers, work execution, LFG pipelines, release ceremony, CI watching, review, debugging, scope drift checks, verification, and setup diagnostics.",
   "author": {
     "name": "WookLabs"
   },
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Athanor Codex",
     "shortDescription": "Codex-native companion workflows for Athanor.",
-    "longDescription": "Athanor Codex brings the practical parts of Athanor to Codex: prompt generation and skill routing, discuss, analyze, goal-aligned assessment, implementation planning, work execution guidance, LFG and LFG-goal orchestration, release ceremony, CI watch and autofix guidance, structured review, triage-first debugging, scope drift checks, verify-before-completion discipline, and setup diagnostics. It is a companion plugin, not a port of Claude Code hooks or Task dispatch.",
+    "longDescription": "Athanor Codex brings the practical parts of Athanor to Codex: prompt generation and skill routing, discuss, analyze, goal-aligned assessment, implementation planning with deep/lite wrapper entrypoints, work execution guidance, LFG and LFG-goal orchestration, release ceremony, CI watch and autofix guidance, structured review, triage-first debugging, scope drift checks, verify-before-completion discipline, and setup diagnostics. It is a companion plugin, not a port of Claude Code hooks or Task dispatch.",
     "developerName": "WookLabs",
     "category": "Developer Tools",
     "capabilities": [
@@ -28,6 +28,6 @@
       "Read",
       "Write"
     ],
-    "defaultPrompt": "Use Athanor Codex to generate prompts, discuss, analyze, assess, plan, work, run LFG, release, watch CI, review, debug, verify, or scope-check this task."
+    "defaultPrompt": "Use Athanor Codex to generate prompts, discuss, analyze, assess, plan, deep-plan, lite-plan, work, run LFG, release, watch CI, review, debug, verify, or scope-check this task."
   }
 }

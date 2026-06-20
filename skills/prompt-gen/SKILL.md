@@ -1,10 +1,8 @@
 ---
 name: prompt-gen
 description: >
-  사용자 요청을 명확한 실행 프롬프트로 재작성하고 다음에 부를 Athanor
-  스킬을 추천한다. Use for prompt generation, prompt refinement,
-  vague request cleanup, plan prompt prep, "프롬프트 젠", "프롬프트 만들어줘",
-  "요청 명확화", "다음 스킬 추천", "plan 전에 정리해줘".
+  prompt generation / prompt refinement / plan prompt prep. Use for
+  "프롬프트 젠", "프롬프트 만들어줘", "요청 명확화", "다음 스킬 추천".
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion, Skill
 ---
@@ -117,8 +115,8 @@ Pick exactly one primary next skill and optional alternatives:
 | quality, score, maturity, overbuilt/underbuilt | `/athanor:assess` |
 | error, failure, regression, broken behavior | `/athanor:debug` |
 | implementation design before work | `/athanor:plan --depth=standard` |
-| trivial low-risk plan | `/athanor:plan --depth=lite` |
-| broad architecture, migration, security, data loss | `/athanor:plan --depth=deep` |
+| trivial low-risk plan | `/athanor:lite-plan` (or `/athanor:plan --depth=lite`) |
+| broad architecture, migration, security, data loss | `/athanor:deep-plan` (or `/athanor:plan --depth=deep`) |
 | accepted plan should be executed | `/athanor:work` |
 | diff, PR, or code should be reviewed | `/athanor:review` |
 | end-to-end plan/work/review/PR/CI ship | `/athanor:lfg` |

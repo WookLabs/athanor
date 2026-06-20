@@ -12,6 +12,11 @@ not enable hooks, and does not merge or deploy changes. It reads state and
 evidence summaries, returns a decision, optionally writes the updated state,
 and can emit a P6 workflow trace event.
 
+The companion run-log helper,
+`scripts/loops/loop_run_log.py`, is narrower: it appends JSONL records to the
+goal directory and inspects lock, budget, and min-attempt posture. It reports
+`irreversible_actions: 0`; appending a log record is the only write it performs.
+
 ## State And Evidence
 
 State files follow `schemas/durable-loop-state.schema.json` and live at:
@@ -23,6 +28,19 @@ State files follow `schemas/durable-loop-state.schema.json` and live at:
 Evidence summaries follow `schemas/durable-loop-evidence.schema.json`. They are
 intentionally narrow: eval status, receipt validator status, Tier 1/Tier 2/Tier
 3 signals, progress status, and artifact references.
+
+Run-log records follow `schemas/loop-run-log-record.schema.json` and live at
+the `loop_run_log` path in `state.json`, defaulting to
+`.athanor/goals/<goal_id>/run-log.jsonl`.
+
+The optional run-log fields in `state.json` are:
+
+- `acting_on`: goal id currently claimed by the runner.
+- `loop_run_log`: append-only JSONL path.
+- `budget.max_cycles`, `budget.max_wall_minutes`, `budget.max_token_estimate`.
+- `min_attempts`: minimum attempts before risky or score-target finalization.
+- `last_evaluator_role`: latest evaluator role name.
+- `lock_status`: `active`, `conflict`, or `released`.
 
 ## Controller CLI
 
@@ -40,6 +58,23 @@ Use `--write-state` when the caller wants the decision applied back to
 `state.json`. Stop decisions such as `stop_no_progress` and
 `stop_max_iterations` persist `cycle_state=aborted` with a concrete
 `stop_reason` when `--write-state` is present.
+
+Append and inspect run-log posture:
+
+```bash
+python scripts/loops/loop_run_log.py append \
+  --goal-dir .athanor/goals/36470e54 \
+  --event cycle_started \
+  --json
+
+python scripts/loops/loop_run_log.py inspect \
+  --goal-dir .athanor/goals/36470e54 \
+  --requested-goal-id 36470e54 \
+  --json
+```
+
+`inspect` reports lock conflict, budget warnings, and min-attempt gate status
+without mutating files.
 
 Exit codes:
 

@@ -15,10 +15,12 @@
       "path": "agents/codex-dispatcher.md",
       "purpose": "Safe Codex CLI dispatch with timeout and stdin handling",
       "allowed_dispatchers": [
+        "deep-plan",
         "plan",
         "review",
         "lfg",
-        "lfg-goal"
+        "lfg-goal",
+        "lite-plan"
       ]
     },
     {
@@ -66,8 +68,10 @@
       "path": "docs/agent-roles/critic.md",
       "owner_skills": [
         "assess",
+        "deep-plan",
         "discuss",
         "lfg-goal",
+        "lite-plan",
         "plan",
         "review",
         "scope-drift",
@@ -89,8 +93,10 @@
       "name": "planner",
       "path": "docs/agent-roles/planner.md",
       "owner_skills": [
+        "deep-plan",
         "lfg",
         "lfg-goal",
+        "lite-plan",
         "plan"
       ]
     },
@@ -108,8 +114,10 @@
       "owner_skills": [
         "assess",
         "debug",
+        "deep-plan",
         "lfg",
         "lfg-goal",
+        "lite-plan",
         "plan",
         "review",
         "scope-drift",
@@ -180,6 +188,26 @@
       ],
       "registered_agents": [],
       "next_skill_handoffs": [
+        "review",
+        "work"
+      ]
+    },
+    {
+      "skill": "deep-plan",
+      "leader_kind": "planning-wrapper",
+      "artifacts": [
+        ".athanor/sessions/{id}/plan.md"
+      ],
+      "reference_roles": [
+        "critic",
+        "planner",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "codex-dispatcher"
+      ],
+      "next_skill_handoffs": [
+        "lfg",
         "review",
         "work"
       ]
@@ -258,6 +286,26 @@
       ]
     },
     {
+      "skill": "lite-plan",
+      "leader_kind": "planning-wrapper",
+      "artifacts": [
+        ".athanor/sessions/{id}/plan.md"
+      ],
+      "reference_roles": [
+        "critic",
+        "planner",
+        "reviewer"
+      ],
+      "registered_agents": [
+        "codex-dispatcher"
+      ],
+      "next_skill_handoffs": [
+        "lfg",
+        "review",
+        "work"
+      ]
+    },
+    {
       "skill": "plan",
       "leader_kind": "tiered-planning",
       "artifacts": [
@@ -289,9 +337,11 @@
         "analyze",
         "assess",
         "debug",
+        "deep-plan",
         "discuss",
         "lfg",
         "lfg-goal",
+        "lite-plan",
         "plan",
         "review",
         "setup",

@@ -1,0 +1,1 @@
+{"id":"trace:workflow-finished","event_type":"workflow.finished","status":"pass","message":"release evidence workflow finished with verification evidence","references":[".athanor/sessions/demo/.hook-state/test-evidence.jsonl"]}

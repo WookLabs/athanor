@@ -69,6 +69,21 @@ jobs:
       - name: Package knowledge index gate
         shell: bash
         run: python scripts/gates/package_knowledge_index.py --json
+      - name: Memory index gate
+        shell: bash
+        run: python scripts/gates/memory_index.py --fixture-root tests/fixtures/memory_index --json
+      - name: Memory retrieval eval gate
+        shell: bash
+        run: python scripts/gates/memory_retrieval_eval.py --fixture-root tests/fixtures/memory_index --queries tests/fixtures/memory_retrieval_eval/queries.json --json
+      - name: Workflow trace query gate
+        shell: bash
+        run: python scripts/evals/workflow_trace_query.py --trace-path tests/fixtures/workflow_trace_query/base.jsonl --mode stats --json
+      - name: Codex mirror parity gate
+        shell: bash
+        run: python scripts/gates/codex_mirror_parity.py --json
+      - name: Work-item stage transition gate
+        shell: bash
+        run: python scripts/gates/work_item_stage.py --fixture-root tests/fixtures/work_items/valid --json
       - name: Agent topology gate
         shell: bash
         run: python scripts/gates/agent_topology.py --json

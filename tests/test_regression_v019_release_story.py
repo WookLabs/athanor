@@ -740,3 +740,69 @@ def test_unreleased_documents_harness_decision_ledger():
         "CHANGELOG [Unreleased] must explain P18 harness decision ledger; "
         f"missing: {missing}"
     )
+
+
+def test_unreleased_documents_ref_optimization_gate_bundle():
+    """The Unreleased story must name the 346-ref optimization gate bundle."""
+    section = _unreleased_section()
+    required = [
+        "346-ref optimization",
+        "scripts/gates/catalog_admission.py",
+        "scripts/gates/memory_index.py",
+        "scripts/gates/memory_retrieval_eval.py",
+        "scripts/evals/workflow_trace_query.py",
+        "scripts/gates/codex_mirror_parity.py",
+        "scripts/gates/work_item_stage.py",
+        "ship_profile_decisions",
+        "4 registered agents",
+        "11 native commands",
+    ]
+    missing = [token for token in required if token not in section]
+    assert not missing, (
+        "CHANGELOG [Unreleased] must explain the ref optimization gate bundle; "
+        f"missing: {missing}"
+    )
+
+
+def test_state_documents_ref_optimization_current_status():
+    """STATE must summarize the current ref-driven optimization surface."""
+    body = STATE_MD.read_text(encoding="utf-8")
+    required = [
+        "346-ref optimization",
+        "catalog admission",
+        "memory index",
+        "memory retrieval eval",
+        "workflow trace query",
+        "Codex mirror parity",
+        "work-item stage transition",
+        "ship-profile reduction",
+        "4 registered agents",
+        "13 native commands",
+    ]
+    missing = [token for token in required if token not in body]
+    assert not missing, (
+        "docs/STATE.md must summarize the current ref optimization status; "
+        f"missing: {missing}"
+    )
+
+
+def test_ci_runs_ref_optimization_stable_gates_before_pytest():
+    """Stable local ref-optimization gates should fail before broad pytest."""
+    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    required = [
+        "Memory index gate",
+        "python scripts/gates/memory_index.py --fixture-root tests/fixtures/memory_index --json",
+        "Memory retrieval eval gate",
+        "python scripts/gates/memory_retrieval_eval.py --fixture-root tests/fixtures/memory_index --queries tests/fixtures/memory_retrieval_eval/queries.json --json",
+        "Workflow trace query gate",
+        "python scripts/evals/workflow_trace_query.py --trace-path tests/fixtures/workflow_trace_query/base.jsonl --mode stats --json",
+        "Codex mirror parity gate",
+        "python scripts/gates/codex_mirror_parity.py --json",
+        "Work-item stage transition gate",
+        "python scripts/gates/work_item_stage.py --fixture-root tests/fixtures/work_items/valid --json",
+    ]
+    missing = [token for token in required if token not in workflow]
+    assert not missing, (
+        "validate-plugin workflow must run stable ref optimization gates; "
+        f"missing: {missing}"
+    )

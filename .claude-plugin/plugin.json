@@ -1,7 +1,7 @@
 {
   "name": "athanor",
-  "version": "0.19.2",
-  "description": "Athanor v0.19.2 — Thin Leader for Claude Code: assess, prompt-gen, plan, work, review, lfg-goal, hooks, Freeze, topology gates, 4 agents.",
+  "version": "0.19.3",
+  "description": "Athanor v0.19.3 — Thin Leader for Claude Code: assess, prompt-gen, plan, work, review, lfg-goal, hooks, Freeze, topology gates, 4 agents.",
   "author": {
     "name": "WookLabs"
   },

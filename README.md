@@ -5,7 +5,7 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**v0.19.2** — 11 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. Score-target goal loops. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
+**v0.19.3** — 13 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. Score-target goal loops. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
 
 Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
 
@@ -88,8 +88,8 @@ You:     /athanor:work --team
          All 6 subtasks complete. 2 lessons saved for next time.
 ```
 
-> Need deeper analysis? Try `/athanor:plan --depth=deep` for full adversarial planning.
-> In a hurry? `/athanor:plan --depth=lite` skips the review step.
+> Need deeper analysis? Try `/athanor:deep-plan` or `/athanor:plan --depth=deep` for full adversarial planning.
+> In a hurry? `/athanor:lite-plan` or `/athanor:plan --depth=lite` skips the review step.
 
 ## Commands
 
@@ -102,6 +102,8 @@ You:     /athanor:work --team
 | `/athanor:assess` | Plan | Goal-aligned 100-point assessment with overbuilt/underbuilt findings |
 | `/athanor:debug` | Plan | Triage-first parallel failure diagnosis |
 | `/athanor:plan` | Plan | Tiered planning via `--depth=standard`(default)`/deep/lite` (+ `--no-review`) |
+| `/athanor:deep-plan` | Plan | Thin wrapper for `/athanor:plan --depth=deep`; rejects contradictory `--depth=` flags |
+| `/athanor:lite-plan` | Plan | Thin wrapper for `/athanor:plan --depth=lite`; rejects contradictory `--depth=` flags |
 | `/athanor:work` | Execute | Grinding through every subtask until done |
 | `/athanor:review` | Plan | Parallel 6-lens code review (architecture, quality, security, performance, testing, docs) |
 | `/athanor:lfg` | Execute | Standalone end-to-end pipeline (plan → work → review → PR → CI) |
@@ -140,7 +142,7 @@ Input ── Planner ──→ Final Plan
 
 ## Design Philosophy
 
-**9 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
+**13 commands, not 100 features.** A focused workflow instead of a feature collection. Each command maps to one phase: brainstorm, analyze, plan, execute.
 
 **Thin leader.** The main session never reads files, analyzes code, or writes code. It dispatches and collects. Your context stays clean regardless of session length.
 
@@ -164,7 +166,7 @@ When Codex is available, it serves as Planner B (deep tier) or Reviewer (standar
 
 **Session communication** via `.md` files — workers read and write to `.athanor/sessions/{id}/`. No shared state in the leader's context.
 
-**Learning system** — after each `/athanor:work`, the Learner extracts structured lessons to `.athanor/lessons/`. Workers read relevant lessons before starting. Frequently-accessed lessons can promote from working to permanent in local lesson frontmatter, and stale working lessons decay. Permanent persistence to mem-search is still unimplemented; see `docs/STATE.md` Known gaps.
+**Learning system** — after each `/athanor:work`, the Learner extracts structured lessons to `.athanor/lessons/`. Lessons carry memory-indexable fields for local recall, and [the read-only memory index](docs/memory-index.md) can search lessons, traces, goals, and completed goals without daemons, network calls, or automatic context injection. Goal/session resumes use the compact [handoff artifact](docs/handoff-artifact.md). Permanent persistence to mem-search remains separate and unimplemented; local lesson files stay the source of truth.
 
 [Full architecture details](docs/DESIGN.md) | [Conventions](docs/CONVENTIONS.md)
 
@@ -205,7 +207,7 @@ Wave 2: [task 3]          ← depends on wave 1
 | `work.circuitBreaker.consecutiveFailures` | `3` | Failures before circuit breaker trips |
 | `team.waveSize` | `3` | Max parallel workers per wave |
 | `memory.decayDays` | `7` | Working memory retention period |
-| `memory.promotionThreshold` | `5` | Access count for local working→permanent lesson promotion; mem-search persistence is not implemented |
+| `memory.promotionThreshold` | `5` | Access count for local working→permanent lesson promotion; local memory-index search is read-only |
 
 ## FAQ
 
@@ -247,7 +249,7 @@ Athanor recommends (does not require) the following companion plugins:
 /plugin install superpowers@superpowers-marketplace
 ```
 
-**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 15 skills (`athanor-analyze`, `athanor-assess`, `athanor-debug`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-plan`, `athanor-prompt-gen`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
+**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 17 skills (`athanor-analyze`, `athanor-assess`, `athanor-debug`, `athanor-deep-plan`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-lite-plan`, `athanor-plan`, `athanor-prompt-gen`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
 
 ```
 codex plugin marketplace add <path-to-athanor>/.agents/plugins/marketplace.json
@@ -263,7 +265,7 @@ Run `/athanor:setup` to audit installed companions. If superpowers is absent, at
 - [x] Core workflow (discuss, analyze, plan, work)
 - [x] Cross-model adversarial planning
 - [x] Solo and team execution modes
-- [x] Local 2-tier lesson files with memory decay prompts (mem-search persistence deferred)
+- [x] Local 2-tier lesson files with memory decay prompts and read-only memory-index search
 - [x] Codex native integration (codex exec CLI)
 - [ ] Multi-project lesson sharing
 - [ ] Custom worker agent definitions

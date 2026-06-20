@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athanor lfg-goal loop run log record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "goal_id",
+    "sequence",
+    "timestamp",
+    "event",
+    "status",
+    "acting_on",
+    "cycle",
+    "evaluator_role",
+    "message",
+    "references",
+    "budget",
+    "irreversible_actions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["blocked", "conflict", "fail", "info", "pass", "warn"]
+    },
+    "acting_on": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "cycle": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "evaluator_role": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_cycles",
+        "current_cycle",
+        "max_wall_minutes",
+        "wall_minutes_used",
+        "max_token_estimate",
+        "token_estimate_used"
+      ],
+      "properties": {
+        "max_cycles": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "current_cycle": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "max_wall_minutes": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "wall_minutes_used": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "max_token_estimate": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "token_estimate_used": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "irreversible_actions": {
+      "const": 0
+    }
+  }
+}

@@ -34,7 +34,7 @@ Registered agent definitions live in plugin-root `agents/`; inline-only role ref
 
 ## Commands
 
-### Athanor-native (11 user-invocable + 2 internal: scope-drift, verification-before-completion)
+### Athanor-native (13 user-invocable + 2 internal: scope-drift, verification-before-completion)
 
 | Command | Mode | Purpose |
 |---------|------|---------|
@@ -44,7 +44,9 @@ Registered agent definitions live in plugin-root `agents/`; inline-only role ref
 | `/athanor:analyze` | Plan | Parallel fast analysis (LSP, mem-search) |
 | `/athanor:assess` | Plan | Goal-aligned multi-lens assessment: weighted dimensions, 100-point score, confidence, overbuilt/underbuilt findings, and Priority Plan. |
 | `/athanor:debug` | Plan | Triage → 병렬 실패 진단 (에러, git 이력, 코드 추적) |
-| `/athanor:plan` | Plan | **Cross-model adversarial planning** with tier dispatch via `--depth={standard\|deep\|lite}` flag (+ orthogonal `--no-review`). Standard tier (default) = Planner A Claude + Codex review + Refinement Critic. Deep tier = Planner A + Planner B Codex cross-planning + 4-input Synthesis Critic (was `/athanor:deep-plan`). Lite tier = Planner A only, review + critic skipped (was `/athanor:lite-plan`). Trigger keywords ("딥 플랜", "라이트 플랜", etc.) still route into the unified skill — athanor identity #2. v0.17.0 / S07 collapsed the former deep-plan + lite-plan slots into this flag-dispatch interface; see `docs/v0.17.0-migration.md`. |
+| `/athanor:plan` | Plan | Canonical cross-model planning via `--depth={standard\|deep\|lite}` (+ `--no-review`). Standard = Planner A + review + Critic; deep = dual planners + synthesis Critic; lite = Planner A only. `/athanor:deep-plan` and `/athanor:lite-plan` are thin wrappers. |
+| `/athanor:deep-plan` | Plan | Thin wrapper for `/athanor:plan --depth=deep`; rejects contradictory `--depth=standard\|lite`; normal `plan.md` artifacts only. |
+| `/athanor:lite-plan` | Plan | Thin wrapper for `/athanor:plan --depth=lite`; rejects contradictory `--depth=standard\|deep`; normal `plan.md` artifacts only. |
 | `/athanor:work` | Execute | **Spec-then-TDD discipline** (Splitter execution_note + conjunction-of-three Phase 3 gate) — athanor identity #3. Post-v0.12.0: sole native executor. Install upstream compound-engineering for CE variant. |
 | `/athanor:review` | Plan | Parallel multi-lens code review (architecture, quality, security, performance, testing, documentation) |
 | `/athanor:lfg` | Execute | **Standalone end-to-end pipeline** (v0.11.0) — wraps the LFG flow through athanor-native commands at identity-bearing steps (Step 1 `/athanor:plan` cross-model + Step 2 `/athanor:work` Spec-then-TDD + Step 3 `/athanor:review` 6-lens). Post-v0.12.0: sole pipeline. (v0.15.1: `--team` mode default) |
@@ -61,7 +63,7 @@ Registered agent definitions live in plugin-root `agents/`; inline-only role ref
 2. Leader는 dispatch + 결과 수집만 한다
 3. Worker는 항상 깨끗한 컨텍스트에서 시작한다
 4. 세션 간 통신은 `.athanor/sessions/{id}/` 의 .md 파일을 통한다
-5. 작업 완료 시 lessons를 2-tier(permanent/working)로 추출·저장한다 (`.athanor/lessons/` frontmatter `importance`; mem-search 영구저장은 미구현 — STATE.md Known gaps)
+5. 작업 완료 시 lessons를 2-tier(permanent/working)로 추출·저장한다 (`.athanor/lessons/` frontmatter `importance`; 로컬 read-only recall은 `docs/memory-index.md`, goal/session handoff는 `docs/handoff-artifact.md`; mem-search 영구저장은 미구현 — STATE.md Known gaps)
 
 ## Session Directory
 
@@ -125,11 +127,10 @@ Canonical rule for finding "the active session"; per-skill prose should referenc
 | Read-Before-Edit Rule | **advisory** — prose guidance; Claude Code runtime is the practical enforcer for Claude-based workers, but no plugin-layer guard for Codex/non-Claude workers |
 | Scope Drift Detection | **on-demand** — `skills/scope-drift/SKILL.md` user-invoked only; no auto-fire on Stop or completion claims |
 | Spec-then-TDD Discipline | **advisory (planner-classified)** — `/athanor:plan` emits Verify criteria, `/athanor:work` classifies subtasks, and the worker/result handler applies the matching branch. **v0.10.0 scope:** athanor-native `/athanor:work` only. Canonical runtime behavior: `skills/work/references/spec-then-tdd-handler.md`; historical v0.8.0 design detail: `docs/archive/defense-mechanisms-detail.md`. |
-| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` skill은 v0.10.0 vendoring으로 흡수되어 매 세션 시작 시 Claude Code platform이 제공하는 SessionStart system reminder channel로 로드된다 (athanor의 hooks.json 등록 결과 아님). 그 skill의 "ABSOLUTELY MUST invoke before response" 톤은 athanor-native **11 Thin Leader skills** (assess, analyze, debug, discuss, lfg, lfg-goal, plan, prompt-gen, review, setup, work — v0.17.0 / S07에서 deep-plan + lite-plan은 `/athanor:plan --depth=` 로 흡수됨) 호출 context에서는 **advisory here**다 — discovery가 leader dispatch로 해소되며, pre-response invocation check은 native context에서 안내일 뿐 강제 아님 (planner-classified discipline). 본 boundary는 11 skill 각각의 §Identity 직후 `### using-superpowers boundary` 2-line pointer로 선언되고 canonical 텍스트는 §"using-superpowers boundary (v0.11.1) — canonical declaration" 에 집약됨 (v0.17.0 / S04 hoist); 회귀는 `tests/test_regression_v011_1_using_superpowers_boundary.py`로 lock. Cross-reference: CLAUDE.md §Defense Mechanisms. Concept adopted from superpowers v5.1.0 sp-using-superpowers (MIT, Jesse Vincent). |
+| using-superpowers boundary (v0.11.1) | **advisory (preamble-declared)** — `superpowers:using-superpowers` is a Claude Code platform mechanism surfaced in SessionStart context, not Athanor hooks. In the **13 native Thin Leader skills** (assess, analyze, debug, deep-plan, discuss, lfg, lfg-goal, lite-plan, plan, prompt-gen, review, setup, work), that pre-response pressure is **advisory here**: discovery resolves through leader dispatch, under planner-classified discipline. Each skill points to the canonical declaration below. |
 | PreToolUse Kernel Guard | **enforced (command-based), best-effort coverage** — `hooks/hooks.json` PreToolUse event; the hook genuinely fires and exits 2 to block. Targets 3 accident-class patterns: destructive shell (rm -rf /, git reset --hard), force-push to main/master, credential file access (.env, private keys). `.env.example`/`.env.test` allowed. `hooks.profile: "off"` opt-out. **Honest scope:** this is a textual regex guard, NOT a command parser or security boundary — it catches obvious literal forms but is bypassable by obfuscation (command substitution `$(...)`, variable indirection, base64/eval, reordered flags). Treat it as a guardrail against fat-finger accidents, not containment against an adversary. The force-push matcher uses a `(?![\w-])` boundary so `main`/`master`-prefixed branches (e.g. `feature/main-update`) are allowed while exact `main`/`master` segments stay blocked. |
 
 ### Completion-Claim Verification (Stop hook — enforced, command-based)
-
 On every `Stop` event, Claude Code invokes `scripts/hooks/stop_verify_claims.py` (registered as `type: command` in `hooks/hooks.json`). The script extracts the last main-session assistant message, checks the `hooks.profile: "off"` opt-out, recognises its own current `<!-- athanor:verification-emission v=2 nonce=<32-hex> -->` sentinel (re-entry prevention), greps for material-claim phrases (English + Korean whitelist), and exits 2 with stderr fed back as continuation context — forcing the model to invoke `verification-before-completion` and produce fresh evidence before Stop succeeds. **Spike evidence:** 2026-05-18 dry-run confirmed Claude Code honors `exit 2` from command-based Stop hooks (`docs/STATE.md` §"Command-hook Stop blocking spike (2026-05-18)"). **Companion-fix arc:** v0.11.3 input-layer parser + v0.11.4 `${CLAUDE_PLUGIN_ROOT}` path. **Known residuals (v0.11.8+):** LLM-class semantic similarity, speculative tense, multi-paragraph quote spans, Cherokee homoglyphs. See `docs/archive/stop-hook-postmortem.md` + `docs/archive/defense-mechanisms-detail.md` for full pipeline, post-mortem, and detection-layer history.
 
 ### Spec-then-TDD Discipline (advisory — planner-classified)
@@ -141,8 +142,7 @@ Canonical runtime behavior, result schema, downgrade/gate handling, and PostTool
 **What it does NOT catch:** Splitter misclassification and adversarial evidence fabrication remain advisory residuals; runtime evidence mismatches can fail only where PostToolUse evidence exists.
 
 ### using-superpowers boundary (v0.11.1) — canonical declaration
-
-**Single source of truth (v0.17.0 / S04 hoist).** Athanor's **Thin Leader** + **planner-classified discipline** applies across the 11 native Thin Leader skills (assess, analyze, debug, discuss, lfg, lfg-goal, plan, prompt-gen, review, setup, work). `superpowers:using-superpowers` is loaded at SessionStart via the Claude Code platform's system reminder channel (NOT via athanor's `hooks.json`). Its "ABSOLUTELY MUST invoke before response" / "1% chance → MUST use it" pressure is **advisory here** in native skill contexts — discovery resolves through **leader dispatch**, not pre-response invocation check. Carve-out: `scope-drift` and `verification-before-completion` keep their own vendored-content voice; `ce-test-browser` is non-Thin-Leader so the boundary is irrelevant. **Honesty label: advisory** — no runtime gate ships; matches the status-table row above. Regression lock: `tests/test_regression_v011_1_using_superpowers_boundary.py`. Each native skill carries a 2-line pointer (heading `### using-superpowers boundary` + 1-line "See CLAUDE.md …") rather than restating this prose. Concept adopted from superpowers v5.1.0 `sp-using-superpowers` (MIT, Jesse Vincent).
+**Single source of truth (v0.17.0 / S04 hoist).** Athanor's **Thin Leader** + **planner-classified discipline** applies across the 13 native Thin Leader skills (assess, analyze, debug, deep-plan, discuss, lfg, lfg-goal, lite-plan, plan, prompt-gen, review, setup, work). `superpowers:using-superpowers` is a Claude Code platform mechanism surfaced in SessionStart context, not Athanor hooks. Its mandatory tone is **advisory here**: discovery resolves through **leader dispatch**, not pre-response invocation. Carve-out: `scope-drift`, `verification-before-completion`, and `ce-test-browser`. **Honesty label: advisory**; no runtime gate ships. Regression lock: `tests/test_regression_v011_1_using_superpowers_boundary.py`. Each native skill carries a 2-line pointer instead of restating this prose. Concept adopted from superpowers v5.1.0 `sp-using-superpowers` (MIT, Jesse Vincent).
 
 ## Concept Absorption Surface (post-v0.12.0)
 
@@ -152,7 +152,7 @@ Previously titled §"Vendored Surface — Identity Guard Layer" through v0.10.0 
 
 Four athanor identity commitments survive intact, upheld by native skill prose + regression locks:
 1. **Thin Leader contract.** Leader never does implementation work directly.
-2. **Cross-model adversarial planning.** `/athanor:plan` via `--depth=` tier dispatch (deep = Planner A + Planner B Codex cross-planning + synthesis Critic; standard default = A + Codex review + refinement Critic; lite = A only).
+2. **Cross-model adversarial planning.** `/athanor:plan` via `--depth=` tier dispatch, with `/athanor:deep-plan` and `/athanor:lite-plan` as thin wrappers (deep = Planner A + Planner B Codex cross-planning + synthesis Critic; standard default = A + Codex review + refinement Critic; lite = A only).
 3. **Spec-then-TDD discipline.** `/athanor:work` Splitter `execution_note` + conjunction-of-three Phase 3 gate.
 4. **Stop hook runtime gate.** `scripts/hooks/stop_verify_claims.py` fires on every Stop event (v0.10.0 vendor-aware whitelist scope; D11 preserved as general defensive coverage).
 
