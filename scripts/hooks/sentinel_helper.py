@@ -69,7 +69,15 @@ def emit() -> int:
     # the same .strip() before hashing so both sides agree on the canonical
     # form. Content forgery still raises hash mismatch — whitespace is not
     # a security boundary. Companion-fix to v0.11.3/4/5 runtime+doc arc.
-    body_hash = hashlib.sha256(body.strip().encode("utf-8")).hexdigest()
+    # errors="surrogatepass": a lone surrogate (e.g. PowerShell mangling an
+    # em-dash at the shell→python pipe boundary) would otherwise raise
+    # UnicodeEncodeError here and crash emit. The validator side
+    # (stop_verify_claims.py validate_emission_sentinel) encodes the SAME
+    # canonical body with the SAME handler, so both hashes agree on identical
+    # input.
+    body_hash = hashlib.sha256(
+        body.strip().encode("utf-8", errors="surrogatepass")
+    ).hexdigest()
     if not hook_state.write_nonce_state(ACTIVE_SESSION, nonce, body_hash):
         _stderr("could not write nonce state — sentinel will fail validation")
         return 1

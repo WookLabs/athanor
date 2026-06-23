@@ -315,12 +315,43 @@ def test_unknown_profile_falls_back_to_standard(tmp_path):
     )
 
 
-def test_missing_athanor_json_defaults_to_standard(tmp_path):
-    """No athanor.json in tree → defaults to standard."""
+def test_missing_athanor_json_fails_open_optin_gate(tmp_path):
+    """Opt-in gate (fix/stop-hook-optin-deadlock): a repo with NO athanor.json
+    has NOT opted into the runtime gate, so the Stop hook must fail-open
+    (exit 0) on a material claim rather than block.
+
+    UPDATED from `test_missing_athanor_json_defaults_to_standard` (which
+    asserted exit 2). That prior assertion encoded the deadlock bug: with no
+    athanor.json the gate fired (exit 2) but was UNSATISFIABLE, because the
+    only release path (emit a valid v=2 sentinel) routes through the same
+    opt-in-gated state machinery (get_state_dir → _athanor_opt_in), which
+    no-ops without athanor.json. The fix exits 0 when config_path is None.
+    A `.git` dir bounds the walk-up so an ancestor athanor.json above the
+    pytest tmp dir cannot leak in.
+    """
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
+    (empty_dir / ".git").mkdir()  # bound config walk-up at this dir
     rc, _, _ = _run({"last_assistant_message": "tests pass"}, cwd=str(empty_dir))
-    assert rc == 2
+    assert rc == 0, (
+        "no athanor.json (not opted in) → gate must fail-open (exit 0); the "
+        f"gate would otherwise be an unsatisfiable deadlock. got {rc}"
+    )
+
+
+def test_athanor_json_present_engages_gate_from_subdir(tmp_path):
+    """Companion to the opt-in-gate test above: the positive control. With an
+    athanor.json present at the project root (profile standard), the gate
+    DOES engage (exit 2) on a material claim — proving the fix gates on
+    opt-in presence, not on disabling enforcement wholesale."""
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / ".git").mkdir()
+    (proj / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "standard"}}), encoding="utf-8"
+    )
+    rc, _, _ = _run({"last_assistant_message": "tests pass"}, cwd=str(proj))
+    assert rc == 2, f"opted-in repo (profile standard) must still block; got {rc}"
 
 
 # --- v0.7.9 U4: config resolution priority ($CLAUDE_PROJECT_DIR, git-root, walk-stops-at-git)
@@ -353,10 +384,22 @@ def test_claude_project_dir_env_var_honored(tmp_path):
 def test_parent_dir_hijack_blocked_by_git_boundary(tmp_path):
     """v0.7.9 closes PR #16 sec-002: ancestor athanor.json with profile=off
     must NOT silently disable the gate when called from inside a git repo
-    whose root has no athanor.json. Walk-up stops at .git boundary."""
+    whose root has its OWN athanor.json. Walk-up stops at .git boundary.
+
+    UPDATED for the opt-in gate (fix/stop-hook-optin-deadlock): the original
+    test gave the repo root NO athanor.json and asserted exit 2 (gate stays
+    active = hijack blocked). Under the opt-in gate, a repo with no athanor.json
+    fails open (exit 0) — which would mask the hijack guard (exit 0 for the
+    WRONG reason: not opted in, vs. correctly ignoring the hostile ancestor).
+    To keep the security assertion meaningful, the repo root now carries its
+    own profile=standard athanor.json: opt-in is satisfied, so the ONLY way
+    the gate could fail to fire is if the .git boundary were crossed and the
+    hostile ancestor's profile=off honored. Exit 2 therefore still proves the
+    hijack guard holds.
+    """
     # Set up: /tmp/X/athanor.json (profile=off) is a hostile ancestor.
-    # /tmp/X/myrepo/ is a git repo with no athanor.json.
-    # Run from /tmp/X/myrepo/subdir/ — the hostile athanor.json must NOT apply.
+    # /tmp/X/myrepo/ is a git repo with its OWN athanor.json (profile=standard).
+    # Run from /tmp/X/myrepo/subdir/ — the hostile ancestor must NOT apply.
     ancestor = tmp_path / "hostile_ancestor"
     ancestor.mkdir()
     (ancestor / "athanor.json").write_text(
@@ -365,6 +408,9 @@ def test_parent_dir_hijack_blocked_by_git_boundary(tmp_path):
     repo = ancestor / "myrepo"
     repo.mkdir()
     (repo / ".git").mkdir()  # simulate git repo (just need the dir to exist)
+    (repo / "athanor.json").write_text(
+        json.dumps({"hooks": {"profile": "standard"}}), encoding="utf-8"
+    )
     subdir = repo / "subdir"
     subdir.mkdir()
     rc, _, _ = _run({"last_assistant_message": "tests pass"}, cwd=str(subdir))
