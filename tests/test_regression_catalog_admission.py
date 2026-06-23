@@ -92,6 +92,37 @@ def test_known_low_surface_principle_ref_can_be_adopted() -> None:
     assert principle["runtime_surface_delta"]["cap"] is False
 
 
+def _check_by_id(report: dict, check_id: str) -> dict:
+    for check in report["checks"]:
+        if check["id"] == check_id:
+            return check
+    raise AssertionError(f"missing check {check_id!r}")
+
+
+def test_absent_ref_root_is_vacuously_clean_not_fail(tmp_path: Path) -> None:
+    # ref/ is gitignored (local 346-repo corpus, never committed), so on every
+    # clean checkout / CI run it is absent. An absent ref root means "0 refs to
+    # admit" -> vacuously clean, NOT a policy violation. Point the gate at a
+    # nonexistent ref root to reproduce the CI condition.
+    missing_ref_root = tmp_path / "ref-does-not-exist"
+    assert not missing_ref_root.exists()
+
+    proc = _run_cli("--ref-root", str(missing_ref_root), "--json")
+
+    assert proc.returncode == 0, proc.stderr
+    report = json.loads(proc.stdout)
+    assert report["status"] != "fail"
+    assert report["status"] in {"pass", "warn"}
+    assert report["summary"]["local_refs"] == 0
+    assert report["summary"]["entries"] == 0
+    assert report["summary"]["failures"] == 0
+    # The existence check must not be fatal when ref/ is absent.
+    ref_root_check = _check_by_id(report, "catalog.ref_root_exists")
+    assert ref_root_check["status"] != "fail"
+    # Real fail-loud checks stay intact.
+    assert _check_by_id(report, "catalog.irreversible_actions_zero")["status"] == "pass"
+
+
 def test_runtime_surface_growth_without_evidence_is_not_adopted(tmp_path: Path) -> None:
     ref_root = tmp_path / "ref"
     candidate = ref_root / "surface-heavy"

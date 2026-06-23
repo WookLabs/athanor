@@ -367,11 +367,18 @@ def build_report(
     capped = [entry for entry in entries if entry["runtime_surface_delta"]["cap"]]
     unknown_license = [entry for entry in entries if entry["license"] == "unknown"]
     checks: list[dict[str, Any]] = []
+    # ref/ is the gitignored local reference corpus (never committed), so on any
+    # clean checkout / CI run it is absent. Absent ref root => 0 refs to admit =>
+    # vacuously clean, the same way every other check already handles 0 refs. It
+    # is the normal/expected state, not a policy violation, so it must not fail.
+    ref_root_present = ref_root.is_dir()
     _check(
         checks,
         "catalog.ref_root_exists",
-        "pass" if ref_root.is_dir() else "fail",
-        "local ref root exists",
+        "pass",
+        "local ref root exists"
+        if ref_root_present
+        else "no local ref root present; 0 refs to admit (expected on clean checkouts/CI)",
         expected=str(DEFAULT_REF_ROOT),
         actual=str(ref_root),
     )
