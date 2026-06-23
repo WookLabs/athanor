@@ -27,7 +27,52 @@ State files follow `schemas/durable-loop-state.schema.json` and live at:
 
 Evidence summaries follow `schemas/durable-loop-evidence.schema.json`. They are
 intentionally narrow: eval status, receipt validator status, Tier 1/Tier 2/Tier
-3 signals, progress status, and artifact references.
+3 signals, progress status, optional score-target policy, optional structured
+assessment evidence, and artifact references.
+
+When `score_target` is absent, the controller uses the legacy durable resume
+router. When `score_target` is present, `/athanor:lfg-goal` uses the adaptive
+controller model:
+
+- `work` remains the task/subtask execution engine inside a cycle.
+- `lfg` remains one delivery loop.
+- `assess` is the quality and goal-fit evaluation gate.
+- `lfg-goal` is the adaptive goal controller that chooses the next sub-loop
+  from receipt and assessment evidence.
+
+The adaptive controller emits machine-readable actions:
+
+- `run_baseline_assess` before the first score-target delivery loop when no
+  baseline assessment packet exists.
+- `run_delta_assess` after a valid cycle receipt when no delta assessment packet
+  exists.
+- `run_lfg_cycle` when the latest assessment is below target and the loop should
+  run another delivery/fix cycle. The decision evidence carries
+  `target_dimensions` and `priority_plan_items`.
+- `prompt_tier3_user` when final assessment evidence meets the score target and
+  completion gates have passed.
+- `run_scope_drift`, `require_receipt_validation`,
+  `require_assessment_evidence`, `stop_no_progress`, and
+  `stop_max_iterations` when the controller cannot honestly advance.
+
+Assessment packets are fail-loud: malformed score fields, missing dimension
+data, non-boolean target flags, or contradictory `target_met` claims are not
+treated as success. The controller derives the actual minimum dimension score
+from `assessment.dimensions[*].score` and blocks if it disagrees with the packet
+field `assessment.min_dimension_score`. A final assessment's `target_met` flag is
+checked both ways: `true` must also meet `score_target.overall_score`,
+`score_target.min_dimension_score`, dimension floors, and no-regression
+requirements before the controller can emit `prompt_tier3_user`; `false` is also
+blocked when those computed requirements are satisfied.
+
+Current evidence wins over stale state. If `evidence.validator_status` is
+`invalid_steps_present`, the controller blocks even when `state.json` still says
+`last_validator_status: all_valid`. If `eval_status` is `fail`, the controller
+emits `block_failed_eval` instead of continuing to tier checks or another cycle.
+
+The max-iteration cap is enforced when the controller would start another
+delivery/fix loop. It does not block `prompt_tier3_user` for a valid final
+assessment on the last allowed cycle.
 
 Run-log records follow `schemas/loop-run-log-record.schema.json` and live at
 the `loop_run_log` path in `state.json`, defaulting to

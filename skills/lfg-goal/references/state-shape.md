@@ -54,6 +54,39 @@ not folded into `state.json`. Use `scripts/loops/loop_run_log.py inspect` to
 check lock status, budget warnings, and the min-attempt gate before starting or
 finishing a cycle.
 
+## Controller evidence packet
+
+The durable controller reads the state above plus a separate evidence packet
+validated by `schemas/durable-loop-evidence.schema.json`.
+
+Score-target evidence adds two optional objects:
+
+- `score_target` — target policy with `overall_score`,
+  `min_dimension_score`, and `completion_gates_required`.
+- `assessment` — structured `/athanor:assess` evidence with
+  `kind: baseline | delta | final`, `report_path`, `overall_score`,
+  `min_dimension_score`, `target_met`, `priority_plan_items`, and per-dimension
+  `score`, `target`, `floor`, `target_met`, and `regressed` fields.
+
+With `score_target` present, machine-readable controller actions replace ad hoc
+leader branching:
+
+- `bootstrapping` + missing baseline assessment → `run_baseline_assess`.
+- valid `cycle_n_complete` receipt + missing assessment → `run_delta_assess`.
+- below-target delta/final assessment → `run_lfg_cycle`, carrying target
+  dimensions and Priority Plan items into the next cycle.
+- final assessment target met + Tier 1/Tier 2 completion gates passed →
+  `prompt_tier3_user`.
+- invalid receipt, invalid assessment shape, no-progress, or max-iteration
+  conditions surface as explicit block/stop decisions, not silent success.
+
+The controller validates `target_met` against the computed score target in both
+directions: `true` with failing score/floor/regression evidence blocks Tier 3
+prompting, and `false` with passing score/floor/regression evidence blocks
+another delivery loop. It also derives the actual minimum dimension score from
+`assessment.dimensions[*].score` and treats disagreement with
+`assessment.min_dimension_score` as contradictory assessment evidence.
+
 ## Resume semantics
 
 On `/athanor:lfg-goal` re-invocation, the leader reads `state.json` and routes based on both `cycle_state` (macro) and `cycle_phase` (within-cycle granularity).
