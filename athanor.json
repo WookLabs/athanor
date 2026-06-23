@@ -28,6 +28,9 @@
   "triggers": {
     "language": "both"
   },
+  "output": {
+    "language": "ko"
+  },
   "hooks": {
     "profile": "standard",
     "stopLoopThreshold": 3,

@@ -65,3 +65,55 @@ def test_schema_accepts_safety_corpus_mode():
     instance = _load_json(ROOT_CONFIG)
     instance["hooks"]["safetyCorpus"] = {"mode": "observe"}
     jsonschema.validate(instance=instance, schema=schema)
+
+
+def _validate_instance(instance) -> None:
+    """Validate an in-memory instance dict against the shipped schema."""
+    schema = _load_json(SCHEMA_PATH)
+    jsonschema.validate(instance=instance, schema=schema)
+
+
+def _minimal_config_with_output(language: str) -> dict:
+    """A minimal valid config carrying only the bits the output enum needs.
+
+    ``version`` is the sole top-level requirement; ``output.language`` is the
+    field under test. Keeping it minimal isolates the enum constraint from
+    unrelated schema rules.
+    """
+    return {"version": "1.0", "output": {"language": language}}
+
+
+def test_output_language_enum_accepts_ko_and_en():
+    """output.language accepts the two supported values ko and en.
+
+    Against the current schema (which lacks an ``output`` property block) the
+    root's permissive ``additionalProperties: true`` would let any shape pass —
+    but once the ``output`` object is added with ``additionalProperties: false``
+    and an enum, only ko/en validate. This asserts the accept direction.
+    """
+    for language in ("ko", "en"):
+        # Must not raise.
+        _validate_instance(_minimal_config_with_output(language))
+
+
+def test_output_language_enum_rejects_other_values():
+    """output.language enum enforces ko/en only — 'both' must be rejected.
+
+    ``triggers.language`` permits 'both', but ``output.language`` is a distinct
+    axis (best-effort presentation language) that does not. A config carrying
+    ``output: {"language": "both"}`` must raise jsonschema.ValidationError once
+    the strict ``output`` object lands in the schema.
+    """
+    with pytest.raises(jsonschema.ValidationError) as excinfo:
+        _validate_instance(_minimal_config_with_output("both"))
+    msg = str(excinfo.value).lower()
+    assert "both" in msg or "enum" in msg or "language" in msg, (
+        f"validation error should reference the rejected enum value, got: {msg}"
+    )
+
+
+def test_output_object_rejects_unknown_property():
+    """output object is strict (additionalProperties: false) — unknown keys fail."""
+    instance = {"version": "1.0", "output": {"language": "ko", "bogus": True}}
+    with pytest.raises(jsonschema.ValidationError):
+        _validate_instance(instance)

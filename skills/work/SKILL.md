@@ -187,8 +187,7 @@ prompts in `references/multi-status.md`.
 
 ### Step 3: Work Log Finalization
 
-Finalize `.athanor/sessions/{id}/work-log.md` with summary (Total /
-Completed / Failed / Skipped / Blocked counts) + Step 2b timeline.
+Finalize `.athanor/sessions/{id}/work-log.md` with summary (Total / Completed / Failed / Skipped / Blocked counts) + Step 2b timeline.
 
 **v0.16.0 — `blocked_queue` drain.** If non-empty, present external
 blockers list to user (and append `## Blocked Queue` to work-log.md)
@@ -201,8 +200,7 @@ Full prompt in `references/learner-cleaner.md`.
 
 ### Step 5: Cleanup (automatic, after Learner)
 
-Dispatch Cleaner agent (haiku) — memory decay + old-session cleanup. Full
-prompt in `references/learner-cleaner.md`.
+Dispatch Cleaner agent (haiku) — memory decay + old-session cleanup. Full prompt in `references/learner-cleaner.md`.
 
 ### Step 6: Final Summary
 
@@ -212,6 +210,8 @@ Subtasks: {completedCount}/{N} | Failed: {failedCount}
 Learning: {lesson_count} lessons | Cleanup: {promoted} promoted, {deleted} expired
 Session:  .athanor/sessions/{id}/
 ```
+
+**Output language.** 최종 요약·경고 안내문(여기와 Step 2b 사용자 프롬프트)의 prose는 해석된 `output.language`에 맞춘다 (해석: setup SKILL.md §"output.language 해석 (canonical)" 한 줄 포인터; 부재·malformed → `en`). 위 블록 라벨(`Athanor Work Complete:`/`Subtasks:`/`Failed:`/`Learning:`/`Cleanup:`/`Session:`), work-log.md 필드 키, 결과 패킷 토큰·필드 키는 **항상 영어**. 보고 prose는 완료-주장 단정 어조(`완료했습니다`/`통과했습니다`) 대신 사실 서술(`…를 실행했다`)을 쓴다 (stop-hook 오발 회피).
 
 ---
 

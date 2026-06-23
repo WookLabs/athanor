@@ -3,6 +3,20 @@
 Detailed reference for `/athanor:work` Step 2b multi-status branches.
 Cross-linked from `skills/work/SKILL.md` Step 2b.
 
+**Output language (user-facing prompts).** The four user-prompt blocks below
+— needs-context (§needs_context handler), circuit-breaker (§Circuit Breaker
+Check), failure (§If failed but no circuit breaker), and blocked-queue drain
+(§blocked_queue drain) — present explanation/question prose to the user. That
+surrounding prose follows the interpreted `output.language` (interpretation:
+setup SKILL.md §"output.language 해석 (canonical)" one-line pointer; absent /
+malformed → `en`; existing Korean choices like `재시도 / 스킵 / 중단` are kept
+as-is when `output.language=ko`). Status enum values
+(`done`/`failure`/`done_with_concerns`/`needs_context`/`blocked`) and the
+work-log field labels (`Status:`/`Time:`/`Summary:`/`Files:`) stay **English**
+in every rendering. Report prose uses factual narration (`…를 실행했다`) over
+completion-claim assertions (`완료했습니다`/`통과했습니다`) to avoid stop-hook
+misfires.
+
 ## Status Vocabulary (v0.16.0 multi-status)
 
 The executor returns one of five `status` values. Each value is paired with a

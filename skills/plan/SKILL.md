@@ -44,8 +44,7 @@ code, rubric text, and templates live under `skills/plan/references/`:
   2-input deep review-skipped, 2-input standard refinement, pass-through).
 - `references/critic-rubric.md` — v0.8.0 Critic Rubric (Spec-then-TDD
   Readiness, four axes A/B/C/D).
-- `references/presentation.md` — Step 5 presentation template + UNRESOLVED
-  conflict handler.
+- `references/presentation.md` — Step 5 presentation template + UNRESOLVED conflict handler.
 - `references/depth-flag-dispatch.md` — active handler for
   `--depth={standard|deep|lite}` + `--no-review`. `/athanor:deep-plan`
   and `/athanor:lite-plan` are restored thin wrappers that force the
@@ -273,8 +272,11 @@ present the **complete plan** using the template in
 `references/presentation.md` (Goal / Approach / Phase Summary / Scope /
 Phase Detail / Key Decisions / Risks), followed by either the UNRESOLVED
 conflict handler (`AskUserQuestion`) or the no-conflicts confirmation
-prompt (Y 확정 / N 수정 필요). After confirmation, plan.md is as-authored;
-`/athanor:work` consumes the latest plan.md.
+prompt (Y 확정 / N 수정 필요). 제시 텍스트는 해석된 `output.language`(ko→
+한국어 / en→영어; 부재 시 en)에 맞춘다(해석 규칙: skills/setup/SKILL.md §"output.language 해석 (canonical)") — plan.md의 Splitter 구조 토큰(`##
+Subtasks`, `execution_note:` 등)·필드 키는 언어 무관 항상 영어. After
+confirmation, plan.md is as-authored; `/athanor:work` consumes the latest
+plan.md.
 
 ---
 

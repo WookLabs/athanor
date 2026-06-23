@@ -501,6 +501,8 @@ END_RESULT"
 
 After the Critic completes, present the synthesis to the user.
 
+User-facing prose — this synthesis presentation and the clarify-mode Scoping synthesis (Step 2-clarify.4) — follows the resolved `output.language` (ko→한국어 / en→영어; 부재 시 en; resolve per `skills/setup/SKILL.md` §`output.language 해석 (canonical)` just before Present-to-User). Leader-internal dispatch (Researcher / Devil's Advocate / Critic) output templates, the requirements.md ID tokens (R/A/F/AE-ID) and Summary heading, and result-packet field keys stay English regardless — the plan cite-back contract depends on them.
+
 Format the output clearly:
 
 ```
