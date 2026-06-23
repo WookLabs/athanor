@@ -67,6 +67,7 @@ def test_current_repo_reports_dev_only_candidates_without_failing_default() -> N
     candidate_paths = {candidate["path"] for candidate in report["dev_only_candidates"]}
     assert any(path.startswith("tests/") for path in candidate_paths)
     assert any(path.startswith("docs/plans/") for path in candidate_paths)
+    assert not any(path.startswith(".venv/") for path in candidate_paths)
     assert all(
         candidate["recommended_action"] == "exclude-from-ship-profile"
         for candidate in report["dev_only_candidates"]
@@ -121,6 +122,9 @@ def test_build_report_classifies_ship_profile_buckets(tmp_path: Path) -> None:
     (root / "skills" / "work").mkdir(parents=True)
     (root / "tests").mkdir(parents=True)
     (root / ".claude-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+    (root / ".python-version").write_text("3.14\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text("[project]\nname = \"fixture\"\n", encoding="utf-8")
+    (root / "uv.lock").write_text("version = 1\n", encoding="utf-8")
     (root / ".github" / "workflows" / "validate.yml").write_text("name: ci\n", encoding="utf-8")
     (root / "docs" / "plans" / "2026-06-18-plan.md").write_text("plan\n", encoding="utf-8")
     (root / "docs" / "archive" / "STATE-history.md").write_text("history\n", encoding="utf-8")
@@ -132,6 +136,7 @@ def test_build_report_classifies_ship_profile_buckets(tmp_path: Path) -> None:
     buckets = {item["bucket"]: item for item in report["classifications"]}
     assert buckets["runtime"]["files"] == 1
     assert buckets["distribution_metadata"]["files"] == 1
+    assert buckets["development_metadata"]["files"] == 3
     assert buckets["development_ci"]["files"] == 1
     assert buckets["development_history"]["files"] == 2
     assert buckets["tests"]["files"] == 1
@@ -142,6 +147,9 @@ def test_build_report_classifies_ship_profile_buckets(tmp_path: Path) -> None:
         "docs/archive/STATE-history.md",
         "tests/test_work.py",
     }
+    decision_prefixes = {decision["path_prefix"] for decision in report["ship_profile_decisions"]}
+    assert ".venv/" in decision_prefixes
+    assert {".python-version", "pyproject.toml", "uv.lock"} <= decision_prefixes
 
 
 def test_operator_docs_explain_ship_profile_and_read_only_policy() -> None:
@@ -156,3 +164,25 @@ def test_operator_docs_explain_ship_profile_and_read_only_policy() -> None:
         "scripts/gates/package_footprint_policy.py",
     ):
         assert token in body
+
+
+def test_build_report_uses_pruned_walk_instead_of_recursive_rglob(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "README.md").write_text("fixture\n", encoding="utf-8")
+    (root / "ref").mkdir()
+    (root / "ref" / "external.py").write_text("external\n", encoding="utf-8")
+
+    def _raise_on_rglob(self, pattern):  # noqa: ANN001
+        raise AssertionError("package footprint policy must prune excluded dirs before traversal")
+
+    monkeypatch.setattr(Path, "rglob", _raise_on_rglob)
+
+    report = module.build_report(repo_root=root)
+
+    assert report["package"]["file_count"] == 1
+    assert report["ship_profile"]["file_count"] == 1

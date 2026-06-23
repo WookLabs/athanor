@@ -10,6 +10,7 @@ import importlib
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ SCRIPTS_HOOKS = REPO_ROOT / "scripts" / "hooks"
 SNIFTER_SCRIPT = SCRIPTS_HOOKS / "posttool_evidence_sniffer.py"
 HOOKS_JSON = REPO_ROOT / "hooks" / "hooks.json"
 CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "validate-plugin.yml"
+PYPROJECT = REPO_ROOT / "pyproject.toml"
 
 if str(SCRIPTS_HOOKS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_HOOKS))
@@ -167,6 +169,47 @@ def test_pytest_payload_marks_full_suite_scope(sniffer, tmp_path):
     assert record["exit_code"] == 0
 
 
+def test_pytest_without_targets_marks_full_suite_scope(sniffer, tmp_path):
+    root, session_dir = _project_with_session(tmp_path)
+    payload = _bash_payload(
+        "python -m pytest -q",
+        exit_code=0,
+        stdout="1491 passed in 20.00s",
+    )
+
+    exit_code, stderr = sniffer.evaluate_payload(payload, project_root=root)
+
+    assert exit_code == 0
+    assert stderr == ""
+    [record] = _records(session_dir)
+    assert record["test_targets"] == []
+    assert record["primary_target"] is None
+    assert record["scope"] == "full_suite"
+    assert record["exit_code"] == 0
+
+
+def test_env_project_dir_allows_installed_hook_cwd_to_write_evidence(
+    sniffer,
+    monkeypatch,
+    tmp_path,
+):
+    root, session_dir = _project_with_session(tmp_path)
+    outside = tmp_path / "plugin-cache"
+    outside.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
+    monkeypatch.chdir(outside)
+
+    exit_code, stderr = sniffer.evaluate_payload(
+        _bash_payload("pytest tests -q", exit_code=0)
+    )
+
+    assert exit_code == 0
+    assert stderr == ""
+    [record] = _records(session_dir)
+    assert record["session_id"] == session_dir.name
+    assert record["scope"] == "full_suite"
+
+
 def test_pytest_payload_infers_green_exit_code_from_output_when_direct_code_absent(sniffer, tmp_path):
     root, session_dir = _project_with_session(tmp_path)
     payload = _bash_payload(
@@ -278,6 +321,12 @@ def test_capability_probe_reports_posttooluse_evidence_only_supported():
     }
 
 
-def test_ci_installs_yaml_dependency_for_collection():
+def test_ci_uses_locked_uv_environment_with_yaml_dependency():
     body = CI_WORKFLOW.read_text(encoding="utf-8").lower()
-    assert "pyyaml" in body
+    assert "astral-sh/setup-uv" in body
+    assert "uv sync --locked --dev" in body
+    assert "uv run python -m pytest tests/ -v" in body
+
+    pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    dev_dependencies = pyproject["dependency-groups"]["dev"]
+    assert any(item.lower().startswith("pyyaml") for item in dev_dependencies)

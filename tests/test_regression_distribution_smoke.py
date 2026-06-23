@@ -7,6 +7,7 @@ files lack a ``name:`` field.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -35,6 +36,14 @@ def _run_report(*args: str, env: dict[str, str] | None = None) -> subprocess.Com
         check=False,
         env=env,
     )
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("distribution_smoke", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _minimal_plugin(tmp_path: Path) -> Path:
@@ -75,7 +84,7 @@ def _minimal_plugin(tmp_path: Path) -> Path:
 
 
 def test_distribution_smoke_report_passes_on_current_repo() -> None:
-    result = _run_report()
+    result = _run_report("--skip-claude")
 
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(result.stdout)
@@ -86,10 +95,15 @@ def test_distribution_smoke_report_passes_on_current_repo() -> None:
     assert report["component_inventory"]["expected_agents"] == EXPECTED_AGENTS
     assert report["component_inventory"]["agent_count"] == 4
     assert report["cost_surface"]["always_on_tokens"] <= 2200
+    assert ".venv" in report["package"]["excluded_dirs"]
+    assert not any(
+        item["path"].startswith(".venv/")
+        for item in report["package"]["largest_files"]
+    )
 
 
 def test_distribution_smoke_schema_validates_report() -> None:
-    result = _run_report()
+    result = _run_report("--skip-claude")
 
     assert result.returncode == 0, result.stdout + result.stderr
     jsonschema.validate(
@@ -120,3 +134,25 @@ def test_distribution_smoke_skips_claude_when_requested() -> None:
     report = json.loads(result.stdout)
     assert report["claude_cli"]["status"] == "skipped"
     assert report["component_inventory"]["source"] == "manifest"
+
+
+def test_package_footprint_uses_pruned_walk_instead_of_recursive_rglob(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "README.md").write_text("fixture", encoding="utf-8")
+    (root / "ref").mkdir()
+    (root / "ref" / "external.py").write_text("external\n", encoding="utf-8")
+
+    def _raise_on_rglob(self, pattern):  # noqa: ANN001
+        raise AssertionError("package footprint must prune excluded dirs before traversal")
+
+    monkeypatch.setattr(Path, "rglob", _raise_on_rglob)
+
+    report = module._package_footprint(root)
+
+    assert report["file_count"] == 1
+    assert report["largest_files"] == [{"path": "README.md", "bytes": 7}]

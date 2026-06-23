@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "gates" / "maintenance_profile.py"
@@ -36,6 +37,17 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+@pytest.fixture(scope="module")
+def current_repo_profile() -> dict:
+    module = _load_module()
+    return module.build_report(
+        repo_root=REPO_ROOT,
+        skip_claude=True,
+        samples=1,
+        ref_warn_days=99999,
+    )
+
+
 def test_cli_emits_schema_valid_read_only_profile() -> None:
     proc = _run_cli(
         "--skip-claude",
@@ -55,17 +67,8 @@ def test_cli_emits_schema_valid_read_only_profile() -> None:
     assert report["summary"]["irreversible_actions"] == 0
 
 
-def test_profile_contains_expected_read_only_steps() -> None:
-    module = _load_module()
-
-    report = module.build_report(
-        repo_root=REPO_ROOT,
-        skip_claude=True,
-        samples=1,
-        ref_warn_days=99999,
-    )
-
-    step_ids = {step["id"] for step in report["steps"]}
+def test_profile_contains_expected_read_only_steps(current_repo_profile: dict) -> None:
+    step_ids = {step["id"] for step in current_repo_profile["steps"]}
     assert step_ids >= {
         "entropy-cleanup",
         "distribution-smoke",
@@ -73,24 +76,15 @@ def test_profile_contains_expected_read_only_steps() -> None:
         "native-runtime-probe",
         "harness-decision-ledger",
     }
-    assert all(step["read_only"] is True for step in report["steps"])
-    assert report["summary"]["irreversible_actions"] == 0
+    assert all(step["read_only"] is True for step in current_repo_profile["steps"])
+    assert current_repo_profile["summary"]["irreversible_actions"] == 0
 
 
-def test_profile_exposes_loop_prompt_and_ci_command() -> None:
-    module = _load_module()
-
-    report = module.build_report(
-        repo_root=REPO_ROOT,
-        skip_claude=True,
-        samples=1,
-        ref_warn_days=99999,
-    )
-
-    assert "python scripts/gates/maintenance_profile.py" in report["operator"]["ci_command"]
-    assert "/loop" in report["operator"]["loop_prompt"]
-    assert "--skip-claude" in report["operator"]["ci_command"]
-    assert "no irreversible actions" in report["operator"]["loop_prompt"].lower()
+def test_profile_exposes_loop_prompt_and_ci_command(current_repo_profile: dict) -> None:
+    assert "python scripts/gates/maintenance_profile.py" in current_repo_profile["operator"]["ci_command"]
+    assert "/loop" in current_repo_profile["operator"]["loop_prompt"]
+    assert "--skip-claude" in current_repo_profile["operator"]["ci_command"]
+    assert "no irreversible actions" in current_repo_profile["operator"]["loop_prompt"].lower()
 
 
 def test_invalid_samples_exits_two() -> None:

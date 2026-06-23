@@ -20,6 +20,10 @@ gate. Use `catalog_admission.py` as the reference radar evidence gate for
 
 | Path prefix | Ship-profile action | Repo-local action | Deletion policy | Reason |
 |---|---|---|---|---|
+| `.venv/` | exclude from default ship profile | keep local only | do not commit | uv-managed virtual environments are reproducible from `uv.lock` and must not inflate plugin content. |
+| `.python-version` | exclude from default ship profile | keep repo-local | do not delete | Local Python version pins reproduce maintainer tooling and are not runtime plugin content. |
+| `pyproject.toml` | exclude from default ship profile | keep repo-local | do not delete | Python project metadata supports CI and tests, but Claude/Codex plugin loading does not require it. |
+| `uv.lock` | exclude from default ship profile | keep repo-local | do not delete | The lockfile reproduces development dependencies and should not inflate the default runtime package. |
 | `docs/plans/` | exclude from default ship profile | keep repo-local | do not delete | Implementation plans are execution history and review evidence. |
 | `docs/archive/` | exclude from default ship profile | keep repo-local | do not delete | Archived docs are historical audit material, not runtime surface. |
 | `tests/` | exclude from default ship profile | keep repo-local | do not delete | Tests run in CI and local verification, but users do not need them in the runtime package. |

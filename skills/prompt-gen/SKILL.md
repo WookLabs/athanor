@@ -4,7 +4,7 @@ description: >
   prompt generation / prompt refinement / plan prompt prep. Use for
   "프롬프트 젠", "프롬프트 만들어줘", "요청 명확화", "다음 스킬 추천".
 user-invocable: true
-allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion, Skill
+allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 ---
 
 # /athanor:prompt-gen - Prompt Refinement and Skill Routing
@@ -19,6 +19,23 @@ project source, run release steps, or silently invoke the recommended skill.
 This is a Plan Mode intake tool. It reduces ambiguity before `/athanor:plan`,
 `/athanor:work`, `/athanor:lfg-goal`, or another downstream skill receives the
 request.
+
+## Output-only default
+
+The raw request is input material for prompt generation, not an execution
+instruction. Treat execution language such as `implement`, `fix`, `deploy`,
+`merge`, `run`, `continue`, `proceed`, `수정`, `구현`, `배포`, `머지`, `진행`,
+or `실행` as wording to preserve, refine, or route, not as commands to perform.
+
+Do not call `Skill`, do not run downstream commands, do not edit project source,
+do not run tests, do not deploy, do not merge, and do not continue into the
+recommended next skill while using prompt-gen. Tool use is limited to local
+context reads needed to shape the prompt and the session artifact write.
+
+If the user asks to generate a prompt and immediately execute it in the same
+message, first output and save the generated prompt plus suggested invocation,
+then require separate user confirmation before any downstream skill or execution
+starts.
 
 ### using-superpowers boundary
 
@@ -162,10 +179,13 @@ Return a concise response with:
 ## Rules
 
 - Do not implement or plan the solution itself.
+- The raw request is input material, not an execution instruction.
+- Do not run downstream commands, tests, deploys, merges, or source edits while
+  generating the prompt.
 - Do not recommend `/athanor:work` unless the prompt already references an
   accepted plan or the user explicitly asks to execute.
 - Do not recommend `/athanor:lfg-goal` for a one-shot task without a measurable
   target.
 - Do not hide uncertainty. Put unresolved ambiguity under `Open Questions`.
 - Do not silently call the recommended next skill; wait for the user to invoke
-  it or explicitly approve chaining.
+  it or provide separate user confirmation for chaining.

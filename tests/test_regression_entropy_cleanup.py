@@ -1,6 +1,8 @@
 """Regression tests for the P11 entropy cleanup report gate."""
 from __future__ import annotations
 
+import datetime as dt
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -16,6 +18,14 @@ SCHEMA = REPO_ROOT / "schemas" / "entropy-cleanup-report.schema.json"
 
 def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("entropy_cleanup", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _run_cli(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -151,3 +161,35 @@ def test_runtime_conformance_failure_is_reported_as_mirror_failure(tmp_path: Pat
     check = _check_by_id(report, "mirrors.runtime_conformance")
     assert check["status"] == "fail"
     assert "codex.skills" in check["details"]["failed_checks"]
+
+
+def test_ref_scan_uses_single_git_probe_per_ref(monkeypatch, tmp_path: Path) -> None:
+    module = _load_module()
+    repo = tmp_path / "repo"
+    ref = repo / "ref"
+    child = ref / "candidate"
+    child.mkdir(parents=True)
+    calls: list[tuple[Path, tuple[str, ...]]] = []
+
+    def _fake_git_value(path: Path, *args: str) -> str:
+        calls.append((path, args))
+        assert path == child
+        assert args == ("show", "-s", "--format=%cI%x00%h%x00%D", "HEAD")
+        return "2026-06-01T00:00:00+00:00\x00abc1234\x00HEAD -> main, origin/main"
+
+    monkeypatch.setattr(module, "_git_value", _fake_git_value)
+    checks: list[dict] = []
+    actions: list[dict] = []
+
+    summary = module._scan_refs(
+        repo_root=repo,
+        today=dt.date(2026, 6, 22),
+        ref_warn_days=99999,
+        checks=checks,
+        actions=actions,
+    )
+
+    assert len(calls) == 1
+    assert summary["ref_count"] == 1
+    assert summary["refs"][0]["branch"] == "main"
+    assert summary["refs"][0]["sha"] == "abc1234"

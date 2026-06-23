@@ -16,10 +16,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-      - name: Install Python test dependencies
+          python-version-file: .python-version
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+      - name: Install Python test environment
         shell: bash
-        run: pip install pytest jsonschema pyyaml
+        run: uv sync --locked --dev
       - name: JSON syntax check
         shell: bash
         run: |
@@ -42,102 +46,102 @@ jobs:
         # (a) evidence-ready and (d) contract-ledger need .athanor/ session
         # artifacts which are gitignored and absent in CI fresh checkouts.
         shell: bash
-        run: python scripts/check_release_ready.py --ci
+        run: uv run python scripts/check_release_ready.py --ci
       - name: Hook payload replay gate
         shell: bash
-        run: python scripts/gates/replay_hook_fixtures.py --fixture-root tests/fixtures/hooks --json
+        run: uv run python scripts/gates/replay_hook_fixtures.py --fixture-root tests/fixtures/hooks --json
       - name: Hook performance budget gate
         shell: bash
-        run: python scripts/gates/check_hook_performance_budget.py --json
+        run: uv run python scripts/gates/check_hook_performance_budget.py --json
       - name: Workflow scenario eval gate
         shell: bash
-        run: python scripts/evals/run_workflow_scenarios.py --scenario-root tests/fixtures/workflow_evals --json
+        run: uv run python scripts/evals/run_workflow_scenarios.py --scenario-root tests/fixtures/workflow_evals --json
       - name: Workflow episode package gate
         shell: bash
         run: |
-          python scripts/evals/package_workflow_episode.py --scenario-root tests/fixtures/workflow_evals --output-dir .athanor/episodes/workflow-evals --json
-          python scripts/evals/run_workflow_scenarios.py --episode-root .athanor/episodes/workflow-evals --json
+          uv run python scripts/evals/package_workflow_episode.py --scenario-root tests/fixtures/workflow_evals --output-dir .athanor/episodes/workflow-evals --json
+          uv run python scripts/evals/run_workflow_scenarios.py --episode-root .athanor/episodes/workflow-evals --json
       - name: External eval adapter gate
         shell: bash
-        run: python scripts/evals/export_external_eval_adapter.py --episode-root .athanor/episodes/workflow-evals --output-dir .athanor/external-evals/workflow-evals --json
+        run: uv run python scripts/evals/export_external_eval_adapter.py --episode-root .athanor/episodes/workflow-evals --output-dir .athanor/external-evals/workflow-evals --json
       - name: Distribution smoke gate
         shell: bash
-        run: python scripts/gates/distribution_smoke.py --json
+        run: uv run python scripts/gates/distribution_smoke.py --json
       - name: Package footprint policy gate
         shell: bash
-        run: python scripts/gates/package_footprint_policy.py --json
+        run: uv run python scripts/gates/package_footprint_policy.py --json
       - name: Package knowledge index gate
         shell: bash
-        run: python scripts/gates/package_knowledge_index.py --json
+        run: uv run python scripts/gates/package_knowledge_index.py --json
       - name: Memory index gate
         shell: bash
-        run: python scripts/gates/memory_index.py --fixture-root tests/fixtures/memory_index --json
+        run: uv run python scripts/gates/memory_index.py --fixture-root tests/fixtures/memory_index --json
       - name: Memory retrieval eval gate
         shell: bash
-        run: python scripts/gates/memory_retrieval_eval.py --fixture-root tests/fixtures/memory_index --queries tests/fixtures/memory_retrieval_eval/queries.json --json
+        run: uv run python scripts/gates/memory_retrieval_eval.py --fixture-root tests/fixtures/memory_index --queries tests/fixtures/memory_retrieval_eval/queries.json --json
       - name: Workflow trace query gate
         shell: bash
-        run: python scripts/evals/workflow_trace_query.py --trace-path tests/fixtures/workflow_trace_query/base.jsonl --mode stats --json
+        run: uv run python scripts/evals/workflow_trace_query.py --trace-path tests/fixtures/workflow_trace_query/base.jsonl --mode stats --json
       - name: Codex mirror parity gate
         shell: bash
-        run: python scripts/gates/codex_mirror_parity.py --json
+        run: uv run python scripts/gates/codex_mirror_parity.py --json
       - name: Work-item stage transition gate
         shell: bash
-        run: python scripts/gates/work_item_stage.py --fixture-root tests/fixtures/work_items/valid --json
+        run: uv run python scripts/gates/work_item_stage.py --fixture-root tests/fixtures/work_items/valid --json
       - name: Agent topology gate
         shell: bash
-        run: python scripts/gates/agent_topology.py --json
+        run: uv run python scripts/gates/agent_topology.py --json
       - name: Organization operating model gate
         shell: bash
-        run: python scripts/gates/organization_operating_model.py --json
+        run: uv run python scripts/gates/organization_operating_model.py --json
       - name: Organization work-item registry gate
         shell: bash
-        run: python scripts/gates/organization_work_item_registry.py --json
+        run: uv run python scripts/gates/organization_work_item_registry.py --json
       - name: Organization stage receipt gate
         shell: bash
-        run: python scripts/gates/organization_stage_receipt.py --json
+        run: uv run python scripts/gates/organization_stage_receipt.py --json
       - name: Policy promotion ledger gate
         shell: bash
-        run: python scripts/gates/policy_promotion_ledger.py --json
+        run: uv run python scripts/gates/policy_promotion_ledger.py --json
       - name: Organization score gate
         shell: bash
-        run: python scripts/gates/organization_score.py --json
+        run: uv run python scripts/gates/organization_score.py --json
       - name: Trace-memory quality gate
         shell: bash
-        run: python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json
+        run: uv run python scripts/gates/trace_memory_quality.py --lesson-root tests/fixtures/trace_memory_quality/lessons --comparison-file tests/fixtures/trace_memory_quality/comparisons.json --today 2026-06-17 --json
       - name: Harness decision ledger gate
         shell: bash
-        run: python scripts/gates/harness_decision_ledger.py --json
+        run: uv run python scripts/gates/harness_decision_ledger.py --json
       - name: Durable loop fixture gate
         shell: bash
-        run: python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
+        run: uv run python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
       - name: Cross-runtime conformance gate
         shell: bash
-        run: python scripts/gates/runtime_conformance.py --json
+        run: uv run python scripts/gates/runtime_conformance.py --json
       - name: Observability trend snapshot gate
         shell: bash
-        run: python scripts/observability/collect_trend_snapshot.py --json --samples 1
+        run: uv run python scripts/observability/collect_trend_snapshot.py --json --samples 1
       - name: Entropy cleanup report gate
         shell: bash
-        run: python scripts/gates/entropy_cleanup.py --json
+        run: uv run python scripts/gates/entropy_cleanup.py --json
       - name: Runtime execution adapter fixture gate
         shell: bash
-        run: python scripts/gates/runtime_execution_adapter.py --fixture-root tests/fixtures/runtime_execution --json
+        run: uv run python scripts/gates/runtime_execution_adapter.py --fixture-root tests/fixtures/runtime_execution --json
       - name: Native runtime probe gate
         shell: bash
-        run: python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json
+        run: uv run python scripts/gates/native_runtime_probe.py --fixture-root tests/fixtures/native_runtime_probe --json
       - name: Native runtime playbook gate
         shell: bash
-        run: python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json
+        run: uv run python scripts/gates/native_runtime_playbook.py --fixture-root tests/fixtures/native_runtime_probe --json
       - name: Reactive channel fixture gate
         shell: bash
-        run: python scripts/gates/reactive_channel_fixture.py --fixture-root tests/fixtures/reactive_channels --json
+        run: uv run python scripts/gates/reactive_channel_fixture.py --fixture-root tests/fixtures/reactive_channels --json
       - name: Maintenance profile gate
         shell: bash
-        run: python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json
+        run: uv run python scripts/gates/maintenance_profile.py --skip-claude --ref-warn-days 99999 --samples 1 --json
       - name: Hook installer regression gate
         shell: bash
-        run: python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q
+        run: uv run python -m pytest tests/test_regression_hook_install_dry_run.py tests/test_regression_hook_installer_trust.py tests/test_regression_hook_installer_apply.py tests/test_regression_hook_installer_remove.py -q
       - name: Regression fixtures (pytest)
         shell: bash
-        run: pytest tests/ -v
+        run: uv run python -m pytest tests/ -v

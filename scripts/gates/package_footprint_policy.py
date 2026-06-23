@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.gates.distribution_smoke import _package_footprint  # noqa: E402
+from scripts.gates.distribution_smoke import _package_file_paths, _package_footprint  # noqa: E402
 
 DEFAULT_MAX_FILES = 600
 DEFAULT_MAX_TOTAL_BYTES = 4_750_000
@@ -21,6 +21,7 @@ DEFAULT_MAX_LARGE_FILE_BYTES = 250_000
 DEFAULT_CANDIDATE_LIMIT = 20
 
 DEV_ONLY_PREFIXES: tuple[tuple[str, str], ...] = (
+    (".venv/", "uv-managed local virtual environments are development-only"),
     ("tests/", "regression tests are development-only for the default ship profile"),
     ("docs/plans/", "historical implementation plans are development history"),
     ("docs/archive/", "archived historical docs are development history"),
@@ -28,8 +29,17 @@ DEV_ONLY_PREFIXES: tuple[tuple[str, str], ...] = (
     ("docs/architecture/", "research and architecture review docs are development history"),
     (".github/", "CI workflows are repository operations, not runtime plugin surface"),
 )
+DEV_ONLY_FILES: tuple[tuple[str, str], ...] = (
+    (".python-version", "local Python version pins are development environment metadata"),
+    ("pyproject.toml", "Python project metadata supports CI and tests, not runtime plugin loading"),
+    ("uv.lock", "uv lockfiles reproduce development dependencies and are not runtime plugin surface"),
+)
 
 SHIP_PROFILE_EXCLUSIONS: tuple[tuple[str, str, str], ...] = (
+    (".venv/", "development_environment", "uv-managed local virtual environments are never shipped plugin content"),
+    (".python-version", "development_metadata", "local Python version pins are not runtime plugin content"),
+    ("pyproject.toml", "development_metadata", "Python project metadata is for repository tooling, not runtime plugin loading"),
+    ("uv.lock", "development_metadata", "uv lockfiles reproduce repository tooling dependencies, not runtime plugin content"),
     ("docs/plans/", "development_history", "implementation plans are repo-local execution history"),
     ("docs/archive/", "development_history", "archived docs are repo-local audit history"),
     ("tests/", "tests", "regression tests are verified in CI but not required at runtime"),
@@ -71,6 +81,8 @@ def _check(
 
 
 def _bucket_for_path(path: str) -> str:
+    if path in {name for name, _reason in DEV_ONLY_FILES}:
+        return "development_metadata"
     if path.startswith("skills/") or path.startswith("agents/") or path.startswith("hooks/"):
         return "runtime"
     if path.startswith(".claude-plugin/") or path in {
@@ -105,15 +117,24 @@ def _bucket_for_path(path: str) -> str:
 
 
 def _candidate_reason(path: str) -> str | None:
+    for exact_path, reason in DEV_ONLY_FILES:
+        if path == exact_path:
+            return reason
     for prefix, reason in DEV_ONLY_PREFIXES:
         if path.startswith(prefix):
             return reason
     return None
 
 
+def _matches_ship_profile_pattern(path: str, pattern: str) -> bool:
+    if pattern.endswith("/"):
+        return path.startswith(pattern)
+    return path == pattern
+
+
 def _ship_profile_exclusion_reason(path: str) -> str | None:
-    for prefix, _bucket, reason in SHIP_PROFILE_EXCLUSIONS:
-        if path.startswith(prefix):
+    for pattern, _bucket, reason in SHIP_PROFILE_EXCLUSIONS:
+        if _matches_ship_profile_pattern(path, pattern):
             return reason
     return None
 
@@ -121,15 +142,10 @@ def _ship_profile_exclusion_reason(path: str) -> str | None:
 def _file_records(repo_root: Path) -> list[dict[str, Any]]:
     footprint = _package_footprint(repo_root)
     records: list[dict[str, Any]] = []
-    # Distribution smoke truncates largest_files, so do a full scan here while
-    # preserving its exclusion policy through _package_footprint.
-    excluded_dirs = set(footprint.get("excluded_dirs", []))
-    for path in repo_root.rglob("*"):
-        rel_parts = path.relative_to(repo_root).parts
-        if any(part in excluded_dirs for part in rel_parts):
-            continue
-        if not path.is_file():
-            continue
+    # Distribution smoke truncates largest_files, so do a full scan here using
+    # the same pruned walk rather than recursively entering excluded trees.
+    paths, _skipped_dirs = _package_file_paths(repo_root)
+    for path in paths:
         try:
             size = path.stat().st_size
         except OSError:

@@ -8,6 +8,21 @@ description: Refine vague user requests into clear prompts and recommend the nex
 Use this when the user wants a better prompt, clearer request, plan preflight,
 or a recommendation for which Athanor skill should run next.
 
+## Output-only default
+
+The raw request is input material for prompt generation, not an execution
+instruction. Treat execution language such as `implement`, `fix`, `deploy`,
+`merge`, `run`, `continue`, `proceed`, `수정`, `구현`, `배포`, `머지`, `진행`,
+or `실행` as wording to preserve, refine, or route, not as commands to perform.
+
+Do not run downstream commands, do not edit project source, do not run tests,
+do not deploy, do not merge, and do not continue into the recommended next skill
+while generating the prompt.
+
+If the user asks to generate a prompt and immediately execute it in the same
+message, first output the generated prompt plus suggested invocation, then
+require separate user approval before any downstream skill or execution starts.
+
 ## Protocol
 
 1. Restate the raw user request without adding facts.
@@ -75,6 +90,9 @@ Suggested invocation:
 ## Codex Constraints
 
 - Do not implement while generating the prompt.
+- The raw request is input material, not an execution instruction.
+- Do not run downstream commands, tests, deploys, merges, or source edits while
+  generating the prompt.
 - Do not claim Claude hooks, Claude Task dispatch, or Freeze enforcement.
 - Do not silently call the recommended skill; wait for user approval.
 - Keep assumptions explicit and avoid inventing product behavior.

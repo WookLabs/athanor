@@ -19,7 +19,7 @@ The gate always checks:
 - plugin-root `agents/` contains only the 4 registered agent files:
   `ci-watcher`, `codex-dispatcher`, `learner`, and `releaser`.
 - package footprint excludes local runtime/cache directories such as
-  `.athanor/`, `.git/`, `.pytest_cache/`, and `ref/`.
+  `.athanor/`, `.git/`, `.pytest_cache/`, `.venv/`, and `ref/`.
 
 When `claude` is on `PATH`, the gate also runs:
 
@@ -33,8 +33,9 @@ The live loader inventory must report exactly 4 agents. The projected
 always-on cost from `claude plugin details` must stay at or below the default
 budget of `2200` tokens.
 
-Use `--skip-claude` only for fixture tests or environments that cannot install
-Claude Code. CI should run the full gate wherever the CLI is available.
+Use `--skip-claude` only for fixture/regression tests or environments that
+cannot install Claude Code. CI should run the full gate wherever the CLI is
+available.
 
 The 7 inline-only pipeline role documents live under `docs/agent-roles/` so
 Claude's plugin loader does not register them as standalone agents. Do not move

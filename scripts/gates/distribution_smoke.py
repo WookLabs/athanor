@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -17,6 +18,7 @@ EXCLUDED_PACKAGE_DIRS = {
     ".athanor",
     ".git",
     ".pytest_cache",
+    ".venv",
     "__pycache__",
     "ref",
 }
@@ -109,15 +111,9 @@ def _package_footprint(repo_root: Path) -> dict[str, Any]:
     file_count = 0
     total_bytes = 0
     largest_files: list[dict[str, Any]] = []
-    skipped_dirs: set[str] = set()
+    paths, skipped_dirs = _package_file_paths(repo_root)
 
-    for path in repo_root.rglob("*"):
-        rel_parts = path.relative_to(repo_root).parts
-        if any(part in EXCLUDED_PACKAGE_DIRS for part in rel_parts):
-            skipped_dirs.update(part for part in rel_parts if part in EXCLUDED_PACKAGE_DIRS)
-            continue
-        if not path.is_file():
-            continue
+    for path in paths:
         try:
             size = path.stat().st_size
         except OSError:
@@ -138,6 +134,20 @@ def _package_footprint(repo_root: Path) -> dict[str, Any]:
         "excluded_dirs": sorted(skipped_dirs | EXCLUDED_PACKAGE_DIRS),
         "largest_files": largest_files[:10],
     }
+
+
+def _package_file_paths(repo_root: Path) -> tuple[list[Path], set[str]]:
+    paths: list[Path] = []
+    skipped_dirs: set[str] = set()
+    for dirpath, dirnames, filenames in os.walk(repo_root):
+        excluded = sorted(name for name in dirnames if name in EXCLUDED_PACKAGE_DIRS)
+        skipped_dirs.update(excluded)
+        dirnames[:] = sorted(name for name in dirnames if name not in EXCLUDED_PACKAGE_DIRS)
+        base = Path(dirpath)
+        for filename in sorted(filenames):
+            paths.append(base / filename)
+    paths.sort(key=lambda path: path.relative_to(repo_root).as_posix())
+    return paths, skipped_dirs
 
 
 def _run_command(args: list[str], cwd: Path, timeout: int) -> dict[str, Any]:

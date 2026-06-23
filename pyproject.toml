@@ -1,0 +1,42 @@
+[project]
+name = "athanor"
+version = "0.19.3"
+description = "General-purpose agentic workflow orchestrator plugin for Claude Code and Codex."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "WookLabs" },
+]
+keywords = [
+  "orchestration",
+  "adversarial-planning",
+  "workflow",
+  "thin-leader",
+  "cross-model",
+  "claude-code",
+  "codex",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/WookLabs/athanor"
+Repository = "https://github.com/WookLabs/athanor"
+
+[dependency-groups]
+dev = [
+  "jsonschema>=4.0",
+  "pytest>=8.0",
+  "pyyaml>=6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+  ".athanor",
+  ".git",
+  ".pytest_cache",
+  ".venv",
+  "__pycache__",
+  "ref",
+]

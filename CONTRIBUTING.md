@@ -23,6 +23,13 @@ discovery file naming, and lesson file conventions.
 
 Test with: `claude --plugin-dir /path/to/athanor -p "/athanor:{skill} {test input}"`
 
+Python verification uses the repo-local uv environment:
+
+```
+uv sync --locked --dev
+uv run python -m pytest tests/ -q
+```
+
 ## Vendoring vs. Installing (Contribution Gate)
 
 When proposing a PR that adds a vendored file under `skills/`, the PR description MUST answer:

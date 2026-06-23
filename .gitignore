@@ -4,6 +4,7 @@ ref/
 # Athanor runtime data (local only)
 .athanor/
 .memsearch/
+.venv/
 
 # Node
 node_modules/
@@ -18,4 +19,3 @@ Thumbs.db
 __pycache__/
 *.pyc
 .claude/
-ref/
