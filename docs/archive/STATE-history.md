@@ -1293,3 +1293,31 @@ honesty labels.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
+
+## Archived from STATE.md (2026-06-23, v0.20.0 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.5 — Self-Dogfood: fail-loud fixes from enforcement audit
+
+**v0.18.5** (released 2026-06-06) — An adversarial enforcement audit (4-lens
+Workflow, refute-default verify) of athanor's own complexity + no-silent-fallback
+discipline found and fixed 4 athanor-own-code defects. No identity-invariant change.
+
+1. **Silent-fallback fixes (fail-loud).** `build_freeze_allowlist.py` emits a
+   stderr WARN when a `## Subtasks` section is present but no header matches
+   either shape (was a silent `[]` → freeze mis-scope with no breadcrumb);
+   `capability_probe.py` narrows a catch-all `except Exception` to
+   `(OSError, FileNotFoundError)` so an unexpected runtime-resolver error
+   propagates instead of being masked by the walk-up.
+2. **Complexity gate gap.** review/SKILL.md (311 lines, uncapped while
+   work≤250 / plan≤300 were gated) gains a ≤320 line-cap regression.
+3. **Honesty under-label.** /athanor:review gains an explicit "advisory — not a
+   merge gate" banner mirroring critic-rubric.md (Critic had it; review did not).
+
+7 new regression tests, RED→GREEN; full suite 946 passed, 0 failed. Dogfood note:
+this audit refutes the prior "zero risky-silent fallback patterns" claim — the
+runtime gate scripts were clean, but v0.17/v0.18 new surfaces had drifted (DF1/DF2
+were real). User code stays advisory (athanor is not the user's CI); only athanor's
+own code is gated — the honest enforcement boundary.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.

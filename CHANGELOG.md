@@ -3,57 +3,57 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.20.0] — 2026-06-23
+
+This minor release rolls up the never-published `0.19.3` ref-optimization work
+plus the score-95 tooling migration, a Stop-hook opt-in deadlock fix, and the
+`catalog_admission` CI fixes into a single shipped version. The plugin surface
+stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
+`releaser`) and the existing native command set are unchanged. Identity
+invariants intact (4): Thin Leader / cross-model adversarial / Spec-then-TDD /
+Stop hook gate.
 
 ### Added
 
-- **Prompt generation skill.** Adds `/athanor:prompt-gen` and Codex
-  companion `athanor-prompt-gen` to refine vague user requests into
-  structured prompts, recommend the next Athanor skill, and prepare
-  cleaner `/athanor:plan` inputs without starting implementation.
-- **Plan depth wrapper skills.** Restores `/athanor:deep-plan` and
-  `/athanor:lite-plan` as thin wrappers over `/athanor:plan --depth=deep`
-  and `/athanor:plan --depth=lite`, plus Codex companion mirrors
-  `athanor-deep-plan` and `athanor-lite-plan`. `/athanor:plan` remains the
-  canonical protocol owner and `--depth=` compatibility stays live.
-- **Agent topology gate.** Adds `docs/agent-topology.md`,
-  `docs/agent-topology-contract.json`, and
-  `scripts/gates/agent_topology.py` to lock the 4 registered agents,
-  7 reference roles, every skill route, and `prompt-gen` intake-framing
-  status before broad regression tests.
-- **lfg-goal score-target optimization loop.** `/athanor:lfg-goal` now
-  supports opt-in score-target goals that run `/athanor:assess` at
-  bootstrap and after each validated LFG cycle, then keep iterating on
-  the lowest-scoring dimensions, weak-evidence gaps, and Priority Plan
-  items until the overall score and per-dimension floor pass. The
-  score-target contract is mirrored in the Codex companion skill,
-  `goal.md` template, Tier 2 judge rubric, config defaults, schema, and
-  regression tests.
-- **346-ref optimization gate bundle.** Adds the local-first optimization
-  bundle from the 346-ref analysis while keeping the 4 registered agents and
-  current 13 native commands: `scripts/gates/catalog_admission.py`,
-  `scripts/gates/memory_index.py`, `scripts/gates/memory_retrieval_eval.py`,
-  `scripts/evals/workflow_trace_query.py`,
-  `scripts/gates/codex_mirror_parity.py`,
-  `scripts/gates/work_item_stage.py`, and package
-  `ship_profile_decisions` keep ref absorption, memory, trace replay, Codex
-  mirror parity, work-item stages, and ship-profile reduction gated by
-  read-only evidence.
-
-## [0.19.3] — 2026-06-20
-
-### Added
-
-- **346-ref optimization release.** Ships the local-first ref optimization
-  gates for catalog admission, memory index, memory retrieval eval, workflow
-  trace query, Codex mirror parity, work-item stage transitions, and
-  package-footprint reduction while keeping historical refs repo-local and out
-  of default packaged context.
+- **346-ref optimization bundle.** Ships the local-first, read-only gate bundle
+  from the 346-ref optimization pass — `scripts/gates/memory_index.py`,
+  `scripts/gates/catalog_admission.py`, `scripts/gates/codex_mirror_parity.py`,
+  `scripts/gates/work_item_stage.py`, the durable-loop controller,
+  `scripts/evals/workflow_trace_query.py`, the hook-safety corpus, and
+  package-footprint reduction. All gates are read-only evidence; historical
+  `ref/` material stays repo-local and out of default packaged context, and the
+  4-agent / native-command surface is frozen.
 
 ### Changed
 
-- **Claude plugin release metadata.** Bumps the Claude plugin release surface to
-  `0.19.3` so user/local plugin updates detect the ref optimization package.
+- **uv/pyproject tooling migration (score-95).** CI now uses
+  `astral-sh/setup-uv` with `uv sync --locked --dev` and `uv run`, backed by new
+  `pyproject.toml`, `.python-version` (3.14), and `uv.lock` files. The ship
+  profile classifies the new tooling files as dev-only so they stay out of the
+  packaged plugin surface.
+- **Installed-hook project-root resolution.** The installed-hook
+  `resolve_project_root()` now honors `$CLAUDE_PROJECT_DIR` before falling back
+  to the cwd walk-up, so hooks resolve the correct repo root under Claude Code.
+- **PostToolUse evidence scope.** The evidence sniffer scope is promoted from
+  `unspecified` to `full_suite`.
+- **prompt-gen output-only hardening (Prompt generation skill).** The
+  `/athanor:prompt-gen` Prompt generation skill (native + Codex mirror
+  `athanor-prompt-gen`) drops `Skill` from its allowed-tools and treats any
+  execution-language request as raw prompt material rather than a directive, so
+  it stays output-only: it turns vague requests into structured prompts and can
+  recommend the next Athanor skill (e.g. `/athanor:plan`) without ever starting
+  implementation.
+
+### Fixed
+
+- **Stop-hook opt-in deadlock.** `scripts/hooks/stop_verify_claims.py` now exits
+  `0` when no `athanor.json` is present — previously the gate was unsatisfiable
+  without opt-in because its emission-sentinel path is also opt-in-gated. The
+  sentinel body is now hashed with surrogate-safe `surrogatepass` handling on
+  both the emit and validate sides.
+- **catalog_admission CI fixes.** The `catalog_admission` gate treats an absent
+  `ref/` corpus (gitignored) as vacuously clean, and its three real-corpus
+  integration tests skip when `ref/` is absent, so fresh CI checkouts pass.
 
 ## [0.19.2] — 2026-06-19
 

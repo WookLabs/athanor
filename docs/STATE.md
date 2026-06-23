@@ -4,15 +4,46 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.19.3 — Ref Optimization Release
+## Current Phase: v0.20.0 — Ref Optimization + uv Tooling Release
 
-**v0.19.3** (released 2026-06-20) — Patch release for the 346-ref
-optimization pass. The plugin surface stays conservative: 4 registered agents,
-13 native commands, and no new default live execution. The release packages the
-local-first gate bundle for catalog admission, memory index, memory retrieval
-eval, workflow trace query, Codex mirror parity, work-item stage transition, and
-ship-profile reduction while keeping `ref/` plus historical planning,
-architecture, and test evidence repo-local rather than default packaged context.
+**v0.20.0** (released 2026-06-23) — Minor release that ships the never-published
+`0.19.3` ref-optimization work as a single shipped version, folded together with
+the score-95 uv/pyproject tooling migration, a Stop-hook opt-in deadlock fix, and
+the `catalog_admission` CI fixes. The plugin surface stays frozen: 4 registered
+agents and the existing native command set are unchanged, and the 346-ref
+optimization gate bundle (catalog admission, memory index, Codex mirror parity,
+work-item stage transition, durable-loop controller, workflow-trace eval,
+hook-safety corpus, and package-footprint reduction) remains local-first and
+read-only with `ref/` kept repo-local rather than default packaged context.
+
+The score-95 increment migrates CI to `astral-sh/setup-uv` + `uv sync
+--locked --dev` + `uv run` (new `pyproject.toml`, `.python-version` = 3.14, and
+`uv.lock`, all dev-only in the ship profile), makes the installed-hook
+`resolve_project_root()` honor `$CLAUDE_PROJECT_DIR` before the cwd walk-up,
+promotes the PostToolUse evidence scope from `unspecified` to `full_suite`, and
+hardens `/athanor:prompt-gen` (native + Codex mirror) to be output-only. The
+Stop-hook fix makes `stop_verify_claims.py` exit 0 when no `athanor.json` is
+present (the gate was unsatisfiable without opt-in because the sentinel path is
+also opt-in-gated) and adds surrogate-safe (`surrogatepass`) sentinel-body
+hashing on both emit and validate sides. `catalog_admission` now treats an
+absent gitignored `ref/` corpus as vacuously clean.
+
+Release verification closed with Claude/Codex manifest validation, distribution
+smoke, topology/package/mirror gates, and the full pytest suite under `uv run`.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.19.3 — Ref Optimization Release
+
+**v0.19.3** (committed 2026-06-20, never published to the marketplace; folded
+into v0.20.0) — Patch release for the 346-ref optimization pass. The plugin
+surface stays conservative: 4 registered agents, 13 native commands, and no new
+default live execution. The release packages the local-first gate bundle for
+catalog admission, memory index, memory retrieval eval, workflow trace query,
+Codex mirror parity, work-item stage transition, and ship-profile reduction
+while keeping `ref/` plus historical planning, architecture, and test evidence
+repo-local rather than default packaged context.
 
 Release verification closed with Claude/Codex manifest validation, distribution
 smoke, topology/package/mirror gates, and focused regression coverage.
@@ -143,32 +174,6 @@ real bugs in athanor's own executable code. No identity-invariant change.
 legitimate-allowed guards), RED→GREEN; full suite 965 passed, 0 failed. Honest
 scope: 5 bugs are pre-existing v0.16.0 regex flaws, only 1 (D1) is a v0.18.5
 regression — found by dogfooding the bug review on athanor itself.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.5 — Self-Dogfood: fail-loud fixes from enforcement audit
-
-**v0.18.5** (released 2026-06-06) — An adversarial enforcement audit (4-lens
-Workflow, refute-default verify) of athanor's own complexity + no-silent-fallback
-discipline found and fixed 4 athanor-own-code defects. No identity-invariant change.
-
-1. **Silent-fallback fixes (fail-loud).** `build_freeze_allowlist.py` emits a
-   stderr WARN when a `## Subtasks` section is present but no header matches
-   either shape (was a silent `[]` → freeze mis-scope with no breadcrumb);
-   `capability_probe.py` narrows a catch-all `except Exception` to
-   `(OSError, FileNotFoundError)` so an unexpected runtime-resolver error
-   propagates instead of being masked by the walk-up.
-2. **Complexity gate gap.** review/SKILL.md (311 lines, uncapped while
-   work≤250 / plan≤300 were gated) gains a ≤320 line-cap regression.
-3. **Honesty under-label.** /athanor:review gains an explicit "advisory — not a
-   merge gate" banner mirroring critic-rubric.md (Critic had it; review did not).
-
-7 new regression tests, RED→GREEN; full suite 946 passed, 0 failed. Dogfood note:
-this audit refutes the prior "zero risky-silent fallback patterns" claim — the
-runtime gate scripts were clean, but v0.17/v0.18 new surfaces had drifted (DF1/DF2
-were real). User code stays advisory (athanor is not the user's CI); only athanor's
-own code is gated — the honest enforcement boundary.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.

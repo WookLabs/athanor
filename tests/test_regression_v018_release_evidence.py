@@ -84,7 +84,12 @@ def test_state_md_current_phase_is_v018_or_later():
     m = pattern.search(body)
     assert m, "docs/STATE.md must have a `## Current Phase` heading"
     heading_line = m.group(0)
-    assert "0.18.0" in heading_line or "0.18." in heading_line or "0.19." in heading_line, (
+    assert (
+        "0.18.0" in heading_line
+        or "0.18." in heading_line
+        or "0.19." in heading_line
+        or "0.20." in heading_line
+    ), (
         f"docs/STATE.md `## Current Phase` heading must reference v0.18+; "
         f"got {heading_line!r}"
     )
