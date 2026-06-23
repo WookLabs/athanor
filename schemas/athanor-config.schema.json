@@ -328,6 +328,18 @@
           "description": "When true, simulate cycles without committing. Intended for development and test mode."
         }
       }
+    },
+    "lfg": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configuration for the /athanor:lfg end-to-end pipeline. Currently exposes the opt-in (default-off) auto-merge switch for /athanor:lfg Step 8.5 — Merge-readiness gate + optional merge.",
+      "properties": {
+        "_doc": { "type": "string" },
+        "autoMerge": {
+          "type": "boolean",
+          "description": "Opt-in (default-off) auto-merge switch for /athanor:lfg Step 8.5. When false (the default), the pipeline terminates at 'PR open + CI green' and never merges. When true, a green PR may be merged to its base branch only after the Step 8.5 conjunctive merge-readiness gate passes; the invocation flag --no-merge still hard-disables it. Documentary/discoverability knob — the load-bearing default is false."
+        }
+      }
     }
   }
 }

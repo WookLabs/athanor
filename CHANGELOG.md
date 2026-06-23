@@ -3,6 +3,24 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **Opt-in `/athanor:lfg` auto-merge + merge-readiness gate (Step 8.5).** After
+  CI goes green, `/athanor:lfg` can now optionally merge a green PR to its base
+  branch (`gh pr merge --rebase --delete-branch`). It is **off by default** and
+  opt-in via the `--merge`/`--no-merge` flag or `athanor.json` `lfg.autoMerge`
+  (`--no-merge` wins ties). Merge proceeds only when a fail-loud conjunctive
+  readiness gate passes — re-entry/draft state, dual-source residual review
+  blockers, unresolved-CI section, an exhaustive 8-value GitHub
+  `mergeStateStatus` disposition, and merge-queue detection. On any failed
+  clause the leader leaves the PR open, reports which clause failed, and still
+  finishes the pipeline; it never `--admin`-bypasses branch protection. The step
+  **merges only** — it never version-bumps, tags, or edits CHANGELOG/STATE.md
+  (that stays the `athanor-releaser` ceremony). The gate is advisory
+  (leader-prose-enforced); no runtime hook blocks the merge.
+
 ## [0.20.1] — 2026-06-23
 
 ### Added
