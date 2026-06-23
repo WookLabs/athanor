@@ -3,6 +3,12 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **User-facing output language preference (`output.language`).** best-effort advisory, default en — 본 레포 ko; 9개 native 스킬에 leader-side 해석 + 조건부 per-language directive 주입; 영어권 default 동작 불변.
+
 ## [0.20.0] — 2026-06-23
 
 This minor release rolls up the never-published `0.19.3` ref-optimization work

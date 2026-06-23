@@ -175,4 +175,4 @@ See `athanor.json` in project root. Key settings:
 - `work.defaultMode`: "solo" or "team"
 - `memory.decayDays`: Working memory retention (default: 7)
 - `memory.promotionThreshold`: Access count for auto-promotion (default: 5)
-- `triggers.language`: "ko", "en", or "both"
+- `triggers.language`: "ko", "en", or "both"; `output.language`: "ko" or "en" (default en) — 사용자-대면 출력 언어, best-effort advisory; leader가 Present-to-User 직전 jq + case-guard로 해석(ko|en 외 값·부재·오류 시 en)

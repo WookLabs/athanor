@@ -211,6 +211,7 @@ Wave 2: [task 3]          ← depends on wave 1
 | `team.waveSize` | `3` | Max parallel workers per wave |
 | `memory.decayDays` | `7` | Working memory retention period |
 | `memory.promotionThreshold` | `5` | Access count for local working→permanent lesson promotion; local memory-index search is read-only |
+| `output.language` | `"en"` | Best-effort user-facing output language (advisory; no runtime renderer — leader resolves at present time; this repo ships `"ko"`) |
 
 ## FAQ
 

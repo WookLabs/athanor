@@ -113,6 +113,8 @@ Announce the plan briefly:
 └── Session: .athanor/sessions/{session-id}/
 ```
 
+Announce prose follows the interpreted `output.language` (see `skills/setup/SKILL.md` §"output.language 해석 (canonical)"); the labels and the session path stay as shown.
+
 ### Step 2: Parallel Dispatch (one Reviewer per lens)
 
 For each selected lens, dispatch ONE Reviewer worker via the Task tool. All dispatches
@@ -202,7 +204,7 @@ Consolidation rules:
 5. **Score table.** Include a 6-row score table — one row per lens that ran. Mark
    skipped lenses as `—`.
 
-Write the consolidated report in this shape:
+Write the consolidated report in this shape. Body prose (summary, finding descriptions, notes) follows the interpreted `output.language` (see `skills/setup/SKILL.md` §"output.language 해석 (canonical)"); structure headings (`# Code Review`, `Executive Summary` / `Lens Scores`, `## 🔴 Critical`, etc.), the `Session:`/`Branch:`/`Base:`/`Reviewers:` labels, and result-packet field keys stay verbatim English:
 
 ```markdown
 # Code Review — {target}
@@ -214,7 +216,7 @@ Reviewers: {comma-separated lens list}
 
 ## Executive Summary
 
-{2-3 sentences. Lead with critical count, then headline themes.}
+{2-3 sentences, in the interpreted `output.language`. Lead with critical count, then headline themes. Heading keyword stays English.}
 
 ## 🔴 Critical
 {numbered list of critical findings, deduplicated, with severity tag and lens
@@ -255,7 +257,7 @@ provenance, file:line, evidence, suggested-fix direction}
 
 Present the headline numbers (critical/high/medium/low counts + average score) to
 the user, point at `.athanor/sessions/{session-id}/review.md` for the full report,
-and stop. Do not auto-fix. Do not auto-create issues. The user decides next steps.
+and stop. headline 숫자·안내문은 해석된 `output.language`에 맞추되, review.md 구조 헤딩과 결과 패킷 토큰·필드 키는 항상 영어. Do not auto-fix. Do not auto-create issues. The user decides next steps.
 
 If the user followed `/athanor:work` immediately before this, also offer:
 - "Run `/athanor:work` again with the Critical findings as new subtasks?" (yes/no)
