@@ -64,6 +64,9 @@
     },
     "dryRun": false
   },
+  "lfg": {
+    "autoMerge": false
+  },
   "review": {
     "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
     "minConfidence": 25
