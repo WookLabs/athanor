@@ -7,12 +7,26 @@ import sys
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "gates" / "catalog_admission.py"
 SCHEMA = REPO_ROOT / "schemas" / "catalog-entry.schema.json"
 DOC = REPO_ROOT / "docs" / "catalog-admission-policy.md"
 REF_ROOT = REPO_ROOT / "ref"
+
+# REF_ROOT mirrors catalog_admission.py's DEFAULT_REF_ROOT (REPO_ROOT / "ref").
+# That corpus is gitignored (local 346-repo reference set, never committed), so
+# it is absent on every clean checkout / CI run. The tests below read the real
+# corpus directly (REF_ROOT.iterdir()) or assert on specific real ref repos, so
+# they are local integration tests that cannot run meaningfully without it. They
+# skip when ref/ is absent and run unchanged on dev machines where it is present.
+# Hermetic tests that build their own ref root via --ref-root are NOT guarded.
+_REF_CORPUS_PRESENT = REF_ROOT.is_dir()
+_requires_ref_corpus = pytest.mark.skipif(
+    not _REF_CORPUS_PRESENT,
+    reason="requires the local ref/ reference corpus (gitignored 346 repos); absent on CI/clean checkouts",
+)
 
 REQUIRED_FIELDS = {
     "id",
@@ -45,6 +59,7 @@ def _entry_by_id(report: dict, entry_id: str) -> dict:
     raise AssertionError(f"missing catalog entry {entry_id!r}")
 
 
+@_requires_ref_corpus
 def test_catalog_admission_reports_all_current_refs_with_schema_valid_entries() -> None:
     assert SCRIPT.is_file(), "catalog admission gate must exist"
     assert SCHEMA.is_file(), "catalog entry schema must exist"
@@ -68,6 +83,7 @@ def test_catalog_admission_reports_all_current_refs_with_schema_valid_entries() 
         jsonschema.validate(entry, schema)
 
 
+@_requires_ref_corpus
 def test_surface_growth_refs_are_capped_below_adopt() -> None:
     proc = _run_cli("--json")
 
@@ -81,6 +97,7 @@ def test_surface_growth_refs_are_capped_below_adopt() -> None:
     assert "runtime surface" in compound["cap_reason"].lower()
 
 
+@_requires_ref_corpus
 def test_known_low_surface_principle_ref_can_be_adopted() -> None:
     proc = _run_cli("--json")
 
