@@ -1321,3 +1321,34 @@ own code is gated — the honest enforcement boundary.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
+
+## Archived from STATE.md (2026-06-23, v0.20.1 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.6 — Deep Bug-Hunt: Kernel Guard security hardening
+
+**v0.18.6** (released 2026-06-07) — A deep adversarial bug-hunt Workflow (4
+specialized lenses → refute-default reproduce-to-confirm) found and fixed 11
+real bugs in athanor's own executable code. No identity-invariant change.
+
+1. **Kernel Guard root-wipe bypasses (CRITICAL, pre-existing v0.16.0).**
+   `rm -rf /*`, `rm -rf --no-preserve-root /`, `rm -fr /` and `git clean
+   --force` all slipped the PreToolUse safety gate; `head -n 5 .env` evaded the
+   credential-read guard. The `rm` family is now a flag-detection +
+   target-detection split (order-independent, intervening-option-tolerant,
+   glob-aware) with false-positive guards (`/tmp/build`, `~/proj`, `rm -f`).
+2. **Freeze + parser fixes.** freeze_guard now `posixpath.normpath`-collapses
+   `..` before allowlist matching (F1 path-traversal); build_freeze_allowlist's
+   DF1 drift WARN keys off a recognized subtask BLOCK, not a stray heading (D1,
+   a v0.18.5 regression); non-bracketed inline file lists keep all paths (F3).
+3. **Release-gate hardening.** manifest_checks fails-loud on a non-string
+   `hooks` field (R2, was an uncaught TypeError); check_release_ready adds a
+   version right-boundary (R3, `0.18.5`≠`0.18.50`) and fails-loud on an
+   unreadable version (R4).
+
+19 new regression tests (each security fix pairs bypass-blocked +
+legitimate-allowed guards), RED→GREEN; full suite 965 passed, 0 failed. Honest
+scope: 5 bugs are pre-existing v0.16.0 regex flaws, only 1 (D1) is a v0.18.5
+regression — found by dogfooding the bug review on athanor itself.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
