@@ -44,9 +44,24 @@ def test_v019_release_documents_evidence_branch_story():
 
 
 def test_v019_release_bumps_plugin_version():
-    """The release pass bumps the plugin manifest."""
+    """The release pass bumps the plugin manifest.
+
+    The v0.19 evidence branch shipped in the 0.19.x line; the manifest must
+    sit at or beyond that line (it advances with every later release — e.g.
+    v0.20.0 folded the never-published 0.19.3 work forward). The hard 0.19.x
+    pin was relaxed to ``minor >= 19`` so later minors do not require editing
+    this assertion, while still proving the evidence-branch bump landed and
+    the [0.19.0] story remains documented.
+    """
     version = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
-    assert version.startswith("0.19.")
+    parts = version.split(".")
+    assert len(parts) == 3 and parts[0] == "0" and parts[1].isdigit(), (
+        f"plugin.json version must be a 0.MINOR.PATCH string; got {version!r}"
+    )
+    assert int(parts[1]) >= 19, (
+        f"plugin.json version must be at or beyond the 0.19 evidence branch; "
+        f"got {version!r}"
+    )
     assert "Ships the v0.19.0" in _unreleased_section()
 
 
