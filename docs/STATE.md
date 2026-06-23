@@ -4,7 +4,23 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.20.0 — Ref Optimization + uv Tooling Release
+## Current Phase: v0.20.1 — output.language Presentation Preference
+
+**v0.20.1** (released 2026-06-23) — Patch release that ships the never-published
+`output.language` presentation preference (merged to main after v0.20.0 in commit
+`cdf76e5`, but never released). `output.language` is a best-effort advisory
+user-facing language preference (enum `ko|en`, default `en`; this repo runs `ko`):
+the leader interprets it at present-time across the 9 native Thin Leader skills,
+injecting a conditional per-language directive so prose surfaces can render in the
+chosen language while machine-parse surfaces (result schemas, JSON, gate output)
+stay English. The English-default behavior is unchanged, and the plugin surface
+stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
+`releaser`) and the existing native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.20.0 — Ref Optimization + uv Tooling Release
 
 **v0.20.0** (released 2026-06-23) — Minor release that ships the never-published
 `0.19.3` ref-optimization work as a single shipped version, folded together with
@@ -145,35 +161,6 @@ cross-referenced, dead one-shot scripts inert + test-entangled), and one
 5 new/updated regression tests; full suite 970 passed, 0 failed. CLAUDE.md
 §Native Agent Inventory + §Effort Level + COLLISION GUARD simplified to the
 4-registered reality.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.6 — Deep Bug-Hunt: Kernel Guard security hardening
-
-**v0.18.6** (released 2026-06-07) — A deep adversarial bug-hunt Workflow (4
-specialized lenses → refute-default reproduce-to-confirm) found and fixed 11
-real bugs in athanor's own executable code. No identity-invariant change.
-
-1. **Kernel Guard root-wipe bypasses (CRITICAL, pre-existing v0.16.0).**
-   `rm -rf /*`, `rm -rf --no-preserve-root /`, `rm -fr /` and `git clean
-   --force` all slipped the PreToolUse safety gate; `head -n 5 .env` evaded the
-   credential-read guard. The `rm` family is now a flag-detection +
-   target-detection split (order-independent, intervening-option-tolerant,
-   glob-aware) with false-positive guards (`/tmp/build`, `~/proj`, `rm -f`).
-2. **Freeze + parser fixes.** freeze_guard now `posixpath.normpath`-collapses
-   `..` before allowlist matching (F1 path-traversal); build_freeze_allowlist's
-   DF1 drift WARN keys off a recognized subtask BLOCK, not a stray heading (D1,
-   a v0.18.5 regression); non-bracketed inline file lists keep all paths (F3).
-3. **Release-gate hardening.** manifest_checks fails-loud on a non-string
-   `hooks` field (R2, was an uncaught TypeError); check_release_ready adds a
-   version right-boundary (R3, `0.18.5`≠`0.18.50`) and fails-loud on an
-   unreadable version (R4).
-
-19 new regression tests (each security fix pairs bypass-blocked +
-legitimate-allowed guards), RED→GREEN; full suite 965 passed, 0 failed. Honest
-scope: 5 bugs are pre-existing v0.16.0 regex flaws, only 1 (D1) is a v0.18.5
-regression — found by dogfooding the bug review on athanor itself.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
