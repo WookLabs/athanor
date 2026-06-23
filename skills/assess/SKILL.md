@@ -244,6 +244,25 @@ Return a concise summary to the user:
 Do not start implementation unless the user explicitly asks for a plan or work
 after reading the assessment.
 
+### Score-Target Packet For /athanor:lfg-goal
+
+When `/athanor:assess` is invoked by `/athanor:lfg-goal` as a score-target
+baseline, delta, or final assessment, the report must contain enough structured
+data for the lfg-goal controller evidence packet:
+
+- `kind`: `baseline`, `delta`, or `final`;
+- `report_path`: the saved `assess.md` path;
+- `overall_score` and `min_dimension_score`; `min_dimension_score` must equal
+  the minimum of the emitted per-dimension `score` values;
+- `target_met`: whether both the overall target and dimension floor are met;
+- `priority_plan_items`: the concrete next items from `## Priority Plan`;
+- per-dimension `score`, `target`, `floor`, `target_met`, and `regressed`.
+
+The lfg-goal leader converts those report fields into
+`schemas/durable-loop-evidence.schema.json` before calling
+`scripts/loops/run_goal_loop_controller.py`. Missing or malformed assessment
+fields block the adaptive loop; they are not treated as a passing score.
+
 ## Rules
 
 - Do not implement.

@@ -133,6 +133,13 @@ high final score alone is not enough: every dimension must meet the
 declared floor unless the user explicitly waives that dimension in
 `goal.md`.
 
+The durable controller owns the score-target loop choice. It consumes a
+machine-readable evidence packet and emits the next action:
+`run_baseline_assess`, `run_delta_assess`, `run_lfg_cycle`,
+`run_scope_drift`, `prompt_tier3_user`, or an explicit stop/block action.
+The leader dispatches the returned action; it does not infer success from
+missing assessment evidence.
+
 ### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
 ## Architecture: Validated Receipt-Ledger Loop
@@ -305,7 +312,8 @@ receipt-validator writes
 `.athanor/goals/<id>/receipts/CNNN-lfg-receipt.md`. The validator runs
 each Verification Command below and records its exit code + captured
 output as the evidence for that step. **Per-step status enum:**
-`completed | skipped-by-rule | completed-with-residuals | failed | missing`.
+`VALID | INVALID | UNDETERMINED`. Residual notes are metadata on a
+`VALID` step, not a fourth per-step status.
 
 | Step | Required Evidence | Verification Command | PASS Criterion |
 |---|---|---|---|
@@ -321,9 +329,11 @@ output as the evidence for that step. **Per-step status enum:**
 
 **Per-cycle aggregate status:**
 
-- `all_valid` — all steps `completed` or `skipped-by-rule`
-- `completed_with_residuals` — ≥1 `completed-with-residuals`, 0 `failed`, 0 `missing`
-- `invalid_steps_present` — ≥1 `failed` or `missing`
+- `all_valid` — every step is `VALID`; `UNDETERMINED` is tolerated only when
+  no step is `INVALID` and the uncertainty is surfaced in the receipt.
+- `completed_with_residuals` — ≥1 `VALID` step carries a residual note, with
+  0 `INVALID` steps and no missing required evidence.
+- `invalid_steps_present` — ≥1 step is `INVALID`.
 
 Only `all_valid` and `completed_with_residuals` (with user override) can close G-markers.
 `invalid_steps_present` blocks marker closure — the next cycle resumes from the
@@ -715,6 +725,41 @@ The leader records the selected dimensions in the cycle queue and the
 cycle requirements injected into `/athanor:lfg`. The loop MUST NOT chase
 cosmetic score increases that the latest assessment labels as overbuilt,
 remove/simplify candidates, or weak evidence.
+
+**Controller evidence packet.** The leader passes score-target decisions
+through `scripts/loops/run_goal_loop_controller.py` with evidence matching
+`schemas/durable-loop-evidence.schema.json`:
+
+- `score_target`: `overall_score`, `min_dimension_score`, and
+  `completion_gates_required`.
+- `assessment`: `kind: baseline | delta | final`, `report_path`,
+  `overall_score`, `min_dimension_score`, `target_met`,
+  `priority_plan_items`, and per-dimension `score`, `target`, `floor`,
+  `target_met`, and `regressed`.
+
+Controller behavior is fail-loud:
+
+- no baseline packet during score-target bootstrap → `run_baseline_assess`;
+- valid cycle receipt with no delta/final packet → `run_delta_assess`;
+- below-target assessment with progress → `run_lfg_cycle` carrying target
+  dimensions and Priority Plan items;
+- final target met plus Tier 1/Tier 2 gates passed → `prompt_tier3_user`;
+- contradictory or malformed assessment evidence → controller block/error, not
+  implicit success.
+
+For final completion, `target_met` is not trusted by itself. The controller
+cross-checks it both ways against `score_target.overall_score`,
+`score_target.min_dimension_score`, each dimension floor, and regression flags:
+`true` with failing computed evidence blocks completion, and `false` with
+passing computed evidence blocks another loop. The controller derives the actual
+minimum dimension score from `assessment.dimensions[*].score`; if it disagrees
+with `assessment.min_dimension_score`, the packet is contradictory evidence.
+Current receipt evidence also wins over stale state: `validator_status:
+invalid_steps_present` blocks even when `state.json` still says
+`last_validator_status: all_valid`. `eval_status: fail` blocks continuation.
+The max-iteration cap stops only attempts to start another delivery/fix cycle;
+it does not prevent Tier 3 prompting for a valid final assessment on the last
+allowed cycle.
 
 **Progress accounting.** A score-target cycle counts as progress when
 at least one of these holds:

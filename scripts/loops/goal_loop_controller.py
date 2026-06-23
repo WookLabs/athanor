@@ -35,6 +35,7 @@ VALIDATOR_STATUSES = {
 EVAL_STATUSES = {"fail", "missing", "not_applicable", "pass"}
 TIER3_USER_RESPONSES = {"abort", "continue", "yes"}
 DECISION_STATUSES = {"concern", "escalated", "failure", "pass", "skipped"}
+ASSESSMENT_KINDS = {"baseline", "delta", "final"}
 ROUTES_BY_CYCLE_PHASE = {
     "not_started": "resume_cycle_from_start",
     "lfg_done_seen": "validate_receipt",
@@ -49,6 +50,12 @@ EVIDENCE_REQUIRED_ACTIONS = {
     "run_tier1_check",
     "run_tier2_judges",
     "prompt_tier3_user",
+    "start_next_cycle",
+}
+DELIVERY_LOOP_ACTIONS = {
+    "bootstrap_goal",
+    "resume_cycle_from_start",
+    "run_lfg_cycle",
     "start_next_cycle",
 }
 
@@ -103,6 +110,24 @@ def _require_string(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value:
         raise LoopStateError(f"{field_name} must be a non-empty string")
     return value
+
+
+def _require_bool(value: Any, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise LoopStateError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_number(value: Any, field_name: str) -> int | float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise LoopStateError(f"{field_name} must be a number")
+    return value
+
+
+def _require_string_list(value: Any, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise LoopStateError(f"{field_name} must be a list of strings")
+    return tuple(value)
 
 
 @dataclass(frozen=True)
@@ -236,6 +261,147 @@ def is_terminal_state(state: LoopState) -> bool:
 
 
 @dataclass(frozen=True)
+class AssessmentDimension:
+    """One assessed dimension used for target/floor/regression decisions."""
+
+    score: int | float
+    target: int | float | None
+    floor: int | float | None
+    target_met: bool
+    regressed: bool
+
+    @classmethod
+    def from_dict(cls, raw_data: Any, field_name: str) -> "AssessmentDimension":
+        data = _require_object(raw_data)
+        target = data.get("target")
+        floor = data.get("floor")
+        return cls(
+            score=_require_number(data.get("score"), f"{field_name}.score"),
+            target=(
+                None
+                if target is None
+                else _require_number(target, f"{field_name}.target")
+            ),
+            floor=(
+                None if floor is None else _require_number(floor, f"{field_name}.floor")
+            ),
+            target_met=_require_bool(
+                data.get("target_met"), f"{field_name}.target_met"
+            ),
+            regressed=_require_bool(data.get("regressed"), f"{field_name}.regressed"),
+        )
+
+    def needs_work(self) -> bool:
+        below_floor = self.floor is not None and self.score < self.floor
+        return not self.target_met or self.regressed or below_floor
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "score": self.score,
+            "target": self.target,
+            "floor": self.floor,
+            "target_met": self.target_met,
+            "regressed": self.regressed,
+        }
+
+
+@dataclass(frozen=True)
+class AssessmentEvidence:
+    """Structured assessment evidence consumed by the adaptive goal controller."""
+
+    kind: str
+    report_path: str
+    overall_score: int | float
+    min_dimension_score: int | float
+    target_met: bool
+    priority_plan_items: tuple[str, ...]
+    dimensions: dict[str, AssessmentDimension]
+
+    @classmethod
+    def from_dict(cls, raw_data: Any) -> "AssessmentEvidence":
+        data = _require_object(raw_data)
+        kind = _require_string(data.get("kind"), "assessment.kind")
+        if kind not in ASSESSMENT_KINDS:
+            raise LoopStateError(f"unsupported assessment.kind: {kind}")
+
+        dimensions_raw = data.get("dimensions")
+        if not isinstance(dimensions_raw, dict) or not dimensions_raw:
+            raise LoopStateError("assessment.dimensions must be a non-empty object")
+        dimensions: dict[str, AssessmentDimension] = {}
+        for name, dimension_data in dimensions_raw.items():
+            if not isinstance(name, str) or not name:
+                raise LoopStateError("assessment dimension names must be non-empty strings")
+            dimensions[name] = AssessmentDimension.from_dict(
+                dimension_data,
+                f"assessment.dimensions.{name}",
+            )
+
+        return cls(
+            kind=kind,
+            report_path=_require_string(
+                data.get("report_path"), "assessment.report_path"
+            ),
+            overall_score=_require_number(
+                data.get("overall_score"), "assessment.overall_score"
+            ),
+            min_dimension_score=_require_number(
+                data.get("min_dimension_score"), "assessment.min_dimension_score"
+            ),
+            target_met=_require_bool(data.get("target_met"), "assessment.target_met"),
+            priority_plan_items=_require_string_list(
+                data.get("priority_plan_items", []),
+                "assessment.priority_plan_items",
+            ),
+            dimensions=dimensions,
+        )
+
+    def target_dimensions(self) -> tuple[str, ...]:
+        return tuple(
+            name
+            for name, _dimension in sorted(
+                (
+                    (name, dimension)
+                    for name, dimension in self.dimensions.items()
+                    if dimension.needs_work()
+                ),
+                key=lambda item: (item[1].score, item[0]),
+            )
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "report_path": self.report_path,
+            "overall_score": self.overall_score,
+            "min_dimension_score": self.min_dimension_score,
+            "target_met": self.target_met,
+            "priority_plan_items": list(self.priority_plan_items),
+            "dimensions": {
+                name: dimension.to_dict()
+                for name, dimension in self.dimensions.items()
+            },
+        }
+
+
+def _score_target_from_dict(raw_data: Any) -> dict[str, Any]:
+    data = _require_object(raw_data)
+    target = {
+        "overall_score": _require_number(
+            data.get("overall_score"), "score_target.overall_score"
+        ),
+        "min_dimension_score": _require_number(
+            data.get("min_dimension_score"), "score_target.min_dimension_score"
+        ),
+    }
+    completion_gates_required = data.get("completion_gates_required", False)
+    target["completion_gates_required"] = _require_bool(
+        completion_gates_required,
+        "score_target.completion_gates_required",
+    )
+    return target
+
+
+@dataclass(frozen=True)
 class EvidenceSummary:
     """Narrow evidence input consumed by the durable loop controller."""
 
@@ -246,6 +412,8 @@ class EvidenceSummary:
     tier3_user_response: str | None = None
     progress_made: bool | None = None
     references: tuple[str, ...] = field(default_factory=tuple)
+    score_target: dict[str, Any] | None = None
+    assessment: AssessmentEvidence | None = None
 
     @classmethod
     def from_dict(cls, raw_data: Any) -> "EvidenceSummary":
@@ -288,6 +456,14 @@ class EvidenceSummary:
         if tier2_goal_met is not None and not isinstance(tier2_goal_met, bool):
             raise LoopStateError("tier2_goal_met must be a boolean or null")
 
+        score_target = data.get("score_target")
+        if score_target is not None:
+            score_target = _score_target_from_dict(score_target)
+
+        assessment = data.get("assessment")
+        if assessment is not None:
+            assessment = AssessmentEvidence.from_dict(assessment)
+
         return cls(
             eval_status=eval_status,
             validator_status=validator_status,
@@ -296,6 +472,8 @@ class EvidenceSummary:
             tier3_user_response=tier3_user_response,
             progress_made=progress_made,
             references=tuple(references),
+            score_target=score_target,
+            assessment=assessment,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -307,6 +485,10 @@ class EvidenceSummary:
             "tier3_user_response": self.tier3_user_response,
             "progress_made": self.progress_made,
             "references": list(self.references),
+            "score_target": self.score_target,
+            "assessment": (
+                None if self.assessment is None else self.assessment.to_dict()
+            ),
         }
 
 
@@ -363,6 +545,10 @@ def _decision(
     }
     if state.warnings:
         decision_evidence["state_warnings"] = list(state.warnings)
+    if evidence.score_target is not None:
+        decision_evidence["score_target"] = evidence.score_target
+    if evidence.assessment is not None:
+        decision_evidence["assessment"] = evidence.assessment.to_dict()
     if extra_evidence:
         decision_evidence.update(extra_evidence)
     return LoopDecision(
@@ -411,6 +597,244 @@ def _route_for_state(state: LoopState) -> tuple[str, str, str]:
     raise LoopStateError("could not route loop state")
 
 
+def _adaptive_target_evidence(assessment: AssessmentEvidence) -> dict[str, Any]:
+    return {
+        "target_dimensions": list(assessment.target_dimensions()),
+        "priority_plan_items": list(assessment.priority_plan_items),
+    }
+
+
+def _assessment_contradictions(
+    assessment: AssessmentEvidence,
+    score_target: dict[str, Any],
+) -> tuple[str, ...]:
+    target_failures: list[str] = []
+    computed_min_dimension_score = min(
+        dimension.score for dimension in assessment.dimensions.values()
+    )
+    min_dimension_score_mismatch: str | None = None
+    if assessment.overall_score < score_target["overall_score"]:
+        target_failures.append("overall_score_below_target")
+    if assessment.min_dimension_score != computed_min_dimension_score:
+        claimed = f"{assessment.min_dimension_score:g}"
+        computed = f"{computed_min_dimension_score:g}"
+        min_dimension_score_mismatch = (
+            f"min_dimension_score_mismatch:claimed={claimed},computed={computed}"
+        )
+        target_failures.append(min_dimension_score_mismatch)
+    if computed_min_dimension_score < score_target["min_dimension_score"]:
+        target_failures.append("min_dimension_score_below_target")
+    for name, dimension in assessment.dimensions.items():
+        if not dimension.target_met:
+            target_failures.append(f"dimension_target_not_met:{name}")
+        if dimension.floor is not None and dimension.score < dimension.floor:
+            target_failures.append(f"dimension_below_floor:{name}")
+        if dimension.regressed:
+            target_failures.append(f"dimension_regressed:{name}")
+
+    if min_dimension_score_mismatch is not None and not assessment.target_met:
+        return (min_dimension_score_mismatch,)
+    if assessment.target_met and target_failures:
+        return tuple(target_failures)
+    if not assessment.target_met and not target_failures:
+        return ("target_met_false_but_scores_satisfy_target",)
+    return ()
+
+
+def _max_iterations_decision(state: LoopState, evidence: EvidenceSummary) -> LoopDecision:
+    return _decision(
+        state,
+        evidence,
+        action="stop_max_iterations",
+        status="failure",
+        reason=f"max iterations reached: {state.current_cycle}/{state.max_iterations}",
+        next_cycle_state="aborted",
+        next_cycle_phase=None,
+        extra_evidence={"stop_reason": "stop_max_iterations"},
+    )
+
+
+def _failed_eval_decision(state: LoopState, evidence: EvidenceSummary) -> LoopDecision:
+    blocked_action = "run_lfg_cycle"
+    if evidence.score_target is None:
+        try:
+            blocked_action = _route_for_state(state)[0]
+        except LoopStateError:
+            blocked_action = "unknown"
+    return _decision(
+        state,
+        evidence,
+        action="block_failed_eval",
+        status="failure",
+        reason="eval evidence failed; refusing to advance loop",
+        extra_evidence={"blocked_action": blocked_action},
+    )
+
+
+def _invalid_receipt_decision(
+    state: LoopState,
+    evidence: EvidenceSummary,
+) -> LoopDecision | None:
+    if evidence.validator_status != "invalid_steps_present":
+        return None
+
+    try:
+        blocked_action = _route_for_state(state)[0]
+    except LoopStateError:
+        blocked_action = "unknown"
+    if evidence.score_target is not None and state.cycle_state == "cycle_n_complete":
+        blocked_action = "run_delta_assess"
+
+    return _decision(
+        state,
+        evidence,
+        action="run_scope_drift",
+        status="escalated",
+        reason="invalid receipt evidence blocks loop advancement",
+        extra_evidence={
+            "blocked_action": blocked_action,
+            "validator_status": evidence.validator_status,
+            "state_validator_status": state.last_validator_status,
+        },
+    )
+
+
+def _decide_adaptive_goal(
+    state: LoopState,
+    evidence: EvidenceSummary,
+) -> LoopDecision | None:
+    if evidence.score_target is None:
+        return None
+
+    if state.cycle_state == "bootstrapping":
+        if evidence.assessment is None:
+            return _decision(
+                state,
+                evidence,
+                action="run_baseline_assess",
+                status="pass",
+                reason="score target requires baseline assessment before delivery loop",
+            )
+        if evidence.assessment.kind != "baseline":
+            return _decision(
+                state,
+                evidence,
+                action="require_assessment_evidence",
+                status="escalated",
+                reason="bootstrapping requires baseline assessment evidence",
+                extra_evidence={"expected_assessment_kind": "baseline"},
+            )
+        return _decision(
+            state,
+            evidence,
+            action="run_lfg_cycle",
+            status="pass",
+            reason="baseline assessment captured; start first delivery loop",
+            next_cycle_state="cycle_n_in_progress",
+            next_cycle_phase="not_started",
+            extra_evidence=_adaptive_target_evidence(evidence.assessment),
+        )
+
+    if state.cycle_state != "cycle_n_complete":
+        return None
+
+    validator_status = evidence.validator_status or state.last_validator_status
+
+    if validator_status == "invalid_steps_present":
+        return _decision(
+            state,
+            evidence,
+            action="run_scope_drift",
+            status="escalated",
+            reason="invalid receipt blocks adaptive assessment routing",
+            extra_evidence={
+                "blocked_action": "run_delta_assess",
+                "validator_status": validator_status,
+                "state_validator_status": state.last_validator_status,
+            },
+        )
+
+    if validator_status not in {"all_valid", "completed_with_residuals"}:
+        return _decision(
+            state,
+            evidence,
+            action="require_receipt_validation",
+            status="escalated",
+            reason="cycle receipt must be valid before assessment routing",
+            extra_evidence={
+                "blocked_action": "run_delta_assess",
+                "validator_status": validator_status,
+                "state_validator_status": state.last_validator_status,
+            },
+        )
+
+    if evidence.assessment is None:
+        return _decision(
+            state,
+            evidence,
+            action="run_delta_assess",
+            status="pass",
+            reason="valid cycle receipt requires delta assessment before next loop",
+            extra_evidence={"blocked_action": "run_lfg_cycle"},
+        )
+
+    if evidence.assessment.kind not in {"delta", "final"}:
+        return _decision(
+            state,
+            evidence,
+            action="require_assessment_evidence",
+            status="escalated",
+            reason="completed cycle requires delta or final assessment evidence",
+            extra_evidence={"expected_assessment_kind": "delta|final"},
+        )
+
+    assessment_contradictions = _assessment_contradictions(
+        evidence.assessment,
+        evidence.score_target,
+    )
+    if assessment_contradictions:
+        return _decision(
+            state,
+            evidence,
+            action="require_assessment_evidence",
+            status="escalated",
+            reason="assessment target contradiction blocks completion prompt",
+            extra_evidence={
+                "assessment_contradictions": list(assessment_contradictions),
+            },
+        )
+
+    if (
+        evidence.assessment.kind == "final"
+        and evidence.assessment.target_met
+        and evidence.tier1_passed is True
+        and evidence.tier2_goal_met is True
+    ):
+        return _decision(
+            state,
+            evidence,
+            action="prompt_tier3_user",
+            status="pass",
+            reason="final assessment met score target and completion gates",
+            next_cycle_state="cycle_n_in_progress",
+            next_cycle_phase="tier3_pending",
+        )
+
+    if state.current_cycle >= state.max_iterations:
+        return _max_iterations_decision(state, evidence)
+
+    return _decision(
+        state,
+        evidence,
+        action="run_lfg_cycle",
+        status="pass",
+        reason="assessment target not met; run next delivery/fix loop",
+        next_cycle_state="cycle_n_in_progress",
+        next_cycle_phase="not_started",
+        extra_evidence=_adaptive_target_evidence(evidence.assessment),
+    )
+
+
 def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecision:
     """Return the next durable-loop decision without writing state."""
     if is_terminal_state(state):
@@ -422,17 +846,12 @@ def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecis
             reason=f"terminal state refuses re-entry: {state.cycle_state}",
         )
 
-    if state.current_cycle >= state.max_iterations:
-        return _decision(
-            state,
-            evidence,
-            action="stop_max_iterations",
-            status="failure",
-            reason=f"max iterations reached: {state.current_cycle}/{state.max_iterations}",
-            next_cycle_state="aborted",
-            next_cycle_phase=None,
-            extra_evidence={"stop_reason": "stop_max_iterations"},
-        )
+    if evidence.eval_status == "fail":
+        return _failed_eval_decision(state, evidence)
+
+    invalid_receipt_decision = _invalid_receipt_decision(state, evidence)
+    if invalid_receipt_decision is not None:
+        return invalid_receipt_decision
 
     if evidence.progress_made is False:
         next_no_progress_count = state.no_progress_count + 1
@@ -454,7 +873,13 @@ def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecis
                 },
             )
 
+    adaptive_decision = _decide_adaptive_goal(state, evidence)
+    if adaptive_decision is not None:
+        return adaptive_decision
+
     action, status, reason = _route_for_state(state)
+    if state.current_cycle >= state.max_iterations and action in DELIVERY_LOOP_ACTIONS:
+        return _max_iterations_decision(state, evidence)
     if evidence.eval_status == "missing" and action in EVIDENCE_REQUIRED_ACTIONS:
         return _decision(
             state,
@@ -471,7 +896,11 @@ def apply_decision(state: LoopState, decision: LoopDecision) -> LoopState:
     """Return state after applying a controller decision."""
     if decision.action in {
         "refuse_terminal_state",
+        "block_failed_eval",
         "require_eval_evidence",
+        "require_assessment_evidence",
+        "require_receipt_validation",
+        "run_scope_drift",
     }:
         return state
 
@@ -488,12 +917,20 @@ def apply_decision(state: LoopState, decision: LoopDecision) -> LoopState:
             )
         return LoopState.from_dict(data)
 
-    if decision.action == "start_next_cycle":
+    if decision.action in {"start_next_cycle", "run_lfg_cycle"}:
         data["cycle_state"] = "cycle_n_in_progress"
         data["cycle_phase"] = "not_started"
         data["current_cycle"] = state.current_cycle + 1
         data["last_validator_status"] = "not_yet_run"
         data["tier2_last_verdict"] = None
+
+    if (
+        decision.action == "prompt_tier3_user"
+        and decision.next_cycle_state == "cycle_n_in_progress"
+        and decision.next_cycle_phase == "tier3_pending"
+    ):
+        data["cycle_state"] = "cycle_n_in_progress"
+        data["cycle_phase"] = "tier3_pending"
 
     if decision.evidence.get("progress_made") is True:
         data["no_progress_count"] = 0

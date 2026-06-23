@@ -188,9 +188,14 @@ Legacy state without `cycle_phase` gets one explicit coarse fallback decision:
 
 ### Attempt Budget
 
-If `current_cycle >= max_iterations` and the goal is not complete, return
-`stop_max_iterations`. The persisted state becomes `aborted` with a concrete
-`aborted_reason`.
+Current executable behavior is narrower than the original June 2026 design
+sketch: `current_cycle >= max_iterations` returns `stop_max_iterations` only
+when the controller would start another delivery/fix loop, such as
+`start_next_cycle`, `resume_cycle_from_start`, or `run_lfg_cycle`. It does not
+block ratification-only routes such as `prompt_tier3_user` for a completed
+final assessment or legacy `tier2_checked` / `tier3_pending` resume path. When
+`stop_max_iterations` is returned, the persisted state becomes `aborted` with a
+concrete `aborted_reason`.
 
 ### No-Progress Budget
 

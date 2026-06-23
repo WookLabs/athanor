@@ -47,6 +47,97 @@
     "progress_made": {
       "type": ["boolean", "null"]
     },
+    "score_target": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "overall_score",
+        "min_dimension_score"
+      ],
+      "properties": {
+        "overall_score": {
+          "type": "number"
+        },
+        "min_dimension_score": {
+          "type": "number"
+        },
+        "completion_gates_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "assessment": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "report_path",
+        "overall_score",
+        "min_dimension_score",
+        "target_met",
+        "priority_plan_items",
+        "dimensions"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "baseline",
+            "delta",
+            "final"
+          ]
+        },
+        "report_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "overall_score": {
+          "type": "number"
+        },
+        "min_dimension_score": {
+          "type": "number"
+        },
+        "target_met": {
+          "type": "boolean"
+        },
+        "priority_plan_items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dimensions": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "score",
+              "target_met",
+              "regressed"
+            ],
+            "properties": {
+              "score": {
+                "type": "number"
+              },
+              "target": {
+                "type": ["number", "null"]
+              },
+              "floor": {
+                "type": ["number", "null"]
+              },
+              "target_met": {
+                "type": "boolean"
+              },
+              "regressed": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
     "references": {
       "type": "array",
       "items": {
