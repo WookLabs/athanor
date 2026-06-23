@@ -881,7 +881,14 @@ def validate_emission_sentinel(message: str) -> bool:
     # form. Content forgery still raises hash mismatch — whitespace is not
     # a security boundary. Companion-fix to v0.11.3/4/5 runtime+doc arc.
     body_canonical = body_after.strip()
-    actual_hash = hashlib.sha256(body_canonical.encode("utf-8")).hexdigest()
+    # errors="surrogatepass": a lone surrogate (e.g. from a shell→python pipe
+    # that mangled a non-ASCII byte such as an em-dash) would otherwise raise
+    # UnicodeEncodeError here and crash the hook. The emit side
+    # (sentinel_helper.py) encodes the SAME canonical body with the SAME handler,
+    # so the round-trip hash still agrees byte-for-byte on identical input.
+    actual_hash = hashlib.sha256(
+        body_canonical.encode("utf-8", errors="surrogatepass")
+    ).hexdigest()
     stored_hash = state.get("body_hash", "")
     if not isinstance(stored_hash, str) or actual_hash != stored_hash:
         _stderr(
@@ -1072,6 +1079,20 @@ def main() -> int:
     # v0.11.7 B1 minimal closure — detection only, fires BEFORE the off-profile
     # early return so mutations flipping standard→off still surface the warning.
     _check_profile_mutation(profile)
+    # Opt-in gate: enforcement requires athanor.json. When no config resolves
+    # (config_path is None) the project has not opted in, and the gate is
+    # UNSATISFIABLE — the only sanctioned release path (emit a valid v=2
+    # sentinel) routes through the same opt-in-gated state machinery
+    # (get_state_dir → _athanor_opt_in), which returns None/False without
+    # athanor.json. So both write_nonce_state (helper emit) and read_nonce_state
+    # (validate_emission_sentinel) no-op, leaving the model with no way to
+    # satisfy a block. This mirrors the circuit-breaker stance below (state
+    # persistence is opt-in; an un-opted-in repo is a no-op). Without opt-in,
+    # fail-open (exit 0) rather than block-forever. The plugin installs the Stop
+    # hook user-scope (global), so this is the default for every non-athanor
+    # checkout. (profile=off below is the opt-OUT path for opted-in repos.)
+    if config_path is None:
+        return 0
     if profile == "off":
         # Audit breadcrumb — makes ancestor-hijack visible. The user (or a
         # future auditor) can see WHICH athanor.json disabled the gate AND
