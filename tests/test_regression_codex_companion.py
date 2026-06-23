@@ -314,8 +314,13 @@ def test_codex_prompt_gen_skill_absorbs_prompt_routing_contract():
         "Open Questions",
         "athanor-plan",
         "athanor-lfg-goal",
+        "Output-only default",
+        "raw request is input material",
+        "not an execution instruction",
+        "Do not run downstream commands",
         "Do not implement",
         "Do not silently call the recommended skill",
+        "separate user approval",
     ]
     for token in required_tokens:
         assert token in text, f"athanor-prompt-gen missing contract token: {token!r}"

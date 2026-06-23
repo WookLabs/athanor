@@ -22,9 +22,10 @@ no `name:` frontmatter because skills dispatch them inline with session paths
 and task-specific packets. Registering them would add surface area without a
 usable standalone invocation path.
 
-`prompt-gen` is an intake-framing skill, not a new agent. It clarifies the
-request, emits `prompt-gen.md`, and recommends the next skill. It should not
-execute, plan the solution, or silently invoke the recommended skill.
+`prompt-gen` is an output-only intake-framing skill, not a new agent. It treats
+the raw request as prompt material, emits `prompt-gen.md`, and recommends the
+next skill. It should not execute, plan the solution, run downstream commands,
+or silently invoke the recommended skill.
 
 `deep-plan` and `lite-plan` are planning-wrapper skills, not new agents. They
 bind the requested planning tier, then delegate to the canonical `plan`

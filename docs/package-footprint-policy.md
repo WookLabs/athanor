@@ -30,7 +30,7 @@ python scripts/gates/package_footprint_policy.py --strict --json
 
 The gate uses the same broad package scan as distribution smoke, excluding
 local runtime/cache directories such as `.athanor/`, `.git/`,
-`.pytest_cache/`, `__pycache__/`, and `ref/`.
+`.pytest_cache/`, `.venv/`, `__pycache__/`, and `ref/`.
 
 ## Ship Profile Buckets
 
@@ -42,6 +42,7 @@ The report classifies files into buckets such as:
 - `schemas`;
 - `docs`;
 - `development_history`;
+- `development_metadata`;
 - `development_ci`;
 - `tests`;
 - `evals`;
@@ -51,11 +52,15 @@ The report classifies files into buckets such as:
 The default dev-only candidates are:
 
 - `tests/**`;
+- `.venv/**`;
 - `docs/plans/**`;
 - `docs/archive/**`;
 - `docs/goals-completed/**`;
 - `docs/architecture/**`;
-- `.github/**`.
+- `.github/**`;
+- `.python-version`;
+- `pyproject.toml`;
+- `uv.lock`.
 
 Each candidate is reported with `recommended_action:
 exclude-from-ship-profile`. This is a recommendation for a future packaging

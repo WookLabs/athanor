@@ -352,6 +352,26 @@ def _is_git_repo(path: Path) -> bool:
     return _git_value(path, "rev-parse", "--is-inside-work-tree") == "true"
 
 
+def _branch_from_decorations(raw: str) -> str:
+    for item in raw.split(", "):
+        if item.startswith("HEAD -> "):
+            return item.removeprefix("HEAD -> ")
+    return ""
+
+
+def _git_head_info(path: Path) -> dict[str, str] | None:
+    raw = _git_value(path, "show", "-s", "--format=%cI%x00%h%x00%D", "HEAD")
+    parts = raw.split("\x00", 2)
+    if len(parts) < 2 or not parts[0] or not parts[1]:
+        return None
+    decorations = parts[2] if len(parts) > 2 else ""
+    return {
+        "last_commit": parts[0],
+        "sha": parts[1],
+        "branch": _branch_from_decorations(decorations),
+    }
+
+
 def _scan_refs(
     *,
     repo_root: Path,
@@ -369,17 +389,18 @@ def _scan_refs(
     for child in children:
         if not child.is_dir():
             continue
-        if not _is_git_repo(child):
+        git_info = _git_head_info(child)
+        if git_info is None:
             non_git.append(_rel(repo_root, child))
             continue
-        commit_date = _git_value(child, "log", "-1", "--format=%cI")
+        commit_date = git_info["last_commit"]
         age_days = None
         if commit_date:
             age_days = (today - _parse_iso_datetime(commit_date).date()).days
         item = {
             "path": _rel(repo_root, child),
-            "branch": _git_value(child, "branch", "--show-current"),
-            "sha": _git_value(child, "rev-parse", "--short", "HEAD"),
+            "branch": git_info["branch"],
+            "sha": git_info["sha"],
             "last_commit": commit_date,
             "age_days": age_days,
         }

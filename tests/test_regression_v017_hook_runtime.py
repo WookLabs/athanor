@@ -269,6 +269,24 @@ def test_resolve_project_root_finds_athanor_json(tmp_path):
     assert result.resolve() == proj.resolve()
 
 
+def test_resolve_project_root_prefers_claude_project_dir(monkeypatch, tmp_path):
+    """Installed hooks may run from a plugin cache cwd while Claude exposes
+    the real project through CLAUDE_PROJECT_DIR."""
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "athanor.json").write_text("{}", encoding="utf-8")
+    outside = tmp_path / "plugin-cache"
+    outside.mkdir()
+
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+    monkeypatch.chdir(outside)
+
+    result = runtime.resolve_project_root()
+
+    assert result is not None
+    assert result.resolve() == project.resolve()
+
+
 def test_resolve_project_root_returns_none_when_nothing(tmp_path):
     """No markers anywhere → returns None."""
     bare = tmp_path / "bare"

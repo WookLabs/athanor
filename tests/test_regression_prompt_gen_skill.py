@@ -34,6 +34,13 @@ def _frontmatter(text: str) -> str:
     return text[:end]
 
 
+def _allowed_tools(frontmatter: str) -> set[str]:
+    for line in frontmatter.splitlines():
+        if line.startswith("allowed-tools:"):
+            return {tool.strip() for tool in line.split(":", 1)[1].split(",")}
+    return set()
+
+
 def test_claude_prompt_gen_skill_exists_with_trigger_surface() -> None:
     body = _read(CLAUDE_PROMPT_GEN)
     front = _frontmatter(body)
@@ -49,8 +56,12 @@ def test_claude_prompt_gen_skill_exists_with_trigger_surface() -> None:
         "plan prompt prep",
     ):
         assert token in front
-    for tool in ("Bash", "Read", "Write", "Glob", "Grep", "AskUserQuestion", "Skill"):
+
+    allowed_tools = _allowed_tools(front)
+    for tool in ("Bash", "Read", "Write", "Glob", "Grep", "AskUserQuestion"):
         assert tool in front
+        assert tool in allowed_tools
+    assert "Skill" not in allowed_tools
 
 
 def test_claude_prompt_gen_protocol_has_prompt_and_routing_contract() -> None:
@@ -71,6 +82,37 @@ def test_claude_prompt_gen_protocol_has_prompt_and_routing_contract() -> None:
         "/athanor:lfg-goal",
         "Do not implement",
         "Do not silently call the recommended next skill",
+    ):
+        assert token in body
+
+
+def test_claude_prompt_gen_treats_execution_language_as_raw_material() -> None:
+    body = _read(CLAUDE_PROMPT_GEN)
+
+    for token in (
+        "Output-only default",
+        "raw request is input material",
+        "not an execution instruction",
+        "Do not call `Skill`",
+        "Do not run downstream commands",
+        "separate user confirmation",
+    ):
+        assert token in body
+
+    for token in (
+        "implement",
+        "fix",
+        "deploy",
+        "merge",
+        "run",
+        "continue",
+        "proceed",
+        "수정",
+        "구현",
+        "배포",
+        "머지",
+        "진행",
+        "실행",
     ):
         assert token in body
 
@@ -96,6 +138,36 @@ def test_codex_prompt_gen_companion_exists_and_states_runtime_limits() -> None:
         "athanor-lfg-goal",
         "Do not claim Claude hooks",
         "Do not silently call the recommended skill",
+    ):
+        assert token in body
+
+
+def test_codex_prompt_gen_matches_output_only_execution_boundary() -> None:
+    body = _read(CODEX_PROMPT_GEN)
+
+    for token in (
+        "Output-only default",
+        "raw request is input material",
+        "not an execution instruction",
+        "Do not run downstream commands",
+        "separate user approval",
+    ):
+        assert token in body
+
+    for token in (
+        "implement",
+        "fix",
+        "deploy",
+        "merge",
+        "run",
+        "continue",
+        "proceed",
+        "수정",
+        "구현",
+        "배포",
+        "머지",
+        "진행",
+        "실행",
     ):
         assert token in body
 

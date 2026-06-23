@@ -53,6 +53,9 @@ Then try it:
 
 ```bash
 git clone https://github.com/WookLabs/athanor.git
+cd athanor
+uv sync --locked --dev
+uv run python -m pytest tests/ -q
 claude --plugin-dir /path/to/athanor
 ```
 
@@ -96,7 +99,7 @@ You:     /athanor:work --team
 | Command | Mode | What it does |
 |---------|------|-------------|
 | `/athanor:setup` | — | Health check and configuration |
-| `/athanor:prompt-gen` | Plan | Clarify a vague request into a reusable prompt and recommend the next skill |
+| `/athanor:prompt-gen` | Plan | Clarify a vague request into a reusable prompt and recommend the next skill without executing it |
 | `/athanor:discuss` | Plan | Decision brainstorming (researcher + devil's advocate + critic) |
 | `/athanor:analyze` | Plan | Parallel fast analysis (multiple workers simultaneously) |
 | `/athanor:assess` | Plan | Goal-aligned 100-point assessment with overbuilt/underbuilt findings |

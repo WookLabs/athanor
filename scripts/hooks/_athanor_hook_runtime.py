@@ -11,8 +11,8 @@ Per S06 scope (minimalist, Plan B-adopted):
      parsed dict or {} on any error.
   3. `is_hook_profile_off(config)` — returns True if
      `hooks.profile == "off"`. Used by all hooks for opt-out.
-  4. `resolve_project_root()` — walk-up to find .git or athanor.json.
-     Returns Path or None.
+  4. `resolve_project_root()` — find $CLAUDE_PROJECT_DIR, .git, or
+     athanor.json. Returns Path or None.
 
 DESIGN PRINCIPLES (per C1 conflict resolution adopting Plan B):
   - No framework, no class hierarchy — bare module-level helpers.
@@ -114,16 +114,25 @@ def _walk_up_for(marker_check) -> Path | None:
 
 
 def resolve_project_root() -> Path | None:
-    """Walk up from cwd to the first directory containing either ``.git/``
-    or ``athanor.json``. Returns that Path, or ``None`` if nothing found
-    within the walk-up bounds.
+    """Resolve the current Athanor project root.
 
     Used by callers that want a stable reference dir (e.g., for resolving
-    session paths). Does NOT consult ``$CLAUDE_PROJECT_DIR`` — that's
-    config-resolution policy, kept inside the scripts that need it.
+    session paths). ``$CLAUDE_PROJECT_DIR`` wins when it points at a directory
+    containing either ``.git/`` or ``athanor.json``; otherwise this falls back
+    to walking up from cwd within the walk-up bounds.
     """
     def _is_root(p: Path) -> bool:
         return (p / ".git").is_dir() or (p / ATHANOR_CONFIG_NAME).is_file()
+
+    env_proj = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_proj:
+        try:
+            candidate = Path(env_proj).resolve()
+        except (OSError, RuntimeError):
+            candidate = Path(env_proj)
+        if _is_root(candidate):
+            return candidate
+
     return _walk_up_for(_is_root)
 
 

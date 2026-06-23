@@ -197,7 +197,7 @@ def _extract_test_targets(pytest_args: list[str]) -> list[str]:
 
 def _scope_for_targets(targets: list[str]) -> str:
     if not targets:
-        return "unspecified"
+        return "full_suite"
     normalized = {t.replace("\\", "/").rstrip("/") for t in targets}
     if normalized == {"tests"} or normalized == {"."}:
         return "full_suite"
