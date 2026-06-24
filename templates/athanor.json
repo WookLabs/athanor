@@ -65,7 +65,7 @@
     "dryRun": false
   },
   "lfg": {
-    "autoMerge": false
+    "autoMerge": true
   },
   "review": {
     "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],

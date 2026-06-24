@@ -2,15 +2,16 @@
 
 Contract under lock
 -------------------
-`/athanor:lfg` Step 8.5 adds an **opt-in (default-off) merge** of a green PR
+`/athanor:lfg` Step 8.5 adds an **opt-out (default-ON) merge** of a green PR
 to its base branch, gated behind a **fail-loud conjunctive merge-readiness
 gate**. Three properties make lfg identity-bearing here and are the reason a
 *logic* lock (not just a vocabulary lock) is required:
 
-1. **Opt-in, default-off.** Merging to a base branch is consequential and
-   effectively irreversible, so the safe terminal state stays "PR open + CI
-   green". Merge is reachable only via `--merge` / `lfg.autoMerge` (default
-   ``false``); `--no-merge` hard-disables even when config enables it.
+1. **Opt-out, default-ON.** Merging a green PR to its base branch happens by
+   default, but only after the conjunctive readiness gate passes — disabling it
+   is a one-flag opt-out. The fail-safe *disable* direction wins ties:
+   `--unmerge` (default ``true`` via `lfg.autoMerge`) hard-disables even when
+   config enables it; `--merge` explicitly enables when config is ``false``.
 
 2. **Conjunctive (AND) gate.** Merge proceeds **iff ALL** clauses G1–G5 hold
    (after a G0 entry/re-entry check). A static test that asserted only that the
@@ -259,7 +260,7 @@ def test_result_packet_has_all_eight_merge_states() -> None:
         "already-merged",
         "blocked-by-gate",
         "blocked-merge-queue",
-        "skipped-not-opted-in",
+        "skipped-merge-disabled",
         "skipped-no-pr",
         "skipped-pr-closed",
         "skipped-head-equals-base",
@@ -357,27 +358,35 @@ def test_head_equals_base_skip_clause() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 11. Opt-in default-off: --merge/--no-merge + lfg.autoMerge + literal default-off.
+# 11. Opt-out default-ON: --merge/--unmerge + lfg.autoMerge + literal default-on.
 # ---------------------------------------------------------------------------
-def test_opt_in_default_off_statement() -> None:
+def test_opt_out_default_on_statement() -> None:
     block = _step_8_5_block()
-    assert "--merge" in block, "Step 8.5 must document the `--merge` opt-in flag."
-    assert "--no-merge" in block, (
-        "Step 8.5 must document `--no-merge` (the hard-disable / fail-safe flag)."
+    assert "--merge" in block, (
+        "Step 8.5 must document the `--merge` explicit-enable flag (kept as the "
+        "symmetric counterpart of `--unmerge`)."
+    )
+    assert "--unmerge" in block, (
+        "Step 8.5 must document `--unmerge` (the hard-disable / fail-safe opt-out "
+        "flag that replaced `--no-merge`)."
+    )
+    assert "--no-merge" not in block, (
+        "Step 8.5 must NOT retain the old `--no-merge` flag — it was renamed to "
+        "`--unmerge` for the opt-out (default-on) design."
     )
     assert "lfg.autoMerge" in block, (
         "Step 8.5 must document the `lfg.autoMerge` config knob."
     )
     lowered = block.lower()
     assert (
-        "default `false`" in lowered
-        or "default false" in lowered
-        or re.search(r"default[^.\n]{0,20}false", lowered)
-        or "off by default" in lowered
-        or "opt-in" in lowered
+        "default `true`" in lowered
+        or "default true" in lowered
+        or re.search(r"default[^.\n]{0,20}true", lowered)
+        or "on by default" in lowered
+        or "opt-out" in lowered
     ), (
-        "Step 8.5 must carry a literal default-off statement (e.g. 'default "
-        "`false`', 'OFF by default', or 'opt-in')."
+        "Step 8.5 must carry a literal default-ON statement (e.g. 'default "
+        "`true`', 'ON by default', or 'opt-out')."
     )
 
 
@@ -417,23 +426,23 @@ def test_post_merge_boundary_vs_releaser() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 14. Config: athanor.json AND template default-off; schema knob is boolean.
+# 14. Config: athanor.json AND template default-ON; schema knob is boolean.
 # ---------------------------------------------------------------------------
-def test_athanor_json_auto_merge_default_false() -> None:
+def test_athanor_json_auto_merge_default_true() -> None:
     config = json.loads(ATHANOR_JSON.read_text(encoding="utf-8"))
     assert "lfg" in config, "athanor.json must declare an `lfg` block."
-    assert config["lfg"].get("autoMerge") is False, (
-        "athanor.json `lfg.autoMerge` must be the boolean False by default "
-        "(the load-bearing default-off value)."
+    assert config["lfg"].get("autoMerge") is True, (
+        "athanor.json `lfg.autoMerge` must be the boolean True by default "
+        "(the load-bearing default-ON value; opt-out via `--unmerge`)."
     )
 
 
-def test_template_athanor_json_auto_merge_default_false() -> None:
+def test_template_athanor_json_auto_merge_default_true() -> None:
     config = json.loads(TEMPLATE_JSON.read_text(encoding="utf-8"))
     assert "lfg" in config, "templates/athanor.json must declare an `lfg` block."
-    assert config["lfg"].get("autoMerge") is False, (
-        "templates/athanor.json `lfg.autoMerge` must be the boolean False by "
-        "default (shipped scaffold mirrors the safe default)."
+    assert config["lfg"].get("autoMerge") is True, (
+        "templates/athanor.json `lfg.autoMerge` must be the boolean True by "
+        "default (shipped scaffold mirrors the default-ON value)."
     )
 
 

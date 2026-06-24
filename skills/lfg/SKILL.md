@@ -322,20 +322,23 @@ merge --rebase` + `--delete-branch` (best-effort). It **never** version-bumps,
 git-tags, or edits CHANGELOG/STATE.md — that stays the `athanor-releaser`
 ceremony (`agents/releaser.md`). See §"Post-merge boundary" below.
 
-#### Opt-in resolution (merge is OFF by default)
+#### Opt-out resolution (merge is ON by default)
 
-`/athanor:lfg` terminates at "PR open + CI green" by default. Merging to a base
-branch is consequential and effectively irreversible, so it is gated behind an
-**explicit opt-in**, resolved in this precedence:
+`/athanor:lfg` auto-merges a green PR by default, but still only through the
+fail-loud conjunctive readiness gate below — merging to a base branch is
+consequential and effectively irreversible, so disabling it stays a one-flag
+**opt-out**. Resolution precedence (the fail-safe *disable* direction wins ties):
 
-1. `--merge` / `--no-merge` invocation flag (highest precedence). `--no-merge`
-   **hard-disables** even when config enables it — the fail-safe direction wins
-   ties.
-2. else `athanor.json` `lfg.autoMerge` (boolean, **default `false`**).
-3. else **off**.
+1. `--unmerge` invocation flag (**highest precedence**) → **hard-disables** the
+   merge even when config enables it — the fail-safe direction wins ties.
+2. else `--merge` invocation flag → explicitly **enables**, overriding a config
+   that is `false`.
+3. else `athanor.json` `lfg.autoMerge` (boolean, **default `true`**).
+4. else **on**.
 
-If merge is **not** opted in, Step 8.5 is a **no-op** that records
-`merge: skipped-not-opted-in` and proceeds to Step 9. Do not run the gate.
+If merge is **disabled** (`--unmerge`, or `lfg.autoMerge: false` with no
+`--merge`), Step 8.5 is a **no-op** that records `merge: skipped-merge-disabled`
+and proceeds to Step 9. Do not run the gate.
 
 #### The merge-readiness gate (ordered conjunction, fail-loud)
 
@@ -540,7 +543,7 @@ merge: <one of>
   already-merged           # G0 re-entry found state == MERGED (honest merged report, never blocked)
   blocked-by-gate          # a G1..G5 clause failed (+ failing clause + one-line reason)
   blocked-merge-queue      # repo uses a merge queue; left for the queue/human (G5)
-  skipped-not-opted-in     # merge not opted in (no --merge / lfg.autoMerge=false)
+  skipped-merge-disabled   # merge disabled (--unmerge, or lfg.autoMerge=false with no --merge)
   skipped-no-pr            # no open PR / gh unavailable (shares Step 8's skip guard)
   skipped-pr-closed        # G0 found state == CLOSED (closed un-merged)
   skipped-head-equals-base # headRefName == baseRefName; nothing to merge
