@@ -124,6 +124,8 @@ discoveries: {tagged discoveries}
 END_RESULT
 ```
 
+Common convention: `docs/worker-context-packets.md`.
+
 ---
 
 ## 3. Result Brief Format

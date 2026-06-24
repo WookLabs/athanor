@@ -270,6 +270,8 @@ Worker에게 넘기는 정보:
 }
 ```
 
+Common convention: `docs/worker-context-packets.md`.
+
 **완료 시:**
 1. local lesson 추출/정리 (`.athanor/lessons/`, 2-tier frontmatter)
 2. cleaner 실행
