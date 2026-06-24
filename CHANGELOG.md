@@ -3,7 +3,22 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.22.0] — 2026-06-24
+
+### Added
+
+- **`/athanor:lfg-goal` durable loop controller strengthened (PR #65).** The
+  goal-loop controller gains an **adaptive score-target router**: it validates
+  assessment evidence with fail-loud parsing, runs a two-way `target_met`
+  cross-check against the computed scores (so a claimed pass is rejected when
+  the numbers disagree, and vice versa), and routes baseline/delta assessment
+  results into the next lfg-cycle carrying the lowest-scoring dimensions as the
+  focus. Review-hardening lands alongside it: **persistent block/escalate
+  states are now bounded** — a stuck `eval_status=fail` / invalid-receipt loop
+  terminates via `stop_no_progress` → `aborted` instead of spinning — and the
+  **CLI exit-code contract** now returns non-zero for every stop/block action
+  (`exit 0` ⟺ the controller authorized a forward action). New fixture-gate
+  scenarios plus a re-drive regression test lock the behavior.
 
 ### Changed
 
