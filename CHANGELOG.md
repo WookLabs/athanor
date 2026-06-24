@@ -3,6 +3,22 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.22.1] — 2026-06-25
+
+### Added
+
+- **Worker context packet convention (slim, advisory).** Adds
+  `docs/worker-context-packets.md` — a lightweight dispatch-hygiene convention
+  that names what a clean-context worker should receive in its dispatch packet
+  and return in its result. It is **convention-only and not runtime-enforced**:
+  rather than re-encoding the contracts, it references the existing canonical
+  sources — the executor dispatch packet in `skills/work/references/splitter.md`,
+  the `ATHANOR_RESULT` result schema in
+  `skills/work/references/spec-then-tdd-handler.md`, and the runtime write-scope
+  in `skills/work/references/freeze.md`. A single doc-pin regression test locks
+  the convention's cross-references. The plugin surface stays frozen: 4
+  registered agents and the existing native command set are unchanged.
+
 ## [0.22.0] — 2026-06-24
 
 ### Added
