@@ -200,10 +200,20 @@ concrete `aborted_reason`.
 ### No-Progress Budget
 
 If summarized evidence says `progress_made=false`, increment
-`no_progress_count`. If the count reaches `no_progress_threshold`, return
-`stop_no_progress` and persist `aborted`.
+`no_progress_count`. A **persistent block** counts as no-progress the same
+way: an `eval_status=fail` cycle (emitting `block_failed_eval`) or an
+`invalid_steps_present` cycle (emitting `run_scope_drift`) with no positive
+progress (`progress_made` not `true`) also increments `no_progress_count`.
+A block is "stay put and surface the failure," so it does not advance
+`current_cycle`/`cycle_state`/`cycle_phase` — only the `no_progress_count`
+accumulator moves. If the count reaches `no_progress_threshold`, return
+`stop_no_progress` and persist `aborted`, including when the threshold is
+reached on a blocking cycle (the controller returns `stop_no_progress`
+instead of the block action).
 
-If evidence says `progress_made=true`, reset `no_progress_count` to `0`.
+If evidence says `progress_made=true`, reset `no_progress_count` to `0` —
+a single block followed by a progress cycle (the legitimate
+"block once → user fixes it → continue" path) never aborts.
 
 ### Eval Evidence Guard
 

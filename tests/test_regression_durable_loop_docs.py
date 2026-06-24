@@ -17,6 +17,12 @@ def test_durable_loop_doc_names_cli_fixture_state_and_boundary() -> None:
         "stop_no_progress",
         "stop_max_iterations",
         "require_eval_evidence",
+        # Exit-code contract (BLOCKER 2): the block/refuse actions that exit 1
+        # must be enumerated in the "Exit codes" section.
+        "block_failed_eval",
+        "run_scope_drift",
+        "require_assessment_evidence",
+        "require_receipt_validation",
         "does not invoke Claude Code",
     ):
         assert token in body

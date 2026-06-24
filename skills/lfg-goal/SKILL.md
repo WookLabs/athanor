@@ -275,8 +275,8 @@ checks exit 0>
   validator-passed receipt AND, when Score target is enabled, latest
   assessment score passes target_overall_score plus
   target_min_dimension_score
-- invalid_cycle: receipt aggregate=invalid for `noProgressThreshold`
-  consecutive cycles
+- invalid_cycle: receipt aggregate `invalid_steps_present` for
+  `noProgressThreshold` consecutive cycles
 - blocked: explicit user abort via Tier 3 prompt
 - max_iterations: cycle counter reaches `lfgGoal.maxIterations`
 
@@ -383,8 +383,9 @@ Bash-only checks. Same shape as `/athanor:lfg` Step 2 GATE checks.
 PASS requires **all** of:
 
 1. **Ledger arithmetic.** All G-markers in `goal.md` have `[x]`; each
-   has `closed_by: CNNN`; each referenced CNNN has receipt with
-   `aggregate: valid`.
+   has `closed_by: CNNN`; each referenced CNNN has a receipt with
+   aggregate `all_valid` (or `completed_with_residuals` with user
+   override).
 2. **Verify command.** Run `goal.md` §"Verify command" (single Bash
    one-liner); capture exit code. Exit 0 → signal PASS.
 3. **AE-ID evidence index.** For each AE-ID in `goal.md`, grep cycle
