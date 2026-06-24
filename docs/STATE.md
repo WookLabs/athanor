@@ -4,7 +4,28 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.22.0 — Default-On lfg Auto-Merge + Strengthened lfg-goal Loop
+## Current Phase: v0.22.1 — Worker Context Packet Convention (slim)
+
+**v0.22.1** (released 2026-06-25) — Patch release shipping a single
+documentation-only convention landed on main since v0.22.0 (PR #69, merged as
+`5a42bdc`). New `docs/worker-context-packets.md` (~61 lines) is a lightweight,
+**advisory** dispatch-hygiene convention: it names what a clean-context worker
+should be handed in its dispatch packet and what it must return, but instead of
+re-encoding any contract it references the existing canonical sources — the
+executor dispatch packet in `skills/work/references/splitter.md`, the
+`ATHANOR_RESULT` result schema in `skills/work/references/spec-then-tdd-handler.md`,
+and the runtime write-scope in `skills/work/references/freeze.md`. It is
+**convention-only and not runtime-enforced**; a single doc-pin regression test
+locks the cross-references. (It supersedes an initially over-built schema+gate
+build-out that cross-model review shrank to a small net doc addition.) The
+plugin surface stays frozen: 4 registered agents (`ci-watcher`,
+`codex-dispatcher`, `learner`, `releaser`) and the existing native command set
+are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.22.0 — Default-On lfg Auto-Merge + Strengthened lfg-goal Loop
 
 **v0.22.0** (released 2026-06-24) — Minor release shipping two
 `/athanor:lfg` / `/athanor:lfg-goal` improvements landed on main since
@@ -113,48 +134,6 @@ repo-local rather than default packaged context.
 
 Release verification closed with Claude/Codex manifest validation, distribution
 smoke, topology/package/mirror gates, and focused regression coverage.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.19.2 — Prompt, Goal, and Topology Patch
-
-**v0.19.2** (released 2026-06-19) — Patch release for the v0.19 deployment:
-the validation workflow dependency fix remains in place, and the prompt
-generation, score-target goal-loop, and agent-topology branches are now
-published as a versioned plugin update. The plugin surface includes
-`/athanor:assess` and `/athanor:prompt-gen`; the Codex companion mirror includes
-`athanor-assess` and `athanor-prompt-gen`. The broader runtime remains
-conservative: new gates are local/read-only or opt-in unless an operator
-explicitly applies state changes.
-
-1. **Assessment skill.** Adds a reusable 100-point, weighted, goal-aligned
-   analysis skill that scores detailed dimensions, records confidence, calls
-   out overbuilt/underbuilt parts, and produces add/remove/priority guidance
-   before implementation work starts.
-2. **Prompt generation and skill routing.** Adds `/athanor:prompt-gen` as a
-   Plan Mode intake surface that turns vague requests into structured prompts,
-   records assumptions and open questions, and recommends the next Athanor
-   skill without starting implementation.
-3. **Evidence and loop harness.** Promotes the PostToolUse evidence sniffer,
-   live-redacted hook corpus, fixture replay, durable loop controller,
-   runtime conformance, observability snapshots, workflow episode packaging,
-   native runtime probes, and external-eval adapters into committed gates and
-   docs without enabling unsafe live execution by default.
-4. **Organization operating model.** Adds office/stage routing, work-item
-   registry, stage receipts, policy-promotion ledger, package knowledge index,
-   package-footprint policy, and computed organization score gate so the
-   "company-like" operating model is evidence-backed instead of prose-only.
-5. **346-ref optimization.** The follow-up optimization pass keeps
-   the 4 registered agents and 11 native commands intact while adding local
-   gates for catalog admission, memory index, memory retrieval eval, workflow trace query,
-   Codex mirror parity, work-item stage transition, and
-   ship-profile reduction. The gate bundle is intentionally read-only and
-   keeps `ref/` plus historical planning, architecture, and test evidence
-   repo-local rather than default packaged context.
-
-Release verification closed with the focused release gates, distribution smoke,
-runtime/package/organization gates, and the full pytest suite.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
