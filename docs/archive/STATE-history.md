@@ -1352,3 +1352,31 @@ regression — found by dogfooding the bug review on athanor itself.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
+
+## Archived from STATE.md (2026-06-24, v0.21.0 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
+
+**v0.18.7** (released 2026-06-07) — An evidence-based plugin-diet audit (3
+Explore agents + direct verification). Honest finding: athanor is already lean;
+most audit "candidates" were refuted (ROADMAP test-locked, DESIGN
+cross-referenced, dead one-shot scripts inert + test-entangled), and one
+"orphan" finding was refuted by the existing v0.13.0 contract tests and dropped
+(the test net working). No identity-invariant change.
+
+1. **Agents 11 → 4 registered.** The 7 inline-only pipeline roles (analyst,
+   cleaner, critic, executor, planner, researcher, reviewer) de-registered to
+   pure reference docs (name/tools/model frontmatter removed, description kept) —
+   0 @-mention adoption; the registered type contradicted the collision guard
+   (skills dispatch them INLINE with session paths). learner / releaser /
+   ci-watcher / codex-dispatcher stay registered. `claude plugin validate` clean.
+2. **Honesty + staleness.** DESIGN.md dropped the v0.17.0-removed deep-plan /
+   lite-plan for `--depth=`; schema labels memory.promotionThreshold +
+   triggers.language as unimplemented / advisory (no over-claim).
+
+5 new/updated regression tests; full suite 970 passed, 0 failed. CLAUDE.md
+§Native Agent Inventory + §Effort Level + COLLISION GUARD simplified to the
+4-registered reality.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
