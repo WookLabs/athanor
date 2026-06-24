@@ -2,6 +2,38 @@
 
 Older phase sections moved out of `docs/STATE.md` by the releaser bounded-history trim rule (CONVENTIONS §7 / releaser Step 3). Verbatim moves — no content loss.
 
+## Archived from STATE.md (2026-06-24)
+
+## Previous Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
+
+**v0.18.8** (released 2026-06-12) — Ships the **athanor-codex companion plugin**
+(the window's one additive feature) plus a two-round Fable 5 audit (PR #53,
+P2–P20) of hooks, docs, and ledgers. The athanor plugin's own behavior is
+unchanged — patch, not minor (no migration guide; the companion carries its own
+independent `0.1.0+codex.*` version). No identity-invariant change.
+
+1. **athanor-codex companion** (`plugins/athanor-codex/`). A second-runtime
+   mirror of the athanor native skill set for the Codex CLI — 13 prefix-safe
+   skills (discuss/analyze/plan/work/lfg/lfg-goal/review/debug/ci-watch/
+   release/scope-drift/verify/setup), no Claude hooks, repo-local marketplace entry. P9
+   pins lfg-goal UNDETERMINED non-blocking parity both ways.
+2. **Hook hardening (security).** P14 removes a dead `DEPRECATION_SENTINEL`
+   Stop-gate bypass; P13 segment-scopes the force-push guard (`feature/main-update`
+   allowed, exact `main`/`master` blocked) and strips `sudo`/`env` wrapper
+   prefixes; P16 adds NotebookEdit/MultiEdit to Kernel Guard coverage; P15 makes
+   `.athanor/.hook-state/` creation opt-in (no debris in non-athanor repos).
+3. **Freeze + doc-contract.** P2 fixes the freeze allowlist DOA on absolute paths
+   (relativization + `allowedPaths` key unification); P18 centralizes the plugin
+   version literal via `tests/_version.py`; P5/P6/P7/P17 restore doc-contract
+   parity; P10 canonicalizes the stop-phrase whitelist; P19/P20 correct stale
+   STATE ledger rows + re-key ROADMAP deferrals to stable codenames.
+
+A 6-lens review round (0 Critical / 4 High, all fixed) closed the release; +53
+regression tests. Full suite **1025 passed, 4 skipped, 1 xpassed**.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
 ## Archived from STATE.md (2026-06-06)
 
 ## Previous Phase: v0.15.0 — LFG Pipeline Contract Reconciliation (22-bug eradication)

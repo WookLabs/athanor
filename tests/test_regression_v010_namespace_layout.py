@@ -130,7 +130,7 @@ def test_vendored_skill_frontmatter_name_matches_directory():
 
 
 def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_0_16_x_series():
-    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x series.
+    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x series.
 
     v0.10.1 generalization → v0.11.0 extension → v0.12.0 extension →
     v0.13.0 extension → v0.14.0 extension → v0.15.0 extension → v0.16.0
@@ -147,7 +147,8 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
     extended to include 0.19.x at v0.19.0 (evidence harness + organization
     model); extended to include 0.20.x at v0.20.0 (ref optimization + uv
     tooling migration); extended to include 0.21.x at v0.21.0 (opt-in
-    /athanor:lfg auto-merge + Step 8.5 gate).
+    /athanor:lfg auto-merge + Step 8.5 gate); extended to include 0.22.x
+    at v0.22.0 (default-on lfg auto-merge + strengthened lfg-goal loop).
     """
     import json
     mp = json.loads(
@@ -168,9 +169,10 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
                         or v.startswith("0.19.")
                         or v.startswith("0.20.")
                         or v.startswith("0.21.")
+                        or v.startswith("0.22.")
                      )]
     assert in_series, (
-        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x series; "
+        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x series; "
         f"got {versions}"
     )
 
@@ -204,7 +206,8 @@ def test_plugin_manifest_version_matches_marketplace():
             or pj_version.startswith("0.19.")
             or pj_version.startswith("0.20.")
             or pj_version.startswith("0.21.")
+            or pj_version.startswith("0.22.")
         ), (
-            f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x series; "
+            f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x series; "
             f"got {pj_version!r}"
         )

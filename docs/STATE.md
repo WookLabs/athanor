@@ -4,7 +4,36 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.21.0 — Opt-in /athanor:lfg Auto-Merge + Step 8.5 Gate
+## Current Phase: v0.22.0 — Default-On lfg Auto-Merge + Strengthened lfg-goal Loop
+
+**v0.22.0** (released 2026-06-24) — Minor release shipping two
+`/athanor:lfg` / `/athanor:lfg-goal` improvements landed on main since
+v0.21.0. First, **`/athanor:lfg` Step 8.5 auto-merge flips to opt-out
+(default ON)**: the `lfg.autoMerge` default is now `true`, so a green PR is
+merged once the unchanged conjunctive merge-readiness gate (G0–G5) passes;
+disabling collapses to a one-flag opt-out (`--no-merge` renamed to
+`--unmerge`, fail-safe direction wins ties), `--merge` stays the
+explicit-enable counterpart, and the disabled-skip state is renamed
+`skipped-merge-disabled` (gate logic, disposition table, re-poll, merge
+command, never-`--admin` rule, and releaser boundary all unchanged).
+Second, the **`/athanor:lfg-goal` durable loop controller is strengthened
+(PR #65)** with an adaptive score-target router — assessment-evidence
+validation with fail-loud parsing, a two-way `target_met` cross-check
+against computed scores, and baseline/delta assessment → lfg-cycle routing
+carrying the lowest-scoring dimensions — plus review-hardening that bounds
+persistent block/escalate states (a stuck `eval_status=fail` /
+invalid-receipt loop terminates via `stop_no_progress` → `aborted` instead
+of spinning) and a CLI exit-code contract that returns non-zero for all
+stop/block actions (`exit 0` ⟺ a forward action was authorized). New
+fixture-gate scenarios + a re-drive regression test lock the loop behavior.
+The plugin surface stays frozen: 4 registered agents (`ci-watcher`,
+`codex-dispatcher`, `learner`, `releaser`) and the existing native command
+set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.21.0 — Opt-in /athanor:lfg Auto-Merge + Step 8.5 Gate
 
 **v0.21.0** (released 2026-06-24) — Minor release that publishes the opt-in
 `/athanor:lfg` auto-merge surface: after CI goes green, `/athanor:lfg` Step 8.5
@@ -126,36 +155,6 @@ explicitly applies state changes.
 
 Release verification closed with the focused release gates, distribution smoke,
 runtime/package/organization gates, and the full pytest suite.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
-
-**v0.18.8** (released 2026-06-12) — Ships the **athanor-codex companion plugin**
-(the window's one additive feature) plus a two-round Fable 5 audit (PR #53,
-P2–P20) of hooks, docs, and ledgers. The athanor plugin's own behavior is
-unchanged — patch, not minor (no migration guide; the companion carries its own
-independent `0.1.0+codex.*` version). No identity-invariant change.
-
-1. **athanor-codex companion** (`plugins/athanor-codex/`). A second-runtime
-   mirror of the athanor native skill set for the Codex CLI — 13 prefix-safe
-   skills (discuss/analyze/plan/work/lfg/lfg-goal/review/debug/ci-watch/
-   release/scope-drift/verify/setup), no Claude hooks, repo-local marketplace entry. P9
-   pins lfg-goal UNDETERMINED non-blocking parity both ways.
-2. **Hook hardening (security).** P14 removes a dead `DEPRECATION_SENTINEL`
-   Stop-gate bypass; P13 segment-scopes the force-push guard (`feature/main-update`
-   allowed, exact `main`/`master` blocked) and strips `sudo`/`env` wrapper
-   prefixes; P16 adds NotebookEdit/MultiEdit to Kernel Guard coverage; P15 makes
-   `.athanor/.hook-state/` creation opt-in (no debris in non-athanor repos).
-3. **Freeze + doc-contract.** P2 fixes the freeze allowlist DOA on absolute paths
-   (relativization + `allowedPaths` key unification); P18 centralizes the plugin
-   version literal via `tests/_version.py`; P5/P6/P7/P17 restore doc-contract
-   parity; P10 canonicalizes the stop-phrase whitelist; P19/P20 correct stale
-   STATE ledger rows + re-key ROADMAP deferrals to stable codenames.
-
-A 6-lens review round (0 Critical / 4 High, all fixed) closed the release; +53
-regression tests. Full suite **1025 passed, 4 skipped, 1 xpassed**.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
