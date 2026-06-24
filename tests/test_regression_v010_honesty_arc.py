@@ -281,10 +281,10 @@ def test_archive_ledger_contains_canonical_phrases():
 
 def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_0_16_x_series():
     """MUST: docs/STATE.md Current Phase mentions a 0.10.x / 0.11.x / 0.12.x /
-    0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x version.
+    0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x version.
     v0.18.0 extension accepted to keep the test stable through the Freeze
     infrastructure release; v0.20.0 extension at the ref-optimization + uv
-    tooling release."""
+    tooling release; v0.21.0 extension at the opt-in lfg auto-merge release."""
     text = STATE.read_text(encoding="utf-8")
     found_current = False
     in_series = False
@@ -303,12 +303,13 @@ def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_
                     or "0.18." in line
                     or "0.19." in line
                     or "0.20." in line
+                    or "0.21." in line
                 ):
                 in_series = True
             break
     assert found_current, "STATE.md must have Current Phase section"
     assert in_series, (
-        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x version"
+        "Current Phase must reference a 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x version"
     )
 
 

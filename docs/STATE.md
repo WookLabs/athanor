@@ -4,7 +4,28 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.20.1 — output.language Presentation Preference
+## Current Phase: v0.21.0 — Opt-in /athanor:lfg Auto-Merge + Step 8.5 Gate
+
+**v0.21.0** (released 2026-06-24) — Minor release that publishes the opt-in
+`/athanor:lfg` auto-merge surface: after CI goes green, `/athanor:lfg` Step 8.5
+can optionally merge a green PR to its base branch (`gh pr merge --rebase
+--delete-branch`), gated by a fail-loud conjunctive merge-readiness check
+(re-entry/draft state, dual-source residual review blockers, unresolved-CI
+section, an exhaustive 8-value GitHub `mergeStateStatus` disposition, and
+merge-queue detection). It is off by default and opt-in via the
+`--merge`/`--no-merge` flag or `athanor.json` `lfg.autoMerge` (`--no-merge` wins
+ties); on any failed clause the leader leaves the PR open, reports which clause
+failed, and still finishes the pipeline, never `--admin`-bypassing branch
+protection. The step merges only — version-bump/tag/CHANGELOG/STATE.md stays the
+`athanor-releaser` ceremony — and the gate is advisory (leader-prose-enforced;
+no runtime hook blocks the merge). The plugin surface stays frozen: 4 registered
+agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and the existing
+native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.20.1 — output.language Presentation Preference
 
 **v0.20.1** (released 2026-06-23) — Patch release that ships the never-published
 `output.language` presentation preference (merged to main after v0.20.0 in commit
@@ -135,32 +156,6 @@ independent `0.1.0+codex.*` version). No identity-invariant change.
 
 A 6-lens review round (0 Critical / 4 High, all fixed) closed the release; +53
 regression tests. Full suite **1025 passed, 4 skipped, 1 xpassed**.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.18.7 — Plugin Diet: de-register 7 reference-only agents
-
-**v0.18.7** (released 2026-06-07) — An evidence-based plugin-diet audit (3
-Explore agents + direct verification). Honest finding: athanor is already lean;
-most audit "candidates" were refuted (ROADMAP test-locked, DESIGN
-cross-referenced, dead one-shot scripts inert + test-entangled), and one
-"orphan" finding was refuted by the existing v0.13.0 contract tests and dropped
-(the test net working). No identity-invariant change.
-
-1. **Agents 11 → 4 registered.** The 7 inline-only pipeline roles (analyst,
-   cleaner, critic, executor, planner, researcher, reviewer) de-registered to
-   pure reference docs (name/tools/model frontmatter removed, description kept) —
-   0 @-mention adoption; the registered type contradicted the collision guard
-   (skills dispatch them INLINE with session paths). learner / releaser /
-   ci-watcher / codex-dispatcher stay registered. `claude plugin validate` clean.
-2. **Honesty + staleness.** DESIGN.md dropped the v0.17.0-removed deep-plan /
-   lite-plan for `--depth=`; schema labels memory.promotionThreshold +
-   triggers.language as unimplemented / advisory (no over-claim).
-
-5 new/updated regression tests; full suite 970 passed, 0 failed. CLAUDE.md
-§Native Agent Inventory + §Effort Level + COLLISION GUARD simplified to the
-4-registered reality.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
