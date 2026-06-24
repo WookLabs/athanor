@@ -3,6 +3,21 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **`/athanor:lfg` Step 8.5 auto-merge flipped to opt-out (default ON).** The
+  `lfg.autoMerge` default in `athanor.json` / `templates/athanor.json` is now
+  `true`, so a green PR is merged by default once the unchanged conjunctive
+  merge-readiness gate (G0–G5) passes. Disabling is now a one-flag opt-out:
+  the old `--no-merge` flag is **renamed to `--unmerge`** (hard-disables even
+  when config enables it; fail-safe direction wins ties), and `--merge` is kept
+  as the explicit-enable counterpart for a `false` config. The disabled-skip
+  result state `skipped-not-opted-in` is renamed to `skipped-merge-disabled`.
+  The gate logic, disposition table, re-poll, merge command, never-`--admin`
+  rule, and releaser boundary are unchanged.
+
 ## [0.21.0] — 2026-06-24
 
 ### Added

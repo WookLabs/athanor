@@ -332,12 +332,13 @@
     "lfg": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Configuration for the /athanor:lfg end-to-end pipeline. Currently exposes the opt-in (default-off) auto-merge switch for /athanor:lfg Step 8.5 — Merge-readiness gate + optional merge.",
+      "description": "Configuration for the /athanor:lfg end-to-end pipeline. Currently exposes the opt-OUT (default-on) auto-merge switch for /athanor:lfg Step 8.5 — Merge-readiness gate + optional merge.",
       "properties": {
         "_doc": { "type": "string" },
         "autoMerge": {
           "type": "boolean",
-          "description": "Opt-in (default-off) auto-merge switch for /athanor:lfg Step 8.5. When false (the default), the pipeline terminates at 'PR open + CI green' and never merges. When true, a green PR may be merged to its base branch only after the Step 8.5 conjunctive merge-readiness gate passes; the invocation flag --no-merge still hard-disables it. Documentary/discoverability knob — the load-bearing default is false."
+          "default": true,
+          "description": "Opt-OUT (default-on) auto-merge switch for /athanor:lfg Step 8.5. When true (the default), a green PR may be merged to its base branch after the Step 8.5 conjunctive merge-readiness gate passes; the pipeline still records the outcome and never bypasses the gate. When false, the pipeline terminates at 'PR open + CI green' and never merges. The invocation flag --unmerge hard-disables the merge even when this config is true (fail-safe direction wins ties); --merge explicitly enables when this is false. Documentary/discoverability knob — the load-bearing default is true."
         }
       }
     }
