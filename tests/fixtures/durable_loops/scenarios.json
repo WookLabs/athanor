@@ -194,6 +194,279 @@
           "stop_reason": null
         }
       }
+    },
+    {
+      "id": "score-target-bootstrap-runs-baseline-assess",
+      "description": "A bootstrapping goal with a score target but no assessment yet runs the baseline assess first.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "bootstrapping",
+        "cycle_phase": null,
+        "current_cycle": 0,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": null,
+        "last_validator_status": "not_yet_run",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "not_applicable",
+        "validator_status": null,
+        "progress_made": null,
+        "references": [],
+        "score_target": {
+          "overall_score": 90,
+          "min_dimension_score": 80,
+          "completion_gates_required": false
+        }
+      },
+      "expected": {
+        "decision": {
+          "action": "run_baseline_assess",
+          "status": "pass",
+          "next_cycle_state": "bootstrapping",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "bootstrapping",
+          "cycle_phase": null,
+          "current_cycle": 0,
+          "no_progress_count": 0,
+          "stop_reason": null
+        }
+      }
+    },
+    {
+      "id": "valid-receipt-runs-delta-assess",
+      "description": "A completed cycle with an all_valid receipt and a score target runs the delta assessment before the next loop.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "validator_status": "all_valid",
+        "progress_made": true,
+        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "score_target": {
+          "overall_score": 90,
+          "min_dimension_score": 80,
+          "completion_gates_required": false
+        }
+      },
+      "expected": {
+        "decision": {
+          "action": "run_delta_assess",
+          "status": "pass",
+          "next_cycle_state": "cycle_n_complete",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "cycle_n_complete",
+          "cycle_phase": null,
+          "current_cycle": 2,
+          "no_progress_count": 0,
+          "stop_reason": null
+        }
+      }
+    },
+    {
+      "id": "below-target-delta-runs-next-lfg-cycle",
+      "description": "A delta assessment below the score target with progress advances to the next delivery loop.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "validator_status": "all_valid",
+        "progress_made": true,
+        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "score_target": {
+          "overall_score": 90,
+          "min_dimension_score": 80,
+          "completion_gates_required": false
+        },
+        "assessment": {
+          "kind": "delta",
+          "report_path": ".athanor/goals/36470e54/assess/delta-C002.md",
+          "overall_score": 70,
+          "min_dimension_score": 60,
+          "target_met": false,
+          "priority_plan_items": ["raise testing coverage", "tighten security"],
+          "dimensions": {
+            "testing": {"score": 60, "target": 80, "floor": 50, "target_met": false, "regressed": false},
+            "security": {"score": 70, "target": 85, "floor": 60, "target_met": false, "regressed": false}
+          }
+        }
+      },
+      "expected": {
+        "decision": {
+          "action": "run_lfg_cycle",
+          "status": "pass",
+          "next_cycle_state": "cycle_n_in_progress",
+          "next_cycle_phase": "not_started"
+        },
+        "state": {
+          "cycle_state": "cycle_n_in_progress",
+          "cycle_phase": "not_started",
+          "current_cycle": 3,
+          "last_validator_status": "not_yet_run",
+          "tier2_last_verdict": null,
+          "no_progress_count": 0
+        }
+      }
+    },
+    {
+      "id": "failed-eval-blocks",
+      "description": "A failed eval below the no-progress threshold blocks without advancing the cycle and accrues no-progress.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "fail",
+        "validator_status": "all_valid",
+        "progress_made": null,
+        "references": []
+      },
+      "expected": {
+        "decision": {
+          "action": "block_failed_eval",
+          "status": "failure",
+          "next_cycle_state": "cycle_n_complete",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "cycle_n_complete",
+          "cycle_phase": null,
+          "current_cycle": 2,
+          "no_progress_count": 1,
+          "stop_reason": null
+        }
+      }
+    },
+    {
+      "id": "persistent-failed-eval-aborts",
+      "description": "A failed eval at no_progress_threshold - 1 trips stop_no_progress and aborts; locks BLOCKER 1's bound at the fixture gate.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "all_valid",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 1,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "fail",
+        "validator_status": "all_valid",
+        "progress_made": null,
+        "references": []
+      },
+      "expected": {
+        "decision": {
+          "action": "stop_no_progress",
+          "status": "failure",
+          "next_cycle_state": "aborted",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "aborted",
+          "cycle_phase": null,
+          "no_progress_count": 2,
+          "stop_reason": "stop_no_progress"
+        }
+      }
+    },
+    {
+      "id": "invalid-receipt-runs-scope-drift",
+      "description": "An invalid-receipt cycle below the no-progress threshold runs scope drift without advancing the cycle and accrues no-progress.",
+      "state": {
+        "schema_version": 1,
+        "goal_id": "36470e54",
+        "cycle_state": "cycle_n_complete",
+        "cycle_phase": null,
+        "current_cycle": 2,
+        "max_iterations": 5,
+        "no_progress_threshold": 2,
+        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_validator_status": "invalid_steps_present",
+        "tier2_last_verdict": null,
+        "aborted_reason": null,
+        "no_progress_count": 0,
+        "stop_reason": null,
+        "updated_at": "2026-06-17T08:30:00Z"
+      },
+      "evidence": {
+        "eval_status": "pass",
+        "validator_status": "invalid_steps_present",
+        "progress_made": null,
+        "references": []
+      },
+      "expected": {
+        "decision": {
+          "action": "run_scope_drift",
+          "status": "escalated",
+          "next_cycle_state": "cycle_n_complete",
+          "next_cycle_phase": null
+        },
+        "state": {
+          "cycle_state": "cycle_n_complete",
+          "cycle_phase": null,
+          "current_cycle": 2,
+          "no_progress_count": 1,
+          "stop_reason": null
+        }
+      }
     }
   ]
 }

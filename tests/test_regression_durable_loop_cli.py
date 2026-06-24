@@ -134,6 +134,106 @@ def test_loop_controller_cli_write_state_persists_stop_decision(tmp_path: Path) 
     assert persisted["stop_reason"] == "stop_max_iterations"
 
 
+def test_loop_controller_cli_exits_1_for_block_failed_eval(tmp_path: Path) -> None:
+    state_path = tmp_path / "state.json"
+    evidence_path = tmp_path / "evidence.json"
+    _write_json(state_path, _state())
+    _write_json(evidence_path, _evidence(eval_status="fail", progress_made=True))
+
+    proc = _run_controller(state_path, evidence_path)
+
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    decision = json.loads(proc.stdout)
+    assert decision["action"] == "block_failed_eval"
+    assert decision["status"] == "failure"
+
+
+def test_loop_controller_cli_exits_1_for_run_scope_drift(tmp_path: Path) -> None:
+    state_path = tmp_path / "state.json"
+    evidence_path = tmp_path / "evidence.json"
+    _write_json(state_path, _state())
+    _write_json(
+        evidence_path,
+        _evidence(validator_status="invalid_steps_present", progress_made=True),
+    )
+
+    proc = _run_controller(state_path, evidence_path)
+
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    decision = json.loads(proc.stdout)
+    assert decision["action"] == "run_scope_drift"
+
+
+def test_loop_controller_cli_exits_1_for_require_receipt_validation(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "state.json"
+    evidence_path = tmp_path / "evidence.json"
+    _write_json(
+        state_path,
+        _state(
+            cycle_state="cycle_n_complete",
+            cycle_phase=None,
+            last_validator_status="not_yet_run",
+        ),
+    )
+    _write_json(
+        evidence_path,
+        _evidence(
+            validator_status="not_yet_run",
+            progress_made=True,
+            score_target={"overall_score": 90, "min_dimension_score": 80},
+        ),
+    )
+
+    proc = _run_controller(state_path, evidence_path)
+
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    decision = json.loads(proc.stdout)
+    assert decision["action"] == "require_receipt_validation"
+
+
+def test_loop_controller_cli_exits_1_for_require_assessment_evidence(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "state.json"
+    evidence_path = tmp_path / "evidence.json"
+    _write_json(
+        state_path,
+        _state(cycle_state="bootstrapping", cycle_phase=None, current_cycle=0),
+    )
+    _write_json(
+        evidence_path,
+        _evidence(
+            progress_made=True,
+            score_target={"overall_score": 90, "min_dimension_score": 80},
+            assessment={
+                "kind": "delta",
+                "report_path": ".athanor/goals/36470e54/assess/delta.md",
+                "overall_score": 70,
+                "min_dimension_score": 60,
+                "target_met": False,
+                "priority_plan_items": [],
+                "dimensions": {
+                    "quality": {
+                        "score": 60,
+                        "target": 80,
+                        "floor": None,
+                        "target_met": False,
+                        "regressed": False,
+                    }
+                },
+            },
+        ),
+    )
+
+    proc = _run_controller(state_path, evidence_path)
+
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    decision = json.loads(proc.stdout)
+    assert decision["action"] == "require_assessment_evidence"
+
+
 def test_loop_controller_cli_exits_2_for_invalid_state(tmp_path: Path) -> None:
     state_path = tmp_path / "state.json"
     evidence_path = tmp_path / "evidence.json"
@@ -173,10 +273,20 @@ def test_committed_durable_loop_fixtures_pass() -> None:
     assert proc.returncode == 0, proc.stderr
     report = json.loads(proc.stdout)
     assert report["status"] == "pass"
-    assert {item["id"] for item in report["scenarios"]} == {
+    scenarios = report["scenarios"]
+    assert all(item["status"] == "pass" for item in scenarios), [
+        item for item in scenarios if item["status"] != "pass"
+    ]
+    assert {item["id"] for item in scenarios} == {
         "resume-after-receipt-validated",
         "terminal-goal-complete-refuses-reentry",
         "max-iterations-stops",
         "no-progress-threshold-stops",
         "missing-eval-evidence-escalates",
+        "score-target-bootstrap-runs-baseline-assess",
+        "valid-receipt-runs-delta-assess",
+        "below-target-delta-runs-next-lfg-cycle",
+        "failed-eval-blocks",
+        "persistent-failed-eval-aborts",
+        "invalid-receipt-runs-scope-drift",
     }

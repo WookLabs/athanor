@@ -23,6 +23,17 @@ from scripts.loops.goal_loop_controller import (
 )
 
 STOP_ACTIONS = {"stop_max_iterations", "stop_no_progress"}
+# Non-forward "do not proceed" actions: the controller refuses to advance (block /
+# escalate / refuse) but did not reach a terminal abort. Exit-code-wise they are halts,
+# so a re-driver branching on exit code must NOT read them as "proceed".
+BLOCK_ACTIONS = {
+    "block_failed_eval",
+    "run_scope_drift",
+    "require_assessment_evidence",
+    "require_receipt_validation",
+    "require_eval_evidence",
+    "refuse_terminal_state",
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -99,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(decision_json, indent=2, sort_keys=True))
     else:
         print(f"{decision.status}: {decision.action} - {decision.reason}")
-    return 1 if decision.action in STOP_ACTIONS else 0
+    return 1 if decision.action in (STOP_ACTIONS | BLOCK_ACTIONS) else 0
 
 
 if __name__ == "__main__":

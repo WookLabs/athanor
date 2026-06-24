@@ -70,6 +70,16 @@ Current evidence wins over stale state. If `evidence.validator_status` is
 `last_validator_status: all_valid`. If `eval_status` is `fail`, the controller
 emits `block_failed_eval` instead of continuing to tier checks or another cycle.
 
+A persistent block is bounded by the No-Progress Budget. An `eval_status=fail`
+block (`block_failed_eval`) or an `invalid_steps_present` block (`run_scope_drift`)
+with no positive progress (`progress_made` not `true`) increments
+`no_progress_count` without advancing `current_cycle`/`cycle_state`/`cycle_phase`.
+When that count reaches `no_progress_threshold` the controller returns
+`stop_no_progress` (terminal `aborted`) instead of the block action, so a stuck
+"eval keeps failing" or "receipt keeps coming back invalid" loop still terminates.
+A subsequent `progress_made=true` cycle resets `no_progress_count` to `0`, so the
+legitimate "block once → user fixes it → continue" path never aborts.
+
 The max-iteration cap is enforced when the controller would start another
 delivery/fix loop. It does not block `prompt_tier3_user` for a valid final
 assessment on the last allowed cycle.
@@ -121,12 +131,19 @@ python scripts/loops/loop_run_log.py inspect \
 `inspect` reports lock conflict, budget warnings, and min-attempt gate status
 without mutating files.
 
-Exit codes:
+Exit codes (typed contract — `exit 0` ⟺ the controller authorized a forward
+action):
 
-- `0`: non-terminal decision emitted.
-- `1`: policy stop decision emitted, such as `stop_no_progress` or
-  `stop_max_iterations`.
-- `2`: invalid state, invalid evidence, or CLI usage error.
+- `0`: the controller authorized a **forward** action (e.g. `run_lfg_cycle`,
+  `run_baseline_assess`, `run_delta_assess`, `prompt_tier3_user`,
+  `bootstrap_goal`, `start_next_cycle`, `resume_*`, `run_tier1_check`).
+- `1`: the controller **halted or refused to advance** — any terminal stop
+  (`stop_max_iterations`, `stop_no_progress`) **or** block/refuse action
+  (`block_failed_eval`, `run_scope_drift`, `require_assessment_evidence`,
+  `require_receipt_validation`, `require_eval_evidence`, `refuse_terminal_state`).
+  A re-driver branching on exit code must treat `1` as "do not proceed."
+- `2`: invalid state, invalid evidence, or CLI usage error
+  (`LoopStateError`).
 
 When `--trace-path` is supplied, the CLI appends a P6 trace record:
 

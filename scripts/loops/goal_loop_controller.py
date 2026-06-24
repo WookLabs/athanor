@@ -654,6 +654,89 @@ def _max_iterations_decision(state: LoopState, evidence: EvidenceSummary) -> Loo
     )
 
 
+def _counts_as_no_progress(evidence: EvidenceSummary) -> bool:
+    """A cycle is no-progress unless evidence explicitly reports progress_made=True.
+
+    ``progress_made=None`` (evidence silent on progress) counts as no-progress: a cycle
+    with no positive progress signal is, honestly, no progress.
+    """
+    return evidence.progress_made is not True
+
+
+def _no_progress_stop_if_tripped(
+    state: LoopState,
+    evidence: EvidenceSummary,
+) -> LoopDecision | None:
+    """Shared no-progress accounting.
+
+    The single accounting site for the ``progress_made is False`` path and for emitted
+    blocks (eval-fail / invalid-receipt). Returns a terminal ``stop_no_progress`` decision
+    when the incremented count reaches ``no_progress_threshold``; otherwise ``None`` (the
+    caller emits its own action and ``apply_decision`` advances ``no_progress_count``).
+    """
+    if not _counts_as_no_progress(evidence):
+        return None
+    next_no_progress_count = state.no_progress_count + 1
+    if next_no_progress_count < state.no_progress_threshold:
+        return None
+    return _decision(
+        state,
+        evidence,
+        action="stop_no_progress",
+        status="failure",
+        reason=(
+            "no progress threshold reached: "
+            f"{next_no_progress_count}/{state.no_progress_threshold}"
+        ),
+        next_cycle_state="aborted",
+        next_cycle_phase=None,
+        extra_evidence={
+            "stop_reason": "stop_no_progress",
+            "next_no_progress_count": next_no_progress_count,
+        },
+    )
+
+
+def _bounded_block_decision(
+    state: LoopState,
+    evidence: EvidenceSummary,
+    *,
+    action: str,
+    status: str,
+    reason: str,
+    extra_evidence: dict[str, Any],
+) -> LoopDecision:
+    """Emit a block action while folding it into no-progress / max-iter bounding.
+
+    A block does NOT advance ``current_cycle`` / ``cycle_state`` / ``cycle_phase``; the
+    only state it moves is ``no_progress_count``. The terminators are checked first:
+      * the no-progress budget (primary): if this block would reach the threshold, return
+        ``stop_no_progress`` (terminal ``aborted``) instead of the block;
+      * the max-iter cap (secondary safety net): a block on the final allowed cycle
+        returns ``stop_max_iterations``.
+    A non-tripping block carries the incremented ``no_progress_count`` so ``apply_decision``
+    persists it for the block action.
+    """
+    if state.current_cycle >= state.max_iterations:
+        return _max_iterations_decision(state, evidence)
+
+    no_progress_stop = _no_progress_stop_if_tripped(state, evidence)
+    if no_progress_stop is not None:
+        return no_progress_stop
+
+    block_extra = dict(extra_evidence)
+    if _counts_as_no_progress(evidence):
+        block_extra["no_progress_count"] = state.no_progress_count + 1
+    return _decision(
+        state,
+        evidence,
+        action=action,
+        status=status,
+        reason=reason,
+        extra_evidence=block_extra,
+    )
+
+
 def _failed_eval_decision(state: LoopState, evidence: EvidenceSummary) -> LoopDecision:
     blocked_action = "run_lfg_cycle"
     if evidence.score_target is None:
@@ -661,7 +744,7 @@ def _failed_eval_decision(state: LoopState, evidence: EvidenceSummary) -> LoopDe
             blocked_action = _route_for_state(state)[0]
         except LoopStateError:
             blocked_action = "unknown"
-    return _decision(
+    return _bounded_block_decision(
         state,
         evidence,
         action="block_failed_eval",
@@ -685,7 +768,7 @@ def _invalid_receipt_decision(
     if evidence.score_target is not None and state.cycle_state == "cycle_n_complete":
         blocked_action = "run_delta_assess"
 
-    return _decision(
+    return _bounded_block_decision(
         state,
         evidence,
         action="run_scope_drift",
@@ -741,7 +824,7 @@ def _decide_adaptive_goal(
     validator_status = evidence.validator_status or state.last_validator_status
 
     if validator_status == "invalid_steps_present":
-        return _decision(
+        return _bounded_block_decision(
             state,
             evidence,
             action="run_scope_drift",
@@ -854,24 +937,9 @@ def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecis
         return invalid_receipt_decision
 
     if evidence.progress_made is False:
-        next_no_progress_count = state.no_progress_count + 1
-        if next_no_progress_count >= state.no_progress_threshold:
-            return _decision(
-                state,
-                evidence,
-                action="stop_no_progress",
-                status="failure",
-                reason=(
-                    "no progress threshold reached: "
-                    f"{next_no_progress_count}/{state.no_progress_threshold}"
-                ),
-                next_cycle_state="aborted",
-                next_cycle_phase=None,
-                extra_evidence={
-                    "stop_reason": "stop_no_progress",
-                    "next_no_progress_count": next_no_progress_count,
-                },
-            )
+        no_progress_stop = _no_progress_stop_if_tripped(state, evidence)
+        if no_progress_stop is not None:
+            return no_progress_stop
 
     adaptive_decision = _decide_adaptive_goal(state, evidence)
     if adaptive_decision is not None:
@@ -892,16 +960,34 @@ def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecis
     return _decision(state, evidence, action=action, status=status, reason=reason)
 
 
+BLOCK_NO_OP_ACTIONS = {
+    "refuse_terminal_state",
+    "block_failed_eval",
+    "require_eval_evidence",
+    "require_assessment_evidence",
+    "require_receipt_validation",
+    "run_scope_drift",
+}
+
+
 def apply_decision(state: LoopState, decision: LoopDecision) -> LoopState:
     """Return state after applying a controller decision."""
-    if decision.action in {
-        "refuse_terminal_state",
-        "block_failed_eval",
-        "require_eval_evidence",
-        "require_assessment_evidence",
-        "require_receipt_validation",
-        "run_scope_drift",
-    }:
+    if decision.action in BLOCK_NO_OP_ACTIONS:
+        # A block "stays put and surfaces the failure": it must NOT advance
+        # current_cycle / cycle_state / cycle_phase. The only state it may move is
+        # no_progress_count, when the decision carries the folded-in increment.
+        block_no_progress_count = decision.evidence.get("no_progress_count")
+        if (
+            isinstance(block_no_progress_count, int)
+            and not isinstance(block_no_progress_count, bool)
+            and block_no_progress_count != state.no_progress_count
+        ):
+            data = state.to_dict()
+            data["no_progress_count"] = min(
+                state.no_progress_threshold,
+                block_no_progress_count,
+            )
+            return LoopState.from_dict(data)
         return state
 
     data = state.to_dict()

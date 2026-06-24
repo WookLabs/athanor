@@ -39,8 +39,8 @@ def test_collect_snapshot_cli_emits_expected_summaries() -> None:
     hook_ids = {hook["id"] for hook in snapshot["hook_performance"]["hooks"]}
     assert "posttool-evidence-sniffer" in hook_ids
     assert snapshot["hook_performance"]["max_budget_ratio"] >= 0
-    assert snapshot["durable_loop"]["actions"]["stop_no_progress"] == 1
-    assert snapshot["durable_loop"]["decision_statuses"]["escalated"] == 1
+    assert snapshot["durable_loop"]["actions"]["stop_no_progress"] == 2
+    assert snapshot["durable_loop"]["decision_statuses"]["escalated"] == 2
 
 
 def test_collect_snapshot_append_writes_one_jsonl_record(tmp_path: Path) -> None:
