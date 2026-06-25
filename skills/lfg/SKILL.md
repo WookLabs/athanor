@@ -563,7 +563,64 @@ the `merge:` result line + `G1..G5` clause IDs, the `fix(review):` /
 machine-parsed and stay English; only user-facing explanation prose follows
 the resolved language. Resolve the value per `skills/setup/SKILL.md`
 §`output.language 해석 (canonical)` (Present-to-User 직전 해석; 파일
-부재·malformed·미지원 값 → en).
+부재·malformed·미지원 값 → en). The 한글 완료 요약 in Step 9.5 follows this same
+directive (factual 사실 서술; machine tokens English).
+
+### Step 9.5 — 한글 완료 요약 (Korean completion summary)
+
+After Step 9 has emitted the machine result packet (the `merge:` line) and the
+`<promise>DONE</promise>` sentinel, the leader appends a concise human-facing
+completion summary so the user sees what actually happened across the pipeline.
+
+**Same-turn invariant (MAJOR-4).** This summary runs ONLY after Step 9 emitted
+the result packet + `<promise>DONE</promise>`, and is part of the **SAME terminal
+assistant turn** that carries the packet + sentinel — NOT a separate follow-up
+message. It is never emitted before the sentinel, and it NEVER replaces or alters
+the `merge:` line. Caller sentinel-grep and the v=2 verification-before-completion
+emission path are unchanged; prose-after-sentinel already exists today (the Step 9
+Language directive paragraph above follows the sentinel). The leader composes this
+summary from session artifacts already on disk — Present-to-User output, NOT
+implementation work (no project source reads/edits beyond the existing session
+files).
+
+**Language.** Resolve per `skills/setup/SKILL.md` §`output.language 해석 (canonical)`
+(the same citation the other skills use): when the resolved value is `ko` → emit
+the summary in 한글; when `en` → English; absent/malformed/unsupported → `en`.
+ko-hybrid safeguard: ko → 한글, and the maintainer should keep
+`output.language: ko` so this intent does not silently depend on a future template
+flip.
+
+**Content** (composed from existing session artifacts — leader Present-to-User; do
+NOT re-run heavy `gh` calls, reuse already-captured values):
+- plan outcome — `.athanor/sessions/<id>/plan.md` (plan file from Step 1).
+- work outcome + subtask counts (completed / failed / skipped) —
+  `.athanor/sessions/<id>/work-log.md`.
+- review outcome (per-lens summary + residual count) —
+  `.athanor/sessions/<id>/review.md` and any `## Residual Review Findings`.
+- PR number + URL + state — from the Step 7/8 `gh pr view --json number,url,state`
+  already captured.
+- CI result — from Step 8 (green, or `## CI Failures Unresolved`).
+- merge outcome + reason — the Step 8.5 / Step 9 `merge:` state (one of the 8) and
+  the failing-clause reason if blocked.
+
+**Hook-safe phrasing rule (MAJOR-1).** State facts with the evidence above. Write
+the avoid-list as a SINGLE backtick-wrapped list on a `회피`-marked line — mirror
+the Step 9 directive form (line 559):
+완료-주장 어조(`완료했습니다`, `통과했습니다`, `수정 완료`, `구현 완료`, `적용 완료`, `머지 완료`, `배포 완료`, `리뷰 완료`, `테스트 통과`) 회피 — 사실 서술 사용.
+Every literal stays backtick-wrapped with `회피` on the SAME line; NEVER render any
+of these bare. Prefer evidence-bearing factual/passive forms for the actual output
+template: `PR #N 머지됨 (merge: merged)`, `CI green`, `서브태스크 7/8` (numerals +
+slash, not the claim verb), `리뷰 6개 렌즈, 잔여 0`. Rationale: `머지됨` (passive,
+no `완료`) ≠ whitelisted `머지 완료`; `merge: merged` is an English machine token —
+neither is flagged.
+
+**Honesty label.** advisory (leader-prose, Present-to-User) — NOT a runtime gate;
+the summary is human-facing prose and does not change the machine result packet.
+
+**Machine-token boundary (MAJOR-4).** The `merge:` key + the 8 state tokens +
+`G1..G5` clause IDs + the DONE sentinel + `GATE: STOP` keywords are machine-parsed,
+**stay English**, and are emitted by Step 9 BEFORE this summary; only this
+user-facing summary prose follows the resolved `output.language`.
 
 ---
 

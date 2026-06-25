@@ -443,7 +443,7 @@ when score-target mode is enabled.
 Confirm goal is achieved? [yes / continue-iterating / abort]
 ```
 
-cycle·goal-completion 보고는 해석된 `output.language`에 맞춘다; ledger 필드/판정 토큰/센티널은 영어; 완료-주장 어조 회피. 즉 이 ratification 프롬프트의 user-facing 안내 문구(예: "목표가 달성되었는지 확인할까요? [yes / continue-iterating / abort]")와 아래 응답 처리 안내는 해석된 언어로 제시하되, machine-parsed 토큰은 영어로 둔다. 영어로 유지되는 토큰: 옵션 토큰 `[yes / continue-iterating / abort]`·`receipt-validator`·`Tier 1 mechanical`·`Judge A = goal_met`·`validation_status` enum 값·ledger 필드 키·G-markers·DONE 센티널은 언어 무관 항상 영어. 해석 규칙은 `skills/setup/SKILL.md` §`output.language 해석 (canonical)` (Present-to-User 직전 해석; 파일 부재·malformed·미지원 값 → en).
+cycle·goal-completion 보고는 해석된 `output.language`에 맞춘다; ledger 필드/판정 토큰/센티널은 영어; 완료-주장 어조 회피. 즉 이 ratification 프롬프트의 user-facing 안내 문구(예: "목표가 달성되었는지 확인할까요? [yes / continue-iterating / abort]")와 아래 응답 처리 안내는 해석된 언어로 제시하되, machine-parsed 토큰은 영어로 둔다. 영어로 유지되는 토큰: 옵션 토큰 `[yes / continue-iterating / abort]`·`receipt-validator`·`Tier 1 mechanical`·`Judge A = goal_met`·`validation_status` enum 값·ledger 필드 키·G-markers·DONE 센티널은 언어 무관 항상 영어. 해석 규칙은 `skills/setup/SKILL.md` §`output.language 해석 (canonical)` (Present-to-User 직전 해석; 파일 부재·malformed·미지원 값 → en). 루프 종료 시 제시하는 `## 한글 완료 요약` 섹션도 이 동일 directive를 따른다 (사실 서술; machine 토큰은 영어).
 
 User responses:
 
@@ -614,6 +614,7 @@ function lfg_goal_loop(goal_input | --goal-file path):
       no_progress_counter += 1
       if no_progress_counter >= lfgGoal.noProgressThreshold:
         emit_durable_residual_exit(reason="no-progress")
+        present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: no-progress
         return
     else:
       no_progress_counter = 0   # reset on progress
@@ -622,6 +623,7 @@ function lfg_goal_loop(goal_input | --goal-file path):
       log_to_goal_log("cycle N invalid: <failing steps>")
       if cycle == lfgGoal.maxIterations:
         emit_durable_residual_exit(reason="max-iter-with-invalid")
+        present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: max-iter-with-invalid
         return
       continue   # next cycle resumes from failure
 
@@ -666,6 +668,7 @@ function lfg_goal_loop(goal_input | --goal-file path):
       record_to_decisions("tier 2 split: A=<v>, B=<v>")
       if cycle == lfgGoal.maxIterations:
         escalate_to_user_with_both_verdicts()
+        present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: tier-2-split escalation
         break
       continue
 
@@ -675,16 +678,78 @@ function lfg_goal_loop(goal_input | --goal-file path):
       mark_goal_complete(goal_id, cycle)
       write_goal_completion_md(goal_id)
       emit_done_sentinel_through_verification_skill()
+      present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: goal_complete (Tier 3 yes)
       return
     elif user_verdict == "continue-iterating":
       continue
     elif user_verdict == "abort":
       mark_goal_abandoned(goal_id, cycle)
+      present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: aborted (Tier 3 abort)
       return
 
   # ───── Hit max-iter ─────
   emit_durable_residual_exit(reason="max-iterations")
+  present_korean_completion_summary()   # see "## 한글 완료 요약" — terminal: max-iterations
 ```
+
+## 한글 완료 요약 (Korean completion summary)
+
+`present_korean_completion_summary()` is a **single terminal-summary subroutine
+invoked immediately before EACH of the 6 terminal `return`/`break` sites** in the
+`Loop architecture` block above (the exit sites carry a one-line back-reference to
+this section). It is NOT anchored to Tier 3 — three terminal exits never reach
+Tier 3 — and it **reports WHICH terminal state was reached**. It runs AFTER the
+terminal verdict / DONE sentinel / residual-exit record is written, never before
+(same-turn invariant, mirror of lfg Step 9.5). The leader COMPOSES this from goal
+artifacts already on disk — Present-to-User output, NOT implementation work.
+
+**Terminal states covered (MAJOR-3 — all 6, not just Tier 3):**
+- `mark_goal_complete` — goal_complete (Tier 3 `yes`); follows the
+  verification-before-completion DONE emission.
+- `mark_goal_abandoned` — aborted (Tier 3 `abort`).
+- `emit_durable_residual_exit(reason="no-progress")` — no-progress circuit breaker.
+- `emit_durable_residual_exit(reason="max-iter-with-invalid")` — max-iter reached
+  with invalid steps still present.
+- `escalate_to_user_with_both_verdicts()` + `break` — Tier-2 split at max-iter.
+- `emit_durable_residual_exit(reason="max-iterations")` — natural max-iterations
+  fall-through.
+
+**Language.** Same canonical pointer as the Tier 3 directive: resolve per
+`skills/setup/SKILL.md` §`output.language 해석 (canonical)` — ko → 한글, en →
+English, absent/malformed/unsupported → en. ko-hybrid: ko → 한글, maintainer should
+keep `output.language: ko`. lfg-goal already cites this canonical section in its
+Tier 3 language directive (~line 446); this section reuses it — no second resolver.
+
+**Content** (composed from existing goal artifacts — leader Present-to-User):
+- **terminal-state name** (one of the 6 above) + exit reason for residual exits
+  (`no-progress` / `max-iter-with-invalid` / `max-iterations` / Tier-2-split
+  escalation) + where residuals were recorded.
+- goal-ledger status + G-marker tally (X/Y checked) — `.athanor/goals/<id>/goal.md`.
+- cycles run / cycle queue final state — `goal.md` §"Cycle queue" + cycle receipts
+  `.athanor/goals/<id>/receipts/CNNN-lfg-receipt.md` aggregate statuses.
+- final overall + per-dimension scores vs target (score-target mode) — `goal.md`
+  §"Score target" `score_history` + `latest_assessment_ref` =
+  `.athanor/sessions/<id>/assess.md`.
+- 3-tier completion verdict when reached — Tier 1 mechanical PASS/FAIL, Tier 2
+  Judge A / Judge B `goal_met`, Tier 3 user verdict, and the terminal `cycle_state`.
+
+**Hook-safe phrasing rule (MAJOR-1).** Factual prose; write the avoid-list as one
+backtick-wrapped list on a `회피` line — mirror lfg Step 9.5 / line 559:
+완료-주장 어조(`완료했습니다`, `통과했습니다`, `수정 완료`, `구현 완료`, `적용 완료`, `머지 완료`, `배포 완료`, `리뷰 완료`, `테스트 통과`) 회피 — 사실 서술 사용.
+Every literal stays backtick-wrapped with `회피` on the SAME line; NEVER bare.
+Prefer factual forms: `목표 G3/3 충족`, `Tier 2 judges goal_met: true`, `최종 점수
+96/100 (target 95)`, `cycle 3/5`, `종료 상태: max-iterations`.
+
+**Machine-token boundary (MINOR-2 — reference, do NOT restate).** For the
+authoritative machine-token-English list, this section points BACK to the Tier 3
+language directive (~line 446): `validation_status`, `goal_met`,
+`[yes / continue-iterating / abort]`, `receipt-validator`, `Tier 1 mechanical`,
+ledger field keys, G-markers, and the DONE sentinel **stay English** there — this
+section does not re-list them.
+
+**Honesty label.** advisory (leader-prose, Present-to-User) — NOT a runtime gate;
+does not replace the ledger state transition, receipts, or the machine completion
+tokens.
 
 **Key invariants:**
 

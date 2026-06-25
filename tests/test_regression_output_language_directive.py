@@ -42,6 +42,10 @@ SCHEMA_PATH = REPO_ROOT / "schemas" / "athanor-config.schema.json"
 SETUP_SKILL = REPO_ROOT / "skills" / "setup" / "SKILL.md"
 REVIEW_SKILL = REPO_ROOT / "skills" / "review" / "SKILL.md"
 LFG_SKILL = REPO_ROOT / "skills" / "lfg" / "SKILL.md"
+LFG_GOAL_SKILL = REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md"
+# The authoritative Korean completion-claim list the live Stop hook enforces;
+# the test's MATERIAL_CLAIMS_KO must stay a strict subset of it.
+STOP_HOOK_SCRIPT = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
 # A reference doc (not a SKILL.md) that also quotes completion-claim literals
 # inside backticks; included in the smoke corpus so its claim references stay
 # directive-quoted under the tightened heuristic.
@@ -65,12 +69,26 @@ DIRECTIVE_SKILLS = (
 STOP_PHRASE_SKILLS = ("work", "lfg", "lfg-goal", "review", "analyze", "debug")
 
 # Korean material-claim literals the Stop hook treats as completion claims.
+#
+# MAJOR-2 (P3): widened beyond the original 5-element subset to add the
+# merge/deploy/review completion verbs a Korean pipeline-completion summary
+# (/athanor:lfg Step 9.5, /athanor:lfg-goal terminal) would most likely reach
+# for. This tuple MUST stay a *strict subset of* the hook's MATERIAL_CLAIMS_KO
+# in scripts/hooks/stop_verify_claims.py — the smoke must never claim to catch
+# more than the live hook. test_material_claims_ko_is_subset_of_hook locks that.
 MATERIAL_CLAIMS_KO = (
     "완료했습니다",
     "통과했습니다",
     "수정 완료",
     "구현 완료",
     "적용 완료",
+    # MAJOR-2 additions — merge/deploy/review/test completion verbs.
+    "머지 완료",
+    "배포 완료",
+    "리뷰 완료",
+    "테스트 통과",
+    "머지했습니다",
+    "배포됨",
 )
 
 
@@ -329,3 +347,218 @@ def test_stop_phrase_heuristic_distant_marker_does_not_whitelist():
     # '회피' is pushed well beyond _MARKER_PROXIMITY chars from the literal.
     line = "완료했습니다" + " " * (_MARKER_PROXIMITY + 5) + "회피"
     assert _occurrence_is_directive_quote(line, "완료했습니다") is False
+
+
+# --------------------------------------------------------------------------- #
+# (f) Korean completion-summary step (lfg Step 9.5 + lfg-goal terminal)        #
+#     Locks the v0.22.x 한글 완료 요약 contract: the step exists in both        #
+#     skills, sits after the machine packet, fires on all lfg-goal terminal     #
+#     exits, follows the canonical output.language resolver, keeps machine      #
+#     tokens English, is honestly labeled advisory, and is hook-safe prose.     #
+# --------------------------------------------------------------------------- #
+
+# Summary-section markers (either form is accepted as "the summary exists").
+_SUMMARY_MARKERS = ("한글 완료 요약", "Korean completion summary")
+
+
+def _hook_material_claims_ko() -> tuple[str, ...]:
+    """Extract the hook's MATERIAL_CLAIMS_KO literals (base list + the
+    vendor-aware ``.extend([...])`` block) by static text parse — no import,
+    so the test never executes the hook module. Used to prove the test's
+    MATERIAL_CLAIMS_KO is a strict subset of what the live hook enforces.
+    """
+    body = _read(STOP_HOOK_SCRIPT)
+    literals: list[str] = []
+    # Base assignment: MATERIAL_CLAIMS_KO = [ ... ]
+    m = re.search(r"MATERIAL_CLAIMS_KO\s*=\s*\[(.*?)\]", body, re.DOTALL)
+    assert m, "could not locate MATERIAL_CLAIMS_KO base list in the hook script"
+    literals += re.findall(r'"([^"]+)"', m.group(1))
+    # Vendor-aware extension block: MATERIAL_CLAIMS_KO.extend([ ... ])
+    m2 = re.search(
+        r"MATERIAL_CLAIMS_KO\.extend\(\[(.*?)\]\)", body, re.DOTALL
+    )
+    if m2:
+        literals += re.findall(r'"([^"]+)"', m2.group(1))
+    return tuple(literals)
+
+
+def _section_text(body: str, start_marker: str, end_markers: tuple[str, ...]) -> str:
+    """Return the slice of ``body`` from ``start_marker`` up to the first of
+    ``end_markers`` after it (or end-of-file). Raises if the start marker is
+    absent. Used to scope hook-safety / token-boundary checks to the summary
+    block rather than the whole file.
+    """
+    start = body.find(start_marker)
+    assert start != -1, f"start marker {start_marker!r} not found"
+    end = len(body)
+    for em in end_markers:
+        idx = body.find(em, start + len(start_marker))
+        if idx != -1:
+            end = min(end, idx)
+    return body[start:end]
+
+
+def _lfg_summary_section() -> str:
+    """The lfg Step 9.5 block: `### Step 9.5` → `## Athanor identity invariants`."""
+    return _section_text(
+        _read(LFG_SKILL),
+        "### Step 9.5",
+        ("## Athanor identity invariants",),
+    )
+
+
+def _lfg_goal_summary_section() -> str:
+    """The lfg-goal terminal `## 한글 완료 요약` block → EOF (it is terminal)."""
+    return _section_text(
+        _read(LFG_GOAL_SKILL),
+        "## 한글 완료 요약",
+        (),  # terminal section — runs to end of file
+    )
+
+
+def _has_marker(text: str) -> bool:
+    return any(marker in text for marker in _SUMMARY_MARKERS)
+
+
+def test_material_claims_ko_is_subset_of_hook():
+    """[MAJOR-2] The test's widened MATERIAL_CLAIMS_KO must stay a STRICT subset
+    of the live hook's set — the smoke must never over-claim (catch more than
+    the hook actually blocks). Also confirms the widening landed (>5 literals).
+    """
+    hook_set = set(_hook_material_claims_ko())
+    missing = [lit for lit in MATERIAL_CLAIMS_KO if lit not in hook_set]
+    assert not missing, (
+        "test MATERIAL_CLAIMS_KO contains literals the live hook does NOT "
+        f"treat as completion claims (over-claim): {missing}"
+    )
+    # MAJOR-2 widening sanity: the specific merge/deploy/review verbs landed.
+    for required in ("머지 완료", "배포 완료", "리뷰 완료", "테스트 통과",
+                     "머지했습니다", "배포됨"):
+        assert required in MATERIAL_CLAIMS_KO, (
+            f"MAJOR-2 widening missing required literal {required!r}"
+        )
+
+
+def test_lfg_has_korean_completion_summary_step():
+    """lfg SKILL.md carries the 한글 완료 요약 step (marker + `### Step 9.5`)."""
+    body = _read(LFG_SKILL)
+    assert _has_marker(body), (
+        "lfg SKILL.md missing the Korean completion-summary marker "
+        f"(one of {_SUMMARY_MARKERS})"
+    )
+    assert "### Step 9.5" in body, (
+        "lfg SKILL.md missing the '### Step 9.5' completion-summary heading"
+    )
+
+
+def test_lfg_summary_after_machine_packet():
+    """Ordering: `### Step 9.5` sits AFTER `### Step 9` (the machine packet) and
+    BEFORE `## Athanor identity invariants` (still inside the protocol)."""
+    body = _read(LFG_SKILL)
+    off_step9 = body.find("### Step 9 ")  # trailing space → the H3, not 9.5
+    off_step95 = body.find("### Step 9.5")
+    off_invariants = body.find("## Athanor identity invariants")
+    assert off_step9 != -1, "lfg SKILL.md missing '### Step 9 ' heading"
+    assert off_step95 != -1, "lfg SKILL.md missing '### Step 9.5' heading"
+    assert off_invariants != -1, (
+        "lfg SKILL.md missing '## Athanor identity invariants' anchor"
+    )
+    assert off_step9 < off_step95 < off_invariants, (
+        "Step 9.5 must come after the Step 9 machine packet and before the "
+        f"identity invariants; got step9={off_step9}, step9.5={off_step95}, "
+        f"invariants={off_invariants}"
+    )
+
+
+def test_lfg_goal_has_korean_completion_summary():
+    """lfg-goal SKILL.md carries the terminal summary AND covers ALL terminal
+    exits (MAJOR-3): no-progress AND max-iter(ations) AND a goal-complete/abort
+    token — proving it fires on residual exits, not just Tier 3."""
+    section = _lfg_goal_summary_section()
+    assert _has_marker(section), (
+        "lfg-goal summary section missing the Korean completion-summary marker"
+    )
+    assert "no-progress" in section, (
+        "lfg-goal summary missing the 'no-progress' residual-exit terminal "
+        "(MAJOR-3: must cover residual exits, not only Tier 3)"
+    )
+    assert ("max-iter" in section or "max-iterations" in section), (
+        "lfg-goal summary missing the max-iter(ations) residual-exit terminal"
+    )
+    assert any(
+        tok in section
+        for tok in ("goal_complete", "mark_goal_complete", "mark_goal_abandoned",
+                    "aborted")
+    ), (
+        "lfg-goal summary missing a goal-complete/abort terminal token"
+    )
+
+
+def test_summary_machine_tokens_stay_english():
+    """BOTH skills: a machine-token-boundary clause (`stays? English` /
+    `machine-parsed`) co-occurs with the summary marker, so a future edit that
+    Korean-izes `merge:` / `validation_status` fails the test."""
+    for label, section in (
+        ("lfg", _lfg_summary_section()),
+        ("lfg-goal", _lfg_goal_summary_section()),
+    ):
+        assert _has_marker(section), f"{label}: summary marker absent in section"
+        assert re.search(r"stays? English", section) or "machine-parsed" in section, (
+            f"{label}: summary section missing a machine-token-stays-English "
+            "boundary clause ('stay(s) English' or 'machine-parsed')"
+        )
+
+
+def test_summary_directive_follows_output_language_resolver():
+    """BOTH skills: the summary cites the canonical resolver pointer substring
+    `output.language 해석 (canonical)` (no reinvented i18n path)."""
+    for label, section in (
+        ("lfg", _lfg_summary_section()),
+        ("lfg-goal", _lfg_goal_summary_section()),
+    ):
+        assert CANONICAL_POINTER in section, (
+            f"{label}: summary section missing the canonical-pointer substring "
+            f"{CANONICAL_POINTER!r}"
+        )
+
+
+def test_summary_step_labeled_advisory():
+    """BOTH skills: the summary block carries an `advisory` + `Present-to-User`
+    (or `NOT a runtime gate`) honesty label — not mislabeled as enforced."""
+    for label, section in (
+        ("lfg", _lfg_summary_section()),
+        ("lfg-goal", _lfg_goal_summary_section()),
+    ):
+        ok = ("NOT a runtime gate" in section) or (
+            "advisory" in section and "Present-to-User" in section
+        )
+        assert ok, (
+            f"{label}: summary section missing the advisory/Present-to-User "
+            "honesty label (or 'NOT a runtime gate')"
+        )
+
+
+def test_summary_prose_is_hook_safe():
+    """Section-scoped hook-safety: re-run the per-line directive-quote heuristic
+    over the Step 9.5 / 한글 완료 요약 section of BOTH skills under the WIDENED
+    MATERIAL_CLAIMS_KO, asserting zero bare completion-claim literals. Now
+    meaningful because the widened tuple includes merge/deploy/review verbs."""
+    violations = []
+    for label, section in (
+        ("lfg", _lfg_summary_section()),
+        ("lfg-goal", _lfg_goal_summary_section()),
+    ):
+        for lineno, line in enumerate(section.splitlines(), start=1):
+            for literal in MATERIAL_CLAIMS_KO:
+                if literal in line and not _occurrence_is_directive_quote(
+                    line, literal
+                ):
+                    violations.append(
+                        f"{label} summary-section line {lineno}: bare "
+                        f"completion-claim literal {literal!r}: {line.strip()!r}"
+                    )
+    assert not violations, (
+        "bare completion-claim literals in the Korean completion-summary prose "
+        "(expected only backtick-wrapped on a 회피-marked line): "
+        + "; ".join(violations)
+    )
