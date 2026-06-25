@@ -4,7 +4,34 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.22.1 — Worker Context Packet Convention (slim)
+## Current Phase: v0.23.0 — 한글 완료 요약 Step for /athanor:lfg + /athanor:lfg-goal
+
+**v0.23.0** (released 2026-06-25) — Minor release shipping a single
+`/athanor:lfg` / `/athanor:lfg-goal` user-experience addition landed on main
+since v0.22.1 (merged as `6f6301e`). A **한글 완료 요약 step** — a Korean
+completion summary the leader presents when the pipeline finishes
+(`/athanor:lfg` new Step 9.5) and when the macro loop finishes (`/athanor:lfg-goal`
+terminal subroutine on all 6 exit points: goal-met, abort, the three
+durable-residual exits, and the Tier-2-split break, each reporting which state
+ended the loop). It is **advisory leader-prose** (Present-to-User; no new
+runtime gate, no new file) and follows the canonical `output.language` resolver
+(`ko`→한글, `en`→English, default `en`) without i18n duplication — the English
+path is preserved. Machine tokens (the `merge:` 8-state value, `G1..G5`,
+`<promise>DONE</promise>`, `validation_status`, `goal_met`) stay English and are
+emitted before the summary in the same terminal turn, and the prose is hook-safe:
+every Stop-hook-whitelisted Korean literal is backtick-wrapped on a 회피-marked
+line and example output uses factual/passive phrasing. The regression lock
+extends `tests/test_regression_output_language_directive.py` (widened
+`MATERIAL_CLAIMS_KO` as a strict subset of the hook set + 8 new tests covering
+step presence, ordering, all-terminal coverage, machine-token-English,
+canonical-pointer, advisory label, and section-scoped hook-safety). The plugin
+surface stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`,
+`learner`, `releaser`) and the existing native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.22.1 — Worker Context Packet Convention (slim)
 
 **v0.22.1** (released 2026-06-25) — Patch release shipping a single
 documentation-only convention landed on main since v0.22.0 (PR #69, merged as
@@ -97,11 +124,12 @@ Spec-then-TDD / Stop hook gate.
 `0.19.3` ref-optimization work as a single shipped version, folded together with
 the score-95 uv/pyproject tooling migration, a Stop-hook opt-in deadlock fix, and
 the `catalog_admission` CI fixes. The plugin surface stays frozen: 4 registered
-agents and the existing native command set are unchanged, and the 346-ref
-optimization gate bundle (catalog admission, memory index, Codex mirror parity,
-work-item stage transition, durable-loop controller, workflow-trace eval,
-hook-safety corpus, and package-footprint reduction) remains local-first and
-read-only with `ref/` kept repo-local rather than default packaged context.
+agents and 13 native commands are unchanged, and the 346-ref optimization gate
+bundle (catalog admission, memory index, memory retrieval eval,
+workflow trace query, Codex mirror parity, work-item stage transition,
+durable-loop controller, hook-safety corpus, and ship-profile reduction)
+remains local-first and read-only with `ref/` kept repo-local rather than
+default packaged context.
 
 The score-95 increment migrates CI to `astral-sh/setup-uv` + `uv sync
 --locked --dev` + `uv run` (new `pyproject.toml`, `.python-version` = 3.14, and
@@ -117,23 +145,6 @@ absent gitignored `ref/` corpus as vacuously clean.
 
 Release verification closed with Claude/Codex manifest validation, distribution
 smoke, topology/package/mirror gates, and the full pytest suite under `uv run`.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
-
-## Previous Phase: v0.19.3 — Ref Optimization Release
-
-**v0.19.3** (committed 2026-06-20, never published to the marketplace; folded
-into v0.20.0) — Patch release for the 346-ref optimization pass. The plugin
-surface stays conservative: 4 registered agents, 13 native commands, and no new
-default live execution. The release packages the local-first gate bundle for
-catalog admission, memory index, memory retrieval eval, workflow trace query,
-Codex mirror parity, work-item stage transition, and ship-profile reduction
-while keeping `ref/` plus historical planning, architecture, and test evidence
-repo-local rather than default packaged context.
-
-Release verification closed with Claude/Codex manifest validation, distribution
-smoke, topology/package/mirror gates, and focused regression coverage.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.

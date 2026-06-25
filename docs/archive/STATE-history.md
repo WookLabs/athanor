@@ -46,6 +46,23 @@ runtime/package/organization gates, and the full pytest suite.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
+## Previous Phase: v0.19.3 — Ref Optimization Release
+
+**v0.19.3** (committed 2026-06-20, never published to the marketplace; folded
+into v0.20.0) — Patch release for the 346-ref optimization pass. The plugin
+surface stays conservative: 4 registered agents, 13 native commands, and no new
+default live execution. The release packages the local-first gate bundle for
+catalog admission, memory index, memory retrieval eval, workflow trace query,
+Codex mirror parity, work-item stage transition, and ship-profile reduction
+while keeping `ref/` plus historical planning, architecture, and test evidence
+repo-local rather than default packaged context.
+
+Release verification closed with Claude/Codex manifest validation, distribution
+smoke, topology/package/mirror gates, and focused regression coverage.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
 ## Archived from STATE.md (2026-06-24)
 
 ## Previous Phase: v0.18.8 — athanor-codex Companion + Fable 5 Audit (rounds 1–2)
