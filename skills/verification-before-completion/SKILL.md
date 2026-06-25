@@ -123,6 +123,27 @@ Skip any step = lying, not verifying
 | "Partial check is enough" | Partial proves nothing |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
+## Structured Verdict Block
+
+When you present verification evidence for a material claim, emit it as one **greppable Structured Verdict Block per check** — the canonical form is:
+
+```
+### Check: <what is being proven>
+Command: <exact command run>
+Output: <pasted real output / exit code — never paraphrased>
+VERDICT: PASS | FAIL | PARTIAL
+```
+
+Rules:
+
+- One block per check. Each block ends in a single **terminal** `VERDICT:` line whose value is exactly `PASS`, `FAIL`, or `PARTIAL`.
+- The `Output:` line is the **pasted real output or exit code** — never a paraphrase, never "looks good", never reconstructed from memory. If you did not run the command in this message, you have no Output to paste and no VERDICT to assert.
+- `VERDICT: PARTIAL` means some sub-checks passed and some did not (or the check could only be partially run); it is **not** a release-worthy state under a completion claim.
+
+**`VERDICT: PASS` is NOT a release token.** It is an honesty aid for the reader, nothing more. The **v=2 nonce-bound emission sentinel** (see §Emission Sentinel) remains the **ONLY** sanctioned exit-0 / gate-release mechanism — a literal `VERDICT: PASS` string carries no nonce, no body-hash, no TTL, and no one-shot state, so the Stop hook can grep the token but cannot prove the command ever ran. Treating PASS as a release path would re-open the exact forgeable-string hole the v=2 sentinel was built to close. The block never auto-releases the gate; it only documents evidence.
+
+Conversely, a **terminal `VERDICT: FAIL` or `VERDICT: PARTIAL` emitted under a completion/success claim is a self-contradiction** — you are simultaneously asserting "done" and "the proof failed/partially failed." The Stop hook treats that pairing as a fail-loud block (this is the *producer* side of the convention; the Stop-hook *consumer* enforces it). If your verdict is FAIL or PARTIAL, do not claim completion — state the actual status with the evidence and keep working.
+
 ## Key Patterns
 
 **Tests:**

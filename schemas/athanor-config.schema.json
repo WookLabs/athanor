@@ -332,13 +332,19 @@
     "lfg": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Configuration for the /athanor:lfg end-to-end pipeline. Currently exposes the opt-OUT (default-on) auto-merge switch for /athanor:lfg Step 8.5 — Merge-readiness gate + optional merge.",
+      "description": "Configuration for the /athanor:lfg end-to-end pipeline. Exposes the opt-OUT (default-on) auto-merge switch for /athanor:lfg Step 8.5 (Merge-readiness gate + optional merge) and the Step 3/8 fix-round cap (maxFixRounds).",
       "properties": {
         "_doc": { "type": "string" },
         "autoMerge": {
           "type": "boolean",
           "default": true,
           "description": "Opt-OUT (default-on) auto-merge switch for /athanor:lfg Step 8.5. When true (the default), a green PR may be merged to its base branch after the Step 8.5 conjunctive merge-readiness gate passes; the pipeline still records the outcome and never bypasses the gate. When false, the pipeline terminates at 'PR open + CI green' and never merges. The invocation flag --unmerge hard-disables the merge even when this config is true (fail-safe direction wins ties); --merge explicitly enables when this is false. Documentary/discoverability knob — the load-bearing default is true."
+        },
+        "maxFixRounds": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "Cap (default 3) on the /athanor:lfg Step 3 (review-fix) and Step 8 (CI-fix) fix-round loops, surfaced by scripts/loops/lfg_fix_round_counter.py. The leader runs `bump --loop review|ci` each round and treats exit 3 (count reaches/exceeds this cap) as 'stop iterating'. Honesty label: ADVISORY (leader-bound exit-code) — a real exit code now exists (a strict upgrade over pure prose), but no PreToolUse/Stop runtime hook forces the leader to branch (same enforcement class as the Step 8.5 merge-readiness gate). NOT enforced."
         }
       }
     }

@@ -177,6 +177,20 @@ severity / fix-plan target / acceptance criterion per entry):
       v0.11.8+ | snapshot-hash on first Stop; mid-session hash change
       raises explicit mutation warning |
 
+v0.23.x terminal-VERDICT self-contradiction block (Phase 2 of the VERDICT
+anchor — see _terminal_verdict() + the main() branch after is_material_claim):
+  A material completion claim co-occurring with a TERMINAL ``VERDICT: FAIL``
+  or ``VERDICT: PARTIAL`` (the model's OWN self-reported failure) is blocked
+  (exit 2). This closes PART of residual item 1 — the honest-but-contradictory
+  claim (a model that emits real evidence ending in FAIL/PARTIAL yet still
+  claims success). It does NOT close item 1: a model that SILENTLY OMITS the
+  VERDICT line falls back to the whitelist gate exactly as before (the branch
+  only fires on a self-reported FAIL/PARTIAL). ``VERDICT: PASS`` is INERT — it
+  never becomes a release path; the v=2 nonce sentinel stays the SOLE
+  sanctioned exit-0 (Risk R1). The branch sits inside the existing gated region
+  (after profile=off, after the sentinel), so it inherits the opt-out and adds
+  no new exit-0 path. tests/test_regression_stop_hook_verdict.py locks it.
+
 v0.10.0 scope (vendored-surface coverage):
   This script triggers on every `Stop` event regardless of which skill
   produced the model's last turn. The v0.10.2 vendor-aware whitelist
@@ -1000,6 +1014,48 @@ def is_material_claim(message: str) -> bool:
     return False
 
 
+# v0.23.x — Structured Verdict Block consumer (Phase 2 of the VERDICT anchor).
+# Producer side: skills/verification-before-completion/SKILL.md defines the
+# canonical greppable form ``### Check → Command → Output → VERDICT: PASS|FAIL|
+# PARTIAL``. This consumer adds ONE additive rule (Key Decision 2): a material
+# completion claim co-occurring with a TERMINAL ``VERDICT: FAIL|PARTIAL`` is a
+# self-contradiction → block. ``VERDICT: PASS`` is INERT here — it never
+# becomes a release path (the v=2 nonce sentinel stays the SOLE sanctioned
+# exit-0; Risk R1). This STRENGTHENS, never replaces, the phrase whitelist.
+_VERDICT_LINE_RE = re.compile(
+    r"^[ \t]*verdict[ \t]*:[ \t]*(pass|fail|partial)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+# The set whose presence-under-a-claim constitutes a self-contradiction block.
+_BLOCKING_VERDICTS = {"fail", "partial"}
+
+
+def _terminal_verdict(message: str) -> str | None:
+    """Return the LAST terminal ``VERDICT: PASS|FAIL|PARTIAL`` value (lowercased)
+    in ``message``, or None if no (non-suppressed) verdict line is present.
+
+    The message is run through ``_normalize_for_match`` first so a fullwidth /
+    NFKC / confusables-folded ``VERDICT`` token still matches (consistent with
+    ``is_material_claim``). Each candidate match runs through the existing
+    ``_match_is_suppressed`` machinery so a ``VERDICT: FAIL`` inside a
+    quoted/attributed/historical line or a conditional clause does not count
+    (Risk R4). "Terminal" = the last surviving match wins (a trailing FAIL after
+    an earlier PASS governs).
+
+    Returns the verdict string (``"pass"`` / ``"fail"`` / ``"partial"``) — the
+    caller decides what to do with it (only FAIL/PARTIAL block; PASS is inert).
+    """
+    if not message:
+        return None
+    normalized = _normalize_for_match(message)
+    last: str | None = None
+    for m in _VERDICT_LINE_RE.finditer(normalized):
+        if _match_is_suppressed(message, normalized, m.start(), m.end()):
+            continue
+        last = m.group(1).lower()
+    return last
+
+
 def _read_stop_loop_threshold() -> int:
     """Read `hooks.stopLoopThreshold` from athanor.json or default."""
     config_path, _ = _find_athanor_config()
@@ -1131,6 +1187,32 @@ def main() -> int:
 
     if not is_material_claim(last_msg):
         return 0  # no material claim; nothing to gate
+
+    # v0.23.x Phase 2 — terminal VERDICT self-contradiction block.
+    # A material completion claim is present. If the response ALSO carries a
+    # terminal ``VERDICT: FAIL|PARTIAL`` (the model's OWN self-reported failure),
+    # the claim contradicts its own evidence — a self-contradiction we block
+    # immediately, naming the contradiction so the model gets an actionable
+    # signal (not the generic whitelist text). This sits AFTER the profile=off
+    # early return (so opt-out always wins) and AFTER the v=2 sentinel release
+    # (so it never bypasses the sentinel), and it adds NO new exit-0 path:
+    # ``VERDICT: PASS`` is INERT here (PASS-without-sentinel still routes through
+    # the existing material-claim block below, exactly as today — the forgery-
+    # hole guard, Key Decision 2 / Risk R1). The verdict match reuses the same
+    # normalization + suppression machinery as is_material_claim so a homoglyph
+    # VERDICT still matches and an attributed/conditional VERDICT does not
+    # false-block (Risk R4).
+    verdict = _terminal_verdict(last_msg)
+    if verdict in _BLOCKING_VERDICTS:
+        _stderr(
+            f"material completion claim paired with terminal `VERDICT: "
+            f"{verdict.upper()}` — the claim contradicts its own self-reported "
+            "evidence (a passing claim must not co-occur with a FAIL/PARTIAL "
+            "verdict). Resolve the failure (or correct the claim) and re-run "
+            "verification before stopping. To disable this gate per-project, "
+            'set "hooks": {"profile": "off"} in athanor.json.'
+        )
+        return 2
 
     # Material claim present → check circuit breaker before blocking.
     #

@@ -116,3 +116,16 @@ Read from the session directory:
 - Present trade-offs fairly, even when recommending one side
 - UNRESOLVED items must present both options with equal depth
 - Keep output actionable, not academic
+
+## Anti-Rationalization (advisory)
+
+The Critic's value IS independent judgment. The general anti-rationalization /
+trust-the-worker excuses are canonical in
+`skills/verification-before-completion/SKILL.md` (its Rationalization-Prevention
+and Common-Failures tables, plus the **Structured Verdict Block** convention —
+do not restate them here). This is the one Critic-specific failure mode that
+table does not cover:
+
+| Excuse | Reality |
+|--------|---------|
+| "Based on your findings…" / "Let the worker decide" / echoing the worker's verdict | **Delegation-rationalization.** The Critic's entire value is *independent* verification. Deferring to — or merely restating — the worker's own verdict means the Critic added nothing; it is the same as the Critic not existing. Reach your own conclusion from the evidence. |
