@@ -42,6 +42,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = REPO_ROOT / "schemas" / "athanor-config.schema.json"
 ROOT_CONFIG = REPO_ROOT / "athanor.json"
 TEMPLATE_CONFIG = REPO_ROOT / "templates" / "athanor.json"
+LFG_SKILL = REPO_ROOT / "skills" / "lfg" / "SKILL.md"
 
 
 def _load_json(path: Path):
@@ -219,3 +220,92 @@ def test_schema_validates_athanor_json_lfg_goal_block():
     )
     instance = _load_json(ROOT_CONFIG)
     jsonschema.validate(instance=instance, schema=schema)
+
+
+# ---------------------------------------------------------------------------
+# Test 6 -- lfg.maxFixRounds default = 3 (Step 3/8 fix-round cap, Phase 4)
+# ---------------------------------------------------------------------------
+
+
+def test_athanor_json_lfg_max_fix_rounds_default_3():
+    """MUST: ``athanor.json`` declares ``lfg.maxFixRounds == 3``.
+
+    Phase 4 of the verdict-anchor / lfg-fix-counter plan wires a real
+    session-scoped fix-round counter (``scripts/loops/lfg_fix_round_counter.py``)
+    that the leader branches on at /athanor:lfg Step 3 (review-fix) and
+    Step 8 (CI-fix). The cap is config-driven; the runtime config file must
+    carry the default 3 so the documented "up to 3 fix rounds" limit and the
+    counter's ``max_rounds`` agree. Honesty label: ADVISORY (leader-bound
+    exit-code) — NOT enforced.
+    """
+    config = _load_json(ROOT_CONFIG)
+    lfg = config.get("lfg")
+    assert isinstance(lfg, dict), (
+        "athanor.json must declare a top-level 'lfg' object; "
+        f"got {type(lfg).__name__}"
+    )
+    assert lfg.get("maxFixRounds") == 3, (
+        f"athanor.json lfg.maxFixRounds must equal 3 (Step 3/8 fix-round cap "
+        f"default); got {lfg.get('maxFixRounds')!r}"
+    )
+
+
+def test_template_json_lfg_max_fix_rounds_default_3():
+    """MUST: ``templates/athanor.json`` declares ``lfg.maxFixRounds == 3``.
+
+    Parity with the root config (cf. Test 4): the user-install template must
+    ship the same Step 3/8 fix-round cap default so /athanor:setup does not
+    introduce silent drift between dev and user-install defaults.
+    """
+    config = _load_json(TEMPLATE_CONFIG)
+    lfg = config.get("lfg")
+    assert isinstance(lfg, dict), (
+        "templates/athanor.json must declare a top-level 'lfg' object; "
+        f"got {type(lfg).__name__}"
+    )
+    assert lfg.get("maxFixRounds") == 3, (
+        f"templates/athanor.json lfg.maxFixRounds must equal 3; got "
+        f"{lfg.get('maxFixRounds')!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 7 -- doc-consistency: the Step 3/8 honesty relabel is not stale
+# ---------------------------------------------------------------------------
+
+
+def test_lfg_skill_fix_round_relabel_not_stale():
+    """MUST: ``skills/lfg/SKILL.md`` no longer claims "no programmatic counter"
+    for the Step 3/8 fix-round loops, and the new counter protocol is wired.
+
+    Phase 4 (d) doc-consistency lock: the relabel from *"prose guidance for the
+    leader; there is no programmatic counter"* to the
+    ``lfg_fix_round_counter.py ... exit 3 = cap`` protocol must actually have
+    landed, so the honesty relabel in CLAUDE.md / the schema is not a stale
+    claim. The Step 8.5 merge-readiness gate is the only place that may still
+    carry the old "no PreToolUse/Stop runtime hook" framing for ITSELF; the
+    literal phrase "no programmatic counter" must be gone for the fix loops.
+    """
+    body = LFG_SKILL.read_text(encoding="utf-8")
+    # The old admission must be gone entirely (the merge-gate row was reworded
+    # to its own "no PreToolUse/Stop runtime hook" self-description, which does
+    # not use this exact phrase).
+    assert "no programmatic counter" not in body, (
+        "skills/lfg/SKILL.md still contains the stale 'no programmatic counter' "
+        "admission — Phase 4 relabels the Step 3/8 fix-round loops to the real "
+        "exit-code counter; this phrase must no longer appear."
+    )
+    # The real counter protocol must be wired into the fix loops.
+    assert "lfg_fix_round_counter.py" in body, (
+        "skills/lfg/SKILL.md must reference scripts/loops/lfg_fix_round_counter.py "
+        "for the Step 3/8 fix-round loops (the real exit-code counter)."
+    )
+    assert "exit 3" in body, (
+        "skills/lfg/SKILL.md must document 'exit 3 = cap reached' as the "
+        "fix-round stop signal the leader branches on."
+    )
+    # The relabel must be honest: advisory / leader-bound, NOT claimed enforced.
+    assert "advisory (leader-bound exit code)" in body, (
+        "skills/lfg/SKILL.md must label the fix-round counter ADVISORY "
+        "(leader-bound exit code), not enforced."
+    )

@@ -155,10 +155,21 @@ consolidates findings and surfaces blockers + recommendations.
 
 If `/athanor:review` surfaces merge-blocker findings, the LFG leader
 re-dispatches `/athanor:work` with a focused subtask scoped to the merge-blocker findings.
-Iterate up to **3 fix rounds** (the iteration limit is prose guidance
-for the leader; there is no programmatic counter enforced by the Stop
-hook or any runtime gate), then stop and proceed to step 4 with any
-unresolved blockers recorded.
+Iterate up to **3 fix rounds**, then stop and proceed to step 4 with any
+unresolved blockers recorded. Bound the loop with the session-scoped
+counter: at the start of each review-fix round the leader runs
+
+```bash
+python3 scripts/loops/lfg_fix_round_counter.py bump --session <id> --loop review
+```
+
+and treats **exit 3 = cap reached (stop iterating)** — break the loop and
+proceed to step 4. (`<id>` is the active session per CLAUDE.md §Session
+Lookup Convention; the cap is `lfg.maxFixRounds`, default 3.) **Honesty
+label: advisory (leader-bound exit code).** A real exit code now exists —
+a strict upgrade over pure prose — but it is leader-prose-bound: no
+PreToolUse/Stop runtime hook forces the leader to branch on exit 3 (the
+same enforcement class as the Step 8.5 merge-readiness gate). NOT enforced.
 
 `/athanor:review` does NOT auto-apply fixes (athanor identity choice).
 Users wanting CE's autofix behavior should install the upstream
@@ -254,9 +265,22 @@ entirely and proceed to step 9.
 gh pr view --json number,url,state
 ```
 
-For up to **3 fix iterations** (the iteration limit is prose guidance
-for the leader; there is no programmatic counter enforced by the Stop
-hook or any runtime gate), repeat:
+For up to **3 fix iterations**, repeat. Bound the loop with the
+session-scoped counter: at the start of each CI-fix iteration the leader
+runs
+
+```bash
+python3 scripts/loops/lfg_fix_round_counter.py bump --session <id> --loop ci
+```
+
+and treats **exit 3 = cap reached (stop iterating)** — break the loop and
+proceed to step 9 with any unresolved CI failures recorded. (`<id>` is the
+active session per CLAUDE.md §Session Lookup Convention; the cap is
+`lfg.maxFixRounds`, default 3.) **Honesty label: advisory (leader-bound
+exit code)** — a real exit code now exists (a strict upgrade over pure
+prose), but it is leader-prose-bound: no PreToolUse/Stop runtime hook
+forces the leader to branch on exit 3 (same enforcement class as the
+Step 8.5 merge-readiness gate). NOT enforced. Each iteration:
 
 1. Wait for CI to complete:
    ```bash
@@ -311,8 +335,9 @@ section in the PR body and proceed to step 9. The autopilot contract is
 prose-driven git/gh plumbing, the same enforcement class as the Step 5/7/8
 lfg steps — there is **no PreToolUse/Stop runtime hook** that programmatically
 prevents the merge or enforces the conjunction. It is **advisory**, NOT
-enforced (cf. the Step 3/Step 8 iteration limits: "prose guidance for the
-leader; no programmatic counter"). The §Defense Mechanisms "lfg merge-readiness
+enforced (the same leader-bound class as the Step 3/Step 8 fix-round
+counter: a real signal exists, but no hook forces the leader to branch).
+The §Defense Mechanisms "lfg merge-readiness
 gate" row carries the same advisory scope and is deliberately kept distinct
 from the **enforced** Stop-hook row.
 

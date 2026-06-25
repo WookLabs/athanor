@@ -661,12 +661,15 @@ def test_l1_no_stale_60s_ttl_references():
 # ---------------------------------------------------------------------------
 def test_l4_enforcement_transparency_note():
     """L4 lock: lfg/SKILL.md ``3 fix iterations`` / ``3 fix rounds`` clauses
-    must include a prose-only enforcement transparency note.
+    must include an enforcement transparency note.
 
     The 3-iteration limit for review fixes (Step 3) and CI autofix (Step 8)
-    is prose-only guidance — there is no runtime counter enforcing it. An
-    enforcement transparency note must be present in the Protocol section
-    (Steps 3 and 8) so users understand the advisory nature.
+    is now bounded by the session-scoped ``lfg_fix_round_counter.py`` exit-code
+    counter — a strict upgrade over the pre-Phase-4 pure-prose guidance, but
+    still ADVISORY: no PreToolUse/Stop runtime hook forces the leader to branch
+    on the exit code. A transparency note conveying that advisory / leader-bound
+    (not runtime-enforced) nature must be present in the Protocol section
+    (Steps 3 and 8) so users understand the limit is not hook-enforced.
     """
     body = _read(LFG_SKILL)
     # Extract the Protocol section (Steps 1-9 area)
@@ -678,6 +681,8 @@ def test_l4_enforcement_transparency_note():
     else:
         protocol_section = body[protocol_start:].lower()
 
+    # Accept either the legacy pure-prose phrasing OR the Phase 4 honest
+    # advisory/leader-bound relabel (the counter exists but is not hook-forced).
     transparency_signals = [
         "prose-only",
         "no runtime enforcement",
@@ -686,14 +691,18 @@ def test_l4_enforcement_transparency_note():
         "prose guidance",
         "advisory limit",
         "not runtime-enforced",
+        "advisory (leader-bound exit code)",
+        "leader-prose-bound",
+        "not enforced",
     ]
     # At least one transparency note must appear in the Protocol section
     # near the 3-iteration clauses (not in unrelated sections like
     # using-superpowers boundary)
     assert any(sig in protocol_section for sig in transparency_signals), (
         "lfg SKILL.md Protocol section must include an enforcement "
-        "transparency note near the 3-iteration limit clauses (Step 3 + Step 8). "
-        "The 3-iteration limit is prose-only guidance with no runtime counter."
+        "transparency note near the 3-iteration limit clauses (Step 3 + Step 8) "
+        "conveying the limit's advisory / leader-bound (not runtime-enforced) "
+        "nature — the fix-round counter exists but no hook forces the branch."
     )
 
 

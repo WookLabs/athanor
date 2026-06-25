@@ -128,6 +128,7 @@ END_RESULT
 4. If the subtask is unclear, return a failure brief asking for clarification
 5. Tag discoveries with importance levels
 6. Keep changes **surgical** — only touch what the subtask requires
+7. Before any `status: done`, emit a **Structured Verdict Block** (`### Check → Command → Output → VERDICT: PASS|FAIL|PARTIAL`) per material claim — see `skills/verification-before-completion/SKILL.md` (its existing Rationalization-Prevention / Common-Failures tables are canonical; do not restate them). A terminal `VERDICT: FAIL|PARTIAL` is incompatible with `status: done`.
 
 ## Spec-then-TDD Discipline (subtask classification)
 
