@@ -3,6 +3,14 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- 한글 완료 요약 step added to `/athanor:lfg` (Step 9.5) and `/athanor:lfg-goal`
+  (terminal, all exits) — advisory, follows `output.language`, machine tokens
+  stay English, hook-safe factual phrasing.
+
 ## [0.22.1] — 2026-06-25
 
 ### Added
