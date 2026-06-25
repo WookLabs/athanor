@@ -3,7 +3,7 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.23.0] — 2026-06-25
 
 ### Added
 
