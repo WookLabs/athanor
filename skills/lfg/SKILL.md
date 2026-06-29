@@ -341,6 +341,11 @@ The §Defense Mechanisms "lfg merge-readiness
 gate" row carries the same advisory scope and is deliberately kept distinct
 from the **enforced** Stop-hook row.
 
+G0–G4 disposition is now computed by `scripts/gates/lfg_merge_gate.py`
+(executable + regression-tested by `tests/test_lfg_merge_gate_exec.py`) — a
+strict upgrade over hand-interpreted bash; no runtime hook forces the leader to
+honor the verdict, so the gate stays advisory.
+
 This step runs inside the documented Thin-Leader lfg git/gh plumbing exception
 (CLAUDE.md §Core Principle). It does exactly two things on success — `gh pr
 merge --rebase` + `--delete-branch` (best-effort). It **never** version-bumps,
@@ -490,6 +495,30 @@ leave the PR open, instruct manual enqueue (`gh pr merge --auto` / the repo's
 queue UI), and **never** `--admin` past it. Merge-queue auto-enqueue from lfg is
 out of scope for v1; the queue is **detected and respected**, not silently
 fought.
+
+#### Executable disposition gate (G0–G4 now computed in code)
+
+The G0–G4 disposition above is **no longer hand-interpreted bash** — it is
+computed by `scripts/gates/lfg_merge_gate.py`, a verdict-only pure function (it
+structurally cannot merge, so it cannot add `--admin`). Pipe the G0 `gh pr view`
+snapshot into the script and branch on its exit code (0=merge, 2=malformed/unknown
+enum, 3=block, 4=skip); pass each re-poll-budget-exhausted attempt
+`--repoll-exhausted` so an unsettled state resolves to BLOCK (never merge). The
+disposition tables above remain as documentation of what the script encodes:
+```bash
+# G0–G4 disposition is computed by the executable gate (was hand-interpreted bash).
+# Capture the verdict JSON so the block/skip arms can report its .clause/.detail:
+VERDICT=$(gh pr view --json number,url,state,isDraft,mergeable,mergeStateStatus,headRefName,baseRefName,body 2>/dev/null \
+  | python "${CLAUDE_PLUGIN_ROOT}/scripts/gates/lfg_merge_gate.py" \
+      --findings-file "docs/residual-review-findings/$(git branch --show-current).md" \
+      --findings-file "docs/residual-review-findings/$(git rev-parse HEAD).md")
+case $? in
+  0) gh pr merge "$PR" --rebase --delete-branch ;;   # never bypasses protection; G5 (queue) classified from stderr
+  3) echo "blocked-by-gate: $(echo "$VERDICT" | jq -r .clause) — $(echo "$VERDICT" | jq -r .detail); leave PR open" ;;
+  4) echo "skip ($(echo "$VERDICT" | jq -r .clause)); re-poll on G4-unsettled per the 3×5s budget; re-invoke; on exhaustion pass --repoll-exhausted → exit 3" ;;
+  2) echo "fail-loud: unknown enum / malformed — do NOT merge, surface stderr" ;;
+esac
+```
 
 #### Merge command (only when G1–G5 all PASS)
 
