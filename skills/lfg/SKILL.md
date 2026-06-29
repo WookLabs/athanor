@@ -86,14 +86,6 @@ migration guide. LFG users with strong scope-lock requirements should
 be aware that Codex stage writes are on the honour system within this
 release line.
 
-### Organization Operating Model overlay
-
-Before Step 1, align the run with the `office/stage` lifecycle in
-`docs/organization-operating-model.md` (intake→…→postmortem); after the
-relevant LFG evidence exists, an organization-stage handoff `receipt` can be
-recorded there. Preview-only unless `--emit`. See the doc's "Per-cycle
-overlay" section for the full overlay (handoff adapter + policy promotion).
-
 ### Step 1 — Invoke `/athanor:plan` (cross-model adversarial)
 
 Invoke the `/athanor:plan` skill with the user's feature description.

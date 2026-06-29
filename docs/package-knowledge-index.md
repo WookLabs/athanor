@@ -44,24 +44,9 @@ without scanning repo-local development history.
 - Reactive channel fixtures:
   [doc](reactive-channel-fixtures.md),
   [gate](../scripts/gates/reactive_channel_fixture.py).
-- Organization operating model:
-  [doc](organization-operating-model.md),
-  [gate](../scripts/gates/organization_operating_model.py).
-- Organization work-item registry:
-  [doc](organization-work-item-registry.md),
-  [gate](../scripts/gates/organization_work_item_registry.py).
-- Organization stage receipts:
-  [doc](organization-stage-receipts.md),
-  [gate](../scripts/gates/organization_stage_receipt.py).
 - Work-item stage transitions:
   [doc](work-item-stage-transitions.md),
   [gate](../scripts/gates/work_item_stage.py).
-- Policy promotion ledger:
-  [doc](policy-promotion-ledger.md),
-  [gate](../scripts/gates/policy_promotion_ledger.py).
-- Organization score:
-  [doc](organization-score.md),
-  [gate](../scripts/gates/organization_score.py).
 - Memory index:
   [doc](memory-index.md),
   [gate](../scripts/gates/memory_index.py).

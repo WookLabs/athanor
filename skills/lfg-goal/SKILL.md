@@ -167,14 +167,6 @@ The literal phrase **Validated Receipt-Ledger Loop** names this
 architecture in plan.md and in every downstream reference. Use it
 verbatim when describing the skill to users.
 
-### Organization Operating Model overlay
-
-Each cycle aligns with the `office/stage` lifecycle in
-`docs/organization-operating-model.md` (intake→…→postmortem); a
-validator-backed cycle `receipt` can record an organization-stage handoff
-there. Preview-only unless `--emit`. See the doc's "Per-cycle overlay" section
-for the full overlay (handoff adapter + policy promotion).
-
 ### Run Log, Budget, And Lock
 
 Each goal run SHOULD maintain an append-only run log at the `loop_run_log`
