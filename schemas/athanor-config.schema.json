@@ -260,11 +260,6 @@
           "minimum": 1,
           "description": "Consecutive cycles with no new diff or test count change abort the loop with a no-progress signal."
         },
-        "userConfirmAfter": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Pause for user confirmation after N cycles even when guards have not tripped."
-        },
         "tier2Adversarial": {
           "type": "boolean",
           "description": "Tier 2 goal-check dispatches judge-A (Claude) plus judge-B (Codex) in parallel; both must agree for the goal-check to pass."

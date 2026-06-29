@@ -270,6 +270,44 @@ def test_template_json_lfg_max_fix_rounds_default_3():
 
 
 # ---------------------------------------------------------------------------
+# Test 8 -- dead-config removal: userConfirmAfter must stay gone (C004-G4)
+# ---------------------------------------------------------------------------
+
+
+def test_user_confirm_after_is_removed():
+    """MUST: ``lfgGoal.userConfirmAfter`` is absent from config + schema.
+
+    Removed in C004-G4: the knob was schema-described ("pause for user
+    confirmation after N cycles") but NEVER wired into skills/lfg-goal/SKILL.md
+    — no loop step branches on it; the only live pause cadences are
+    ``maxIterations``, the no-progress circuit breaker, scope-drift high
+    severity, and Tier-3 ratification. A grep over scripts/skills/hooks found
+    zero behavioral consumer, so the key was decorative config. This guard
+    fails loud if it is re-introduced without a real consumer.
+    """
+    root = _load_json(ROOT_CONFIG)
+    template = _load_json(TEMPLATE_CONFIG)
+    schema = _load_json(SCHEMA_PATH)
+
+    assert "userConfirmAfter" not in (root.get("lfgGoal") or {}), (
+        "athanor.json lfgGoal must NOT re-introduce the dead 'userConfirmAfter' "
+        "knob without wiring a real loop consumer (C004-G4 removal)."
+    )
+    assert "userConfirmAfter" not in (template.get("lfgGoal") or {}), (
+        "templates/athanor.json lfgGoal must NOT re-introduce 'userConfirmAfter' "
+        "(C004-G4 removal)."
+    )
+    lfg_schema_props = (
+        ((schema.get("properties") or {}).get("lfgGoal") or {}).get("properties")
+        or {}
+    )
+    assert "userConfirmAfter" not in lfg_schema_props, (
+        "schema lfgGoal must NOT declare 'userConfirmAfter' (C004-G4 removal); "
+        "re-add only alongside a real loop-step consumer."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Test 7 -- doc-consistency: the Step 3/8 honesty relabel is not stale
 # ---------------------------------------------------------------------------
 
