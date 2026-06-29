@@ -414,3 +414,34 @@ agents, external telemetry, or irreversible automation.
   ]
 }
 ```
+
+## Per-cycle overlay (relocated from lfg / lfg-goal skills)
+
+`/athanor:lfg` and `/athanor:lfg-goal` align each run/cycle with this model
+instead of restating it inline. The detail below was relocated here so the
+hot-path skills carry only a short pointer.
+
+**How the pipeline maps.** The existing LFG 9-step pipeline is routed through
+the office/stage graph above: intake, requirements, research, planning,
+design-review, execution, verification, release, postmortem, and
+memory-update. `/athanor:lfg-goal` treats the same graph as the lifecycle for
+goal work — intake/triage shape the goal, requirements/research stabilize the
+next cycle, planning/design-review approve execution, verification/release
+check the shipped result, and postmortem/memory-update feed learning
+governance. The overlay clarifies accountable owner roles and keeps the
+existing receipt obligations explicit; it does **not** add a default live
+listener, registered agents, or external telemetry, and each cycle stays
+receipt-driven.
+
+**Organization-stage handoff (preview-only by default).** Once the relevant
+LFG/cycle evidence (or a validator-backed cycle receipt) exists, an
+organization-stage handoff can be recorded through
+`scripts/gates/organization_stage_receipt.py`. The adapter is preview-only
+unless `--emit` is present (omit `--emit` to preview without writes), and it
+mutates work-item state only with `--apply-work-item-update`.
+
+**Policy promotion.** Goal-level or postmortem lessons that should become
+operating policy or a gate must flow through `docs/policy-promotions/*.json`
+and be validated with `scripts/gates/policy_promotion_ledger.py` before being
+treated as active policy. Do not treat prose lessons as policy without that
+promotion state.

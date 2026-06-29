@@ -167,26 +167,13 @@ The literal phrase **Validated Receipt-Ledger Loop** names this
 architecture in plan.md and in every downstream reference. Use it
 verbatim when describing the skill to users.
 
-### P26 Organization Operating Model Overlay
+### Organization Operating Model overlay
 
-`/athanor:lfg-goal` inherits `/athanor:lfg` and aligns each cycle with
-`docs/organization-operating-model.md`. The wrapper treats the P26
-office/stage graph as the lifecycle for goal work: intake and triage
-shape the goal, requirements and research stabilize the next cycle,
-planning and design-review approve execution, verification and release
-check the shipped result, and postmortem plus memory-update feed
-learning governance. The cycle remains receipt-driven and does not add
-a default live listener, registered agents, or external telemetry.
-
-After a validator-backed cycle receipt exists, an organization-stage handoff
-can be recorded through `scripts/gates/organization_stage_receipt.py`. The
-adapter is preview-only unless `--emit` is present, and it mutates work-item
-state only with `--apply-work-item-update`.
-
-Goal-level lessons that should become operating policy must flow through
-`docs/policy-promotions/*.json` and
-`scripts/gates/policy_promotion_ledger.py`; do not treat prose lessons as
-active policy without that promotion state.
+Each cycle aligns with the `office/stage` lifecycle in
+`docs/organization-operating-model.md` (intake→…→postmortem); a
+validator-backed cycle `receipt` can record an organization-stage handoff
+there. Preview-only unless `--emit`. See the doc's "Per-cycle overlay" section
+for the full overlay (handoff adapter + policy promotion).
 
 ### Run Log, Budget, And Lock
 
