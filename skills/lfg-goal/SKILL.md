@@ -893,7 +893,6 @@ Baked into `athanor.json` and `templates/athanor.json`:
 "lfgGoal": {
   "maxIterations": 5,
   "noProgressThreshold": 2,
-  "userConfirmAfter": 3,
   "tier2Adversarial": true,
   "tier3UserRatification": true,
   "scopeDriftAutoCheck": true,
