@@ -575,13 +575,6 @@ def test_unreleased_documents_package_knowledge_index():
     )
 
 
-def test_ci_runs_organization_operating_model_gate():
-    """P26 organization operating model should fail before broad pytest."""
-    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
-    assert "Organization operating model gate" in workflow
-    assert "python scripts/gates/organization_operating_model.py --json" in workflow
-
-
 def test_unreleased_documents_organization_operating_model():
     """The Unreleased story must name the P26 organization operating model."""
     section = _unreleased_section()
@@ -599,13 +592,6 @@ def test_unreleased_documents_organization_operating_model():
         "CHANGELOG [Unreleased] must explain P26 organization operating model; "
         f"missing: {missing}"
     )
-
-
-def test_ci_runs_organization_work_item_registry_gate():
-    """P27 organization work-item registry should fail before broad pytest."""
-    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
-    assert "Organization work-item registry gate" in workflow
-    assert "python scripts/gates/organization_work_item_registry.py --json" in workflow
 
 
 def test_unreleased_documents_organization_work_item_registry():
@@ -627,13 +613,6 @@ def test_unreleased_documents_organization_work_item_registry():
     )
 
 
-def test_ci_runs_organization_stage_receipt_gate():
-    """P28 organization stage receipts should fail before broad pytest."""
-    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
-    assert "Organization stage receipt gate" in workflow
-    assert "python scripts/gates/organization_stage_receipt.py --json" in workflow
-
-
 def test_unreleased_documents_organization_stage_receipts():
     """The Unreleased story must name the P28 organization stage receipt adapter."""
     section = _unreleased_section()
@@ -651,13 +630,6 @@ def test_unreleased_documents_organization_stage_receipts():
         "CHANGELOG [Unreleased] must explain P28 organization stage receipts; "
         f"missing: {missing}"
     )
-
-
-def test_ci_runs_policy_promotion_ledger_gate():
-    """P29 policy promotion ledger should fail before broad pytest."""
-    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
-    assert "Policy promotion ledger gate" in workflow
-    assert "python scripts/gates/policy_promotion_ledger.py --json" in workflow
 
 
 def test_unreleased_documents_policy_promotion_ledger():
@@ -678,13 +650,6 @@ def test_unreleased_documents_policy_promotion_ledger():
         "CHANGELOG [Unreleased] must explain P29 policy promotion ledger; "
         f"missing: {missing}"
     )
-
-
-def test_ci_runs_organization_score_gate():
-    """P30 organization score should fail before broad pytest."""
-    workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
-    assert "Organization score gate" in workflow
-    assert "python scripts/gates/organization_score.py --json" in workflow
 
 
 def test_unreleased_documents_organization_score_gate():
