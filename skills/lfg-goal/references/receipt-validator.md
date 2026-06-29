@@ -235,7 +235,7 @@ Procedure:
    the response — commands, exit codes, evidence excerpts, the
    `ATHANOR_RESULT` block).
 3. Invoke `verification-before-completion` per its §"Emission Sentinel"
-   procedure: pipe the body through `scripts/hooks/sentinel_helper.py
+   procedure: pipe the body through `${CLAUDE_PLUGIN_ROOT}/scripts/hooks/sentinel_helper.py
    emit`, receive the `<!-- athanor:verification-emission v=2 nonce=...
    -->` sentinel line, prefix the response with it on line 1.
 4. Emit response: sentinel line on line 1, evidence body verbatim
