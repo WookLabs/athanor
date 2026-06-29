@@ -36,7 +36,7 @@ As of athanor v0.7.9, the v=1 bare-string sentinel is no longer accepted (it was
 2. Pipe that body through the sentinel helper to receive a nonce-bound sentinel line:
 
    ```bash
-   echo "<your evidence verbatim>" | python3 scripts/hooks/sentinel_helper.py emit
+   echo "<your evidence verbatim>" | python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/sentinel_helper.py" emit
    ```
 
    The helper writes a fresh nonce + SHA-256 of the piped body to `.athanor/sessions/active/.hook-state/nonce.json` and prints a sentinel line of the form:

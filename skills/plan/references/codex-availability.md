@@ -43,6 +43,7 @@ elif [ "$CODEX_CONFIG_ENABLED" = "false" ]; then
     self-critic) review_strategy=claude-self-review ;;
     skip)        review_strategy=none ;;
     fail)        echo "ERROR: codex.enabled=false but codex.fallback=fail — aborting" >&2; exit 1 ;;
+    *)           echo "ERROR: unknown codex.fallback='$CODEX_FALLBACK' (expected self-critic|skip|fail) — aborting" >&2; exit 1 ;;
   esac
 else
   # CLI absent, config true — same fallback matrix
@@ -51,6 +52,7 @@ else
     self-critic) review_strategy=claude-self-review ;;
     skip)        review_strategy=none ;;
     fail)        echo "ERROR: codex --version failed and codex.fallback=fail — aborting" >&2; exit 1 ;;
+    *)           echo "ERROR: unknown codex.fallback='$CODEX_FALLBACK' (expected self-critic|skip|fail) — aborting" >&2; exit 1 ;;
   esac
 fi
 ```
