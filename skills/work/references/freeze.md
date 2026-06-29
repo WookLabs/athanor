@@ -35,7 +35,7 @@ session simply starts enforcing the allowlist that's already on disk.
 Stdlib-only (same constraint as `scripts/hooks/*.py`). Exposes three
 entry points:
 
-- `parse_subtasks_files(plan_md_text: str) -> list[dict]` — parses the
+- `parse_subtask_files(plan_md_path: str) -> list[dict]` — parses the
   `## Subtasks` block of `plan.md`; extracts each subtask's `files:`
   declaration. Returns `[{subtask_id, files: list[str]}, ...]`. Handles
   both bullet-list shape (`- files: [a.py, b.py]`) and table-row shape.
@@ -132,7 +132,7 @@ Sequencing matters (locked by Phase 2 dispatcher contract test):
 
 1. Read PreToolUse payload from stdin.
 2. Try to load `athanor.json`. Result is `None | dict`.
-3. **Invoke `kernel_guard.evaluate(payload, config=None or loaded)` FIRST.**
+3. **Invoke `pretool_kernel_guard.evaluate_payload(payload)` FIRST.**
    Kernel guard runs unconditionally (even on missing config — defaults
    to `profile=standard` per v0.16.0 behavior). If exit 2, propagate
    immediately — freeze never runs after a kernel reject.
@@ -143,9 +143,9 @@ Sequencing matters (locked by Phase 2 dispatcher contract test):
 6. If `config.hooks.freeze.mode == "off"` (default) → exit 0 silently.
 7. Otherwise, resolve `session_id` (from `transcript_path` ancestor or
    `.athanor/sessions/active` cursor) and call
-   `read_freeze_allowlist(session_id) -> dict | None`. None → exit 0
+   `_read_freeze_allowlist() -> dict | None`. None → exit 0
    silently (no allowlist on disk; nothing to enforce against).
-8. Invoke `freeze_guard.evaluate(payload, config, allowlist)`. On
+8. Invoke `freeze_guard.evaluate_payload(payload, allowlist, mode=mode, config=config)`. On
    violation, exit 2 with stderr explaining which path fell outside
    the allowlist and pointing the user at the legitimate-edit
    workflow.
