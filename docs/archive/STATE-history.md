@@ -2,6 +2,39 @@
 
 Older phase sections moved out of `docs/STATE.md` by the releaser bounded-history trim rule (CONVENTIONS §7 / releaser Step 3). Verbatim moves — no content loss.
 
+## Archived from STATE.md (2026-06-30)
+
+## Previous Phase: v0.20.0 — Ref Optimization + uv Tooling Release
+
+**v0.20.0** (released 2026-06-23) — Minor release that ships the never-published
+`0.19.3` ref-optimization work as a single shipped version, folded together with
+the score-95 uv/pyproject tooling migration, a Stop-hook opt-in deadlock fix, and
+the `catalog_admission` CI fixes. The plugin surface stays frozen: 4 registered
+agents and 13 native commands are unchanged, and the 346-ref optimization gate
+bundle (catalog admission, memory index, memory retrieval eval,
+workflow trace query, Codex mirror parity, work-item stage transition,
+durable-loop controller, hook-safety corpus, and ship-profile reduction)
+remains local-first and read-only with `ref/` kept repo-local rather than
+default packaged context.
+
+The score-95 increment migrates CI to `astral-sh/setup-uv` + `uv sync
+--locked --dev` + `uv run` (new `pyproject.toml`, `.python-version` = 3.14, and
+`uv.lock`, all dev-only in the ship profile), makes the installed-hook
+`resolve_project_root()` honor `$CLAUDE_PROJECT_DIR` before the cwd walk-up,
+promotes the PostToolUse evidence scope from `unspecified` to `full_suite`, and
+hardens `/athanor:prompt-gen` (native + Codex mirror) to be output-only. The
+Stop-hook fix makes `stop_verify_claims.py` exit 0 when no `athanor.json` is
+present (the gate was unsatisfiable without opt-in because the sentinel path is
+also opt-in-gated) and adds surrogate-safe (`surrogatepass`) sentinel-body
+hashing on both emit and validate sides. `catalog_admission` now treats an
+absent gitignored `ref/` corpus as vacuously clean.
+
+Release verification closed with Claude/Codex manifest validation, distribution
+smoke, topology/package/mirror gates, and the full pytest suite under `uv run`.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
 ## Archived from STATE.md (2026-06-25)
 
 ## Previous Phase: v0.19.2 — Prompt, Goal, and Topology Patch

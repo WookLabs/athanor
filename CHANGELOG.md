@@ -3,6 +3,68 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.0] — 2026-06-30
+
+Headline: **removed the P26–P30 self-validating governance subsystem**
+(−8,599 LOC across 42 files) and shipped an **executable fail-loud
+merge-readiness gate** for `/athanor:lfg` Step 8.5. Six merged PRs land since
+v0.23.0; net diff 63 files, +2,129 / −8,626. Two fail-loud-over-silent-fallback
+bugs are fixed, dead config and hot-path overlay prose are removed, and the
+analyze + debug skills gain their first behavioral regression tests.
+
+### Added
+
+- **Executable merge-readiness gate for `/athanor:lfg` Step 8.5 (PR #74).** New
+  `scripts/gates/lfg_merge_gate.py` replaces hand-interpreted bash for the
+  pipeline's most-irreversible action (the auto-merge). It reads `gh pr view`
+  JSON on stdin and emits a `merge | block | skip` verdict plus the deciding
+  clause (exit `0`/`2`/`3`/`4`); an unknown `mergeStateStatus` enum maps to
+  exit `2` (fail-loud — never a silent merge), and merge is authorized only for
+  a `CLEAN` state. The gate is verdict-only: it structurally cannot `--admin`
+  or bypass branch protection. +19 executable tests. **Honesty label: advisory**
+  — it is an executable verdict, but no runtime hook forces the leader to honor
+  it (same enforcement class as the Step 3/8 fix-round counter).
+
+### Fixed
+
+- **Two fail-loud-over-silent-fallback bugs (PR #75).** (1) The
+  `${CLAUDE_PLUGIN_ROOT}` sentinel anchor was restored in
+  `verification-before-completion` SKILL.md and `receipt-validator.md` — a bare
+  path had silently degraded Stop-hook invariant #4 in user projects. (2) A
+  `*)` default arm was added to both `codex.fallback` case blocks in
+  `codex-availability.md`, so an unrecognized fallback value surfaces instead
+  of falling through silently. +6 regression tests.
+
+### Removed
+
+- **P26–P30 self-validating governance subsystem removed (PR #79, headline) —
+  −8,599 LOC across 42 files.** The subsystem scored itself (the
+  `organization_score.py` self-scorer) and gated CI on its own existence, with
+  zero external / marketplace / `plugin.json` consumer. Removed: 5 gate scripts,
+  5 org tests, 6 schemas, 5 docs, ~12 artifacts, and 5 decision JSONs, across 4
+  CI-green phases. `work_item_stage.py` and `harness_decision_ledger.py`
+  (separate, live) were KEPT. This is the bulk of the release's −8,626
+  deletions.
+- **Dead `lfgGoal.userConfirmAfter` config removed (PR #77).** The schema
+  falsely advertised a knob with no consumer. `consolidateCycles`,
+  `review.personas`, and `doc-review` were verified live and kept.
+
+### Changed
+
+- **Hot-path overlay prose relocated to docs (PR #76).** ~24 lines of P26
+  overlay prose moved out of the `lfg` / `lfg-goal` hot-path skills into docs.
+  Investigation found the suspected "~2000 LOC over-build" was actually
+  live/tested code, so the live scripts were kept — only the prose moved. (An
+  honesty win: the over-claim was rejected rather than acted on.)
+
+### Tests
+
+- analyze and debug skills gained their first behavioral regression tests
+  (PR #78), plus 4 `freeze.md` function-name fact-corrections. Net new tests
+  across the release: **+25** (+19 executable merge-gate, +6 fail-loud
+  regression), net of the 5 self-validating org tests removed with the
+  governance subsystem.
+
 ## [0.23.0] — 2026-06-25
 
 ### Added
