@@ -4,7 +4,45 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.23.0 — 한글 완료 요약 Step for /athanor:lfg + /athanor:lfg-goal
+## Current Phase: v0.24.0 — Governance Subsystem Removal + Executable lfg Merge Gate
+
+**v0.24.0** (released 2026-06-30) — Minor release landing six merged PRs since
+v0.23.0; net diff 63 files, +2,129 / −8,626. The headline is the **removal of
+the P26–P30 self-validating governance subsystem** (PR #79, −8,599 LOC across
+42 files): a subsystem that scored itself (the `organization_score.py`
+self-scorer) and gated CI on its own existence, with zero external /
+marketplace / `plugin.json` consumer. Removed were 5 gate scripts, 5 org tests,
+6 schemas, 5 docs, ~12 artifacts, and 5 decision JSONs, across 4 CI-green
+phases; `work_item_stage.py` and `harness_decision_ledger.py` (separate, live)
+were kept. Alongside it ships an **executable fail-loud merge-readiness gate**
+for `/athanor:lfg` Step 8.5 (PR #74, `scripts/gates/lfg_merge_gate.py`): stdin
+`gh pr view` JSON → `merge | block | skip` verdict + deciding clause (exit
+`0`/`2`/`3`/`4`), unknown `mergeStateStatus` enum → exit `2` (fail-loud),
+`CLEAN`-only merge, structurally verdict-only (cannot `--admin` / bypass branch
+protection); +19 exec tests. The gate's honesty label stays **advisory** (an
+executable verdict, but no runtime hook forces the leader to honor it — same
+class as the fix-round counter).
+
+Two **fail-loud-over-silent-fallback** bugs were fixed (PR #75): the
+`${CLAUDE_PLUGIN_ROOT}` sentinel anchor restored in
+`verification-before-completion` SKILL.md + `receipt-validator.md` (a bare path
+had silently degraded Stop-hook invariant #4 in user projects), and a `*)`
+default arm added to both `codex.fallback` case blocks in
+`codex-availability.md`; +6 regression tests. Dead `lfgGoal.userConfirmAfter`
+config (schema-advertised but unconsumed) was removed (PR #77), and ~24 lines
+of P26 overlay prose were relocated from the `lfg` / `lfg-goal` hot-path skills
+to docs (PR #76) — the suspected "~2000 LOC over-build" was found to be
+live/tested code and kept, so only the prose moved (over-claim rejected as an
+honesty win). The analyze + debug skills gained their first behavioral
+regression tests (PR #78) plus 4 `freeze.md` function-name fact-corrections;
+net new tests across the release: +25. The plugin surface stays frozen: 4
+registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
+the existing native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / Stop hook gate.
+
+## Previous Phase: v0.23.0 — 한글 완료 요약 Step for /athanor:lfg + /athanor:lfg-goal
 
 **v0.23.0** (released 2026-06-25) — Minor release shipping a single
 `/athanor:lfg` / `/athanor:lfg-goal` user-experience addition landed on main
@@ -118,36 +156,17 @@ stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
-## Previous Phase: v0.20.0 — Ref Optimization + uv Tooling Release
+## Ref-driven optimization surface (current status)
 
-**v0.20.0** (released 2026-06-23) — Minor release that ships the never-published
-`0.19.3` ref-optimization work as a single shipped version, folded together with
-the score-95 uv/pyproject tooling migration, a Stop-hook opt-in deadlock fix, and
-the `catalog_admission` CI fixes. The plugin surface stays frozen: 4 registered
-agents and 13 native commands are unchanged, and the 346-ref optimization gate
-bundle (catalog admission, memory index, memory retrieval eval,
-workflow trace query, Codex mirror parity, work-item stage transition,
-durable-loop controller, hook-safety corpus, and ship-profile reduction)
-remains local-first and read-only with `ref/` kept repo-local rather than
-default packaged context.
-
-The score-95 increment migrates CI to `astral-sh/setup-uv` + `uv sync
---locked --dev` + `uv run` (new `pyproject.toml`, `.python-version` = 3.14, and
-`uv.lock`, all dev-only in the ship profile), makes the installed-hook
-`resolve_project_root()` honor `$CLAUDE_PROJECT_DIR` before the cwd walk-up,
-promotes the PostToolUse evidence scope from `unspecified` to `full_suite`, and
-hardens `/athanor:prompt-gen` (native + Codex mirror) to be output-only. The
-Stop-hook fix makes `stop_verify_claims.py` exit 0 when no `athanor.json` is
-present (the gate was unsatisfiable without opt-in because the sentinel path is
-also opt-in-gated) and adds surrogate-safe (`surrogatepass`) sentinel-body
-hashing on both emit and validate sides. `catalog_admission` now treats an
-absent gitignored `ref/` corpus as vacuously clean.
-
-Release verification closed with Claude/Codex manifest validation, distribution
-smoke, topology/package/mirror gates, and the full pytest suite under `uv run`.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Standing summary carried forward when the v0.20.0 phase block was archived
+(`docs/archive/STATE-history.md`) under the bounded-history trim — this status
+is current, not phase history, so it lives outside the dated phase blocks. The
+**346-ref optimization** gate bundle stays local-first and read-only:
+catalog admission, memory index, memory retrieval eval, workflow trace query,
+Codex mirror parity, work-item stage transition, and ship-profile reduction,
+with `ref/` kept repo-local rather than default-packaged context. The plugin surface
+stays frozen — 4 registered agents (`ci-watcher`, `codex-dispatcher`,
+`learner`, `releaser`) and 13 native commands are unchanged.
 
 ## History (시계열 요약 — 자세한 항목은 CHANGELOG.md 참조)
 

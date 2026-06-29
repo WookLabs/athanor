@@ -130,7 +130,7 @@ def test_vendored_skill_frontmatter_name_matches_directory():
 
 
 def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_0_16_x_series():
-    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x series.
+    """MUST: marketplace.json plugin version is in the 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x / 0.24.x series.
 
     v0.10.1 generalization → v0.11.0 extension → v0.12.0 extension →
     v0.13.0 extension → v0.14.0 extension → v0.15.0 extension → v0.16.0
@@ -150,7 +150,8 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
     /athanor:lfg auto-merge + Step 8.5 gate); extended to include 0.22.x
     at v0.22.0 (default-on lfg auto-merge + strengthened lfg-goal loop);
     extended to include 0.23.x at v0.23.0 (한글 완료 요약 step for
-    /athanor:lfg + /athanor:lfg-goal).
+    /athanor:lfg + /athanor:lfg-goal); extended to include 0.24.x at
+    v0.24.0 (governance subsystem removal + executable lfg merge gate).
     """
     import json
     mp = json.loads(
@@ -173,9 +174,10 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
                         or v.startswith("0.21.")
                         or v.startswith("0.22.")
                         or v.startswith("0.23.")
+                        or v.startswith("0.24.")
                      )]
     assert in_series, (
-        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x series; "
+        f"marketplace.json plugin version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x / 0.24.x series; "
         f"got {versions}"
     )
 
@@ -211,7 +213,8 @@ def test_plugin_manifest_version_matches_marketplace():
             or pj_version.startswith("0.21.")
             or pj_version.startswith("0.22.")
             or pj_version.startswith("0.23.")
+            or pj_version.startswith("0.24.")
         ), (
-            f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x series; "
+            f"plugin.json version must be in 0.10.x / 0.11.x / 0.12.x / 0.13.x / 0.14.x / 0.15.x / 0.16.x / 0.17.x / 0.18.x / 0.19.x / 0.20.x / 0.21.x / 0.22.x / 0.23.x / 0.24.x series; "
             f"got {pj_version!r}"
         )
