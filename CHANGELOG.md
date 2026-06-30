@@ -3,6 +3,55 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.1] — 2026-06-30
+
+Headline: a patch release of **16 adversarially-confirmed fixes** (10 correctness
++ 6 documentation) hardening load-bearing hook/gate code and stale docs. They came
+from an `ultracode` quality hunt — 11 finders → adversarial verification → 18
+findings confirmed and **5 phantom findings rejected** (verify-before-cut) → two
+`/athanor:lfg` fix cycles. All fixes, no new features; this release ships 16 of the
+confirmed findings (the two PRs below) plus **+23 regression tests**. The plugin
+surface stays frozen: 4 registered agents and the existing native command set are
+untouched. Honest re-assessment after the hunt: correctness 88→90 (newly meets its
+floor), documentation 86→89, test_coverage 83→84, overall 89→~90.
+
+### Fixed
+
+10 adversarially-confirmed correctness bugs in load-bearing hook/gate code
+(PR #81, `a3b9527`; +23 regression tests), led by the two HIGH safety fixes:
+
+- **(HIGH) `/athanor:lfg` merge-gate G2 was fail-open.** The unresolved-review-
+  residual clause keyed only on the `blocker` severity token, but `/athanor:review`
+  emits critical/high/medium/low — so an unresolved **CRITICAL** residual could
+  reach a MERGE verdict. The clause now matches `(blocker|critical|high)` and is
+  fail-safe.
+- **(HIGH) PreToolUse kernel-guard destructive-shell check was bypassable.** The
+  destructive-shell matcher was whole-command unanchored: a chained checkout-dot
+  form slipped past the block while a quoted mention was false-blocked. The matcher
+  is now segment-anchored.
+- **(MED) Force-push matcher missed the `+refspec` form.**
+- **(MED) The `test_` credential exemption was a path substring** — it exposed a
+  real `.env` living under a `test_`-prefixed directory; tightened.
+- **(MED) Merge-gate crashed (uncaught exit 1) on a non-UTF-8 findings file** — it
+  now fails loud as exit 2.
+- **(MED) Stop-hook attribution verbs over-suppressed first-person claims.**
+- **(MED) Evidence-gate matched a generic `node_id` as a bare command substring.**
+- **(LOW) PostToolUse sniffer recorded value-option args as targets** and inferred
+  green-as-red on the bare word `error`.
+- **(LOW) Goal-controller parsed an inert `completion_gates_required` flag** (removed).
+
+### Documentation
+
+6 adversarially-confirmed staleness fixes (PR #82, `d0d7405`):
+
+- `DESIGN.md` agent-partition verify command globbed the wrong directory (exited 1
+  on the correct state); corrected.
+- `STATE.md` cited a deleted test as the active enforcer; re-pointed to the live one.
+- `freeze.md` + `/athanor:setup` omitted the live `warn` freeze mode; documented.
+- `freeze.md` cited a non-existent test filename; corrected.
+- `DESIGN.md` documented a ghost `models` config key; removed.
+- `package-knowledge-index` review stamp was stale; refreshed.
+
 ## [0.24.0] — 2026-06-30
 
 Headline: **removed the P26–P30 self-validating governance subsystem**

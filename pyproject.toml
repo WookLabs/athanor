@@ -1,6 +1,6 @@
 [project]
 name = "athanor"
-version = "0.24.0"
+version = "0.24.1"
 description = "General-purpose agentic workflow orchestrator plugin for Claude Code and Codex."
 readme = "README.md"
 requires-python = ">=3.11"
