@@ -284,18 +284,18 @@ who have not yet enabled scope-locked editing.
 Procedure (best-effort, never fails setup):
 
 1. Read `athanor.json` `hooks.freeze.mode`. Valid values: `"off"`
-   (default) or `"session"`.
-2. If `mode == "session"`, additionally:
+   (default), `"session"`, or `"warn"`.
+2. If `mode in {"session", "warn"}`, additionally:
    - Confirm `scripts/work/build_freeze_allowlist.py` exists.
    - Confirm `scripts/hooks/pretool_dispatcher.py` exists.
    - Confirm `scripts/hooks/freeze_guard.py` exists.
-3. Report `freeze_mode: <off|session>` and `freeze_scripts: <present|missing>`.
+3. Report `freeze_mode: <off|session|warn>` and `freeze_scripts: <present|missing>`.
 
 The probe is passive — it does not invoke the dispatcher or build an
 allowlist. Full mechanism details: `skills/work/references/freeze.md`.
 User-facing config + migration: `docs/v0.18.0-migration.md`.
 
-**Brief:** v0.18.0: `hooks.freeze.mode = {off | session}`. Capability
+**Brief:** v0.18.0: `hooks.freeze.mode = {off | session | warn}`. Capability
 probe at `scripts/hooks/capability_probe.py`. Freeze is a Claude
 file-tool allowlist (Edit/Write/MultiEdit + conservative Bash
 patterns); Codex subprocess writes are NOT gated (D2 residual).

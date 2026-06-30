@@ -207,7 +207,6 @@ stays frozen — 4 registered agents (`ci-watcher`, `codex-dispatcher`,
 | `schema-validates-config` (v0.7.7) | ✅ enforced | `tests/test_regression_schema_validates_config.py` |
 | `schema-url-version-pin` (v0.7.7) | ✅ enforced | `tests/test_regression_schema_url_version_pin.py` |
 | `session-lookup-convention` (v0.7.7) | ✅ enforced | `tests/test_regression_session_lookup_convention.py` |
-| `_doc-honesty` (v0.7.7+v0.7.8) | ✅ enforced | `tests/test_regression_doc_string_honesty.py` (models deprecated; hooks working contract) |
 | `vendoring-gate` (T0+T1 disproof) | ⚠️ LLM-driven only | `/athanor:setup` Check #7. CI 자동 실행 안 됨 (개선 후보) |
 | `contract-ledger` presence | ✅ fixed (v0.18.x) | `/athanor:setup` Check #11 — fresh-checkout fast-path implemented: no sessions → PASS (info), not a hard FAIL. See `skills/setup/SKILL.md` §11 fast-path. |
 | `learner-on-release` | ✅ ceremony 단계 (advisory) | `agents/releaser.md` Step 6 — release tag 후 leader가 Learner dispatch (`learner_on_release: pending-leader-dispatch` 신호). `agents/learner.md` §On Release |

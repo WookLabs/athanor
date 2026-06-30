@@ -218,11 +218,17 @@ Enforcement (hybrid stage)".
 }
 ```
 
-- `mode`: one of `"off"` (default — gate is silent, freeze evaluator
-  never runs) or `"session"` (freeze evaluator runs on every
-  PreToolUse for Claude `Edit` / `Write` / `MultiEdit` / `NotebookEdit` /
-  scoped `Bash`). Future modes (`"strict"`, `"per-subtask"`) deferred to
-  v0.18.x and v0.19.0.
+- `mode`: one of three live modes —
+  - `"off"` (default — gate is silent, freeze evaluator never runs).
+  - `"session"` (freeze evaluator runs on every PreToolUse for Claude
+    `Edit` / `Write` / `MultiEdit` / `NotebookEdit` / scoped `Bash`, and
+    **blocks** out-of-allowlist writes).
+  - `"warn"` (freeze evaluator runs identically to `"session"` and logs
+    each out-of-allowlist write via `_log_violation`, but **allows** the
+    write — exit 0; observe-only, non-blocking).
+
+  Future modes (`"strict"`, `"per-subtask"`) are still unimplemented
+  (absent from the schema enum) and remain deferred.
 - `allowedPaths`: list of project-relative paths or globs to
   union into every session's allowlist. Useful for project-wide
   artifacts the plan doesn't always re-declare (`CHANGELOG.md`,
@@ -272,8 +278,10 @@ which legitimate-edit path to take.
 ## Forward references
 
 - Phase 2 dispatcher contract test:
-  `tests/test_regression_v018_pretool_dispatcher_sequencing.py`
+  `tests/test_regression_v018_pretool_dispatcher.py`
   (separate subtask) — pins kernel-FIRST / freeze-SECOND ordering.
+  Integration-level ordering lock:
+  `tests/test_regression_v018_phase2_integration.py`.
 - Phase 3 freeze guard evaluator:
   `scripts/hooks/freeze_guard.py` (separate subtask) — implements the
   per-tool gating logic described above.

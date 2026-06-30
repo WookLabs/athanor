@@ -1,6 +1,6 @@
 # Package Knowledge Index
 
-Last reviewed: 2026-06-20.
+Last reviewed: 2026-06-30.
 
 This is the short package-facing map for Athanor's current runtime and
 operator surface. Use it first when a packaged worker needs current context
