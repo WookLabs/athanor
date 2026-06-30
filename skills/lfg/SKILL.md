@@ -182,8 +182,14 @@ explicitly note that there were no review fixes to persist.
 If `/athanor:review` reported unresolved blocker or recommendation
 findings, record them durably:
 
-1. Compose a `## Residual Review Findings` markdown section listing
-   each finding with severity, file:line, title, and recommendation.
+1. Compose a `## Residual Review Findings` markdown section. For **each
+   blocker-class finding**, emit a structured machine-readable marker line
+   `- severity: <critical|blocker>` (use the `/athanor:review` severity
+   verbatim — `critical` or `high` — or the literal `blocker`), followed by the
+   human detail (file:line, title, recommendation). That marker line is exactly
+   what the Step 8.5 G2 merge-readiness gate parses (it matches
+   `severity: blocker|critical|high`), so an unresolved `critical` residual
+   correctly blocks the auto-merge instead of silently shipping.
 2. Detect the current branch's open PR without prompting:
    ```bash
    gh pr view --json number,url,body,state
@@ -394,8 +400,14 @@ findings in **one of two places**: appended to the **PR body**
 file** `docs/residual-review-findings/<branch-or-head-sha>.md` when no PR existed
 yet at Step 5 time. The gate **MUST check BOTH**; a blocker in *either* location
 → `FAIL`. Parse for a **structured machine token**, not freeform prose: a line
-matching `^[-*] *severity: *blocker` (case-insensitive) within a
-`## Residual Review Findings` section (PR body) **or** in the fallback file.
+matching `^\s*[-*0-9.]*\s*severity:\s*(blocker|critical|high)` (case-insensitive)
+within a `## Residual Review Findings` section (PR body) **or** in the fallback
+file. This token is the merge-blocking vocabulary `/athanor:review` actually
+emits (`critical`/`high`) **plus** the literal `severity: blocker` form, and it
+tolerates leading indentation / numbered-bullet markers (`  - `, `1. `). The
+earlier blocker-only token fell **open** on a `critical` residual (review never
+emits the word `blocker`), so this is a fail-safe broadening — it can only block
+more, never merge more.
 ```bash
 # (a) PR body
 BODY=$(gh pr view "$PR" --json body --jq .body)
@@ -405,12 +417,14 @@ HEADSHA=$(git rev-parse HEAD)
 FALLBACK1="docs/residual-review-findings/${BRANCH}.md"
 FALLBACK2="docs/residual-review-findings/${HEADSHA}.md"
 # FAIL iff (BODY in a Residual Review Findings section) OR (either fallback file)
-#   contains a line matching ^[-*] *severity: *blocker  (case-insensitive)
+#   contains a line matching (case-insensitive):
+#   ^\s*[-*0-9.]*\s*severity:\s*(blocker|critical|high)
 ```
 A recommendation line that merely *mentions* the word "blocker" in prose is NOT
-a `^severity: blocker` line and does not false-FAIL. A blocker present only in
-the fallback file FAILs the gate even though the PR body has no such section
-(this closes the body-only false-PASS hole).
+a `severity: blocker` (or `severity: critical`) marker line and does not
+false-FAIL. A blocker present only in the fallback file FAILs the gate even
+though the PR body has no such section (this closes the body-only false-PASS
+hole).
 
 **G3 — No unresolved-CI section.** The PR body contains **no
 `## CI Failures Unresolved`** header (Step 8 writes that header only when it

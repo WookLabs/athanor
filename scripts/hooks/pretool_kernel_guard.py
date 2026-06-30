@@ -14,6 +14,8 @@ classes:
      - `git checkout .` (restore all)
   2. **Force-push to protected branches** (Bash):
      - `git push --force` / `-f` / `--force-with-lease` to main/master
+     - `git push origin +main` (git-native `+refspec` force form, incl.
+       `+HEAD:main` / `+refs/heads/x:main` dst-ref spellings)
   3. **Sensitive credential file access** (Bash, Read, Write, Edit, MultiEdit, NotebookEdit):
      - `.env`, `.env.local`, `.env.production`, `.env.secret`
      - `credentials.json`, `credentials.yaml`, `private_key`, `.ssh/`,
@@ -155,10 +157,18 @@ DESTRUCTIVE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 # (e.g. `feature/main`) is still blocked — the leading `\b` fires at `/`→`m`
 # and the trailing boundary passes at end-of-arg. Rare; rename to work around.
 # This is a best-effort textual gate, not a parser — see module docstring.
+#
+# Pattern 4 covers the git-native `+refspec` force form (`git push origin
+# +main`), which carries no `--force`/`-f` flag yet force-pushes. The
+# `(?:[^\s:]*:)?` optional group lets the dst-ref spellings `+HEAD:main` /
+# `+refs/heads/x:main` match; the required literal `+` keeps a normal
+# `git push origin main` untouched, and the `(?![\w-])` boundary keeps
+# `+main-fix` (a branch merely prefixed with `main`) allowed.
 FORCE_PUSH_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\bgit\s+push\b(?=.*--force\b)(?=.*\b(?:main|master)(?![\w-]))"),
     re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)-f\b)(?=.*\b(?:main|master)(?![\w-]))"),
     re.compile(r"\bgit\s+push\b(?=.*--force-with-lease\b)(?=.*\b(?:main|master)(?![\w-]))"),
+    re.compile(r"\bgit\s+push\b(?=.*(?:^|\s)\+(?:[^\s:]*:)?(?:main|master)(?![\w-]))"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -187,11 +197,12 @@ SENSITIVE_EXCEPTIONS = (
     ".env.test",
     ".env.sample",
     "fixtures/",
-    "/test_",
-    # `test_` at the start of a basename (e.g. `tests/test_foo.py` is also
-    # caught by `tests/` segment, but standalone `test_foo.env` should be
-    # allowed because it's a fixture name).
 )
+# A `test_`-prefixed BASENAME (e.g. `test_credentials.json`, `test_foo.env`) is
+# a fixture filename and allowed — but this is checked on the basename ONLY (in
+# `_path_is_sensitive`), NOT as a path substring. The old `/test_` substring
+# exception fell OPEN on a real `.env` secret living under a `test_`-prefixed
+# DIRECTORY segment (e.g. `config/test_env/.env`), which must stay blocked.
 # `cat`/`less`/`head`/`tail`/`more`/`bat` credential-read detection for Bash.
 _BASH_READER_KEYWORDS = ("cat", "less", "more", "head", "tail", "bat")
 # Options that consume a SEPARATE-token value (`head -n 5 file`). Their value
@@ -288,12 +299,38 @@ def _read_profile() -> str:
 # ---------------------------------------------------------------------------
 
 def _check_destructive_shell(command: str) -> str | None:
-    """Return matched description if the command is destructive, else None."""
+    """Return matched description if the command is destructive, else None.
+
+    Segment-scoped + anchored (P13), mirroring `_check_force_push`: each
+    DESTRUCTIVE_PATTERN is applied with `pattern.match` (anchored at position 0)
+    to the wrapper-stripped head of every command SEGMENT, so the segment must
+    BEGIN with the destructive subcommand. This one change fixes both directions
+    of the old whole-command unanchored `.search`:
+
+      * false-NEGATIVE — `git checkout . && echo done` (and the `;`/`||`/`|`
+        variants) is now segmented, so the isolated `git checkout .` segment is
+        matched and BLOCKED; the chain operator no longer hides it past the
+        terminator.
+      * false-POSITIVE — `echo "git reset --hard"` / `git commit -m '...git
+        clean -fd...'` now have a non-git segment head, so the anchored match
+        fails and they are ALLOWED (the destructive spelling is only quoted
+        data passed to another command, not the segment's command word).
+
+    Preserved blocks: bare `git reset --hard`, `cd x && git reset --hard` (via
+    segment split), `sudo git reset --hard` (via wrapper strip). Accepted
+    false-NEGATIVE (unchanged, by design): `git -C x reset --hard` — the same
+    best-effort textual idiom and accepted residual as the force-push checks
+    (see module docstring).
+    """
     if _is_destructive_rm(command):
         return "rm -rf targeting filesystem root or home"
-    for pattern, description in DESTRUCTIVE_PATTERNS:
-        if pattern.search(command):
-            return description
+    # Reuse the force-push wrapper stripper (sudo/env prefixes) so a
+    # `sudo git reset --hard` still anchors to the `git …` head.
+    for segment in _command_segments(command):
+        stripped = _strip_force_push_wrappers(segment)
+        for pattern, description in DESTRUCTIVE_PATTERNS:
+            if pattern.match(stripped):
+                return description
     return None
 
 
@@ -400,6 +437,12 @@ def _path_is_sensitive(path: str) -> bool:
     for ex in SENSITIVE_EXCEPTIONS:
         if ex in lowered:
             return False
+    # A `test_`-prefixed BASENAME is a fixture filename (allowed) — scoped to
+    # the basename so a real `.env` under a `test_`-prefixed DIRECTORY segment
+    # (e.g. `config/test_env/.env`) is NOT exempted (the old `/test_` substring
+    # exception fell open on exactly that path).
+    if os.path.basename(lowered).startswith("test_"):
+        return False
     # Substring markers — credentials.json, .ssh/, etc.
     for marker in SENSITIVE_SUBSTRINGS:
         if marker in lowered:

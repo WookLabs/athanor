@@ -393,11 +393,11 @@ def _score_target_from_dict(raw_data: Any) -> dict[str, Any]:
             data.get("min_dimension_score"), "score_target.min_dimension_score"
         ),
     }
-    completion_gates_required = data.get("completion_gates_required", False)
-    target["completion_gates_required"] = _require_bool(
-        completion_gates_required,
-        "score_target.completion_gates_required",
-    )
+    # NOTE: `completion_gates_required` was removed (v0.24.x correctness batch).
+    # It was parsed/validated/echoed but never read — the tier1/tier2 completion
+    # gate fires UNCONDITIONALLY (the documented always-apply 3-tier invariant).
+    # Wiring it would have broken that invariant, so the inert flag was deleted
+    # rather than honored. Any leftover key in input is simply ignored here.
     return target
 
 

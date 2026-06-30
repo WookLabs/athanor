@@ -44,7 +44,13 @@ EXIT_BLOCK = 3
 EXIT_SKIP = 4
 
 # Structured machine token for a review merge-blocker (NOT freeform prose).
-_BLOCKER_RE = re.compile(r"(?im)^[-*] *severity: *blocker")
+# Broadened beyond the lone `severity: blocker` token: /athanor:review emits
+# `critical`/`high`/`medium`/`low` severities (never literally `blocker`), so a
+# blocker-token-only gate fell OPEN on an unresolved CRITICAL residual. The
+# token now matches `severity: blocker|critical|high` and tolerates leading
+# indentation + numbered-bullet markers (`  - `, `1. `). Failure direction is
+# fail-SAFE — it can only block MORE, never merge more.
+_BLOCKER_RE = re.compile(r"(?im)^\s*[-*0-9.]*\s*severity:\s*(blocker|critical|high)\b")
 _RESIDUAL_HEADER = "## Residual Review Findings"
 _UNRESOLVED_CI_HEADER = "## CI Failures Unresolved"
 
@@ -124,7 +130,7 @@ def decide(pr: dict | None, findings_blocker: bool, repoll_exhausted: bool) -> d
     body_blocker = bool(_BLOCKER_RE.search(_residual_section(body)))
     if body_blocker or findings_blocker:
         return _verdict(
-            "block", "G2", "review merge-blocker present (severity: blocker)"
+            "block", "G2", "review merge-blocker present (severity: critical|high|blocker)"
         )
 
     # G3 — unresolved-CI section in the PR body.
@@ -213,7 +219,11 @@ def _read_findings_blocker(paths: list[str]) -> bool:
             continue
         try:
             content = path.read_text(encoding="utf-8")
-        except OSError as exc:
+        except (OSError, UnicodeDecodeError) as exc:
+            # UnicodeDecodeError is a ValueError subclass, NOT an OSError, so a
+            # non-UTF-8 findings file would otherwise escape both this catch and
+            # main()'s `except MergeGateError` → uncaught traceback / exit 1.
+            # Re-raise as MergeGateError → exit 2 (fail-loud, never silent).
             raise MergeGateError(f"could not read findings file: {path}") from exc
         if _BLOCKER_RE.search(content):
             return True

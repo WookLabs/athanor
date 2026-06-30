@@ -256,6 +256,88 @@ def test_g2_missing_findings_file_is_noop(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Q1-1 (HIGH) — G2 fail-open closure. `/athanor:review` emits critical/high
+# severities (never the literal `blocker`), so a blocker-token-only G2 fell
+# OPEN on an unresolved CRITICAL residual and let it reach a MERGE verdict. The
+# broadened token must BLOCK `severity: critical|high` markers (+ indented /
+# numbered-bullet variants) on an OTHERWISE-CLEAN PR, while keeping the literal
+# `severity: blocker` form green. Fail-safe: can only block more, never merge.
+# ---------------------------------------------------------------------------
+def test_g2_critical_high_severity_markers_block():
+    variants = (
+        # canonical critical marker on an otherwise-mergeable PR
+        "intro\n## Residual Review Findings\n- severity: critical — SQLi in auth handler\n",
+        # `high` is also merge-blocking vocabulary
+        "intro\n## Residual Review Findings\n- severity: high — unsafe deserialize\n",
+        # indented sub-bullet (column-0 miss in the old `^[-*]` token)
+        "intro\n## Residual Review Findings\n  - severity: critical — indented finding\n",
+        # numbered-bullet marker
+        "intro\n## Residual Review Findings\n1. severity: critical — numbered finding\n",
+        # the literal `blocker` form must STILL block (back-compat)
+        "intro\n## Residual Review Findings\n* severity: blocker — keep literal token green\n",
+    )
+    for body in variants:
+        p = _run(_pr(body=body))
+        assert p.returncode == EXIT_BLOCK, (
+            f"a `severity: critical|high|blocker` residual marker must BLOCK "
+            f"(exit 3) on a clean PR; body={body!r} got {p.returncode}, "
+            f"stdout={p.stdout!r}"
+        )
+        v = json.loads(p.stdout)
+        assert v["verdict"] == "block", f"verdict must be block; body={body!r} got {v!r}"
+        assert v["clause"] == "G2", f"clause must be G2; body={body!r} got {v!r}"
+
+
+def test_g2_critical_in_findings_file_blocks(tmp_path):
+    """The broadened token also fires via the --findings-file fallback source."""
+    findings = tmp_path / "feature-x.md"
+    findings.write_text(
+        "## Residual Review Findings\n- severity: critical — found on disk\n",
+        encoding="utf-8",
+    )
+    p = _run(_pr(body="clean body, no findings section"), "--findings-file", str(findings))
+    assert p.returncode == EXIT_BLOCK, (
+        f"a `severity: critical` in a --findings-file must BLOCK; got "
+        f"{p.returncode}, stdout={p.stdout!r}"
+    )
+    v = json.loads(p.stdout)
+    assert v["clause"] == "G2", f"clause must be G2; got {v!r}"
+
+
+def test_g2_prose_severity_word_alone_does_not_false_block():
+    """A residual that only MENTIONS 'critical'/'blocker' in prose (no
+    `severity:` token line) must NOT false-FAIL — the clean PR still merges."""
+    body = (
+        "intro\n## Residual Review Findings\n"
+        "- This is a critical-sounding but non-structured note about a blocker.\n"
+    )
+    p = _run(_pr(body=body))
+    assert p.returncode == EXIT_MERGE, (
+        f"prose mentioning 'critical'/'blocker' without a `severity:` marker line "
+        f"must not block; got {p.returncode}, stdout={p.stdout!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Q1-5 — a non-UTF-8 --findings-file must fail-loud (exit 2 EXIT_MALFORMED),
+# never crash to an uncaught traceback / exit 1. UnicodeDecodeError is a
+# ValueError (NOT an OSError) so it previously escaped the `except OSError`.
+# ---------------------------------------------------------------------------
+def test_non_utf8_findings_file_fails_loud(tmp_path):
+    findings = tmp_path / "mojibake.md"
+    findings.write_bytes(b"\xff\xfe- severity: blocker\n")
+    p = _run(_pr(body="clean body"), "--findings-file", str(findings))
+    assert p.returncode == EXIT_MALFORMED, (
+        f"a non-UTF-8 findings file must fail-loud (exit 2 EXIT_MALFORMED), never "
+        f"crash to exit 1; got {p.returncode}, stdout={p.stdout!r} stderr={p.stderr!r}"
+    )
+    assert p.stderr.strip(), "exit 2 must carry a stderr diagnostic (fail-loud)."
+    assert "merge" not in p.stdout, (
+        f"a malformed findings file must NOT emit a verdict on stdout; got {p.stdout!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Fixture 11 — G3 unresolved-CI section → BLOCK / G3 / exit 3.
 # ---------------------------------------------------------------------------
 def test_g3_unresolved_ci_is_block():

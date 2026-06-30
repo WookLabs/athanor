@@ -348,3 +348,87 @@ def test_cli_returns_two_on_invalid_result_json(tmp_path):
 
     assert proc.returncode == 2
     assert "invalid result json" in proc.stderr.lower()
+
+
+# ---------------------------------------------------------------------------
+# Q1-7 — a generic/short test_node_id (e.g. `pytest`) must NOT match an
+# unrelated recorded command as a bare substring (fabricated red_evidence
+# guard). The substring fallback is restricted to node-id-shaped tokens (carry
+# `::` or a path separator) matched as a whole whitespace-delimited token.
+# ---------------------------------------------------------------------------
+def test_generic_node_id_does_not_fabricate_substring_match(gate, tmp_path):
+    evidence = _write_jsonl(
+        tmp_path / "test-evidence.jsonl",
+        [
+            {
+                "command": "python -m pytest tests/test_unrelated.py -q",
+                "test_targets": ["tests/test_unrelated.py"],
+                "scope": "targeted",
+                "exit_code": 1,
+            }
+        ],
+    )
+    result = {
+        "execution_note": "spec-then-tdd",
+        "red_evidence": [
+            {
+                "criterion": "MUST prove red",
+                "command": "pytest -k something",
+                "test_node_id": "pytest",
+                "exit_code": 1,
+                "output_tail": "1 failed",
+            }
+        ],
+        "full_suite_passed": True,
+    }
+
+    report = gate.evaluate_result_against_evidence(result, evidence)
+
+    assert report["status"] == "concern", (
+        "a generic node_id 'pytest' must NOT latch onto an unrelated failing "
+        f"pytest record; report={report!r}"
+    )
+    assert any("missing evidence" in item for item in report["concerns"])
+    assert report["matches"] == []
+
+
+def test_real_node_id_in_differing_command_still_matches(gate, tmp_path):
+    """A real node-id token inside a DIFFERING recorded command still matches via
+    the (now whitespace-delimited) substring fallback — the restriction must not
+    over-tighten the legitimate case."""
+    evidence = _write_jsonl(
+        tmp_path / "test-evidence.jsonl",
+        [
+            {
+                "command": "cd app && python -m pytest tests/foo.py::test_bar -v",
+                "test_targets": [],
+                "scope": "targeted",
+                "exit_code": 1,
+            }
+        ],
+    )
+    result = {
+        "execution_note": "spec-then-tdd",
+        "red_evidence": [
+            {
+                "criterion": "MUST prove red",
+                "command": "pytest tests/foo.py::test_bar",
+                "test_node_id": "tests/foo.py::test_bar",
+                "exit_code": 1,
+                "output_tail": "1 failed",
+            }
+        ],
+        # full_suite intentionally omitted — this case isolates the red_evidence
+        # node_id substring fallback, not the full-suite plumbing.
+        "full_suite_passed": False,
+    }
+
+    report = gate.evaluate_result_against_evidence(result, evidence)
+
+    # The real node-id token still matches inside the differing recorded command.
+    red_matches = [m for m in report["matches"] if m["kind"] == "red_evidence"]
+    assert red_matches, f"real node-id must still match; report={report!r}"
+    assert red_matches[0]["test_node_id"] == "tests/foo.py::test_bar"
+    assert not any("red_evidence" in item for item in report["concerns"]), (
+        f"no missing-evidence concern for the matched red_evidence; report={report!r}"
+    )

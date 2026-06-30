@@ -330,3 +330,75 @@ def test_ci_uses_locked_uv_environment_with_yaml_dependency():
     pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     dev_dependencies = pyproject["dependency-groups"]["dev"]
     assert any(item.lower().startswith("pyyaml") for item in dev_dependencies)
+
+
+# ---------------------------------------------------------------------------
+# Q1-8 — pytest value-taking options (`-n auto`, `-p no:cacheprovider`, ...)
+# must have their VALUE consumed, not recorded as a test target / flipped to
+# targeted scope.
+# ---------------------------------------------------------------------------
+def test_pytest_xdist_n_option_value_not_recorded_as_target(sniffer, tmp_path):
+    root, session_dir = _project_with_session(tmp_path)
+    payload = _bash_payload(
+        "pytest -n auto tests/", exit_code=0, stdout="975 passed in 10.00s"
+    )
+
+    exit_code, _ = sniffer.evaluate_payload(
+        payload, project_root=root, session_dir=session_dir
+    )
+
+    assert exit_code == 0
+    [record] = _records(session_dir)
+    assert record["test_targets"] == ["tests/"], record
+    assert record["primary_target"] == "tests/"
+    assert record["scope"] == "full_suite"
+
+
+def test_pytest_plugin_p_option_value_not_recorded_as_target(sniffer, tmp_path):
+    root, session_dir = _project_with_session(tmp_path)
+    payload = _bash_payload(
+        "pytest -p no:cacheprovider tests/", exit_code=0, stdout="975 passed in 10.00s"
+    )
+
+    exit_code, _ = sniffer.evaluate_payload(
+        payload, project_root=root, session_dir=session_dir
+    )
+
+    assert exit_code == 0
+    [record] = _records(session_dir)
+    assert record["test_targets"] == ["tests/"], record
+    assert record["primary_target"] == "tests/"
+    assert record["scope"] == "full_suite"
+
+
+# ---------------------------------------------------------------------------
+# Q1-9 — a PASSING run whose output tail merely MENTIONS the word 'error' must
+# infer green; only a pytest COUNT-summary token (`<n> failed/error(s)`) marks
+# red. Failure-before-pass order preserved (`1 failed, 3 passed` => red).
+# ---------------------------------------------------------------------------
+def test_passing_run_with_error_word_in_tail_infers_green(sniffer):
+    payload = _bash_payload(
+        "python -m pytest tests/test_demo.py -q",
+        stdout=(
+            "tests/test_demo.py .\n"
+            "DeprecationWarning: raised an error in older pytest versions\n"
+            "5 passed in 0.30s"
+        ),
+    )
+    payload["tool_response"].pop("exit_code")
+
+    assert sniffer._extract_exit_code_with_source(payload) == (0, "pytest_output"), (
+        "a passing tail that merely mentions 'error' must infer green"
+    )
+
+
+def test_failed_count_tail_still_infers_red(sniffer):
+    payload = _bash_payload(
+        "python -m pytest tests/test_demo.py -q",
+        stdout="FAILED tests/test_demo.py::test_z\n1 failed, 3 passed in 0.50s",
+    )
+    payload["tool_response"].pop("exit_code")
+
+    assert sniffer._extract_exit_code_with_source(payload) == (1, "pytest_output"), (
+        "a `1 failed, 3 passed` count-summary tail must still infer red"
+    )

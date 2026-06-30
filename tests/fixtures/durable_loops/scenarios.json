@@ -221,8 +221,7 @@
         "references": [],
         "score_target": {
           "overall_score": 90,
-          "min_dimension_score": 80,
-          "completion_gates_required": false
+          "min_dimension_score": 80
         }
       },
       "expected": {
@@ -267,8 +266,7 @@
         "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
         "score_target": {
           "overall_score": 90,
-          "min_dimension_score": 80,
-          "completion_gates_required": false
+          "min_dimension_score": 80
         }
       },
       "expected": {
@@ -313,8 +311,7 @@
         "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
         "score_target": {
           "overall_score": 90,
-          "min_dimension_score": 80,
-          "completion_gates_required": false
+          "min_dimension_score": 80
         },
         "assessment": {
           "kind": "delta",

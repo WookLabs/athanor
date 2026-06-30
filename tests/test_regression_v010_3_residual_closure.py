@@ -191,6 +191,51 @@ def test_bare_assertion_not_affected_by_r3(stop_module):
     assert stop_module.is_material_claim("리뷰 완료")
 
 
+# ---- Q1-6: attribution window must not over-suppress first-person claims ----
+# `_ATTRIBUTION_VERBS_EN` previously carried first-person action verbs
+# (`wrote`/`noted`/`stated`/...), and the window scan used SUBSTRING membership,
+# so a natural completion claim was silently suppressed — and `wrote` matched
+# inside `rewrote`. The verb list is trimmed to the genuinely-attributional
+# `said`/`claimed`, matched on a WORD boundary.
+
+
+def test_first_person_wrote_claim_not_suppressed(stop_module):
+    """`I wrote the tests, tests pass` must remain a material claim (the gate
+    must FIRE — `wrote` is no longer an attribution verb)."""
+    assert stop_module.is_material_claim("I wrote the tests, tests pass"), (
+        "first-person 'I wrote ... tests pass' must NOT be suppressed"
+    )
+
+
+def test_first_person_rewrote_claim_not_suppressed(stop_module):
+    """`I rewrote X; tests pass` must remain a material claim — `rewrote` must
+    not match the dropped `wrote` as a substring (word-boundary matcher)."""
+    assert stop_module.is_material_claim("I rewrote the module; tests pass"), (
+        "first-person 'I rewrote ... tests pass' must NOT be suppressed"
+    )
+
+
+def test_dropped_attribution_verbs_no_longer_suppress(stop_module):
+    """The dropped verbs (`noted`/`stated`/`reported`/...) must no longer
+    suppress a first-person completion claim on the same line."""
+    for verb in ("noted", "stated", "reported", "commented", "mentioned"):
+        payload = f"I {verb} the change and tests pass now."
+        assert stop_module.is_material_claim(payload), (
+            f"'{verb}' must not suppress the claim after trimming; payload={payload!r}"
+        )
+
+
+def test_said_and_claimed_attribution_still_suppress(stop_module):
+    """Regression — the retained `said`/`claimed` verbs must STILL suppress a
+    genuine third-party attribution (the two locked R3 cases)."""
+    assert not stop_module.is_material_claim(
+        "Earlier the report said tests pass after fixing the bug."
+    ), "'said' attribution must still suppress"
+    assert not stop_module.is_material_claim("He claimed: tests pass now."), (
+        "'claimed' attribution must still suppress"
+    )
+
+
 # ---- Cross-cutting: existing v0.10.2 positives still work ----
 
 

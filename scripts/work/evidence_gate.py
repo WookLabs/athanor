@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -98,8 +99,16 @@ def _red_entry_matches_record(entry: dict, record: dict) -> bool:
         targets.append(primary)
     if node_id in targets:
         return True
-    if record_command and node_id in record_command:
-        return True
+    # Substring fallback — restricted so a generic/short token (e.g. `pytest`)
+    # cannot latch onto an unrelated failing pytest command as a bare substring
+    # (fabricated red_evidence guard). Only enter when node_id LOOKS like a real
+    # pytest node-id (carries a `::` selector or a path separator), and require
+    # it to appear as a whitespace/boundary-delimited token in the (already
+    # whitespace-normalized) recorded command.
+    looks_like_node_id = "::" in node_id or "/" in node_id or "\\" in node_id
+    if record_command and looks_like_node_id:
+        if re.search(r"(?:^|\s)" + re.escape(node_id) + r"(?=\s|$)", record_command):
+            return True
     return False
 
 

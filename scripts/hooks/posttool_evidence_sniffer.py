@@ -59,13 +59,19 @@ _FILE_CHANGE_CONTAINER_KEYS = {
     "modified",
     "paths",
 }
-_PYTEST_FAILURE_SUMMARY_RE = re.compile(r"\b(?:failed|error|errors)\b", re.IGNORECASE)
+# Anchored to a pytest COUNT-summary token (`<n> failed/error(s)`), mirroring
+# the pass regex, so a green run whose tail merely MENTIONS the word
+# 'error'/'failed' (e.g. a deprecation note) is no longer inferred as red.
+_PYTEST_FAILURE_SUMMARY_RE = re.compile(r"\b\d+\s+(?:failed|error|errors)\b", re.IGNORECASE)
 _PYTEST_PASS_SUMMARY_RE = re.compile(r"\b\d+\s+passed\b", re.IGNORECASE)
 _OPTIONS_WITH_VALUE = {
     "-c",
     "-k",
     "-m",
+    "-n",  # xdist worker count (`-n auto`)
     "-o",
+    "-p",  # plugin (de)activation (`-p no:cacheprovider`)
+    "-W",  # warning filter (long form: --pythonwarnings)
     "--basetemp",
     "--cache-clear",
     "--capture",
@@ -77,14 +83,17 @@ _OPTIONS_WITH_VALUE = {
     "--cov-fail-under",
     "--cov-report",
     "--deselect",
+    "--dist",  # xdist distribution mode
     "--ignore",
     "--ignore-glob",
     "--junit-prefix",
     "--junit-xml",
     "--junitxml",
     "--maxfail",
+    "--numprocesses",  # xdist worker count (long form of -n)
     "--override-ini",
     "--pyargs",
+    "--pythonwarnings",  # warning filter (long form of -W)
     "--rootdir",
     "--tb",
 }
