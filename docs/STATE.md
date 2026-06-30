@@ -4,7 +4,37 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.24.0 — Governance Subsystem Removal + Executable lfg Merge Gate
+## Current Phase: v0.24.1 — Adversarial Quality Hunt (correctness + docs patch on v0.24.0)
+
+**v0.24.1** (released 2026-06-30) — Patch release landing two merged PRs since
+v0.24.0 from an `ultracode` quality hunt (11 finders → adversarial verification →
+18 confirmed / 5 phantom findings rejected, verify-before-cut → two `/athanor:lfg`
+fix cycles; all fixes, no new features). PR #81 (`a3b9527`) fixes 10
+adversarially-confirmed correctness bugs in load-bearing hook/gate code (+23
+regression tests), led by two HIGH safety fixes: (1) the `/athanor:lfg` merge-gate
+G2 unresolved-review-residual clause was fail-open — it keyed only on the `blocker`
+severity token while `/athanor:review` emits critical/high/medium/low, so an
+unresolved CRITICAL residual could reach a MERGE verdict; broadened to
+`(blocker|critical|high)`, fail-safe. (2) the PreToolUse kernel-guard
+destructive-shell matcher was whole-command unanchored, so a chained checkout-dot
+form bypassed the block while a quoted mention was false-blocked; now
+segment-anchored. The remaining 8 (5 MED / 3 LOW) cover the force-push `+refspec`
+form, a `test_` credential-exemption path-substring that exposed a real `.env`, a
+merge-gate crash on a non-UTF-8 findings file (now exit 2), stop-hook attribution
+over-suppression, an evidence-gate bare-substring match, and three
+sniffer/controller LOW fixes. PR #82 (`d0d7405`) fixes 6 adversarially-confirmed
+doc-staleness items (DESIGN.md agent-partition verify command + ghost `models`
+config key, STATE.md deleted-test citation, freeze.md `warn`-mode omission + wrong
+test filename, `/athanor:setup` freeze-mode omission, stale
+package-knowledge-index review stamp). Honest re-assessment after the hunt:
+correctness 88→90 (newly meets its floor), documentation 86→89, test_coverage
+83→84, overall 89→~90; net new tests +23. The plugin surface stays frozen: 4
+registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
+the existing native command set are untouched. This patch updates the v0.24.0
+Current Phase in place (no Current→Previous rotation); the v0.24.0 base-release
+narrative follows.
+
+### v0.24.0 base — Governance Subsystem Removal + Executable lfg Merge Gate
 
 **v0.24.0** (released 2026-06-30) — Minor release landing six merged PRs since
 v0.23.0; net diff 63 files, +2,129 / −8,626. The headline is the **removal of
