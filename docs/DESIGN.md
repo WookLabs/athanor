@@ -443,24 +443,12 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 → 계속 / /plan 복귀 / 사용자 직접 개입 선택지
 ```
 
-### Model Configuration per Agent (from ECC)
+### Model Configuration per Agent
 
-역할별 모델 최적화로 비용/속도 균형:
-
-```json
-"models": {
-  "researcher": "sonnet",
-  "analyst": "sonnet",
-  "planner": "opus",
-  "planner-codex": "codex",
-  "critic": "opus",
-  "executor": "opus",
-  "cleaner": "haiku",
-  "learner": "sonnet",
-  "debugger": "sonnet",
-  "debugger-tracer": "opus"
-}
-```
+역할별 모델 티어는 **athanor.json 키가 아니라** 스킬 dispatch 시점에 INLINE으로 지정된다
+(예: Cleaner haiku, Releaser/CI-watcher opus). 정식 매핑은 CLAUDE.md §"Effort Level"를 참조.
+(과거 ECC에서 차용한 `models` config 블록은 schema/template/consumer 어디에도 존재하지 않는
+ghost key로, v0.24.0 기준 제거됨.)
 
 ---
 
@@ -468,12 +456,17 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
 
 ### athanor.json
 
+현재 top-level shape (per-role 모델 티어는 INLINE dispatch에서 지정되며 `models` 키는 없다 —
+위 §"Model Configuration per Agent" 참조):
+
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/WookLabs/athanor/<version>/schemas/athanor-config.schema.json",
   "version": "1.0",
   "codex": {
     "enabled": true,
-    "fallback": "self-critic"
+    "fallback": "self-critic",
+    "timeoutMs": 300000
   },
   "work": {
     "defaultMode": "solo",
@@ -494,17 +487,30 @@ N개 subtask 연속 실패 → Circuit Breaker TRIP
     "promotionThreshold": 5,
     "maxAgeDays": 30
   },
-  "models": {
-    "researcher": "sonnet",
-    "analyst": "sonnet",
-    "planner": "opus",
-    "critic": "opus",
-    "executor": "opus",
-    "cleaner": "haiku",
-    "learner": "sonnet"
-  },
   "triggers": {
     "language": "both"
+  },
+  "output": {
+    "language": "ko"
+  },
+  "hooks": {
+    "profile": "standard",
+    "stopLoopThreshold": 3,
+    "freeze": { "mode": "off", "allowedPaths": [] },
+    "evidence": { "mode": "warn" },
+    "safetyCorpus": { "mode": "off" }
+  },
+  "lfgGoal": {
+    "maxIterations": 5,
+    "scoreTarget": { "enabled": false, "targetOverall": 95, "targetMinDimension": 90 }
+  },
+  "lfg": {
+    "autoMerge": true,
+    "maxFixRounds": 3
+  },
+  "review": {
+    "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
+    "minConfidence": 25
   }
 }
 ```
@@ -571,7 +577,7 @@ CI / pre-commit should enforce the two-kind partition — exactly the 4 register
 a `name:`, the 7 reference docs do not:
 
 ```bash
-python -c "import re,pathlib; reg={p.stem for p in pathlib.Path('agents').glob('*.md') if re.search(r'^name:\s*\S+', p.read_text(encoding='utf-8'), re.M)}; ref={p.stem for p in pathlib.Path('agents').glob('*.md')} - reg; assert reg=={'learner','releaser','ci-watcher','codex-dispatcher'}, reg; assert ref=={'analyst','cleaner','critic','executor','planner','researcher','reviewer'}, ref"
+python -c "import re,pathlib; reg={p.stem for p in pathlib.Path('agents').glob('*.md') if re.search(r'^name:\s*\S+', p.read_text(encoding='utf-8'), re.M)}; ref={p.stem for p in pathlib.Path('docs/agent-roles').glob('*.md')}; assert reg=={'learner','releaser','ci-watcher','codex-dispatcher'}, reg; assert ref=={'analyst','cleaner','critic','executor','planner','researcher','reviewer'}, ref"
 ```
 
 Exit code 0 = correct 4-registered / 7-reference partition; non-zero = drift (AssertionError
