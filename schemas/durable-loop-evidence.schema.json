@@ -60,9 +60,6 @@
         },
         "min_dimension_score": {
           "type": "number"
-        },
-        "completion_gates_required": {
-          "type": "boolean"
         }
       }
     },

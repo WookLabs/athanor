@@ -61,8 +61,8 @@ validated by `schemas/durable-loop-evidence.schema.json`.
 
 Score-target evidence adds two optional objects:
 
-- `score_target` — target policy with `overall_score`,
-  `min_dimension_score`, and `completion_gates_required`.
+- `score_target` — target policy with `overall_score` and
+  `min_dimension_score`.
 - `assessment` — structured `/athanor:assess` evidence with
   `kind: baseline | delta | final`, `report_path`, `overall_score`,
   `min_dimension_score`, `target_met`, `priority_plan_items`, and per-dimension

@@ -47,7 +47,6 @@ def _target(overrides: dict | None = None) -> dict:
     data = {
         "overall_score": 90,
         "min_dimension_score": 80,
-        "completion_gates_required": True,
     }
     if overrides:
         data.update(overrides)
@@ -149,6 +148,48 @@ def test_below_target_delta_with_progress_runs_next_lfg_cycle_with_targets() -> 
     assert next_state.cycle_state == "cycle_n_in_progress"
     assert next_state.cycle_phase == "not_started"
     assert next_state.current_cycle == 2
+
+
+def test_score_target_without_completion_gates_required_parses_and_gate_fires() -> None:
+    """Q1-10: `completion_gates_required` was an inert no-op (parsed/validated/
+    echoed but never read) — it was REMOVED rather than wired, because the
+    tier1+tier2 completion gate fires UNCONDITIONALLY (always-apply 3-tier
+    invariant). A score_target dict WITHOUT the key must parse cleanly and carry
+    no such key, and the completion gate must still fire — guarding against a
+    future re-introduction as a live toggle.
+    """
+    final_assessment = _assessment(
+        kind="final",
+        overall_score=93,
+        min_dimension_score=84,
+        target_met=True,
+        priority_plan_items=[],
+        dimensions={
+            "testing": {
+                "score": 84,
+                "target": 80,
+                "floor": 75,
+                "target_met": True,
+                "regressed": False,
+            }
+        },
+    )
+    evidence = _evidence(
+        score_target={"overall_score": 90, "min_dimension_score": 80},
+        assessment=final_assessment,
+        tier1_passed=True,
+        tier2_goal_met=True,
+    )
+
+    # Parses cleanly; the parsed target carries no completion_gates_required key.
+    assert evidence.score_target == {"overall_score": 90, "min_dimension_score": 80}
+    assert "completion_gates_required" not in evidence.score_target
+
+    # The 3-tier completion gate fires unconditionally (no toggle gates it).
+    decision = decide_next_action(_state(last_validator_status="all_valid"), evidence)
+    assert decision.action == "prompt_tier3_user"
+    assert decision.status == "pass"
+    assert "completion_gates_required" not in decision.evidence.get("score_target", {})
 
 
 def test_final_assessment_meeting_target_prompts_tier3_user() -> None:

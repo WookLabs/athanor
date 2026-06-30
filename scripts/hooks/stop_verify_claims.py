@@ -506,9 +506,15 @@ def _is_conditional_or_speculative_context(text: str, match_start: int) -> bool:
 # verb, suppress it (the match is a historical reference, not a current
 # state assertion).
 _QUOTE_CHARS = ('"', "'", "`")
-_ATTRIBUTION_VERBS_EN = (
-    "said", "claimed", "wrote", "noted", "commented", "mentioned",
-    "stated", "reported", "said:",
+# Trimmed to the two genuinely third-party attribution verbs. The dropped
+# verbs (`wrote`/`noted`/`commented`/`mentioned`/`stated`/`reported`) are also
+# natural FIRST-PERSON action verbs, so a window containing them silently
+# suppressed real completion claims (`I wrote the tests, tests pass`). Combined
+# with the old SUBSTRING test, `wrote` even matched inside `rewrote`. The
+# matcher below is word-boundary anchored so `rewrote` no longer hits.
+_ATTRIBUTION_VERBS_EN = ("said", "claimed")
+_ATTRIBUTION_VERBS_EN_RE = re.compile(
+    r"\b(?:" + "|".join(_ATTRIBUTION_VERBS_EN) + r")\b"
 )
 _ATTRIBUTION_VERBS_KO = ("라고 했", "라고 적", "라고 말")
 _ATTRIBUTION_WINDOW = 40  # chars before match_start to scan
@@ -544,9 +550,10 @@ def _is_attributed_quote_context(text: str, match_start: int,
     #    match_start, clipped to current line.
     window_start = max(line_start, match_start - _ATTRIBUTION_WINDOW)
     window_before_en = text[window_start:match_start].lower()
-    for verb in _ATTRIBUTION_VERBS_EN:
-        if verb in window_before_en:
-            return True
+    # Word-boundary match (NOT substring): `rewrote`/`misstated` must not be
+    # read as the attribution verbs `wrote`/`stated`.
+    if _ATTRIBUTION_VERBS_EN_RE.search(window_before_en):
+        return True
 
     # 3. Attribution-verb check (Korean): Korean markers FOLLOW the quoted
     #    content (`테스트 통과 라고 했어요`). Scan the window after match_end,

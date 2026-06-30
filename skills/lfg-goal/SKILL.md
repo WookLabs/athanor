@@ -775,8 +775,7 @@ remove/simplify candidates, or weak evidence.
 through `scripts/loops/run_goal_loop_controller.py` with evidence matching
 `schemas/durable-loop-evidence.schema.json`:
 
-- `score_target`: `overall_score`, `min_dimension_score`, and
-  `completion_gates_required`.
+- `score_target`: `overall_score` and `min_dimension_score`.
 - `assessment`: `kind: baseline | delta | final`, `report_path`,
   `overall_score`, `min_dimension_score`, `target_met`,
   `priority_plan_items`, and per-dimension `score`, `target`, `floor`,

@@ -578,3 +578,137 @@ def test_head_normal_file_with_value_option_allowed():
         f"head -n 5 README.md must be allowed (non-sensitive), "
         f"got rc={rc} stderr={err!r}"
     )
+
+
+# --- Q1-2 (HIGH): destructive-shell segment-scope + anchor -----------------
+# `_check_destructive_shell` previously ran each DESTRUCTIVE_PATTERN as a
+# whole-command unanchored `.search`, which (a) MISSED `git checkout .` chained
+# with a chain operator (the `\s*$` terminator never fired) and (b) FALSE-BLOCKED
+# a safe command that merely MENTIONS a destructive spelling as quoted data. The
+# fix segments the command and anchors each pattern (`pattern.match`) to the
+# wrapper-stripped segment head, fixing both directions at once.
+
+
+def test_checkout_dot_chained_blocked():
+    """`git checkout .` chained with each operator must now be BLOCKED.
+
+    Before the fix the chain operator sat where the pattern's `\\s*$` terminator
+    expected end-of-string, so the destructive `git checkout .` slipped. Segment
+    splitting isolates it as its own segment, which anchors and blocks.
+    """
+    for cmd in (
+        "git checkout . && echo done",
+        "git checkout . ; echo done",
+        "git checkout . || echo done",
+        "git checkout . | tee log",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 2, (
+            f"{cmd!r} (chained `git checkout .`) must be blocked, "
+            f"got rc={rc} stderr={err!r}"
+        )
+
+
+def test_destructive_preserved_blocks_after_segment_scoping():
+    """Regression — the canonical destructive forms must STAY blocked under the
+    segment-scope + anchor refactor (no weakening)."""
+    for cmd in (
+        "git reset --hard",
+        "cd x && git reset --hard",
+        "sudo git reset --hard",
+        "git checkout .",
+        "git clean -fd",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 2, (
+            f"{cmd!r} must stay blocked after segment scoping, "
+            f"got rc={rc} stderr={err!r}"
+        )
+
+
+def test_destructive_spelling_as_quoted_data_allowed():
+    """False-positive guard — a safe command that merely MENTIONS a destructive
+    spelling as quoted data (echo / commit message) must be ALLOWED.
+
+    The segment's command word is `echo` / `git commit`, not the destructive
+    subcommand, so the anchored per-segment match correctly does not fire.
+    """
+    for cmd in (
+        'echo "git reset --hard"',
+        "git commit -m 'cleanup: removed the old git clean -fd helper'",
+        "git checkout ./path",
+        "git checkout .gitignore",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 0, (
+            f"{cmd!r} (destructive spelling only as data / non-`.` target) must "
+            f"be allowed, got rc={rc} stderr={err!r}"
+        )
+
+
+# --- Q1-3: force-push `+refspec` form --------------------------------------
+# Rule 2 missed the git-native `+refspec` force spelling (`git push origin
+# +main`), which carries no `--force`/`-f` flag yet force-pushes. A 4th
+# segment-scoped pattern now covers it, including the `+HEAD:main` /
+# `+refs/heads/x:main` dst-ref forms.
+
+
+def test_force_push_plus_refspec_blocked():
+    for cmd in (
+        "git push origin +main",
+        "git push origin +HEAD:main",
+        "git push origin +refs/heads/x:main",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 2, (
+            f"{cmd!r} (+refspec force-push to a protected branch) must be "
+            f"blocked, got rc={rc} stderr={err!r}"
+        )
+
+
+def test_force_push_plus_refspec_false_positive_guards_allowed():
+    for cmd in (
+        "git push origin +main-fix",  # branch merely PREFIXED with main
+        "git push origin main",       # normal non-force push
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 0, (
+            f"{cmd!r} must be allowed (no force-push to a protected branch), "
+            f"got rc={rc} stderr={err!r}"
+        )
+
+
+# --- Q1-4: `/test_` credential exception is now basename-scoped -------------
+# The old `/test_` SUBSTRING exception fell open on a real `.env` secret living
+# under a `test_`-prefixed DIRECTORY segment. The exception is now scoped to the
+# basename, so only a `test_`-prefixed FILENAME (a fixture) is exempt.
+
+
+def test_real_env_under_test_prefixed_directory_blocked():
+    for path in ("config/test_env/.env", "test_data/.env"):
+        rc, _, err = _run(_file_tool("Read", path))
+        assert rc == 2, (
+            f"Read {path!r} (real secret under a test_-prefixed directory) must "
+            f"be blocked, got rc={rc} stderr={err!r}"
+        )
+
+
+def test_test_prefixed_fixture_basename_allowed():
+    """A `test_`-prefixed BASENAME is a fixture filename and stays ALLOWED."""
+    rc, _, err = _run(_file_tool("Read", "test_credentials.json"))
+    assert rc == 0, (
+        f"Read test_credentials.json (fixture basename) must be allowed, "
+        f"got rc={rc} stderr={err!r}"
+    )
+
+
+def test_existing_dotenv_exceptions_still_allowed_after_test_underscore_removal():
+    """Regression — the `.env.example` / `.env.test` / `fixtures/` exceptions are
+    untouched by removing the `/test_` substring exception."""
+    for path in (".env.example", ".env.template", ".env.test", ".env.sample",
+                 "tests/fixtures/.env"):
+        rc, _, err = _run(_file_tool("Read", path))
+        assert rc == 0, (
+            f"Read {path!r} must stay allowed (existing exception), "
+            f"got rc={rc} stderr={err!r}"
+        )
