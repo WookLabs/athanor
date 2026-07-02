@@ -158,14 +158,36 @@ compound-engineering plugin — see §"Historical note (post-v0.12.0)".
 
 ### Step 4 — Persist review fixes (REQUIRED after step 3, before residual handoff)
 
+**Git plumbing hardening (autonomous git — applies to every `git commit` /
+`git push` the leader runs in Steps 4, 7, and 8).** These git commands run
+UNATTENDED, so an interactive credential / 2FA / LFS-smudge prompt would
+block on stdin and **hang the pipeline forever** — it would NOT surface as
+the non-zero exit the Step 7 push-failure handler expects. Run every
+autonomous git command with `GIT_TERMINAL_PROMPT=0`, stdin redirected from
+`/dev/null`, and a finite `timeout`, so any such prompt **fails fast with a
+non-zero exit** (routing into the Step 7 push-failure diagnosis path below)
+instead of hanging the unattended run:
+
+```bash
+GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
+GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "<msg>" </dev/null
+```
+
+This mirrors `agents/codex-dispatcher.md`'s existing stdin-redirect +
+`timeout` hardening for the Codex subprocess — the same fail-loud discipline
+extended to lfg's git plumbing.
+
 Check `git status --short`. If review-driven fixes changed files in
 step 3, stage only those files, commit them with `fix(review): apply
-review feedback`, and push the current branch before continuing.
+review feedback` (hardened: `GIT_TERMINAL_PROMPT=0 timeout 120s git commit
+-m "fix(review): apply review feedback" </dev/null`), and push the current
+branch before continuing.
 
-If an upstream exists, run `git push`. If no upstream exists, resolve
-a writable remote dynamically: prefer `origin` when present, otherwise
-use `git remote` and choose the first configured remote. Then run
-`git push --set-upstream <remote> HEAD`.
+If an upstream exists, run `GIT_TERMINAL_PROMPT=0 timeout 120s git push
+</dev/null`. If no upstream exists, resolve a writable remote dynamically:
+prefer `origin` when present, otherwise use `git remote` and choose the
+first configured remote. Then run `GIT_TERMINAL_PROMPT=0 timeout 120s git
+push --set-upstream <remote> HEAD </dev/null`.
 
 If `git remote` returns no remotes, skip the push and note: "No remote
 configured — review fixes committed locally only. Push manually when a
@@ -231,11 +253,14 @@ Use a value-first PR title and a description that summarizes:
 - Test plan (verification steps)
 - Migration / breaking-change notes (if any)
 
-If `git push` fails (non-zero exit), diagnose the error (authentication,
-diverged history, protected branch). Report the push failure as a residual
-finding and proceed to Step 8 only if a PR was already opened by a prior
-step. If no PR exists and push failed, skip Steps 8-9 and emit the failure
-as the pipeline outcome.
+Run the push hardened per §"Git plumbing hardening":
+`GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null`. If `git push`
+fails (non-zero exit) — this now includes a credential / 2FA prompt, which
+fails fast instead of hanging because `GIT_TERMINAL_PROMPT=0` + `</dev/null`
+deny it stdin — diagnose the error (authentication, diverged history,
+protected branch). Report the push failure as a residual finding and proceed
+to Step 8 only if a PR was already opened by a prior step. If no PR exists
+and push failed, skip Steps 8-9 and emit the failure as the pipeline outcome.
 
 > **v0.14.0:** The `athanor-releaser` agent (`agents/releaser.md`) can automate
 > the version bump + CHANGELOG + STATE rotation ceremony. Invoke via worker
@@ -296,11 +321,14 @@ Step 8.5 merge-readiness gate). NOT enforced. Each iteration:
    the fix. Do NOT weaken, skip, or mock the failing assertion — repair the actual
    issue. If the failure is a flaky test with no fix path, the worker documents it
    as a residual outcome.
-4. After the worker completes, verify files were changed, then stage, commit, push:
+4. After the worker completes, verify files were changed, then stage, commit, push.
+   Harden the commit + push per §"Git plumbing hardening" (`GIT_TERMINAL_PROMPT=0`
+   + stdin from `/dev/null` + finite `timeout`) so a credential / 2FA prompt fails
+   fast with a non-zero exit instead of hanging this unattended CI-autofix loop:
    ```bash
    git add <changed-files>
-   git commit -m "fix(ci): <one-line summary of the failure repaired>"
-   git push
+   GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "fix(ci): <one-line summary of the failure repaired>" </dev/null
+   GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
    ```
 5. Return to iteration (1) with the next attempt counter.
 

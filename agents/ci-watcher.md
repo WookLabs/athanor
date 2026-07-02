@@ -101,10 +101,17 @@ Based on the root-cause analysis:
 
 ### Step 4: Commit and Push
 
+These commands run UNATTENDED inside the watch-fix loop, so harden them so an
+interactive credential / 2FA / LFS-smudge prompt **fails fast with a non-zero
+exit** instead of blocking on stdin and hanging the loop forever. Run each with
+`GIT_TERMINAL_PROMPT=0`, stdin redirected from `/dev/null`, and a finite
+`timeout` (this mirrors `agents/codex-dispatcher.md`'s stdin-redirect + `timeout`
+hardening for the Codex subprocess):
+
 ```bash
 git add {changed_files}
-git commit -m "fix(ci): {concise description of what was fixed}"
-git push
+GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "fix(ci): {concise description of what was fixed}" </dev/null
+GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
 ```
 
 The push triggers a new CI run automatically. Return to Step 1 for the next
