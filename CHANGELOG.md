@@ -3,6 +3,31 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.2] — 2026-07-01
+
+Headline: a small **hardening patch** — fail-loud git plumbing for the
+autonomous `/athanor:lfg` pipeline. One merged PR since v0.24.1; all hardening,
+no new features and no surface change.
+
+### Hardened
+
+- **Fail-loud git plumbing in unattended `/athanor:lfg` + `ci-watcher`.** Every
+  autonomous `git push` / `git commit` in `/athanor:lfg` (Steps 4/7/8) and
+  `agents/ci-watcher.md` (Step 4) now runs with `GIT_TERMINAL_PROMPT=0`, stdin
+  redirected from `/dev/null`, and a finite `timeout`. This guard was absent
+  repo-wide: an interactive credential / 2FA / LFS prompt would block on stdin
+  and silently hang the unattended pipeline indefinitely. Git now fails fast
+  with a non-zero exit that flows into the existing push-failure diagnosis
+  path. Pure hardening of existing plumbing — no new surface;
+  `/athanor:lfg-goal` is unchanged (pure wrapper). +7 regression tests
+  (`tests/test_regression_lfg_git_hardening.py`).
+
+A companion "Codex CLAUDE.md preamble" candidate was **refuted and not shipped**
+(AGENTS.md already mirrors CLAUDE.md for Codex — the guard would have been
+redundant). Honest impact: a minor correctness/robustness improvement to lfg
+plumbing; no score re-baseline claimed. The plugin surface stays frozen: 4
+registered agents and the existing native command set are untouched.
+
 ## [0.24.1] — 2026-06-30
 
 Headline: a patch release of **16 adversarially-confirmed fixes** (10 correctness

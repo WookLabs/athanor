@@ -7,8 +7,8 @@
   "plugins": [
     {
       "name": "athanor",
-      "description": "Athanor v0.24.1 — Thin Leader for Claude Code: assess, prompt-gen, plan, work, review, lfg-goal, hooks, Freeze, topology gates, 4 agents.",
-      "version": "0.24.1",
+      "description": "Athanor v0.24.2 — Thin Leader for Claude Code: assess, prompt-gen, plan, work, review, lfg-goal, hooks, Freeze, topology gates, 4 agents.",
+      "version": "0.24.2",
       "source": "./",
       "author": {
         "name": "WookLabs"
