@@ -4,7 +4,28 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.24.1 — Adversarial Quality Hunt (correctness + docs patch on v0.24.0)
+## Current Phase: v0.24.2 — lfg git fail-loud plumbing (hardening patch on v0.24.1)
+
+**v0.24.2** (released 2026-07-01) — Hardening patch landing one merged PR since
+v0.24.1: fail-loud git plumbing for the autonomous `/athanor:lfg` pipeline.
+Every unattended `git push` / `git commit` in `/athanor:lfg` (Steps 4/7/8) and
+`agents/ci-watcher.md` (Step 4) now runs with `GIT_TERMINAL_PROMPT=0`, stdin
+redirected from `/dev/null`, and a finite `timeout` — a guard that was absent
+repo-wide, so an interactive credential / 2FA / LFS prompt would block on stdin
+and silently hang the unattended pipeline indefinitely. Git now fails fast with
+a non-zero exit into the existing push-failure diagnosis path. Pure hardening of
+existing plumbing (no new surface); `/athanor:lfg-goal` is unchanged (pure
+wrapper); +7 regression tests (`tests/test_regression_lfg_git_hardening.py`). A
+companion "Codex CLAUDE.md preamble" candidate was refuted (AGENTS.md already
+mirrors CLAUDE.md for Codex) and not shipped. Honest impact: a minor
+correctness/robustness improvement to lfg plumbing; no score re-baseline
+claimed. The plugin surface stays frozen: 4 registered agents (`ci-watcher`,
+`codex-dispatcher`, `learner`, `releaser`) and the existing native command set
+are untouched. This patch updates the v0.24.1 Current Phase in place (no
+Current→Previous rotation); the v0.24.1 adversarial-quality-hunt narrative
+follows.
+
+### v0.24.1 — Adversarial Quality Hunt (correctness + docs patch on v0.24.0)
 
 **v0.24.1** (released 2026-06-30) — Patch release landing two merged PRs since
 v0.24.0 from an `ultracode` quality hunt (11 finders → adversarial verification →
