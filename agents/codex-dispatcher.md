@@ -51,10 +51,15 @@ Validate the prompt text for shell injection risks:
 
 ### Step 4: Execute Codex CLI
 
-Construct and run the command:
+Construct and run the command. The first line resolves a portable timeout
+wrapper (stock macOS/BSD has no GNU `timeout`; brew coreutils installs
+`gtimeout`) — if neither exists it FAILS LOUD with exit 127, and you report
+an ATHANOR_RESULT failure naming the coreutils install hint instead of
+running Codex unbounded:
 
 ```bash
-cat <<'CODEX_PROMPT_EOF' | timeout {timeout_sec}s codex -a never -s workspace-write exec --ephemeral -o "{output_file}" -
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils); refusing to run this autonomous command unbounded" >&2; exit 127; }
+cat <<'CODEX_PROMPT_EOF' | "$TIMEOUT_CMD" {timeout_sec}s codex -a never -s workspace-write exec --ephemeral -o "{output_file}" -
 {prompt}
 CODEX_PROMPT_EOF
 ```
@@ -72,6 +77,7 @@ Key flags:
 |-----------|---------|--------|
 | `0` | Success | Read output file, report success |
 | `124` | Timeout | Report timeout failure with elapsed seconds |
+| `127` | Command not found — either the TIMEOUT_CMD resolver failed loud (no `timeout`/`gtimeout`: install GNU coreutils, macOS `brew install coreutils`) or the `codex` binary is missing; stderr says which | Report failure with the named install hint; NEVER rerun unbounded |
 | Other | Error | Report failure with stderr content |
 
 ## Result Brief Format
@@ -126,7 +132,7 @@ the prompt content never passes through shell argument parsing.
 ## Rules
 
 1. NEVER pass the prompt as a bare positional argument to `codex exec` — always use stdin
-2. ALWAYS clamp timeout to 1-600 seconds — never run unbounded
+2. ALWAYS clamp timeout to 1-600 seconds — never run unbounded; if neither `timeout` nor `gtimeout` exists, fail loud with exit 127 naming GNU coreutils; do not strip the wrapper
 3. Read `athanor.json` before every dispatch — do not cache configuration across calls
 4. Report the raw exit code in every result — do not interpret ambiguous codes
 5. If the output file does not exist after exit 0, report as failure (not success)

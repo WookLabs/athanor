@@ -106,12 +106,16 @@ interactive credential / 2FA / LFS-smudge prompt **fails fast with a non-zero
 exit** instead of blocking on stdin and hanging the loop forever. Run each with
 `GIT_TERMINAL_PROMPT=0`, stdin redirected from `/dev/null`, and a finite
 `timeout` (this mirrors `agents/codex-dispatcher.md`'s stdin-redirect + `timeout`
-hardening for the Codex subprocess):
+hardening for the Codex subprocess). Portability: stock macOS/BSD ships no GNU
+`timeout` (brew coreutils installs `gtimeout`), so resolve the wrapper per
+invocation and FAIL LOUD with exit 127 naming GNU coreutils when neither
+exists — never silently drop the timeout:
 
 ```bash
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils); refusing to run this autonomous command unbounded" >&2; exit 127; }
 git add {changed_files}
-GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "fix(ci): {concise description of what was fixed}" </dev/null
-GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
+GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git commit -m "fix(ci): {concise description of what was fixed}" </dev/null
+GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git push </dev/null
 ```
 
 The push triggers a new CI run automatically. Return to Step 1 for the next

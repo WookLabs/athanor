@@ -197,8 +197,10 @@ artifacts.
 **Codex CLI Integration:**
 Deep/Standard 티어에서 Codex는 `codex exec` CLI를 통해 호출한다:
 ```
-timeout 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils)" >&2; exit 127; }
+"$TIMEOUT_CMD" 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
 ```
+- portable `TIMEOUT_CMD` resolver 정본: `agents/codex-dispatcher.md` Step 4 (bare `timeout`은 stock macOS/BSD에서 exit 127로 실패)
 - `codex-companion.mjs task`는 Windows에서 spawn ENOENT 버그로 사용 불가
 - `codex exec` CLI가 정상 동작하는 유일한 패턴
 - 출력은 `-o` 플래그로 파일에 저장, worker가 읽어서 처리

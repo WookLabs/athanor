@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\""
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\""
           }
         ]
       }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\""
           }
         ]
       }

@@ -134,7 +134,9 @@ v0.11.4 plugin-root deployment fix (post-mortem)
   every project except athanor's own source repo.
 
   v0.11.4 closes the deployment-path gap. hooks/hooks.json now uses
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"`
+  `sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
+  "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py"` (the
+  run_hook.sh launcher resolves a portable Python interpreter)
   — the env var is set by Claude Code for plugin hooks and expands
   to the plugin install path. Industry pattern: superpowers,
   claude-mem, openai-codex all use ${CLAUDE_PLUGIN_ROOT}. v0.11.3

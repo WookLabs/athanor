@@ -300,6 +300,29 @@ probe at `scripts/hooks/capability_probe.py`. Freeze is a Claude
 file-tool allowlist (Edit/Write/MultiEdit + conservative Bash
 patterns); Codex subprocess writes are NOT gated (D2 residual).
 
+### 14. Python Interpreter Functionality Probe (informational, v0.24.3)
+
+The 3 enforced hooks resolve their interpreter at runtime via
+`scripts/hooks/run_hook.sh`. Probe FUNCTIONALITY, not PATH presence — a
+`python3` that exists on PATH but cannot run `-c` code is the Windows Store
+App-Execution-Alias stub failure (2026-07-01 incident: the Stop gate
+silently fail-opened). `command -v python3` PASSES on that stub; only the
+run probe catches it. Mirror run_hook.sh's probe form:
+
+```bash
+for c in python3 python "py -3"; do
+  if $c -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' </dev/null >/dev/null 2>&1; then
+    echo "WORKING: $c"; break
+  fi
+done
+```
+
+- If at least one candidate passes: report `python_interpreter: WORKING (<candidate>)`.
+- If none passes: report `python_interpreter: NONE_WORKING` plus the warning
+  that the enforced hooks (completion-claim gate, kernel guard, evidence
+  sniffer) will degrade to a visible exit-1 no-op until Python ≥3.10 is
+  installed. Informational — does NOT gate setup.
+
 ### Graceful Degradation (ref/ absence)
 
 User-project installs of athanor do NOT ship the `ref/` directory (it is a
@@ -355,6 +378,7 @@ contract-ledger: [PASS|FAIL (N violations)]
 contract-ledger_violations:
   - contract-ledger violation: ...
   - ... (empty when PASS)
+python_interpreter: [WORKING (<candidate>)|NONE_WORKING]
 ref_absent_warning: [empty string or warning text if ref/ was skipped]
 notes: [any additional observations]
 END_RESULT
