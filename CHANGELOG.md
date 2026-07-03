@@ -3,6 +3,52 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.3] — 2026-07-03
+
+Headline: a small **hardening patch** — portable external invocation for
+athanor's own enforcement and plumbing. Two verified cross-platform holes in
+the plugin's own code (surfaced by the 7/3 delta ref-analysis and designed via
+cross-model deep-plan), one merged PR since v0.24.2 (#86). All hardening, no new
+features and no surface change.
+
+> **Upgrade note (one-time):** this release changes the hook command in
+> `hooks/hooks.json` (bare `python3` → the `run_hook.sh` launcher). Because the
+> command hash changes, Claude Code will show a **one-time hook re-approve
+> prompt** on plugin update. Approve it to keep the enforced Stop / PreToolUse
+> gates active.
+
+### Hardened
+
+- **(N1) Portable interpreter resolution for the 3 ENFORCED hooks.**
+  `hooks/hooks.json` invoked the interpreter as bare `python3`. On Windows the
+  App-Execution-Alias Store stub shadows `python3`, so in a live incident
+  (2026-07-01) the **Stop gate fail-opened silently** — the completion-claim
+  verification gate (identity invariant #4) never ran. A new
+  `scripts/hooks/run_hook.sh` launcher now resolves the interpreter by
+  **functionality probe** (`import sys` + Python ≥3.10, stdin from `/dev/null`)
+  over `python3` → `python` → `py -3`, then `exec`s the winner so exit-2
+  blocking and stdin propagation are preserved; when no working interpreter is
+  found it exits 1 as a **loud pass** with an `INACTIVE` stderr line (no silent
+  fail-open), and it does no caching. `hooks.json` and `catalog.json` are kept
+  in lockstep, a perf-budget gate regex fails loud on drift, and `.gitattributes`
+  pins `*.sh` to LF. This closes the dropped v0.7.8 portable-invocation promise
+  (`docs/STATE.md`). Honest residual: the PreToolUse guard still fail-opens when
+  no Python is present — labeled, not hidden.
+- **(N2) Portable `timeout` resolver** (companion-fix to v0.24.2, which assumed
+  GNU coreutils). On stock macOS / BSD there is no `timeout` binary, so the
+  v0.24.2 fences exited 127 **before** git / gh / codex ever ran. All
+  `/athanor:lfg`, `ci-watcher`, and `codex-dispatcher` sites now resolve
+  `TIMEOUT_CMD=$(command -v timeout || command -v gtimeout)` and fail loud with
+  an exit-127 FATAL when neither exists; the `codex-dispatcher` exit table gains
+  the 127 row.
+
++18 regression tests (11 portable-hook, including a replay of the 2026-07-01
+live Store-stub incident; 7 portable-timeout), and the v0.24.2 locks were
+strengthened. Full suite: 1665 passed. Adversarial review returned
+APPROVE_WITH_NITS; the nits were applied. The plugin surface stays frozen: 4
+registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
+the existing native command set are untouched.
+
 ## [0.24.2] — 2026-07-01
 
 Headline: a small **hardening patch** — fail-loud git plumbing for the
