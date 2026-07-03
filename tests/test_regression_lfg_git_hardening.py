@@ -96,16 +96,32 @@ def test_lfg_hardening_has_failfast_rationale() -> None:
 
 def test_lfg_stdin_redirect_and_timeout_accompany_hardening() -> None:
     """MUST — belt-and-suspenders: stdin redirect from /dev/null + a finite
-    `timeout` accompany GIT_TERMINAL_PROMPT=0, and the note cites the
-    codex-dispatcher mirror."""
+    timeout fence accompany GIT_TERMINAL_PROMPT=0, and the note cites the
+    codex-dispatcher mirror.
+
+    v0.24.3 (N2) strengthened: the timeout fence must be the PORTABLE
+    resolved form `"$TIMEOUT_CMD" NNNs git …` (stock macOS/BSD has no GNU
+    `timeout`; a bare wrapper exits 127 before git runs), and the resolver
+    preamble (`command -v timeout || command -v gtimeout` + coreutils
+    fail-loud hint) must be present in the doc."""
     body = _read(LFG)
     assert "</dev/null" in body, (
         "hardened autonomous git commands must redirect stdin from /dev/null "
         "so a prompt cannot block on inherited stdin."
     )
-    assert re.search(r"timeout\s+\d+s\s+git\s+(?:push|commit)", body), (
-        "hardened autonomous git commands must carry a finite `timeout NNNs` "
-        "fence (the hard wall-clock stop if the prompt path still stalls)."
+    assert re.search(r'"\$TIMEOUT_CMD"\s+\d+s\s+git\s+(?:push|commit)', body), (
+        "hardened autonomous git commands must carry a finite portable "
+        '`"$TIMEOUT_CMD" NNNs` fence (the hard wall-clock stop if the prompt '
+        "path still stalls) — bare `timeout NNNs` is GNU-coreutils-only and "
+        "exits 127 before git runs on stock macOS/BSD."
+    )
+    assert "command -v timeout || command -v gtimeout" in body, (
+        "the portable timeout resolver preamble must be present so "
+        '`"$TIMEOUT_CMD"` actually resolves (timeout → gtimeout → fail loud).'
+    )
+    assert "coreutils" in body, (
+        "the resolver's fail-loud path must name GNU coreutils as the "
+        "actionable install hint."
     )
     assert "codex-dispatcher" in body, (
         "the hardening should reference agents/codex-dispatcher.md's existing "

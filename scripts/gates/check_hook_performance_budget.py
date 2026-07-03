@@ -33,8 +33,16 @@ DEFAULT_CATALOG = REPO_ROOT / "hooks" / "catalog.json"
 DEFAULT_FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures" / "hooks"
 VALID_HOOK_EXIT_CODES = {0, 2}
 
-_PYTHON_PLUGIN_COMMAND = re.compile(
-    r'^python3\s+"?\$\{CLAUDE_PLUGIN_ROOT\}/(?P<path>[^"]+)"?$'
+# v0.24.3 (N1): enabled hooks are invoked through the portable launcher shim
+# `sh run_hook.sh <target.py>` (see scripts/hooks/run_hook.sh). The gate
+# budgets the TARGET hook script hermetically with the CI interpreter —
+# routing through the shim would measure PATH-probe noise, not the hook.
+# Any other command form (including a revert to bare `python3 …`) is
+# fail-loud rejected so a drive-by rewrite goes red here AND in
+# tests/test_regression_portable_hook_interpreter.py.
+_SH_LAUNCHER_COMMAND = re.compile(
+    r'^sh\s+"\$\{CLAUDE_PLUGIN_ROOT\}/scripts/hooks/run_hook\.sh"\s+'
+    r'"\$\{CLAUDE_PLUGIN_ROOT\}/(?P<path>[^"]+)"$'
 )
 
 
@@ -92,9 +100,14 @@ def _select_fixtures(index: dict[str, Any], event: str) -> list[dict[str, Any]]:
 
 
 def _resolve_command(command: str) -> list[str]:
-    match = _PYTHON_PLUGIN_COMMAND.match(command.strip())
+    match = _SH_LAUNCHER_COMMAND.match(command.strip())
     if not match:
-        raise ValueError(f"unsupported hook command form: {command!r}")
+        raise ValueError(
+            "unsupported hook command form (expected "
+            'sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh" '
+            '"${CLAUDE_PLUGIN_ROOT}/<target.py>"): '
+            f"{command!r}"
+        )
     script = REPO_ROOT / match.group("path")
     if not script.is_file():
         raise ValueError(f"hook script does not exist: {script}")

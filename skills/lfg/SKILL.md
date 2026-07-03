@@ -169,25 +169,40 @@ non-zero exit** (routing into the Step 7 push-failure diagnosis path below)
 instead of hanging the unattended run:
 
 ```bash
-GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
-GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "<msg>" </dev/null
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils); refusing to run this autonomous command unbounded" >&2; exit 127; }
+GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git push </dev/null
+GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git commit -m "<msg>" </dev/null
 ```
 
 This mirrors `agents/codex-dispatcher.md`'s existing stdin-redirect +
 `timeout` hardening for the Codex subprocess — the same fail-loud discipline
 extended to lfg's git plumbing.
 
+**Timeout portability (applies to every `"$TIMEOUT_CMD"` use in this
+skill).** Stock macOS/BSD ships no GNU coreutils `timeout` (Homebrew
+coreutils installs it as `gtimeout`), so a bare `timeout` wrapper would
+exit 127 BEFORE git/gh ever runs. Resolve per invocation with the
+`TIMEOUT_CMD=$(command -v timeout || command -v gtimeout)` preamble above
+and FAIL LOUD (exit 127 — the shell's own not-found code, routing into the
+Step 7 non-zero-exit diagnosis path) when neither exists — never silently
+drop the timeout and never run the command unbounded. Because shell state
+does not persist across Bash tool calls, the preamble MUST be run in the
+SAME invocation as the command it guards (it is restated as the first line
+of every fenced block that uses `"$TIMEOUT_CMD"`).
+
 Check `git status --short`. If review-driven fixes changed files in
 step 3, stage only those files, commit them with `fix(review): apply
-review feedback` (hardened: `GIT_TERMINAL_PROMPT=0 timeout 120s git commit
+review feedback` (hardened, after the §"Git plumbing hardening" preamble in
+the same invocation: `GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git commit
 -m "fix(review): apply review feedback" </dev/null`), and push the current
 branch before continuing.
 
-If an upstream exists, run `GIT_TERMINAL_PROMPT=0 timeout 120s git push
-</dev/null`. If no upstream exists, resolve a writable remote dynamically:
-prefer `origin` when present, otherwise use `git remote` and choose the
-first configured remote. Then run `GIT_TERMINAL_PROMPT=0 timeout 120s git
-push --set-upstream <remote> HEAD </dev/null`.
+If an upstream exists, run `GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git
+push </dev/null` (preamble in the same invocation). If no upstream exists,
+resolve a writable remote dynamically: prefer `origin` when present,
+otherwise use `git remote` and choose the first configured remote. Then run
+`GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git push --set-upstream <remote>
+HEAD </dev/null`.
 
 If `git remote` returns no remotes, skip the push and note: "No remote
 configured — review fixes committed locally only. Push manually when a
@@ -253,8 +268,9 @@ Use a value-first PR title and a description that summarizes:
 - Test plan (verification steps)
 - Migration / breaking-change notes (if any)
 
-Run the push hardened per §"Git plumbing hardening":
-`GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null`. If `git push`
+Run the push hardened per §"Git plumbing hardening" (preamble in the same
+invocation): `GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git push
+</dev/null`. If `git push`
 fails (non-zero exit) — this now includes a credential / 2FA prompt, which
 fails fast instead of hanging because `GIT_TERMINAL_PROMPT=0` + `</dev/null`
 deny it stdin — diagnose the error (authentication, diverged history,
@@ -296,15 +312,20 @@ Step 8.5 merge-readiness gate). NOT enforced. Each iteration:
 
 1. Wait for CI to complete:
    ```bash
-   timeout 600s gh pr checks --watch
+   TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils); refusing to run this autonomous command unbounded" >&2; exit 127; }
+   "$TIMEOUT_CMD" 600s gh pr checks --watch
    ```
    If the command exits 0, all checks passed. Break out of the loop and
    proceed to step 9.
-   If the `timeout` wrapper expires (exit 124), treat the cycle as
-   CI-still-pending and continue to step (2) failure handling. The shell
-   `timeout` command wraps the unbounded `--watch` flag; `gh pr checks`
-   itself has no native `--timeout` flag.
-   If it exits non-zero, one or more checks failed. Continue to (2).
+   If the timeout wrapper expires (exit 124), treat the cycle as
+   CI-still-pending and continue to step (2) failure handling. The
+   resolved `"$TIMEOUT_CMD"` wraps the unbounded `--watch` flag; `gh pr
+   checks` itself has no native `--timeout` flag.
+   If it exits 127, the resolver failed loud (no `timeout`/`gtimeout` —
+   GNU coreutils missing) or `gh` itself is not found; surface that as an
+   environment failure, do NOT treat it as CI-pending.
+   If it exits non-zero otherwise, one or more checks failed. Continue
+   to (2).
 2. Identify failing checks and pull failure logs:
    ```bash
    BRANCH=$(git branch --show-current)
@@ -326,9 +347,10 @@ Step 8.5 merge-readiness gate). NOT enforced. Each iteration:
    + stdin from `/dev/null` + finite `timeout`) so a credential / 2FA prompt fails
    fast with a non-zero exit instead of hanging this unattended CI-autofix loop:
    ```bash
+   TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils); refusing to run this autonomous command unbounded" >&2; exit 127; }
    git add <changed-files>
-   GIT_TERMINAL_PROMPT=0 timeout 120s git commit -m "fix(ci): <one-line summary of the failure repaired>" </dev/null
-   GIT_TERMINAL_PROMPT=0 timeout 120s git push </dev/null
+   GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git commit -m "fix(ci): <one-line summary of the failure repaired>" </dev/null
+   GIT_TERMINAL_PROMPT=0 "$TIMEOUT_CMD" 120s git push </dev/null
    ```
 5. Return to iteration (1) with the next attempt counter.
 

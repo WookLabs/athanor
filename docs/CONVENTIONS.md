@@ -47,8 +47,10 @@ Agent({
 
 deep/standard tier에서 Codex가 필요한 경우, Worker가 Bash로 직접 호출:
 ```bash
-timeout 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
+TIMEOUT_CMD=$(command -v timeout || command -v gtimeout) || { echo "FATAL: neither 'timeout' nor 'gtimeout' on PATH — install GNU coreutils (macOS: brew install coreutils)" >&2; exit 127; }
+"$TIMEOUT_CMD" 300s codex -a never -s workspace-write exec --ephemeral -o <output_file> "<prompt>" < /dev/null
 ```
+portable resolver preamble 정본은 `agents/codex-dispatcher.md` Step 4 참조 (stock macOS/BSD에는 GNU `timeout`이 없어 bare `timeout 300s`는 exit 127로 실패).
 Codex 불가 시 Claude Agent() fallback.
 
 ---

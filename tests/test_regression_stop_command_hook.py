@@ -92,8 +92,9 @@ def test_stop_handler_script_file_exists():
         "Executable bits are POSIX-only. On Windows, .py files are executed "
         "via the Python interpreter resolved through PATHEXT/the py launcher, "
         "not via a file-permission bit. The hooks.json command is "
-        "`python3 scripts/hooks/...` regardless of platform; the script's "
-        "POSIX execute bit only matters on Linux/macOS hosts."
+        "`sh .../run_hook.sh .../stop_verify_claims.py` (portable launcher, "
+        "v0.24.3) regardless of platform; the script's POSIX execute bit "
+        "only matters on Linux/macOS hosts."
     ),
 )
 def test_stop_handler_script_is_executable():
@@ -136,10 +137,12 @@ def test_stop_hook_command_uses_plugin_root_or_absolute_path():
         for hook in entry.get("hooks", []):
             cmd = hook.get("command", "")
             # Strip leading quote (cmd may be JSON-quoted in shape:
-            # `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/..."`). The path
-            # arg follows `python3 ` — extract it for the absolute-path
-            # heuristic. Reviewer revision 1: lstrip leading quote so
-            # `cmd.startswith("/")` doesn't fail on `"...` quoted form.
+            # `sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
+            # "${CLAUDE_PLUGIN_ROOT}/scripts/..."`). The first path arg
+            # follows the interpreter token (`sh `, historically
+            # `python3 `) — extract it for the absolute-path heuristic.
+            # Reviewer revision 1: lstrip leading quote so
+            # `path_arg.startswith("/")` doesn't fail on `"...` quoted form.
             if "${CLAUDE_PLUGIN_ROOT}" in cmd:
                 found_paths.append(("plugin_root", cmd))
                 continue

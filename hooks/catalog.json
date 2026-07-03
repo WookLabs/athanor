@@ -5,7 +5,7 @@
       "id": "stop-verify-claims",
       "event": "Stop",
       "matcher": "",
-      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\"",
+      "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\"",
       "runtime_default": "enabled",
       "policy_mode": "block",
       "evidence_level": "replay-gated",
@@ -15,6 +15,7 @@
       "description": "Verifies completion claims at Stop time and blocks unsupported success claims.",
       "source_refs": [
         "hooks/hooks.json",
+        "scripts/hooks/run_hook.sh",
         "scripts/hooks/stop_verify_claims.py",
         "docs/plans/2026-06-14-athanor-xhigh-audit.md"
       ]
@@ -23,7 +24,7 @@
       "id": "pretool-dispatcher",
       "event": "PreToolUse",
       "matcher": "",
-      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\"",
+      "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\"",
       "runtime_default": "enabled",
       "policy_mode": "block",
       "evidence_level": "replay-gated",
@@ -33,6 +34,7 @@
       "description": "Routes PreToolUse payloads through Athanor kernel and freeze guards before tools run.",
       "source_refs": [
         "hooks/hooks.json",
+        "scripts/hooks/run_hook.sh",
         "scripts/hooks/pretool_dispatcher.py",
         "tests/test_regression_v018_pretool_dispatcher.py"
       ]
@@ -59,7 +61,7 @@
       "id": "posttool-evidence-sniffer",
       "event": "PostToolUse",
       "matcher": "",
-      "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\"",
+      "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\"",
       "runtime_default": "enabled",
       "policy_mode": "warn",
       "evidence_level": "replay-gated",
@@ -69,6 +71,7 @@
       "description": "Records test and file-change evidence from PostToolUse payloads without changing default runtime policy.",
       "source_refs": [
         "hooks/hooks.json",
+        "scripts/hooks/run_hook.sh",
         "scripts/hooks/posttool_evidence_sniffer.py",
         "docs/hook-payload-corpus.md"
       ]

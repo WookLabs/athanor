@@ -49,10 +49,13 @@ all v0.16.0 behavior (including fail-closed on missing config) is
 preserved bit-for-bit. The 23 existing subprocess-driven regression
 tests continue to pass unchanged.
 
-Cross-platform note: invoked via `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/
-hooks/pretool_kernel_guard.py"` in hooks/hooks.json. The plugin-root
-expansion follows the v0.11.4 lesson (bare relative paths broke
-deployment in non-source-repo projects).
+Cross-platform note: reached from hooks/hooks.json via `sh
+"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
+"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py"` (the
+dispatcher invokes this guard in-process; run_hook.sh resolves a
+portable Python interpreter). The plugin-root expansion follows the
+v0.11.4 lesson (bare relative paths broke deployment in
+non-source-repo projects).
 """
 from __future__ import annotations
 
