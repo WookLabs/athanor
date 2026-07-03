@@ -4,7 +4,41 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.24.2 — lfg git fail-loud plumbing (hardening patch on v0.24.1)
+## Current Phase: v0.24.3 — portable external invocation (hardening patch on v0.24.2)
+
+**v0.24.3** (released 2026-07-03) — Hardening patch landing one merged PR since
+v0.24.2 (#86, `9f5146b`): portable external invocation for athanor's own
+enforcement/plumbing, closing two verified cross-platform holes surfaced by the
+7/3 delta ref-analysis and designed via cross-model deep-plan. **(N1)** The 3
+ENFORCED hooks were invoked as bare `python3` in `hooks/hooks.json`; on Windows
+the App-Execution-Alias Store stub shadows `python3`, so in a live incident
+(2026-07-01) the **Stop gate fail-opened silently** — identity invariant #4
+(completion-claim verification) never fired. New `scripts/hooks/run_hook.sh`
+launcher resolves the interpreter by functionality probe (`import sys` + py≥3.10,
+stdin `</dev/null`) over `python3` → `python` → `py -3`, then `exec`s the winner
+(exit-2 blocking + stdin propagate preserved); no working interpreter → exit 1
+**loud pass** with `INACTIVE` stderr (no silent fail-open); no caching.
+`hooks.json`/`catalog.json` kept in lockstep, perf-budget gate regex fails loud
+on drift, `.gitattributes` pins `*.sh` LF. This closes the dropped v0.7.8
+portable-invocation promise (see the CLOSED ledger entry below). PreToolUse
+python-less fail-open is an honest-labeled residual. **(N2)** Portable `timeout`
+resolver (companion-fix to v0.24.2, which assumed GNU coreutils — stock
+macOS/BSD had no `timeout` and exited 127 before git/gh/codex ran): all lfg /
+ci-watcher / codex-dispatcher sites now use
+`TIMEOUT_CMD=$(command -v timeout || command -v gtimeout)` + fail-loud exit-127
+FATAL; the codex-dispatcher exit table gains the 127 row. +18 regression tests
+(11 portable-hook incl. the 2026-07-01 live-incident replay, 7 portable-timeout);
+v0.24.2 locks strengthened; full suite 1665 passed; adversarial review
+APPROVE_WITH_NITS (nits applied). Honest impact: a cross-platform
+correctness/robustness fix to athanor's own enforcement + plumbing; no score
+re-baseline claimed. The plugin surface stays frozen: 4 registered agents
+(`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and the existing native
+command set are untouched. User-facing: the hook-command change triggers a
+one-time hook re-approve prompt on plugin update (command hash mismatch). This
+patch updates the v0.24.2 Current Phase in place (no Current→Previous rotation);
+the v0.24.2 lfg-git-plumbing narrative follows.
+
+### v0.24.2 — lfg git fail-loud plumbing (hardening patch on v0.24.1)
 
 **v0.24.2** (released 2026-07-01) — Hardening patch landing one merged PR since
 v0.24.1: fail-loud git plumbing for the autonomous `/athanor:lfg` pipeline.
