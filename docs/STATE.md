@@ -4,7 +4,38 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.24.3 — portable external invocation (hardening patch on v0.24.2)
+## Current Phase: v0.24.4 — skill prompt diet (refactor patch on v0.24.3)
+
+**v0.24.4** (released 2026-07-04) — Refactor patch landing one merged PR since
+v0.24.3 (#88, `9f82019`), from a cross-model deep-plan (Planner A + contrarian
+B + 2 cross-reviews + Critic): a **skill prompt diet**. Four advisory /
+explanatory sections (zero test refs, zero gate/load-bearing logic) were
+relocated out of the hot-path `lfg` / `lfg-goal` skills into four NEW reference
+files (`skills/lfg/references/freeze-residual.md`;
+`skills/lfg-goal/references/{enforcement-scope,release-strategy,lfg-vs-lfg-goal}.md`).
+Char delta: `skills/lfg/SKILL.md` 40,220 → 39,489 (-731); `skills/lfg-goal/SKILL.md`
+49,610 → 45,480 (-4,130). Inline pointers preserve the decision-relevant
+summaries (advisory label, D2 loose-coupling, default-value docs) — behavior
+unchanged. Two new lint checks land in `scripts/gates/lint_checks.py`
+(+192 lines): `skill_size_cap_check` (regrowth ratchet, cap =
+round(post-diet length × 1.05) per skill across 8 skills — prevents the next
+lfg-goal size regression but does NOT enforce further shrink) and
+`skill_line_number_ref_check` (bans new bare `line NNN` deep-prose refs in
+`skills/**/*.md`, `\d{2,5}` threshold + fenced/file:line allowlists). Four
+rotted line-anchor cross-refs were fixed to `(§heading)` form (one cross-file);
+a narrow de-fossil pass touched only the relocated sections with locked-window
+tags preserved. +12 regression tests; full suite 1677 passed; adversarial
+review APPROVE_WITH_NITS. Honest scope: ZERO behavior change and ZERO existing
+tests modified — this is pure relocation + additive lint guardrails. Deferred
+to a future release (lock-retarget cost): `/athanor:lfg` Step 8.5 (~15.6k chars,
+~30 locality assertions) and `/athanor:lfg-goal` Score-Target Loop / Goal
+Storage / Resume-Loop remain inline. The plugin surface stays frozen: 4
+registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
+the existing native command set are untouched. This patch updates the v0.24.3
+Current Phase in place (no Current→Previous rotation); the v0.24.3
+portable-invocation narrative follows.
+
+### v0.24.3 — portable external invocation (hardening patch on v0.24.2)
 
 **v0.24.3** (released 2026-07-03) — Hardening patch landing one merged PR since
 v0.24.2 (#86, `9f5146b`): portable external invocation for athanor's own

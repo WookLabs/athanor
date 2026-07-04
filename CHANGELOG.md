@@ -3,6 +3,48 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.4] — 2026-07-04
+
+Headline: a small **refactor patch** — skill prompt diet. One merged PR
+since v0.24.3 (#88, `9f82019`), from a cross-model deep-plan (Planner A +
+contrarian B + 2 cross-reviews + Critic). Pure relocation + de-fossilize +
+2 lint checks. ZERO behavior change; ZERO existing tests modified. The plugin
+surface stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`,
+`learner`, `releaser`) and the existing native command set are untouched.
+
+### Changed
+
+- **Skill prompt diet — 4 advisory/explanatory sections relocated to
+  reference files (zero test refs).** Decision-relevant summaries stay inline
+  via short pointers (advisory label, D2 loose-coupling, default-value docs);
+  the long prose moved out of the hot-path skills. `skills/lfg/SKILL.md`
+  40,220 → 39,489 chars (-731); `skills/lfg-goal/SKILL.md` 49,610 → 45,480
+  chars (-4,130). Behavior unchanged — the relocated sections carried no
+  test references and no gate/load-bearing logic. Four rotted line-anchor
+  cross-references were fixed to `(§heading)` form (one cross-file); a narrow
+  de-fossil pass touched only the relocated sections, with locked-window tags
+  preserved.
+
+### Added
+
+- **2 lint checks in `scripts/gates/lint_checks.py` (+192 lines).**
+  - `skill_size_cap_check` — a regrowth ratchet (cap = round(post-diet length
+    × 1.05) per skill, across the 8 skills). It prevents the next lfg-goal
+    size regression but does NOT enforce further shrink — an honest ratchet,
+    not a one-way shrink mandate.
+  - `skill_line_number_ref_check` — bans new bare `line NNN` deep-prose
+    references in `skills/**/*.md` (`\d{2,5}` threshold, with fenced-block and
+    `file:line` allowlists), so rotted line-anchors cannot reaccumulate.
+  - +12 regression tests. Full suite: 1677 passed. Adversarial review:
+  APPROVE_WITH_NITS.
+
+### Deferred
+
+- Locked-section relocations deferred to a future release (lock-retarget
+  cost): `/athanor:lfg` Step 8.5 (~15.6k chars, ~30 locality assertions) and
+  `/athanor:lfg-goal` Score-Target Loop / Goal Storage / Resume-Loop. These
+  remain inline; the diet touched only un-locked advisory prose.
+
 ## [0.24.3] — 2026-07-03
 
 Headline: a small **hardening patch** — portable external invocation for
