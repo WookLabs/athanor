@@ -55,26 +55,7 @@ See CLAUDE.md §"using-superpowers boundary (v0.11.1) — canonical declaration"
 
 ## Difference from /athanor:lfg
 
-`/athanor:lfg` is a single-cycle end-to-end pipeline. `/athanor:lfg-goal`
-is a goal-bounded N-cycle macro loop that invokes `/athanor:lfg`
-verbatim once per cycle and adds an honesty layer on top:
-
-| | `/athanor:lfg` | `/athanor:lfg-goal` |
-|---|---|---|
-| Scope | Single feature → ship | Bounded N-cycle iteration → goal completion |
-| Cycle bound | None — one pass through 9 steps | `lfgGoal.maxIterations` (default 5) |
-| Goal ledger | None — implicit in user prompt | `.athanor/goals/<id>/goal.md` durable ledger with G-markers |
-| Score-target loop | N/A | Optional `/athanor:assess` scorecard loop; repeat until `target_overall_score` and `target_min_dimension_score` pass |
-| Per-cycle DONE signal | `<promise>DONE</promise>` from Step 9 | Dispatched receipt-validator runs 9 Bash verification commands; produces `CNNN-lfg-receipt.md` with per-step status enum |
-| Goal-level completion | N/A (no goal concept) | 3-tier check: Tier 1 mechanical + optional score-target arithmetic + Tier 2 adversarial cross-model judges + Tier 3 BLOCKING user ratification |
-| Scope-drift between cycles | N/A | `/athanor:scope-drift` auto-fires (`lfgGoal.scopeDriftAutoCheck: true` default) |
-| Release strategy | Single PR + tag | Per-cycle PRs + tags (`consolidateCycles: false` default per D9); opt-in single-PR mode available |
-| When to choose | Known scope, single ship | Multi-cycle work, goal stated in outcome terms |
-
-`/athanor:lfg-goal` does NOT modify `/athanor:lfg`. The wrapper calls
-lfg verbatim and reads what lfg already produces. Loose coupling is
-the architectural decision (D2): lfg-goal can evolve without touching
-the inner pipeline.
+`/athanor:lfg` is single-cycle; `/athanor:lfg-goal` is a goal-bounded N-cycle macro loop invoking lfg verbatim per cycle. **Loose coupling (D2)**: lfg-goal does NOT modify lfg — wrapper reads what lfg produces. Full table: `references/lfg-vs-lfg-goal.md`.
 
 ## Invocation Forms
 
@@ -697,7 +678,7 @@ artifacts already on disk — Present-to-User output, NOT implementation work.
 `skills/setup/SKILL.md` §`output.language 해석 (canonical)` — ko → 한글, en →
 English, absent/malformed/unsupported → en. ko-hybrid: ko → 한글, maintainer should
 keep `output.language: ko`. lfg-goal already cites this canonical section in its
-Tier 3 language directive (~line 446); this section reuses it — no second resolver.
+Tier 3 language directive (§3-Tier Goal-Completion Check → Tier 3); this section reuses it — no second resolver.
 
 **Content** (composed from existing goal artifacts — leader Present-to-User):
 - **terminal-state name** (one of the 6 above) + exit reason for residual exits
@@ -713,7 +694,7 @@ Tier 3 language directive (~line 446); this section reuses it — no second reso
   Judge A / Judge B `goal_met`, Tier 3 user verdict, and the terminal `cycle_state`.
 
 **Hook-safe phrasing rule (MAJOR-1).** Factual prose; write the avoid-list as one
-backtick-wrapped list on a `회피` line — mirror lfg Step 9.5 / line 559:
+backtick-wrapped list on a `회피` line — mirror lfg Step 9.5 (§Step 9.5 — 한글 완료 요약 in skills/lfg/SKILL.md):
 완료-주장 어조(`완료했습니다`, `통과했습니다`, `수정 완료`, `구현 완료`, `적용 완료`, `머지 완료`, `배포 완료`, `리뷰 완료`, `테스트 통과`) 회피 — 사실 서술 사용.
 Every literal stays backtick-wrapped with `회피` on the SAME line; NEVER bare.
 Prefer factual forms: `목표 G3/3 충족`, `Tier 2 judges goal_met: true`, `최종 점수
@@ -721,7 +702,7 @@ Prefer factual forms: `목표 G3/3 충족`, `Tier 2 judges goal_met: true`, `최
 
 **Machine-token boundary (MINOR-2 — reference, do NOT restate).** For the
 authoritative machine-token-English list, this section points BACK to the Tier 3
-language directive (~line 446): `validation_status`, `goal_met`,
+language directive (§3-Tier Goal-Completion Check → Tier 3): `validation_status`, `goal_met`,
 `[yes / continue-iterating / abort]`, `receipt-validator`, `Tier 1 mechanical`,
 ledger field keys, G-markers, and the DONE sentinel **stay English** there — this
 section does not re-list them.
@@ -938,22 +919,7 @@ Other defaults:
 
 ## Per-cycle commit / release strategy (D9)
 
-Per D9, each cycle ships its own PR + patch release. Honest history:
-v0.13.0 → v0.13.1 → v0.13.2 → ... with one tag per cycle that closes
-≥1 G-marker. Version-space inflation is the accepted honesty-arc cost.
-
-- **Default** (`lfgGoal.consolidateCycles: false`, per D9): per-cycle
-  PRs, one release tag per cycle. Each cycle's `/athanor:lfg` Step 9
-  emits its own DONE sentinel and tag. Goal-completion adds a final
-  `goal-completion.md` index pointing at all cycle tags but does NOT
-  introduce an extra "goal-complete-only" release.
-- **Override** (`lfgGoal.consolidateCycles: true`): all cycles
-  accumulate into a single goal-PR; only goal-completion ships a
-  release. Available as opt-in for users who prefer condensed release
-  history.
-
-`goal-completion.md` indexes all cycle PRs + tags back to the goal
-regardless of mode.
+Owned by the releaser (D9); see `references/release-strategy.md`. Default `consolidateCycles: false` ships per-cycle PRs + tags.
 
 ## 4 Athanor Identity Invariants — Survival Check
 
@@ -996,44 +962,4 @@ orchestration layer composed of them.
 
 ## Honesty note on physical enforcement scope
 
-The receipt-arithmetic + validator dispatch + 3-tier check are
-**advisory / orchestration layers**, NOT runtime gates like the Stop
-hook. The Validated Receipt-Ledger Loop achieves trust through
-structural enforcement — clean-context worker dispatch + externally-
-verifiable Bash commands + blocking user ratification — but it does
-NOT physically prevent a misbehaving leader from:
-
-- Skipping `/athanor:lfg` steps and fabricating a receipt entry
-  (the validator runs Bash commands against artifacts; if the leader
-  forges commit SHAs or PR URLs, the Bash checks would still detect
-  the forgery via `git show` / `gh pr view` non-zero exit — but a
-  truly adversarial leader that forges artifacts too would defeat
-  the layer).
-- Falsifying goal-completion by mutating `goal.md` directly before
-  Tier 3 ratification.
-- Suppressing scope-drift findings between cycles.
-
-These adversarial-forgery scenarios require runtime hard-enforcement
-that is deferred to v0.13.x+ (transcript-event introspection + hook-
-level evidence ratification). Until then, the layer is honest about
-its enforcement posture:
-
-- It makes false completion **externally-detectable** via dispatched
-  validation (clean-context worker reading actual artifacts).
-- It makes false completion **non-completing** via ledger arithmetic
-  (goal.md state transition requires real receipts).
-- It does NOT physically prevent the leader from emitting prose that
-  *claims* false completion (Stop hook handles that fraction of the
-  attack surface; lfg-goal does not duplicate it).
-
-This honest-scope voice mirrors the v0.11.x companion-fix arc
-(v0.11.3 → v0.11.7): the mechanism is shipped, the scope is named,
-and the residual is recorded as deferred. The label
-"advisory (planner-classified)" in CLAUDE.md §Defense Mechanisms
-applies analogously to this skill — the receipt-arithmetic is honest
-about what it catches (mechanical step-skipping, receipt evidence
-shape mismatches) and what it does not (adversarial artifact forgery,
-LLM-class semantic forgery). Users encountering false positives can
-set `lfgGoal.tier2Adversarial: false` or `lfgGoal.tier3UserRatification:
-false` as escape hatches; both choices are recorded to `decisions.md`
-so the loss of posture is auditable, not silent.
+**advisory (planner-classified)** — orchestration layer, NOT a runtime gate. Full reasoning in `references/enforcement-scope.md`.

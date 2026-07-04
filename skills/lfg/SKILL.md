@@ -67,24 +67,11 @@ match a listed entry verbatim before calling the Skill/Task tool.
 
 ### P13 Live Trace Emission: `scripts/evals/emit_workflow_trace.py` emits `workflow.started` and `workflow.finished`; see `docs/workflow-trace-evals.md`.
 
-### v0.18.0 honesty residual — Codex stage NOT freeze-gated
+### v0.18.0 Freeze residual — Codex stage NOT gated
 
-If the user has enabled `athanor.json` `hooks.freeze.mode = "session"`,
-the v0.18.0 Freeze guard gates Claude file-tool writes (Edit / Write /
-MultiEdit + conservative Bash patterns) against the per-session
-allowlist. **Codex subprocess writes invoked during this LFG run
-(`/athanor:plan` Step 1 Codex dispatches, any `codex exec ...` worker
-calls) are NOT gated by Freeze** — those writes happen inside a
-subprocess whose destination paths are not visible to the PreToolUse
-dispatcher. This is the documented D2 residual; see
-`skills/work/references/freeze.md` §"D2 residual — subprocess writes
-NOT gated" and `docs/v0.18.0-migration.md` §"D2 Honesty Residual".
-
-The leader does not warn the user about this on every invocation
-(noise); the residual is documented in CHANGELOG, ROADMAP, and the
-migration guide. LFG users with strong scope-lock requirements should
-be aware that Codex stage writes are on the honour system within this
-release line.
+Documented D2 residual. **Codex subprocess writes during this LFG run are NOT
+gated by Freeze** (the PreToolUse dispatcher cannot see inside the subprocess);
+see `references/freeze-residual.md` for full reasoning.
 
 ### Step 1 — Invoke `/athanor:plan` (cross-model adversarial)
 
@@ -704,7 +691,7 @@ NOT re-run heavy `gh` calls, reuse already-captured values):
 
 **Hook-safe phrasing rule (MAJOR-1).** State facts with the evidence above. Write
 the avoid-list as a SINGLE backtick-wrapped list on a `회피`-marked line — mirror
-the Step 9 directive form (line 559):
+the Step 9 directive form (§Step 9 — Output DONE):
 완료-주장 어조(`완료했습니다`, `통과했습니다`, `수정 완료`, `구현 완료`, `적용 완료`, `머지 완료`, `배포 완료`, `리뷰 완료`, `테스트 통과`) 회피 — 사실 서술 사용.
 Every literal stays backtick-wrapped with `회피` on the SAME line; NEVER render any
 of these bare. Prefer evidence-bearing factual/passive forms for the actual output

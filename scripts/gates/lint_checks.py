@@ -33,12 +33,26 @@ Functions:
     Vendored skills (those carrying upstream license) must include a
     `<!-- Provenance:` HTML comment within the first 60 lines of body.
 
+  skill_line_number_ref_check(skills_dir)
+    Detects rotting deep-prose `line NNN` references in skills/**/*.md.
+    Pure-relocation safety brake: when prose moves, line-number anchors
+    rot silently; this guard surfaces the rot at lint time.
+
+  skill_size_cap_check(skills_dir)
+    Advisory size ratchet — prevents regrowth beyond the measured baseline
+    + 5% headroom per skill. Does NOT enforce shrink (the diet itself is
+    delivered by relocation + verified by char-count ACs). To lower a cap
+    a future release must relocate the load-bearing prose AND retarget the
+    cap constant in the same change.
+
 CLI:
   python -m scripts.gates.lint_checks marketplace-sync <plugin> <marketplace>
   python -m scripts.gates.lint_checks agent-descriptions <agents_dir>
   python -m scripts.gates.lint_checks hook-events <hooks_json>
   python -m scripts.gates.lint_checks hook-items <hooks_json>
   python -m scripts.gates.lint_checks skill-provenance <skill_md>
+  python -m scripts.gates.lint_checks skill-line-refs <skills_dir>
+  python -m scripts.gates.lint_checks skill-size-cap <skills_dir>
 
 Stdlib only. UTF-8 everywhere. Resilient to malformed inputs (returns
 (False, [...]) — never raises).
@@ -308,6 +322,150 @@ def vendored_skill_provenance_check(skill_md_path: Path) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
+# Guard 6: skill line-number reference rot (D3 — session 2026-07-03-004)
+# ---------------------------------------------------------------------------
+# Regex (match = violation), corrected from both planners per §D3:
+# Bare "line NNN" / "~line NNN" / "(line NNN)" / "/ line NNN" in prose —
+# the 4 known rots include a slash-form ("/ line 559:") that the
+# parenthetical-only regex both planners proposed WOULD NOT catch.
+# Discriminate legit single-digit refs ("line 1 of file", "sentinel on
+# line 1") from rotting deep-prose refs by REQUIRING 2+ digits. The
+# `\d{2,5}` threshold is the clean discriminator: deep-prose refs use 3
+# digits; response-line refs use 1.
+_LINE_REF_RE = re.compile(
+    r'(?<!\w)(?:[/(]\s*|/~\s*|\s)~?\s*lines?\s+\d{2,5}\b',
+    re.IGNORECASE,
+)
+
+# Fenced code block markers — content between them is an allowlist zone
+# (code comments legitimately cite source lines).
+_FENCE_RE = re.compile(r'^[ \t]*```', re.MULTILINE)
+
+
+def _skill_line_refs_in_text(body: str) -> list[str]:
+    """Return one violation string per `line NNN`-style ref OUTSIDE fenced blocks.
+
+    Splits the body on ``` fence markers; odd-indexed chunks are inside code
+    blocks (allowed), even-indexed chunks are prose (linted). Within each
+    prose chunk, every `_LINE_REF_RE` match becomes a violation entry
+    carrying the matched text so the operator can locate the rot.
+    """
+    # Split on fence lines, preserving which halves are "outside" (prose).
+    parts = _FENCE_RE.split(body)
+    violations: list[str] = []
+    for i, chunk in enumerate(parts):
+        if i % 2 == 1:
+            continue  # inside a fenced code block — allowlist zone
+        for m in _LINE_REF_RE.finditer(chunk):
+            violations.append(
+                f"skill-line-number-ref violation: rotting deep-prose reference "
+                f"{m.group(0)!r} -- rewrite as `(Section <heading-name>)` "
+                f"(line numbers rot when prose relocates)"
+            )
+    return violations
+
+
+def skill_line_number_ref_check(skills_dir: Path) -> tuple[bool, list[str]]:
+    """Detect rotting `line NNN` references in `skills_dir/**/SKILL.md` prose.
+
+    Scope: every `*.md` file under `skills_dir` (covers `SKILL.md` plus
+    `references/*.md`). NOT `docs/`, NOT `agents/`, NOT `tests/`.
+
+    Allowlist (per §D3):
+      * Inside fenced code blocks (between ``` markers) — code comments
+        legitimately cite source lines.
+      * `path/to/file.py:123` file:line citations — no `line` keyword, not
+        matched by the regex.
+      * Single-digit `line 1` / `line 2` references (response/file) —
+        filtered by the 2+ digit threshold.
+
+    Returns (ok, violations). Pure function — does not raise.
+    """
+    if not skills_dir.is_dir():
+        return False, [f"skill-line-number-ref violation: {skills_dir} not a directory"]
+
+    violations: list[str] = []
+    for md in sorted(skills_dir.rglob("*.md")):
+        if not md.is_file():
+            continue
+        text, err = _read_text(md)
+        if err is not None or text is None:
+            violations.append(
+                f"skill-line-number-ref violation: {err or f'{md} read returned no text'}"
+            )
+            continue
+        violations.extend(_skill_line_refs_in_text(text))
+    return (len(violations) == 0, violations)
+
+
+# ---------------------------------------------------------------------------
+# Guard 7: skill size cap (D2 — session 2026-07-03-004 regrowth brake)
+# ---------------------------------------------------------------------------
+# Caps are measured as `round(current * 1.05)` against the post-Phase-2/3
+# baseline (the orchestrator's "measure AFTER relocations" rule from session
+# 2026-07-03-004). The cap is a regrowth brake — to lower a cap a future
+# release must relocate load-bearing prose AND retarget the cap constant in
+# the same change (see §D2 honest label).
+SKILL_SIZE_CAPS: dict[str, int] = {
+    # Measured POST-Phase-2/3 relocation (session 2026-07-03-004 diet) as
+    # `round(current * 1.05)`. The orchestrator's "measure AFTER relocations"
+    # rule locks the ratchet to the post-diet baseline so regrowth trips
+    # fail-loud at +5% above the slimmed size. See work-log.md for raw len().
+    "lfg-goal": 47754,   # post-diet 45480 * 1.05
+    "lfg": 41463,        # post-diet 39489 * 1.05
+    "setup": 27734,      # current 26413 * 1.05
+    "discuss": 26176,    # current 24930 * 1.05
+    "debug": 18295,      # current 17424 * 1.05
+    "review": 14820,     # current 14114 * 1.05
+    "plan": 14602,       # current 13907 * 1.05
+    "work": 12536,       # current 11939 * 1.05
+}
+
+
+def skill_size_cap_check(skills_dir: Path) -> tuple[bool, list[str]]:
+    """Advisory size ratchet — fail-loud when a SKILL.md regrows past its cap.
+
+    Measures `len(skill_md.read_text(encoding='utf-8'))` (the same number
+    Python's `len()` reports and that the char-count ACs in
+    session 2026-07-03-004 use) against `SKILL_SIZE_CAPS[skill_name]`.
+    Skills not in the dict are skipped (no aspirational target yet).
+
+    Honest scope (§D2 docstring): this is a *regrowth brake*, NOT a shrink
+    enforcer. The diet itself is delivered by Phase-2 relocation and
+    verified by char-count acceptance criteria. The cap is `current + 5%`
+    so a future shrink-then-regrow still trips the brake at +5% above the
+    measured baseline. To lower a cap, a future release must do the
+    relocation + retarget the lint constant in the same change.
+
+    Returns (ok, violations). Pure function — does not raise.
+    """
+    if not skills_dir.is_dir():
+        return False, [f"skill-size-cap violation: {skills_dir} not a directory"]
+
+    violations: list[str] = []
+    for skill_name, cap in SKILL_SIZE_CAPS.items():
+        skill_md = skills_dir / skill_name / "SKILL.md"
+        if not skill_md.is_file():
+            # Not all caps need a present file (e.g. mid-rename); skip silently.
+            continue
+        text, err = _read_text(skill_md)
+        if err is not None or text is None:
+            violations.append(
+                f"skill-size-cap violation: {err or f'{skill_md} read returned no text'}"
+            )
+            continue
+        size = len(text)
+        if size > cap:
+            violations.append(
+                f"skill-size-cap violation: {skill_md} is {size} bytes, "
+                f"cap={cap} (baseline*1.05); either relocate load-bearing prose "
+                f"into references/*.md or raise the cap with a documented "
+                f"justification in the same change"
+            )
+    return (len(violations) == 0, violations)
+
+
+# ---------------------------------------------------------------------------
 # CLI dispatcher
 # ---------------------------------------------------------------------------
 def _cmd_marketplace_sync(args: argparse.Namespace) -> int:
@@ -352,6 +510,26 @@ def _cmd_skill_provenance(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def _cmd_skill_line_refs(args: argparse.Namespace) -> int:
+    ok, violations = skill_line_number_ref_check(Path(args.skills_dir))
+    if ok:
+        print(f"skill-line-refs ok ({len(list(Path(args.skills_dir).rglob('*.md')))} files)")
+        return 0
+    for line in violations:
+        print(line)
+    return 1
+
+
+def _cmd_skill_size_cap(args: argparse.Namespace) -> int:
+    ok, violations = skill_size_cap_check(Path(args.skills_dir))
+    if ok:
+        print(f"skill-size-cap ok ({len(SKILL_SIZE_CAPS)} capped skills)")
+        return 0
+    for line in violations:
+        print(line)
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m scripts.gates.lint_checks",
@@ -379,6 +557,20 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("skill-provenance", help="vendored SKILL.md Provenance presence")
     p.add_argument("skill_md")
     p.set_defaults(func=_cmd_skill_provenance)
+
+    p = sub.add_parser(
+        "skill-line-refs",
+        help="detect rotting `line NNN` deep-prose references in skills/**/*.md",
+    )
+    p.add_argument("skills_dir")
+    p.set_defaults(func=_cmd_skill_line_refs)
+
+    p = sub.add_parser(
+        "skill-size-cap",
+        help="regrowth-brake size cap per skill (D2 regrowth brake)",
+    )
+    p.add_argument("skills_dir")
+    p.set_defaults(func=_cmd_skill_size_cap)
 
     args = parser.parse_args(argv)
     return args.func(args)
