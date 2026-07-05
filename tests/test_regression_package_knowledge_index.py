@@ -32,6 +32,7 @@ REQUIRED_DOCS = {
     "docs/codex-mirror-source-map.md",
 }
 REQUIRED_GATES = {
+    "scripts/gates/check_skill_quality.py",
     "scripts/gates/distribution_smoke.py",
     "scripts/gates/package_footprint_policy.py",
     "scripts/gates/maintenance_profile.py",
@@ -44,8 +45,14 @@ REQUIRED_GATES = {
     "scripts/gates/memory_retrieval_eval.py",
     "scripts/evals/workflow_trace_query.py",
     "scripts/loops/loop_run_log.py",
+    "scripts/loops/check_pre_lfg_stage_receipts.py",
     "scripts/gates/catalog_admission.py",
     "scripts/gates/codex_mirror_parity.py",
+}
+
+RELEASE_FACING_CLIS = {
+    "scripts/gates/check_skill_quality.py",
+    "scripts/loops/check_pre_lfg_stage_receipts.py",
 }
 
 
@@ -150,6 +157,27 @@ def test_missing_entry_point_backlink_fails_gate(tmp_path: Path) -> None:
     assert report["status"] == "fail"
     entry_points = {item["path"]: item for item in report["entry_points"]}
     assert entry_points["CLAUDE.md"]["status"] == "fail"
+
+
+def test_missing_release_facing_cli_links_fail_gate(tmp_path: Path) -> None:
+    root = tmp_path / "plugin"
+    _write_minimal_index_root(root)
+    index = root / "docs" / "package-knowledge-index.md"
+    body = index.read_text(encoding="utf-8")
+    for rel in RELEASE_FACING_CLIS:
+        body = body.replace(f"- [{rel}](../{rel})\n", "")
+    index.write_text(body, encoding="utf-8")
+
+    proc = _run_cli("--repo-root", str(root), "--json")
+
+    assert proc.returncode == 1
+    report = json.loads(proc.stdout)
+    failing_required_refs = {
+        item["path"]
+        for item in report["required_refs"]
+        if item["status"] == "fail"
+    }
+    assert RELEASE_FACING_CLIS <= failing_required_refs
 
 
 def _write_minimal_index_root(root: Path) -> None:

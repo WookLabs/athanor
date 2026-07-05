@@ -23,10 +23,10 @@ outcome, not just ship one cycle.
 9. persist the controller decision and decide the next-loop action.
 
 Codex is an implementation runtime, not Claude Code. Do not claim Claude hook,
-Claude Task, Freeze, or PreToolUse enforcement. The removed Stop completion
-claim hook is not part of loop quality. Quality comes from explicit artifacts:
-loop ledger, receipts, assessment/review reports, controller decisions, and
-human escalation.
+Claude Task, Freeze, or PreToolUse enforcement. No hidden completion hook is
+part of this command; the removed Stop completion claim hook is not part of
+loop quality. Quality comes from explicit artifacts: loop ledger, receipts,
+assessment/review reports, controller decisions, and human escalation.
 
 This is the Validated Receipt-Ledger Loop. It keeps G-markers in `loop.md`,
 stores `CNNN-lfg-receipt.md` under `.athanor/loops/<loop-id>/receipts/`, and
@@ -35,6 +35,47 @@ structure, Tier 2 judges evidence and score/review gates, and Tier 3 asks the
 user for final ratification. `<promise>DONE</promise>` is insufficient without
 validated receipts and controller evidence. Honor `maxIterations`.
 Do not claim hook-backed enforcement.
+
+## Durable State Summary
+
+Durable state lives at `.athanor/loops/<loop-id>/state.json`. Keep the compact
+field vocabulary visible in Codex runs:
+
+- lifecycle: `cycle_state`, `cycle_phase`, `current_cycle`,
+  `cycle_n_in_progress`, `tier3_pending`, `tier3_ratified`
+- ownership/logging: `acting_on`, `loop_run_log`, `lock_status`, `updated_at`
+- limits/progress: `max_iterations`, `budget`, `no_progress_count`,
+  `stop_reason`
+- evidence pointers: `last_receipt_path`, `last_validator_status`,
+  `last_evaluator_role`, `tier2_last_verdict`
+
+Controller decisions must be derived from `state.json` plus
+`evidence/latest.json`; assistant prose is not controller evidence.
+
+## Pre-LFG Stage Receipts
+
+Before the first `athanor-lfg` delivery cycle, preserve pre-cycle reasoning as
+explicit receipts under `.athanor/loops/<loop-id>/receipts/`:
+
+- research: `R000-research-receipt.md`
+- planning: `P000-planning-receipt.md`
+- architecture/design: `A000-architecture-receipt.md`
+
+If a stage is intentionally skipped, write its receipt with `status: skipped`
+and a concrete reason. Do not replace the receipt with hidden context or a chat
+summary.
+
+Required compact evidence:
+
+- research receipt: Source files, external references if any, unresolved facts,
+  and findings that shape `loop.md`.
+- planning receipt: Accepted plan path, acceptance markers, verification
+  commands, cycle boundaries, and known risks.
+- architecture receipt: Public contracts, cross-module design decisions,
+  rejected alternatives, and follow-up constraints.
+
+Each pre-LFG receipt references `loop.md` and any session artifact that supplied
+the stage input.
 
 ## Evidence Vocabulary
 

@@ -88,7 +88,7 @@ Run-log records follow `schemas/loop-run-log-record.schema.json` and live at
 the `loop_run_log` path in `state.json`, defaulting to
 `.athanor/loops/<loop_id>/run-log.jsonl`.
 
-The optional run-log fields in `state.json` are:
+The required run-log fields in `state.json` are:
 
 - `acting_on`: loop id currently claimed by the runner.
 - `loop_run_log`: append-only JSONL path.
@@ -96,6 +96,15 @@ The optional run-log fields in `state.json` are:
 - `min_attempts`: minimum attempts before risky or score-target finalization.
 - `last_evaluator_role`: latest evaluator role name.
 - `lock_status`: `active`, `conflict`, or `released`.
+
+For back-compat only, controller load normalizes legacy state files that are
+missing exactly these newly added fields. The defaults are targeted:
+`acting_on=<loop_id>`, `loop_run_log=.athanor/loops/<loop_id>/run-log.jsonl`,
+`budget.max_cycles=max_iterations`, `budget.max_wall_minutes=null`,
+`budget.max_token_estimate=null`, `min_attempts=0`,
+`last_evaluator_role=null`, and `lock_status=active`. Present-but-invalid
+values, invalid nested `budget` values, and unrelated missing fields still fail
+loudly.
 
 ## Controller CLI
 

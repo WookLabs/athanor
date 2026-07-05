@@ -102,6 +102,9 @@ durable state:
 
 `references/loop-md-template.md` defines the loop ledger shape.
 `references/state-shape.md` defines controller state.
+`references/pre-lfg-stage-receipts.md` defines the research, planning, and
+architecture/design receipt evidence that must exist before the first
+`/athanor:lfg` cycle receipt.
 
 `run-log.jsonl` is an append-only run log. The leader records each controller
 decision and cycle transition through `scripts/loops/loop_run_log.py`; the

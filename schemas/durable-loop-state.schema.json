@@ -9,10 +9,16 @@
     "cycle_state",
     "cycle_phase",
     "current_cycle",
+    "acting_on",
+    "loop_run_log",
     "max_iterations",
+    "budget",
+    "min_attempts",
     "no_progress_threshold",
     "last_receipt_path",
     "last_validator_status",
+    "last_evaluator_role",
+    "lock_status",
     "tier2_last_verdict",
     "aborted_reason",
     "no_progress_count",
@@ -106,6 +112,11 @@
     "budget": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "max_cycles",
+        "max_wall_minutes",
+        "max_token_estimate"
+      ],
       "properties": {
         "max_cycles": {
           "type": ["integer", "null"],

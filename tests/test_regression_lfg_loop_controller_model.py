@@ -13,6 +13,7 @@ from scripts.loops.lfg_loop_controller import (
     EvidenceSummary,
     LoopState,
     LoopStateError,
+    TIER3_USER_RESPONSES,
     apply_decision,
     decide_next_action,
 )
@@ -29,10 +30,20 @@ def _state(**overrides) -> LoopState:
         "cycle_state": "cycle_n_complete",
         "cycle_phase": None,
         "current_cycle": 1,
+        "acting_on": "36470e54",
+        "loop_run_log": "run-log.jsonl",
         "max_iterations": 5,
+        "budget": {
+            "max_cycles": 5,
+            "max_wall_minutes": None,
+            "max_token_estimate": None,
+        },
+        "min_attempts": 0,
         "no_progress_threshold": 2,
         "last_receipt_path": ".athanor/loops/36470e54/receipts/C001-lfg-receipt.md",
         "last_validator_status": "all_valid",
+        "last_evaluator_role": None,
+        "lock_status": "active",
         "tier2_last_verdict": None,
         "aborted_reason": None,
         "no_progress_count": 0,
@@ -391,6 +402,66 @@ def test_final_completion_can_prompt_on_last_allowed_cycle() -> None:
     assert decision.status == "pass"
 
 
+def test_tier3_continue_iterating_starts_next_cycle() -> None:
+    state = _state(cycle_state="cycle_n_in_progress", cycle_phase="tier3_pending")
+
+    decision = decide_next_action(
+        state,
+        _evidence(
+            score_target=None,
+            assessment=None,
+            tier3_user_response="continue-iterating",
+        ),
+    )
+    next_state = apply_decision(state, decision)
+
+    assert decision.action == "start_next_cycle"
+    assert decision.status == "pass"
+    assert decision.evidence["tier3_user_response"] == "continue-iterating"
+    assert next_state.cycle_state == "cycle_n_in_progress"
+    assert next_state.cycle_phase == "not_started"
+    assert next_state.current_cycle == state.current_cycle + 1
+
+
+def test_tier3_legacy_continue_alias_starts_next_cycle() -> None:
+    state = _state(cycle_state="cycle_n_in_progress", cycle_phase="tier3_pending")
+
+    decision = decide_next_action(
+        state,
+        _evidence(
+            score_target=None,
+            assessment=None,
+            tier3_user_response="continue",
+        ),
+    )
+
+    assert decision.action == "start_next_cycle"
+    assert decision.status == "pass"
+    assert decision.evidence["tier3_user_response"] == "continue"
+
+
+def test_tier3_revise_scope_marks_scope_change_pending() -> None:
+    state = _state(cycle_state="cycle_n_in_progress", cycle_phase="tier3_pending")
+
+    decision = decide_next_action(
+        state,
+        _evidence(
+            score_target=None,
+            assessment=None,
+            tier3_user_response="revise-scope",
+        ),
+    )
+    next_state = apply_decision(state, decision)
+
+    assert decision.action == "run_scope_drift"
+    assert decision.status == "escalated"
+    assert decision.next_cycle_state == "scope_change_pending"
+    assert decision.next_cycle_phase is None
+    assert decision.evidence["tier3_user_response"] == "revise-scope"
+    assert next_state.cycle_state == "scope_change_pending"
+    assert next_state.cycle_phase is None
+
+
 def test_final_target_false_contradiction_blocks_another_loop() -> None:
     contradictory_assessment = _assessment(
         kind="final",
@@ -576,6 +647,21 @@ def test_assessment_packet_schema_accepts_structured_score_evidence() -> None:
         "delta",
         "final",
     ]
+
+
+def test_evidence_schema_tier3_values_match_controller() -> None:
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    schema_values = set(schema["properties"]["tier3_user_response"]["enum"])
+
+    assert schema_values == {None, *TIER3_USER_RESPONSES}
+    for response in sorted(TIER3_USER_RESPONSES):
+        packet = _evidence(
+            score_target=None,
+            assessment=None,
+            tier3_user_response=response,
+        ).to_dict()
+        errors = sorted(Draft7Validator(schema).iter_errors(packet), key=str)
+        assert errors == []
 
 
 def test_cli_emits_machine_readable_adaptive_next_action(tmp_path: Path) -> None:

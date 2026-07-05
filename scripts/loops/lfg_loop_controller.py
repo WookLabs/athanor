@@ -33,9 +33,16 @@ VALIDATOR_STATUSES = {
     "not_yet_run",
 }
 EVAL_STATUSES = {"fail", "missing", "not_applicable", "pass"}
-TIER3_USER_RESPONSES = {"abort", "continue", "yes"}
+TIER3_USER_RESPONSES = {
+    "abort",
+    "continue",
+    "continue-iterating",
+    "revise-scope",
+    "yes",
+}
 DECISION_STATUSES = {"concern", "escalated", "failure", "pass", "skipped"}
 ASSESSMENT_KINDS = {"baseline", "delta", "final"}
+LOCK_STATUSES = {"active", "conflict", "released"}
 ROUTES_BY_CYCLE_PHASE = {
     "not_started": "resume_cycle_from_start",
     "lfg_done_seen": "validate_receipt",
@@ -65,10 +72,16 @@ REQUIRED_FIELDS = {
     "cycle_state",
     "cycle_phase",
     "current_cycle",
+    "acting_on",
+    "loop_run_log",
     "max_iterations",
+    "budget",
+    "min_attempts",
     "no_progress_threshold",
     "last_receipt_path",
     "last_validator_status",
+    "last_evaluator_role",
+    "lock_status",
     "tier2_last_verdict",
     "aborted_reason",
     "no_progress_count",
@@ -130,6 +143,55 @@ def _require_string_list(value: Any, field_name: str) -> tuple[str, ...]:
     return tuple(value)
 
 
+def _require_optional_loop_id(value: Any, field_name: str) -> str | None:
+    loop_id = _require_optional_string(value, field_name)
+    if loop_id is not None and not LOOP_ID_RE.match(loop_id):
+        raise LoopStateError(f"{field_name} must be 8 lowercase hex characters or null")
+    return loop_id
+
+
+def _budget_from_dict(raw_data: Any) -> dict[str, int | None]:
+    data = _require_object(raw_data)
+    required = ["max_cycles", "max_wall_minutes", "max_token_estimate"]
+    missing = [field for field in required if field not in data]
+    if missing:
+        raise LoopStateError(f"missing required budget fields: {missing}")
+
+    budget: dict[str, int | None] = {}
+    for field_name in required:
+        value = data[field_name]
+        if value is None:
+            budget[field_name] = None
+        else:
+            budget[field_name] = _require_int(
+                value, f"budget.{field_name}", minimum=1
+            )
+    return budget
+
+
+def _apply_legacy_defaults(data: dict[str, Any], warnings: list[str]) -> None:
+    def default(field_name: str, value: Any) -> None:
+        if field_name not in data:
+            warnings.append(f"legacy_missing_{field_name}")
+            data[field_name] = value
+
+    if "loop_id" in data:
+        default("acting_on", data["loop_id"])
+        default("loop_run_log", f".athanor/loops/{data['loop_id']}/run-log.jsonl")
+    if "max_iterations" in data:
+        default(
+            "budget",
+            {
+                "max_cycles": data["max_iterations"],
+                "max_wall_minutes": None,
+                "max_token_estimate": None,
+            },
+        )
+    default("min_attempts", 0)
+    default("last_evaluator_role", None)
+    default("lock_status", "active")
+
+
 @dataclass(frozen=True)
 class LoopState:
     """Validated durable lfg-loop loop state."""
@@ -139,10 +201,16 @@ class LoopState:
     cycle_state: str
     cycle_phase: str | None
     current_cycle: int
+    acting_on: str | None
+    loop_run_log: str
     max_iterations: int
+    budget: dict[str, int | None]
+    min_attempts: int
     no_progress_threshold: int
     last_receipt_path: str | None
     last_validator_status: str
+    last_evaluator_role: str | None
+    lock_status: str
     tier2_last_verdict: dict[str, Any] | None
     aborted_reason: str | None
     no_progress_count: int
@@ -166,6 +234,8 @@ class LoopState:
             warnings.append("legacy_missing_phase")
             data["cycle_phase"] = None
 
+        _apply_legacy_defaults(data, warnings)
+
         missing = sorted(REQUIRED_FIELDS - set(data))
         if missing:
             raise LoopStateError(f"missing required fields: {missing}")
@@ -184,7 +254,11 @@ class LoopState:
             if cycle_phase not in CYCLE_PHASES:
                 raise LoopStateError(f"unsupported cycle_phase: {cycle_phase}")
 
-        if cycle_state == "cycle_n_in_progress" and cycle_phase is None and not warnings:
+        if (
+            cycle_state == "cycle_n_in_progress"
+            and cycle_phase is None
+            and "legacy_missing_phase" not in warnings
+        ):
             raise LoopStateError("cycle_phase is required for cycle_n_in_progress")
         if cycle_state != "cycle_n_in_progress" and cycle_phase is not None:
             raise LoopStateError("cycle_phase must be null outside cycle_n_in_progress")
@@ -202,6 +276,10 @@ class LoopState:
         )
         if no_progress_count > no_progress_threshold:
             raise LoopStateError("no_progress_count must be <= no_progress_threshold")
+
+        lock_status = _require_string(data["lock_status"], "lock_status")
+        if lock_status not in LOCK_STATUSES:
+            raise LoopStateError(f"unsupported lock_status: {lock_status}")
 
         last_validator_status = _require_string(
             data["last_validator_status"], "last_validator_status"
@@ -221,12 +299,20 @@ class LoopState:
             cycle_state=cycle_state,
             cycle_phase=cycle_phase,
             current_cycle=current_cycle,
+            acting_on=_require_optional_loop_id(data["acting_on"], "acting_on"),
+            loop_run_log=_require_string(data["loop_run_log"], "loop_run_log"),
             max_iterations=max_iterations,
+            budget=_budget_from_dict(data["budget"]),
+            min_attempts=_require_int(data["min_attempts"], "min_attempts", minimum=0),
             no_progress_threshold=no_progress_threshold,
             last_receipt_path=_require_optional_string(
                 data["last_receipt_path"], "last_receipt_path"
             ),
             last_validator_status=last_validator_status,
+            last_evaluator_role=_require_optional_string(
+                data["last_evaluator_role"], "last_evaluator_role"
+            ),
+            lock_status=lock_status,
             tier2_last_verdict=tier2_last_verdict,
             aborted_reason=_require_optional_string(
                 data["aborted_reason"], "aborted_reason"
@@ -244,10 +330,16 @@ class LoopState:
             "cycle_state": self.cycle_state,
             "cycle_phase": self.cycle_phase,
             "current_cycle": self.current_cycle,
+            "acting_on": self.acting_on,
+            "loop_run_log": self.loop_run_log,
             "max_iterations": self.max_iterations,
+            "budget": dict(self.budget),
+            "min_attempts": self.min_attempts,
             "no_progress_threshold": self.no_progress_threshold,
             "last_receipt_path": self.last_receipt_path,
             "last_validator_status": self.last_validator_status,
+            "last_evaluator_role": self.last_evaluator_role,
+            "lock_status": self.lock_status,
             "tier2_last_verdict": self.tier2_last_verdict,
             "aborted_reason": self.aborted_reason,
             "no_progress_count": self.no_progress_count,
@@ -782,7 +874,7 @@ def _invalid_receipt_decision(
     )
 
 
-def _decide_adaptive_goal(
+def _decide_score_target_loop(
     state: LoopState,
     evidence: EvidenceSummary,
 ) -> LoopDecision | None:
@@ -940,7 +1032,7 @@ def _tier3_user_decision(
             next_cycle_phase=None,
             extra_evidence={"tier3_user_response": "yes"},
         )
-    if evidence.tier3_user_response == "continue":
+    if evidence.tier3_user_response in {"continue", "continue-iterating"}:
         if state.current_cycle >= state.max_iterations:
             return _max_iterations_decision(state, evidence)
         return _decision(
@@ -951,7 +1043,18 @@ def _tier3_user_decision(
             reason="human requested another loop cycle",
             next_cycle_state="cycle_n_in_progress",
             next_cycle_phase="not_started",
-            extra_evidence={"tier3_user_response": "continue"},
+            extra_evidence={"tier3_user_response": evidence.tier3_user_response},
+        )
+    if evidence.tier3_user_response == "revise-scope":
+        return _decision(
+            state,
+            evidence,
+            action="run_scope_drift",
+            status="escalated",
+            reason="human requested scope revision before terminal completion",
+            next_cycle_state="scope_change_pending",
+            next_cycle_phase=None,
+            extra_evidence={"tier3_user_response": "revise-scope"},
         )
     if evidence.tier3_user_response == "abort":
         return _decision(
@@ -996,7 +1099,7 @@ def decide_next_action(state: LoopState, evidence: EvidenceSummary) -> LoopDecis
     if tier3_decision is not None:
         return tier3_decision
 
-    adaptive_decision = _decide_adaptive_goal(state, evidence)
+    adaptive_decision = _decide_score_target_loop(state, evidence)
     if adaptive_decision is not None:
         return adaptive_decision
 
@@ -1027,6 +1130,23 @@ BLOCK_NO_OP_ACTIONS = {
 
 def apply_decision(state: LoopState, decision: LoopDecision) -> LoopState:
     """Return state after applying a controller decision."""
+    if (
+        decision.action == "run_scope_drift"
+        and decision.next_cycle_state == "scope_change_pending"
+        and decision.next_cycle_phase is None
+    ):
+        data = state.to_dict()
+        data["cycle_state"] = "scope_change_pending"
+        data["cycle_phase"] = None
+        if decision.evidence.get("progress_made") is True:
+            data["no_progress_count"] = 0
+        elif decision.evidence.get("progress_made") is False:
+            data["no_progress_count"] = min(
+                state.no_progress_threshold,
+                state.no_progress_count + 1,
+            )
+        return LoopState.from_dict(data)
+
     if decision.action in BLOCK_NO_OP_ACTIONS:
         # A block "stays put and surfaces the failure": it must NOT advance
         # current_cycle / cycle_state / cycle_phase. The only state it may move is
