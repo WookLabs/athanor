@@ -18,10 +18,20 @@ def _state(**overrides) -> LoopState:
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "not_started",
         "current_cycle": 2,
+        "acting_on": "36470e54",
+        "loop_run_log": "run-log.jsonl",
         "max_iterations": 5,
+        "budget": {
+            "max_cycles": 5,
+            "max_wall_minutes": None,
+            "max_token_estimate": None,
+        },
+        "min_attempts": 0,
         "no_progress_threshold": 2,
         "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
+        "last_evaluator_role": None,
+        "lock_status": "active",
         "tier2_last_verdict": None,
         "aborted_reason": None,
         "no_progress_count": 0,
@@ -160,3 +170,33 @@ def test_decision_handles_legacy_missing_phase_as_concern() -> None:
     assert decision.action == "resume_cycle_from_start"
     assert decision.status == "concern"
     assert "coarse-grained resume" in decision.reason
+
+
+def test_decision_routes_legacy_state_missing_new_run_log_fields() -> None:
+    data = _state(cycle_phase="receipt_validated").to_dict()
+    for field in [
+        "acting_on",
+        "loop_run_log",
+        "budget",
+        "min_attempts",
+        "last_evaluator_role",
+        "lock_status",
+    ]:
+        data.pop(field)
+    legacy_state = LoopState.from_dict(data)
+
+    assert legacy_state.to_dict()["acting_on"] == "36470e54"
+    assert legacy_state.to_dict()["loop_run_log"] == (
+        ".athanor/loops/36470e54/run-log.jsonl"
+    )
+    assert legacy_state.to_dict()["budget"] == {
+        "max_cycles": 5,
+        "max_wall_minutes": None,
+        "max_token_estimate": None,
+    }
+
+    decision = decide_next_action(legacy_state, _evidence())
+
+    assert decision.action == "run_tier1_check"
+    assert decision.status == "pass"
+    assert "legacy_missing_lock_status" in decision.evidence["state_warnings"]

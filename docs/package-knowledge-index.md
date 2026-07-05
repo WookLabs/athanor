@@ -1,6 +1,6 @@
 # Package Knowledge Index
 
-Last reviewed: 2026-06-30.
+Last reviewed: 2026-07-05.
 
 This is the short package-facing map for Athanor's current runtime and
 operator surface. Use it first when a packaged worker needs current context
@@ -22,6 +22,8 @@ without scanning repo-local development history.
 
 ## Operator Gate Map
 
+- Skill quality:
+  [gate](../scripts/gates/check_skill_quality.py).
 - Distribution smoke:
   [doc](distribution-smoke.md),
   [gate](../scripts/gates/distribution_smoke.py).
@@ -61,6 +63,8 @@ without scanning repo-local development history.
 - Durable loop controller:
   [doc](durable-loop-controller.md),
   [run-log helper](../scripts/loops/loop_run_log.py).
+- Pre-LFG stage receipts:
+  [checker](../scripts/loops/check_pre_lfg_stage_receipts.py).
 - Catalog admission:
   [doc](catalog-admission-policy.md),
   [gate](../scripts/gates/catalog_admission.py).

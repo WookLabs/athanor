@@ -41,6 +41,8 @@
         null,
         "abort",
         "continue",
+        "continue-iterating",
+        "revise-scope",
         "yes"
       ]
     },

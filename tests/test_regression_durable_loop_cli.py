@@ -25,10 +25,20 @@ def _state(**overrides) -> dict:
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "receipt_validated",
         "current_cycle": 2,
+        "acting_on": "36470e54",
+        "loop_run_log": "run-log.jsonl",
         "max_iterations": 5,
+        "budget": {
+            "max_cycles": 5,
+            "max_wall_minutes": None,
+            "max_token_estimate": None,
+        },
+        "min_attempts": 0,
         "no_progress_threshold": 2,
         "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
+        "last_evaluator_role": None,
+        "lock_status": "active",
         "tier2_last_verdict": None,
         "aborted_reason": None,
         "no_progress_count": 0,
@@ -88,6 +98,41 @@ def test_loop_controller_cli_emits_json_decision(tmp_path: Path) -> None:
     assert decision["schema_version"] == 1
     assert decision["action"] == "run_tier1_check"
     assert decision["status"] == "pass"
+
+
+def test_loop_controller_cli_normalizes_legacy_state_on_resume(tmp_path: Path) -> None:
+    state_path = tmp_path / "state.json"
+    evidence_path = tmp_path / "evidence.json"
+    legacy_state = _state()
+    for field in [
+        "acting_on",
+        "loop_run_log",
+        "budget",
+        "min_attempts",
+        "last_evaluator_role",
+        "lock_status",
+    ]:
+        legacy_state.pop(field)
+    _write_json(state_path, legacy_state)
+    _write_json(evidence_path, _evidence())
+
+    proc = _run_controller(state_path, evidence_path, "--write-state")
+
+    assert proc.returncode == 0, proc.stderr
+    decision = json.loads(proc.stdout)
+    assert decision["action"] == "run_tier1_check"
+    assert "legacy_missing_lock_status" in decision["evidence"]["state_warnings"]
+    persisted = json.loads(state_path.read_text(encoding="utf-8"))
+    assert persisted["acting_on"] == "36470e54"
+    assert persisted["loop_run_log"] == ".athanor/loops/36470e54/run-log.jsonl"
+    assert persisted["budget"] == {
+        "max_cycles": 5,
+        "max_wall_minutes": None,
+        "max_token_estimate": None,
+    }
+    assert persisted["min_attempts"] == 0
+    assert persisted["last_evaluator_role"] is None
+    assert persisted["lock_status"] == "active"
 
 
 def test_loop_controller_cli_appends_loop_decision_trace(tmp_path: Path) -> None:

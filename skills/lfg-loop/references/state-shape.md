@@ -64,4 +64,13 @@ Run-log and safety fields:
 - `budget.max_token_estimate`: optional token budget.
 - `min_attempts`: minimum cycles before risky or score-target completion.
 - `last_evaluator_role`: last assessor/reviewer/judge that supplied evidence.
-- `lock_status`: `active`, `complete`, `conflict`, or `aborted`.
+- `lock_status`: `active`, `conflict`, or `released`.
+
+Legacy resume compatibility is narrow. If an existing state file lacks the
+new run-log and safety fields (`acting_on`, `loop_run_log`, `budget`,
+`min_attempts`, `last_evaluator_role`, `lock_status`), controller load
+normalizes them to the current shape with explicit defaults:
+`acting_on=<loop_id>`, `loop_run_log=.athanor/loops/<loop_id>/run-log.jsonl`,
+`budget.max_cycles=max_iterations`, nullable budget limits as `null`,
+`min_attempts=0`, `last_evaluator_role=null`, and `lock_status=active`.
+Invalid values and unrelated missing fields remain hard errors.

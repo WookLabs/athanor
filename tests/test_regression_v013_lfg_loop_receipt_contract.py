@@ -45,6 +45,9 @@ RECEIPT_PARTIAL_WITH_RESIDUALS = FIXTURE_DIR / "receipt_partial_with_residuals.m
 VALIDATOR_AGENT_PATH = (
     REPO_ROOT / "skills" / "lfg-loop" / "references" / "receipt-validator.md"
 )
+PRE_LFG_RECEIPTS_PATH = (
+    REPO_ROOT / "skills" / "lfg-loop" / "references" / "pre-lfg-stage-receipts.md"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +250,27 @@ def test_goal_md_template_has_mandatory_sections():
     assert "Verify command" in body
     assert "Test-count command" in body
     assert "scope_change" in body
+
+
+def test_pre_lfg_research_design_receipt_contract_exists():
+    """Deep research, planning, and design stages must have receipt evidence
+    before the loop starts producing /athanor:lfg cycle receipts.
+    """
+    assert PRE_LFG_RECEIPTS_PATH.is_file()
+    body = PRE_LFG_RECEIPTS_PATH.read_text(encoding="utf-8")
+    for token in (
+        "research receipt",
+        "planning receipt",
+        "architecture receipt",
+        "Required Evidence",
+        "loop.md",
+    ):
+        assert token in body
+
+    skill_body = (REPO_ROOT / "skills" / "lfg-loop" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "pre-lfg-stage-receipts.md" in skill_body
 
 
 # ---------------------------------------------------------------------------
