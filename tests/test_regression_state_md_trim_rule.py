@@ -4,7 +4,7 @@ Context
 -------
 The releaser ceremony Step 3 rotates `## Current Phase` → `## Previous
 Phase` in `docs/STATE.md`. That rotation is append-only, so STATE.md
-grows monotonically (the lfg/lfg-goal doc-lifecycle audit found 28 phase
+grows monotonically (the lfg/lfg-loop doc-lifecycle audit found 28 phase
 sections / ~1336 lines with no trimming). Wave 1 adds a documented
 bounded-history trim rule: once the retained `## Previous Phase` section
 count exceeds a numeric cap, the oldest surplus sections are MOVED

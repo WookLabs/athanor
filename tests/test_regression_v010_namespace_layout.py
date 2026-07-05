@@ -3,7 +3,7 @@ policy + flat skill layout.
 
 D2 policy from the plan:
 - Athanor-native skills (plan, deep-plan, lite-plan, prompt-gen, work,
-  debug, setup, discuss, analyze, review, lfg, lfg-goal, scope-drift,
+  debug, setup, discuss, analyze, review, lfg, lfg-loop, scope-drift,
   verification-before-completion) keep the unprefixed slot at
   `skills/<name>/`. v0.17.0 / S07 collapsed `deep-plan` + `lite-plan`
   into `/athanor:plan --depth=`, then the current surface restored them as
@@ -28,7 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 
 ATHANOR_NATIVE = {
-    "analyze", "assess", "debug", "deep-plan", "discuss", "lfg", "lfg-goal",
+    "analyze", "assess", "debug", "deep-plan", "discuss", "lfg", "lfg-loop",
     "lite-plan", "plan", "prompt-gen", "review", "scope-drift", "setup",
     "verification-before-completion", "work",
 }
@@ -137,7 +137,7 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
     extension → v0.17.0 extension → v0.18.0 extension: pinned to "0.10.0"
     originally; relaxed to 0.10.x at v0.10.1; extended to 0.10.x or 0.11.x
     at v0.11.0; extended to include 0.12.x at v0.12.0 (concept-kernel
-    cutover release); extended to include 0.13.x at v0.13.0 (lfg-goal
+    cutover release); extended to include 0.13.x at v0.13.0 (lfg-loop
     release); extended to include 0.14.x at v0.14.0 (native agent
     definitions); extended to include 0.15.x at v0.15.0 (LFG pipeline
     contract reconciliation); extended to include 0.16.x at v0.16.0
@@ -148,9 +148,9 @@ def test_marketplace_version_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_or_
     model); extended to include 0.20.x at v0.20.0 (ref optimization + uv
     tooling migration); extended to include 0.21.x at v0.21.0 (opt-in
     /athanor:lfg auto-merge + Step 8.5 gate); extended to include 0.22.x
-    at v0.22.0 (default-on lfg auto-merge + strengthened lfg-goal loop);
+    at v0.22.0 (default-on lfg auto-merge + strengthened lfg-loop loop);
     extended to include 0.23.x at v0.23.0 (한글 완료 요약 step for
-    /athanor:lfg + /athanor:lfg-goal); extended to include 0.24.x at
+    /athanor:lfg + /athanor:lfg-loop); extended to include 0.24.x at
     v0.24.0 (governance subsystem removal + executable lfg merge gate).
     """
     import json

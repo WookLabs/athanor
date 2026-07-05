@@ -1,11 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Athanor lfg-goal loop run log record",
+  "title": "Athanor lfg-loop loop run log record",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "goal_id",
+    "loop_id",
     "sequence",
     "timestamp",
     "event",
@@ -22,7 +22,7 @@
     "schema_version": {
       "const": 1
     },
-    "goal_id": {
+    "loop_id": {
       "type": "string",
       "pattern": "^[0-9a-f]{8}$"
     },

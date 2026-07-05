@@ -6,13 +6,13 @@
       "description": "A cycle paused after receipt validation resumes at Tier 1.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "receipt_validated",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -24,10 +24,10 @@
         "eval_status": "pass",
         "validator_status": "all_valid",
         "tier1_passed": true,
-        "tier2_goal_met": false,
+        "tier2_completion_met": false,
         "tier3_user_response": null,
         "progress_made": true,
-        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"]
+        "references": [".athanor/loops/36470e54/receipts/C002-lfg-receipt.md"]
       },
       "expected": {
         "decision": {
@@ -48,13 +48,13 @@
       "description": "A completed goal is terminal and refuses re-entry.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
-        "cycle_state": "goal_complete",
+        "loop_id": "36470e54",
+        "cycle_state": "loop_complete",
         "cycle_phase": null,
         "current_cycle": 3,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C003-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C003-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": {"judge_a": {"goal_met": true}, "judge_b": {"goal_met": true}},
         "aborted_reason": null,
@@ -71,11 +71,11 @@
         "decision": {
           "action": "refuse_terminal_state",
           "status": "skipped",
-          "next_cycle_state": "goal_complete",
+          "next_cycle_state": "loop_complete",
           "next_cycle_phase": null
         },
         "state": {
-          "cycle_state": "goal_complete",
+          "cycle_state": "loop_complete",
           "cycle_phase": null
         }
       }
@@ -85,13 +85,13 @@
       "description": "A cycle complete at the hard iteration cap aborts with a max-iterations stop.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 5,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C005-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C005-lfg-receipt.md",
         "last_validator_status": "completed_with_residuals",
         "tier2_last_verdict": {"judge_a": {"goal_met": false}, "judge_b": {"goal_met": false}},
         "aborted_reason": null,
@@ -102,7 +102,7 @@
       "evidence": {
         "eval_status": "pass",
         "progress_made": true,
-        "references": [".athanor/goals/36470e54/receipts/C005-lfg-receipt.md"]
+        "references": [".athanor/loops/36470e54/receipts/C005-lfg-receipt.md"]
       },
       "expected": {
         "decision": {
@@ -123,13 +123,13 @@
       "description": "A second no-progress cycle aborts with stop_no_progress.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "not_started",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C001-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C001-lfg-receipt.md",
         "last_validator_status": "completed_with_residuals",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -140,7 +140,7 @@
       "evidence": {
         "eval_status": "pass",
         "progress_made": false,
-        "references": [".athanor/goals/36470e54/receipts/C001-lfg-receipt.md"]
+        "references": [".athanor/loops/36470e54/receipts/C001-lfg-receipt.md"]
       },
       "expected": {
         "decision": {
@@ -162,13 +162,13 @@
       "description": "An evidence-gated transition refuses to advance when eval evidence is missing.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "tier1_checked",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -200,7 +200,7 @@
       "description": "A bootstrapping goal with a score target but no assessment yet runs the baseline assess first.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "bootstrapping",
         "cycle_phase": null,
         "current_cycle": 0,
@@ -245,13 +245,13 @@
       "description": "A completed cycle with an all_valid receipt and a score target runs the delta assessment before the next loop.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -263,7 +263,7 @@
         "eval_status": "pass",
         "validator_status": "all_valid",
         "progress_made": true,
-        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "references": [".athanor/loops/36470e54/receipts/C002-lfg-receipt.md"],
         "score_target": {
           "overall_score": 90,
           "min_dimension_score": 80
@@ -290,13 +290,13 @@
       "description": "A delta assessment below the score target with progress advances to the next delivery loop.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -308,14 +308,14 @@
         "eval_status": "pass",
         "validator_status": "all_valid",
         "progress_made": true,
-        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "references": [".athanor/loops/36470e54/receipts/C002-lfg-receipt.md"],
         "score_target": {
           "overall_score": 90,
           "min_dimension_score": 80
         },
         "assessment": {
           "kind": "delta",
-          "report_path": ".athanor/goals/36470e54/assess/delta-C002.md",
+          "report_path": ".athanor/loops/36470e54/assess/delta-C002.md",
           "overall_score": 70,
           "min_dimension_score": 60,
           "target_met": false,
@@ -348,13 +348,13 @@
       "description": "A failed eval below the no-progress threshold blocks without advancing the cycle and accrues no-progress.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -389,13 +389,13 @@
       "description": "A failed eval at no_progress_threshold - 1 trips stop_no_progress and aborts; locks BLOCKER 1's bound at the fixture gate.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": null,
         "aborted_reason": null,
@@ -429,13 +429,13 @@
       "description": "An invalid-receipt cycle below the no-progress threshold runs scope drift without advancing the cycle and accrues no-progress.",
       "state": {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": null,
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "invalid_steps_present",
         "tier2_last_verdict": null,
         "aborted_reason": null,

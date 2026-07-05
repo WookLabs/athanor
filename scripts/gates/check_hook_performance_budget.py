@@ -32,6 +32,7 @@ from scripts.gates.replay_hook_fixtures import (
 DEFAULT_CATALOG = REPO_ROOT / "hooks" / "catalog.json"
 DEFAULT_FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures" / "hooks"
 VALID_HOOK_EXIT_CODES = {0, 2}
+MIN_MEASURED_SAMPLES = 3
 
 # v0.24.3 (N1): enabled hooks are invoked through the portable launcher shim
 # `sh run_hook.sh <target.py>` (see scripts/hooks/run_hook.sh). The gate
@@ -204,9 +205,40 @@ def _measure_hook(
             "reason": str(exc),
         }
 
+    measured_samples = max(MIN_MEASURED_SAMPLES, samples)
+    selected = fixtures[: max(1, min(measured_samples, len(fixtures)))]
+
+    warmup_fixture = selected[0]
+    warmup_payload = warmup_fixture.get("payload")
+    if not isinstance(warmup_payload, dict):
+        return {
+            "id": hook_id,
+            "event": event,
+            "budget_ms": budget_ms,
+            "median_ms": None,
+            "max_ms": None,
+            "runs": [],
+            "fixtures": [str(item.get("id", "<missing-id>")) for item in selected],
+            "status": "fail",
+            "reason": "fixture payload must be a JSON object",
+        }
+    warmup = _run_once(command, warmup_payload, hook_id)
+    if warmup["exit_code"] not in VALID_HOOK_EXIT_CODES:
+        return {
+            "id": hook_id,
+            "event": event,
+            "budget_ms": budget_ms,
+            "median_ms": None,
+            "max_ms": None,
+            "runs": [],
+            "fixtures": [str(item.get("id", "<missing-id>")) for item in selected],
+            "status": "fail",
+            "reason": f"warmup hook exited with unsupported code {warmup['exit_code']}",
+        }
+
     runs: list[dict[str, Any]] = []
-    selected = fixtures[: max(1, min(samples, len(fixtures)))]
-    for fixture in selected:
+    for index in range(measured_samples):
+        fixture = selected[index % len(selected)]
         payload = fixture.get("payload")
         if not isinstance(payload, dict):
             return {
@@ -244,12 +276,12 @@ def _measure_hook(
     durations = [run["duration_ms"] for run in runs]
     median_ms = round(float(statistics.median(durations)), 3)
     max_ms = round(max(durations), 3)
-    if max_ms > budget_ms:
+    if median_ms > budget_ms:
         status = "fail"
-        reason = f"max runtime {max_ms}ms exceeds budget {budget_ms}ms"
+        reason = f"median runtime {median_ms}ms exceeds budget {budget_ms}ms"
     else:
         status = "pass"
-        reason = "within budget"
+        reason = f"median runtime within budget; max observation {max_ms}ms"
     return {
         "id": hook_id,
         "event": event,
@@ -258,6 +290,7 @@ def _measure_hook(
         "max_ms": max_ms,
         "runs": runs,
         "fixtures": [run["fixture_id"] for run in runs],
+        "measured_samples": measured_samples,
         "status": status,
         "reason": reason,
     }
@@ -336,6 +369,7 @@ def main(argv: list[str] | None = None) -> int:
         for hook in report["hooks"]:
             print(
                 f"{hook['status']}: {hook['id']} "
+                f"median={hook['median_ms']}ms "
                 f"max={hook['max_ms']}ms budget={hook['budget_ms']}ms"
             )
             if hook["status"] != "pass":

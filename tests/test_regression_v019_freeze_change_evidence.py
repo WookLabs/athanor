@@ -192,6 +192,6 @@ def test_bash_syntactic_write_target_is_recorded_when_no_response_field(tmp_path
 def test_hooks_json_does_not_register_filechanged():
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     events = set(data["hooks"].keys())
-    assert events == {"Stop", "PreToolUse", "PostToolUse"}
+    assert events == {"PreToolUse", "PostToolUse"}
     assert "FileChanged" not in events
 

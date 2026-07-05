@@ -81,7 +81,7 @@ def test_enabled_hooks_remain_shared_core_events():
         if entry["runtime_default"] == "enabled"
     }
 
-    assert enabled_events == {"Stop", "PreToolUse", "PostToolUse"}
+    assert enabled_events == {"PreToolUse", "PostToolUse"}
     for event in enabled_events:
         row = rows[event]
         assert row["Athanor default"] == "enabled"

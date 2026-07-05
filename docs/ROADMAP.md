@@ -433,14 +433,14 @@ failure. Runtime details, result-gate semantics, and evidence stream behavior
 live in `skills/work/references/spec-then-tdd-handler.md`.
 
 **Replay foundation:** A hook payload corpus and replay gate now exercise the
-current Stop, PreToolUse, and PostToolUse contracts against synthetic fixtures.
-The corpus also has an opt-in `scripts/hooks/hook_payload_capture.py` harness
-for collecting live local Stop, PreToolUse, PostToolUse, and FileChanged
-payloads, plus a deterministic live fixture import tool that redacts reviewed
-captures before appending replayable events to the replay index. The index now
-includes live-redacted Claude Code 2.1.177 captures for Stop, PreToolUse, and
-PostToolUse, so the payload-shape precondition for a strict upgrade is
-satisfied. A Claude Code 2.1.178 live-redacted targeted pytest PostToolUse
+current PreToolUse and PostToolUse contracts against synthetic fixtures. The
+corpus also has an opt-in `scripts/hooks/hook_payload_capture.py` harness for
+collecting live local PreToolUse, PostToolUse, and FileChanged payloads, plus a
+deterministic live fixture import tool that redacts reviewed captures before
+appending replayable events to the replay index. The index now includes
+live-redacted Claude Code captures for PreToolUse and PostToolUse, so the
+payload-shape precondition for retained active hooks is satisfied. A Claude
+Code 2.1.178 live-redacted targeted pytest PostToolUse
 fixture now also exercises the actual test-evidence path and records the
 empirical payload boundary that stdout/stderr are available while direct
 exit-code is absent; the sniffer therefore records `exit_code_source` and only

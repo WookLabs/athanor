@@ -1,15 +1,5 @@
 {
   "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/stop_verify_claims.py\""
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "hooks": [

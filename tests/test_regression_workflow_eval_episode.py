@@ -17,7 +17,7 @@ DOC = REPO_ROOT / "docs" / "workflow-eval-episodes.md"
 EXPECTED_SCENARIOS = {
     "work-evidence-happy-path",
     "work-missing-evidence-escalates",
-    "lfg-goal-receipt-loop",
+    "lfg-loop-receipt-loop",
     "durable-loop-no-progress-escalates",
 }
 

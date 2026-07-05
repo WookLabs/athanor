@@ -10,16 +10,16 @@
 v0.24.3 (#88, `9f82019`), from a cross-model deep-plan (Planner A + contrarian
 B + 2 cross-reviews + Critic): a **skill prompt diet**. Four advisory /
 explanatory sections (zero test refs, zero gate/load-bearing logic) were
-relocated out of the hot-path `lfg` / `lfg-goal` skills into four NEW reference
+relocated out of the hot-path `lfg` / `lfg-loop` skills into four NEW reference
 files (`skills/lfg/references/freeze-residual.md`;
-`skills/lfg-goal/references/{enforcement-scope,release-strategy,lfg-vs-lfg-goal}.md`).
-Char delta: `skills/lfg/SKILL.md` 40,220 → 39,489 (-731); `skills/lfg-goal/SKILL.md`
+`skills/lfg-loop/references/{enforcement-scope,release-strategy,lfg-vs-lfg-loop}.md`).
+Char delta: `skills/lfg/SKILL.md` 40,220 → 39,489 (-731); `skills/lfg-loop/SKILL.md`
 49,610 → 45,480 (-4,130). Inline pointers preserve the decision-relevant
 summaries (advisory label, D2 loose-coupling, default-value docs) — behavior
 unchanged. Two new lint checks land in `scripts/gates/lint_checks.py`
 (+192 lines): `skill_size_cap_check` (regrowth ratchet, cap =
 round(post-diet length × 1.05) per skill across 8 skills — prevents the next
-lfg-goal size regression but does NOT enforce further shrink) and
+lfg-loop size regression but does NOT enforce further shrink) and
 `skill_line_number_ref_check` (bans new bare `line NNN` deep-prose refs in
 `skills/**/*.md`, `\d{2,5}` threshold + fenced/file:line allowlists). Four
 rotted line-anchor cross-refs were fixed to `(§heading)` form (one cross-file);
@@ -28,7 +28,7 @@ tags preserved. +12 regression tests; full suite 1677 passed; adversarial
 review APPROVE_WITH_NITS. Honest scope: ZERO behavior change and ZERO existing
 tests modified — this is pure relocation + additive lint guardrails. Deferred
 to a future release (lock-retarget cost): `/athanor:lfg` Step 8.5 (~15.6k chars,
-~30 locality assertions) and `/athanor:lfg-goal` Score-Target Loop / Goal
+~30 locality assertions) and `/athanor:lfg-loop` Score-Target Loop / Goal
 Storage / Resume-Loop remain inline. The plugin surface stays frozen: 4
 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
 the existing native command set are untouched. This patch updates the v0.24.3
@@ -79,7 +79,7 @@ redirected from `/dev/null`, and a finite `timeout` — a guard that was absent
 repo-wide, so an interactive credential / 2FA / LFS prompt would block on stdin
 and silently hang the unattended pipeline indefinitely. Git now fails fast with
 a non-zero exit into the existing push-failure diagnosis path. Pure hardening of
-existing plumbing (no new surface); `/athanor:lfg-goal` is unchanged (pure
+existing plumbing (no new surface); `/athanor:lfg-loop` is unchanged (pure
 wrapper); +7 regression tests (`tests/test_regression_lfg_git_hardening.py`). A
 companion "Codex CLAUDE.md preamble" candidate was refuted (AGENTS.md already
 mirrors CLAUDE.md for Codex) and not shipped. Honest impact: a minor
@@ -144,9 +144,9 @@ Two **fail-loud-over-silent-fallback** bugs were fixed (PR #75): the
 `verification-before-completion` SKILL.md + `receipt-validator.md` (a bare path
 had silently degraded Stop-hook invariant #4 in user projects), and a `*)`
 default arm added to both `codex.fallback` case blocks in
-`codex-availability.md`; +6 regression tests. Dead `lfgGoal.userConfirmAfter`
+`codex-availability.md`; +6 regression tests. Dead `lfgLoop.userConfirmAfter`
 config (schema-advertised but unconsumed) was removed (PR #77), and ~24 lines
-of P26 overlay prose were relocated from the `lfg` / `lfg-goal` hot-path skills
+of P26 overlay prose were relocated from the `lfg` / `lfg-loop` hot-path skills
 to docs (PR #76) — the suspected "~2000 LOC over-build" was found to be
 live/tested code and kept, so only the prose moved (over-claim rejected as an
 honesty win). The analyze + debug skills gained their first behavioral
@@ -156,15 +156,15 @@ registered agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and
 the existing native command set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
-## Previous Phase: v0.23.0 — 한글 완료 요약 Step for /athanor:lfg + /athanor:lfg-goal
+## Previous Phase: v0.23.0 — 한글 완료 요약 Step for /athanor:lfg + /athanor:lfg-loop
 
 **v0.23.0** (released 2026-06-25) — Minor release shipping a single
-`/athanor:lfg` / `/athanor:lfg-goal` user-experience addition landed on main
+`/athanor:lfg` / `/athanor:lfg-loop` user-experience addition landed on main
 since v0.22.1 (merged as `6f6301e`). A **한글 완료 요약 step** — a Korean
 completion summary the leader presents when the pipeline finishes
-(`/athanor:lfg` new Step 9.5) and when the macro loop finishes (`/athanor:lfg-goal`
+(`/athanor:lfg` new Step 9.5) and when the macro loop finishes (`/athanor:lfg-loop`
 terminal subroutine on all 6 exit points: goal-met, abort, the three
 durable-residual exits, and the Tier-2-split break, each reporting which state
 ended the loop). It is **advisory leader-prose** (Present-to-User; no new
@@ -183,7 +183,7 @@ surface stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`,
 `learner`, `releaser`) and the existing native command set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
 ## Previous Phase: v0.22.1 — Worker Context Packet Convention (slim)
 
@@ -204,12 +204,12 @@ plugin surface stays frozen: 4 registered agents (`ci-watcher`,
 are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
-## Previous Phase: v0.22.0 — Default-On lfg Auto-Merge + Strengthened lfg-goal Loop
+## Previous Phase: v0.22.0 — Default-On lfg Auto-Merge + Strengthened lfg-loop Loop
 
 **v0.22.0** (released 2026-06-24) — Minor release shipping two
-`/athanor:lfg` / `/athanor:lfg-goal` improvements landed on main since
+`/athanor:lfg` / `/athanor:lfg-loop` improvements landed on main since
 v0.21.0. First, **`/athanor:lfg` Step 8.5 auto-merge flips to opt-out
 (default ON)**: the `lfg.autoMerge` default is now `true`, so a green PR is
 merged once the unchanged conjunctive merge-readiness gate (G0–G5) passes;
@@ -218,7 +218,7 @@ disabling collapses to a one-flag opt-out (`--no-merge` renamed to
 explicit-enable counterpart, and the disabled-skip state is renamed
 `skipped-merge-disabled` (gate logic, disposition table, re-poll, merge
 command, never-`--admin` rule, and releaser boundary all unchanged).
-Second, the **`/athanor:lfg-goal` durable loop controller is strengthened
+Second, the **`/athanor:lfg-loop` durable loop controller is strengthened
 (PR #65)** with an adaptive score-target router — assessment-evidence
 validation with fail-loud parsing, a two-way `target_met` cross-check
 against computed scores, and baseline/delta assessment → lfg-cycle routing
@@ -233,7 +233,7 @@ The plugin surface stays frozen: 4 registered agents (`ci-watcher`,
 set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
 ## Previous Phase: v0.21.0 — Opt-in /athanor:lfg Auto-Merge + Step 8.5 Gate
 
@@ -254,7 +254,7 @@ agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and the existin
 native command set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
 ## Previous Phase: v0.20.1 — output.language Presentation Preference
 
@@ -270,7 +270,7 @@ stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
 `releaser`) and the existing native command set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / Stop hook gate.
+Spec-then-TDD / explicit evidence gates.
 
 ## Ref-driven optimization surface (current status)
 
@@ -316,7 +316,7 @@ stays frozen — 4 registered agents (`ci-watcher`, `codex-dispatcher`,
 
 | Contract | 상태 | 보호 위치 |
 |---|---|---|
-| `stop-hook-command-contract` | ✅ enforced (v0.7.8 — runtime gate via `type: command` + exit 2) | `tests/test_regression_stop_command_hook.py` (registration) + `tests/test_regression_stop_hook_script.py` (decision flow) |
+| `stop-completion-claim-hook` | ❌ removed from active runtime | `tests/test_regression_lfg_loop_migration.py` (active surface), hook replay/performance tests for retained PreToolUse + PostToolUse |
 | `hook-uniqueness` | ✅ enforced | `tests/test_regression_hook_uniqueness.py`, `scripts/gates/manifest_checks.py::hook_uniqueness_check` |
 | `manifest-no-hooks-field` | ✅ enforced | `tests/test_regression_manifest_hooks.py`, `scripts/gates/manifest_checks.py::duplicate_hooks_path_check` |
 | `check_a_evidence` (release-time) | ✅ enforced | `scripts/check_release_ready.py::check_a_evidence` (word-boundary regex) |

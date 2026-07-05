@@ -1,10 +1,10 @@
 """Regression tests for v0.17.0 shared hook runtime module.
 
 Covers `scripts/hooks/_athanor_hook_runtime.py` — minimalist shared
-helpers used by both `stop_verify_claims.py` and `pretool_kernel_guard.py`.
+helpers used by the active PreToolUse and PostToolUse hooks.
 
 Per S06 minimalist scope (C1 conflict resolution adopting Plan B):
-  1. `read_stdin_payload()` — parse PreToolUse/Stop event JSON from stdin.
+  1. `read_stdin_payload()` — parse hook event JSON from stdin.
      Fail-open on malformed. Returns dict or None.
   2. `read_athanor_config()` — walk up from cwd to find athanor.json.
      Stops at .git boundary. Returns parsed dict or {}.
@@ -43,7 +43,7 @@ import _athanor_hook_runtime as runtime  # noqa: E402
 
 def test_read_stdin_payload_valid_json():
     """A valid JSON object on stdin returns the parsed dict."""
-    payload = {"hook_event_name": "Stop", "session_id": "abc123"}
+    payload = {"hook_event_name": "PreToolUse", "session_id": "abc123"}
     fake_stdin = io.StringIO(json.dumps(payload))
     # Override isatty so the helper does not bail out as TTY
     fake_stdin.isatty = lambda: False  # type: ignore[method-assign]
@@ -362,24 +362,6 @@ def test_extract_target_path_non_dict_returns_none(bad_input):
 # ---------------------------------------------------------------------------
 # Integration smoke: existing hooks still work after refactor.
 # ---------------------------------------------------------------------------
-
-
-def test_stop_hook_script_still_runs():
-    """Smoke: stop_verify_claims.py imports + executes a no-op payload
-    without raising. Behavior-preservation guard for the v0.17.0 refactor."""
-    script = REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py"
-    proc = subprocess.run(
-        [sys.executable, str(script)],
-        input="{}",
-        text=True,
-        capture_output=True,
-        cwd=str(REPO_ROOT),
-    )
-    # exit 0 = fail-open on empty payload (the script's own contract).
-    assert proc.returncode == 0, (
-        f"stop_verify_claims.py broke after refactor: rc={proc.returncode} "
-        f"stderr={proc.stderr!r}"
-    )
 
 
 def test_pretool_hook_script_still_runs():

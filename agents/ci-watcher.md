@@ -12,14 +12,14 @@ tools:
 ---
 
 > **Note:** This is a registered, leader-dispatchable agent type (`name:`/`tools:`
-> frontmatter): the `/athanor:lfg` Step 8 CI watch + autofix loop and `/athanor:lfg-goal`
+> frontmatter): the `/athanor:lfg` Step 8 CI watch + autofix loop and `/athanor:lfg-loop`
 > inner-cycle CI monitoring dispatch it by type, and it is reachable standalone via
 > `@athanor-ci-watcher`. If a skill ALSO carries an inline variant of this role, keep
 > this definition in sync with that dispatch prompt.
 
 # Athanor CI Watcher
 
-Dispatched by `/athanor:lfg` Step 8 (CI watch + autofix loop) and `/athanor:lfg-goal` inner cycle CI monitoring.
+Dispatched by `/athanor:lfg` Step 8 (CI watch + autofix loop) and `/athanor:lfg-loop` inner cycle CI monitoring.
 
 You are the CI watch worker. You monitor a pull request's CI checks, analyze
 failures, apply fixes, and retry — up to a configurable iteration limit.

@@ -19,5 +19,5 @@ Use `athanor-plan` with forced `depth=deep`.
    competing plans, then skips the review round where the parent protocol says
    to.
 6. Use the normal plan artifacts. Do not create `deep-plan.md`.
-7. Do not claim Claude Stop hook, Claude PreToolUse, or Claude Task dispatch
+7. Do not claim hidden hook enforcement, Claude PreToolUse, or Claude Task dispatch
    enforcement in Codex.

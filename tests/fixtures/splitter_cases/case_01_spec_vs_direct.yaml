@@ -4,7 +4,7 @@
 # behavior introduction dominates.
 case_id: case_01_spec_vs_direct
 subtask_brief: |
-  Subtask 5: Add a new error path to scripts/hooks/stop_verify_claims.py
+  Subtask 5: Add a new error path to scripts/hooks/pretool_dispatcher.py
   when athanor.json hooks.profile is set to "lenient" (currently undefined
   fallback to "standard"). Also fix the typo "occurence" → "occurrence" in
   the docstring on line 312.

@@ -15,7 +15,7 @@
 # No working interpreter => exit 1 LOUD-PASS: non-2 exits pass through the
 # harness gate, but Claude Code surfaces the hook error + this stderr line
 # visibly. Never exit 2 here (would brick python-less sessions on every
-# Stop/tool call); never exit 0 silently (the failure mode this file fixes).
+# hook call); never exit 0 silently (the failure mode this file fixes).
 # Locked by tests/test_regression_portable_hook_interpreter.py.
 
 TARGET="$1"
@@ -33,5 +33,5 @@ for CAND in python3 python "py -3"; do
   fi
 done
 
-echo "athanor hook gate INACTIVE: no working Python >= 3.10 on PATH (tried: python3, python, py -3). Enforced hooks (completion-claim gate, kernel guard, evidence sniffer) did NOT run. Install Python 3.10+ (https://www.python.org/downloads/) or set hooks.profile:\"off\" in athanor.json to acknowledge." >&2
+echo "athanor hook gate INACTIVE: no working Python >= 3.10 on PATH (tried: python3, python, py -3). Active hooks (kernel guard, evidence sniffer) did NOT run. Install Python 3.10+ (https://www.python.org/downloads/)." >&2
 exit 1

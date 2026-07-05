@@ -6,7 +6,7 @@ description: Watch GitHub Actions for an Athanor PR, fix concrete CI failures, c
 # Athanor CI Watch
 
 Use this for the CI watch and autofix stage of `athanor-lfg` or
-`athanor-lfg-goal`, or when the user explicitly asks to monitor a PR's CI.
+`athanor-lfg-loop`, or when the user explicitly asks to monitor a PR's CI.
 
 ## Preconditions
 
@@ -89,5 +89,5 @@ root cause summary, what was already attempted, and the next manual action.
 - Do not weaken tests, remove assertions, or disable checks to make CI green.
 - Do not edit `.github/workflows/` unless the failing log points to workflow
   configuration as the root cause.
-- Do not claim Claude Task dispatch, Claude Stop hook verification, Claude
+- Do not claim Claude Task dispatch, hidden hook verification, Claude
   PreToolUse enforcement, or Freeze enforcement.

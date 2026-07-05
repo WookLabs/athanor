@@ -8,7 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LEARNER = REPO_ROOT / "agents" / "learner.md"
 WORK_LEARNER_REFERENCE = REPO_ROOT / "skills" / "work" / "references" / "learner-cleaner.md"
-LFG_GOAL = REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md"
+LFG_GOAL = REPO_ROOT / "skills" / "lfg-loop" / "SKILL.md"
 HANDOFF_ARTIFACT = REPO_ROOT / "docs" / "handoff-artifact.md"
 TOPOLOGY_CONTRACT = REPO_ROOT / "docs" / "agent-topology-contract.json"
 AGENTS_DIR = REPO_ROOT / "agents"
@@ -48,7 +48,7 @@ def test_work_reference_mentions_searchable_lesson_ids() -> None:
     assert "evidence_refs" in text
 
 
-def test_lfg_goal_mentions_compact_handoff_artifact() -> None:
+def test_lfg_loop_mentions_compact_handoff_artifact() -> None:
     text = _text(LFG_GOAL)
 
     assert "compact handoff artifact" in text

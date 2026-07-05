@@ -21,7 +21,7 @@ Inspection inputs:
 
   1. hooks/hooks.json                  — which events athanor currently registers
   2. CLAUDE.md                         — prose references to event semantics
-  3. docs/STATE.md (Stop hook spike)   — empirical evidence from 2026-05-18
+  3. docs/STATE.md                     — historical hook evidence notes
   4. skills/work/references/spec-then-tdd-handler.md
                                        — v0.19.0 evidence-bound anchor for
                                          PostToolUse pytest sniffer
@@ -169,7 +169,7 @@ def _inspect_session_start(
       - Claude Code's SessionStart system reminder channel auto-loads skills
         described as "ABSOLUTELY MUST invoke before response" — this is a
         PLATFORM behavior, NOT a hook event athanor registers.
-      - Athanor's hooks.json registers Stop + PreToolUse only as of v0.17.0.
+      - Athanor's active hooks.json surface is PreToolUse + PostToolUse.
       - The platform passes the skill body via an additionalContext-style
         system reminder. Payload-shape introspection from athanor's side is
         not currently available because we don't register the event.
@@ -436,8 +436,7 @@ def build_capability_report(project_root: Path) -> dict:
         "recommendations_for_v018_v019": [
             "v0.18.0: spike-verify UserPromptSubmit stdout-additionalContext "
             "contract before designing any context-injection feature on top "
-            "of it (mirror the 2026-05-18 Stop hook spike methodology — "
-            "log-only probe registered in ~/.claude/settings.json).",
+            "of it (use a log-only probe registered in ~/.claude/settings.json).",
             "v0.19.0: use the evidence-only PostToolUse sniffer to collect "
             "pytest exit code + output tail in session JSONL. Promote Phase "
             "3 from advisory to enforced only after live evidence confirms "

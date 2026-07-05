@@ -69,12 +69,11 @@ def test_default_dry_run_reports_enabled_runtime_hooks_and_never_writes(tmp_path
 
     by_id = {action["id"]: action for action in report["actions"]}
     assert set(by_id) == {
-        "stop-verify-claims",
         "pretool-dispatcher",
         "posttool-evidence-sniffer",
     }
     assert {action["status"] for action in by_id.values()} == {"already-present"}
-    assert report["summary"]["already-present"] == 3
+    assert report["summary"]["already-present"] == 2
     assert report["summary"]["would-add"] == 0
     assert report["summary"]["blocked"] == 0
     assert report["summary"]["conflict"] == 0
@@ -270,7 +269,7 @@ def test_human_summary_reports_status_counts_without_json(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "Athanor hook install dry-run" in result.stdout
-    assert "already-present: 3" in result.stdout
+    assert "already-present: 2" in result.stdout
     assert "would-add: 0" in result.stdout
     assert "writes: 0" in result.stdout
     assert not settings_path.exists()

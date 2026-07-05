@@ -223,7 +223,7 @@ def main() -> int:
     # Step 2: only after kernel passed, consult config for freeze.
     config = _runtime.read_athanor_config()
     if _runtime.is_hook_profile_off(config):
-        return 0  # global opt-out (same as Stop hook)
+        return 0  # legacy global opt-out
 
     root = _runtime.resolve_project_root()
     warning = _observe_safety_corpus(payload, config, root)
@@ -234,7 +234,14 @@ def main() -> int:
     if mode == "off":
         return 0  # default — freeze layer skipped entirely
 
-    # Step 3: lazy-import freeze_guard (Subtask 2.3). Missing module is
+    # Step 3: load per-session allowlist. Missing allowlist → fail-open
+    # (the freeze_guard signature mirrors this; we short-circuit early
+    # to avoid the lazy-load + import cost on every PreToolUse event).
+    allowlist = _read_freeze_allowlist()
+    if allowlist is None:
+        return 0
+
+    # Step 4: lazy-import freeze_guard (Subtask 2.3). Missing module is
     # opt-in fail-open with a stderr breadcrumb.
     try:
         from freeze_guard import evaluate_payload as freeze_evaluate  # type: ignore
@@ -243,13 +250,6 @@ def main() -> int:
             "freeze_guard module not available; passing (fail-open). "
             "Install athanor v0.18.0 Phase 2 (Subtask 2.3) to enable."
         )
-        return 0
-
-    # Step 4: load per-session allowlist. Missing allowlist → fail-open
-    # (the freeze_guard signature mirrors this; we short-circuit early
-    # to avoid the lazy-load + import cost on every PreToolUse event).
-    allowlist = _read_freeze_allowlist()
-    if allowlist is None:
         return 0
 
     # Resolve the project root so freeze_guard can relativize ABSOLUTE

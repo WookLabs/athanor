@@ -69,8 +69,11 @@ outcome.
 
 ## Codex Constraints
 
-- Do not claim Claude Stop hook enforcement, Claude PreToolUse enforcement,
+- Do not claim hidden hook enforcement, Claude PreToolUse enforcement,
   Freeze enforcement, or Claude Task isolation.
 - Do not fabricate PR, push, CI, or test status. If credentials, remotes, `gh`,
   or CI are unavailable, record that as the pipeline outcome.
 - Do not weaken failing tests or CI checks to make the pipeline green.
+
+
+Do not claim hook-backed enforcement.

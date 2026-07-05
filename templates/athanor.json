@@ -32,8 +32,6 @@
     "language": "en"
   },
   "hooks": {
-    "profile": "standard",
-    "stopLoopThreshold": 3,
     "freeze": {
       "mode": "off",
       "allowedPaths": []
@@ -45,7 +43,7 @@
       "mode": "off"
     }
   },
-  "lfgGoal": {
+  "lfgLoop": {
     "maxIterations": 5,
     "noProgressThreshold": 2,
     "tier2Adversarial": true,
@@ -53,8 +51,8 @@
     "scopeDriftAutoCheck": true,
     "consolidateCycles": false,
     "archiveOnComplete": true,
-    "goalRetentionDays": 30,
-    "goalsDir": ".athanor/goals",
+    "loopRetentionDays": 30,
+    "loopsDir": ".athanor/loops",
     "scoreTarget": {
       "enabled": false,
       "targetOverall": 95,

@@ -12,7 +12,7 @@
       "deep-plan",
       "discuss",
       "lfg",
-      "lfg-goal",
+      "lfg-loop",
       "lite-plan",
       "plan",
       "prompt-gen",
@@ -38,7 +38,7 @@
       "athanor-deep-plan",
       "athanor-discuss",
       "athanor-lfg",
-      "athanor-lfg-goal",
+      "athanor-lfg-loop",
       "athanor-lite-plan",
       "athanor-plan",
       "athanor-prompt-gen",
@@ -59,8 +59,7 @@
     "catalog": "hooks/catalog.json",
     "enabled_runtime_events": [
       "PostToolUse",
-      "PreToolUse",
-      "Stop"
+      "PreToolUse"
     ],
     "allow_capture_only": true
   }

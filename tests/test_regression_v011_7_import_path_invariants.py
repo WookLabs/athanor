@@ -16,9 +16,9 @@ What this test does NOT do:
 What this test DOES do:
 - Verifies both `__init__.py` package markers exist as files
   (Python 3 package import contract).
-- Verifies `import scripts`, `from scripts import hooks`, and the
-  three modules under `scripts.hooks` (`stop_verify_claims`,
-  `sentinel_helper`, `hook_state`) all import cleanly via
+- Verifies `import scripts`, `from scripts import hooks`, and active modules
+  under `scripts.hooks` (`_athanor_hook_runtime`, `pretool_dispatcher`,
+  `posttool_evidence_sniffer`) all import cleanly via
   `importlib.import_module` (no `ModuleNotFoundError`).
 
 If either `__init__.py` is deleted in the future (refactor,
@@ -61,8 +61,8 @@ def test_scripts_package_init_exists() -> None:
     Python 3 package import contract: without `__init__.py`,
     `scripts/` would be treated as an implicit namespace package
     (PEP 420), which works for some patterns but breaks the
-    explicit `from scripts.hooks import X` form used by the
-    Stop-hook test harness and other internal tooling.
+    explicit `from scripts.hooks import X` form used by hook tests and other
+    internal tooling.
     """
     init_path = SCRIPTS_DIR / "__init__.py"
     assert init_path.exists(), (
@@ -116,45 +116,16 @@ def test_scripts_package_import_resolves() -> None:
     assert hooks_pkg is not None
 
 
-def test_scripts_hooks_module_import_resolves() -> None:
-    """`from scripts.hooks import stop_verify_claims` must resolve.
-
-    This is the canonical Stop-hook module under runtime gate
-    (`hooks/hooks.json` invokes it as a `type: command` Stop hook
-    via `scripts/hooks/stop_verify_claims.py`). Tests in
-    `tests/test_regression_v011_3_stop_hook_input_layer.py` and
-    others use this exact import path; a regression here cascades.
-    """
-    module = importlib.import_module("scripts.hooks.stop_verify_claims")
-    assert module is not None
-    # Sanity: the module should expose the public entry point used
-    # by the hook (verifies it loaded as a module, not as a stub).
-    assert hasattr(module, "__file__")
-
-
-def test_scripts_hooks_sentinel_helper_import_resolves() -> None:
-    """`from scripts.hooks import sentinel_helper` must resolve.
-
-    `sentinel_helper` is invoked by `stop_verify_claims` at runtime
-    (sentinel-body normalization per v0.11.6); a broken import path
-    would silently break the runtime gate's emission detection.
-    """
-    module = importlib.import_module("scripts.hooks.sentinel_helper")
-    assert module is not None
-    assert hasattr(module, "__file__")
-
-
-def test_scripts_hooks_hook_state_import_resolves() -> None:
-    """`from scripts.hooks import hook_state` must resolve.
-
-    `hook_state` provides the v0.7.9 circuit-breaker semantics used
-    by the Stop hook to prevent re-entry loops. A broken import
-    here would either crash the hook on every Stop event (catastrophic
-    fail-closed) or silently fail-open (the v0.11.3 pre-fix mode).
-    """
-    module = importlib.import_module("scripts.hooks.hook_state")
-    assert module is not None
-    assert hasattr(module, "__file__")
+def test_scripts_hooks_active_modules_import_resolve() -> None:
+    """Active hook modules and shared runtime helpers must resolve."""
+    for module_name in (
+        "scripts.hooks._athanor_hook_runtime",
+        "scripts.hooks.pretool_dispatcher",
+        "scripts.hooks.posttool_evidence_sniffer",
+    ):
+        module = importlib.import_module(module_name)
+        assert module is not None
+        assert hasattr(module, "__file__")
 
 
 if __name__ == "__main__":

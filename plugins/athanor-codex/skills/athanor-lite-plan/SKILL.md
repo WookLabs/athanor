@@ -18,5 +18,5 @@ Use `athanor-plan` with forced `depth=lite`.
 5. Treat `--no-review` as redundant because lite planning already skips review
    and critic work.
 6. Use the normal plan artifacts. Do not create `lite-plan.md`.
-7. Do not claim Claude Stop hook, Claude PreToolUse, or Claude Task dispatch
+7. Do not claim hidden hook enforcement, Claude PreToolUse, or Claude Task dispatch
    enforcement in Codex.

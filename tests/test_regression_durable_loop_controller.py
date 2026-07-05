@@ -1,9 +1,9 @@
-"""Regression tests for durable lfg-goal loop decisions."""
+"""Regression tests for durable lfg-loop loop decisions."""
 from __future__ import annotations
 
 import pytest
 
-from scripts.loops.goal_loop_controller import (
+from scripts.loops.lfg_loop_controller import (
     EvidenceSummary,
     LoopState,
     apply_decision,
@@ -14,13 +14,13 @@ from scripts.loops.goal_loop_controller import (
 def _state(**overrides) -> LoopState:
     data = {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "not_started",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": None,
         "aborted_reason": None,
@@ -37,10 +37,10 @@ def _evidence(**overrides) -> EvidenceSummary:
         "eval_status": "pass",
         "validator_status": "all_valid",
         "tier1_passed": True,
-        "tier2_goal_met": False,
+        "tier2_completion_met": False,
         "tier3_user_response": None,
         "progress_made": True,
-        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "references": [".athanor/loops/36470e54/receipts/C002-lfg-receipt.md"],
     }
     data.update(overrides)
     return EvidenceSummary.from_dict(data)
@@ -65,13 +65,13 @@ def test_decision_routes_each_cycle_phase(
 
     assert decision.action == expected_action
     assert decision.status == "pass"
-    assert decision.goal_id == "36470e54"
+    assert decision.loop_id == "36470e54"
 
 
 @pytest.mark.parametrize(
     ("cycle_state", "cycle_phase", "expected_action"),
     [
-        ("bootstrapping", None, "bootstrap_goal"),
+        ("bootstrapping", None, "bootstrap_loop"),
         ("cycle_n_complete", None, "start_next_cycle"),
         ("scope_change_pending", None, "resume_scope_change_review"),
     ],
@@ -88,7 +88,7 @@ def test_decision_routes_macro_states(
     assert decision.status == "pass"
 
 
-@pytest.mark.parametrize("cycle_state", ["goal_complete", "aborted"])
+@pytest.mark.parametrize("cycle_state", ["loop_complete", "aborted"])
 def test_decision_refuses_terminal_states(cycle_state: str) -> None:
     decision = decide_next_action(
         _state(

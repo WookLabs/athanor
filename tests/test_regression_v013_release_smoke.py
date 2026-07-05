@@ -14,25 +14,31 @@ def test_v013_release_surface_intact():
     Catches regression of any single deliverable shipping in the v0.13.x + v0.14.0 release line.
     """
     # skill spec
-    assert (REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md").is_file()
+    assert (REPO_ROOT / "skills" / "lfg-loop" / "SKILL.md").is_file()
     # 5 reference files
-    refs = ["receipt-validator.md", "judge-rubric.md", "scope-change-critic.md", "state-shape.md", "goal-md-template.md"]
+    refs = [
+        "receipt-validator.md",
+        "judge-rubric.md",
+        "scope-change-critic.md",
+        "state-shape.md",
+        "loop-md-template.md",
+    ]
     for r in refs:
-        assert (REPO_ROOT / "skills" / "lfg-goal" / "references" / r).is_file(), f"missing reference {r}"
+        assert (REPO_ROOT / "skills" / "lfg-loop" / "references" / r).is_file(), f"missing reference {r}"
     # 3 fixtures
     fixtures = ["receipt_valid.md", "receipt_invalid_missing_step3.md", "receipt_partial_with_residuals.md"]
     for f in fixtures:
-        assert (REPO_ROOT / "tests" / "fixtures" / "lfg_goal" / f).is_file(), f"missing fixture {f}"
+        assert (REPO_ROOT / "tests" / "fixtures" / "lfg_loop" / f).is_file(), f"missing fixture {f}"
     # config block
     config = json.loads((REPO_ROOT / "athanor.json").read_text(encoding="utf-8"))
-    assert "lfgGoal" in config, "athanor.json missing lfgGoal block"
-    assert config["lfgGoal"]["maxIterations"] == 5, "D8 default violated"
-    assert config["lfgGoal"]["consolidateCycles"] is False, "D9 default violated"
+    assert "lfgLoop" in config, "athanor.json missing lfgLoop block"
+    assert config["lfgLoop"]["maxIterations"] == 5, "D8 default violated"
+    assert config["lfgLoop"]["consolidateCycles"] is False, "D9 default violated"
     # template parity
     template = json.loads(
         (REPO_ROOT / "templates" / "athanor.json").read_text(encoding="utf-8")
     )
-    assert template["lfgGoal"] == config["lfgGoal"], "athanor.json + templates/athanor.json lfgGoal parity violated"
+    assert template["lfgLoop"] == config["lfgLoop"], "athanor.json + templates/athanor.json lfgLoop parity violated"
     # version bump
     plugin = json.loads(
         (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
@@ -40,8 +46,9 @@ def test_v013_release_surface_intact():
     assert plugin["version"] == _plugin_version(), f"plugin.json version not bumped: {plugin['version']}"
 
 
-def test_companion_fix_arc_scripts_present():
-    """v0.11.3-v0.11.8 companion-fix arc scripts must survive v0.13.x ship (D10/D11 preservation)."""
-    assert (REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py").is_file()
-    assert (REPO_ROOT / "scripts" / "hooks" / "hook_state.py").is_file()
-    assert (REPO_ROOT / "scripts" / "hooks" / "sentinel_helper.py").is_file()
+def test_active_hook_scripts_present():
+    """The retained active hook surface is PreToolUse + PostToolUse only."""
+    assert (REPO_ROOT / "scripts" / "hooks" / "pretool_dispatcher.py").is_file()
+    assert (REPO_ROOT / "scripts" / "hooks" / "pretool_kernel_guard.py").is_file()
+    assert (REPO_ROOT / "scripts" / "hooks" / "posttool_evidence_sniffer.py").is_file()
+    assert not (REPO_ROOT / "scripts" / "hooks" / "stop_verify_claims.py").exists()

@@ -18,7 +18,7 @@ This regression test pins the invariants of that rewrite:
    - §"Session Lookup Convention"
    - §"Defense Mechanisms" + its §"Status table" subsection
    - The 4 identity invariants enumeration (Thin Leader,
-     cross-model adversarial planning, Spec-then-TDD, Stop hook)
+     cross-model adversarial planning, Spec-then-TDD, explicit evidence gates)
 3. The 3 archive companion files exist at the canonical paths under
    `docs/archive/` so the cross-reference links from CLAUDE.md resolve.
 
@@ -94,9 +94,9 @@ def test_claude_md_has_session_lookup_convention() -> None:
 def test_claude_md_has_defense_mechanisms_status_table() -> None:
     """MUST — §"Defense Mechanisms" heading + §"Status table" subsection.
 
-    The Defense Mechanisms section indexes the five defense layers
-    (Completion-Claim Verification, Stop-Phrase Detection, Read-Before-
-    Edit, Scope Drift Detection, Spec-then-TDD, using-superpowers
+    The Defense Mechanisms section indexes the defense layers
+    (Stop-Phrase Detection, Read-Before-Edit, Scope Drift Detection,
+    Spec-then-TDD, explicit evidence gates, using-superpowers
     boundary). The Status table subsection lists each mechanism's
     enforcement level (enforced vs advisory) — honesty discipline that
     must not silently disappear in a rewrite.
@@ -119,7 +119,7 @@ def test_claude_md_has_4_identity_invariants() -> None:
     1. Thin Leader contract
     2. Cross-model adversarial planning
     3. Spec-then-TDD discipline
-    4. Stop hook runtime gate
+    4. Explicit evidence gates
 
     Each must appear by literal phrase so the contract index reflects
     them. They are the survival surface from the v0.12.0 vendoring
@@ -138,8 +138,9 @@ def test_claude_md_has_4_identity_invariants() -> None:
         "Spec-then-TDD": [
             "Spec-then-TDD",
         ],
-        "Stop hook": [
-            "Stop hook",
+        "explicit evidence gates": [
+            "Explicit evidence",
+            "explicit evidence",
         ],
     }
     missing = []
@@ -149,7 +150,7 @@ def test_claude_md_has_4_identity_invariants() -> None:
     assert not missing, (
         f"CLAUDE.md is missing identity invariant phrases: {missing}. "
         f"All 4 identity invariants (Thin Leader / cross-model adversarial / "
-        f"Spec-then-TDD / Stop hook) must be present by literal name — they "
+        f"Spec-then-TDD / explicit evidence gates) must be present by literal name — they "
         f"are the survival surface from the v0.12.0 vendoring cutover."
     )
 

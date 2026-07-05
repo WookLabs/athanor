@@ -83,14 +83,14 @@ Agent({
   prompt: "You are the Athanor Cleaner agent.
 
 ## Task
-Apply memory decay rules, clean old sessions, and age out stale goals.
+Apply memory decay rules, clean old sessions, and age out stale loops.
 
 ## Config
 - memory.decayDays: {from athanor.json, default 7}
 - memory.promotionThreshold: {default 5}
 - memory.maxAgeDays: {default 30}
-- lfgGoal.goalRetentionDays: {default 30}
-- lfgGoal.goalsDir: {default .athanor/goals}
+- lfgLoop.loopRetentionDays: {default 30}
+- lfgLoop.loopsDir: {default .athanor/loops}
 
 ## Instructions
 1. Scan .athanor/sessions/{session-id}/discoveries/ for permanent tags
@@ -104,12 +104,12 @@ Apply memory decay rules, clean old sessions, and age out stale goals.
 3. Clean old sessions (older than maxAgeDays days)
    - NEVER delete today's sessions
    - Promote permanent discoveries before deleting
-4. Clean stale goals in lfgGoal.goalsDir (default .athanor/goals/)
-   - Candidate ONLY if non-completing terminal status (goal.md status == abandoned
-     OR state.json cycle_state == aborted) AND age > goalRetentionDays
-   - Promote permanent discoveries/receipts before deleting the goal dir
-   - NEVER clean a complete goal (archived to docs/goals-completed/; user action
-     to delete its live tree) or an active goal
+4. Clean stale loops in lfgLoop.loopsDir (default .athanor/loops/)
+   - Candidate ONLY if non-completing terminal status (loop.md status == abandoned
+     OR state.json cycle_state == aborted) AND age > loopRetentionDays
+   - Promote permanent discoveries/receipts before deleting the loop dir
+   - NEVER clean a complete loop (archived to docs/loops-completed/; user action
+     to delete its live tree) or an active loop
 5. Report your results as:
 
 ATHANOR_RESULT
@@ -118,7 +118,7 @@ summary: {1-2 sentence cleanup summary}
 promoted: {count}
 deleted_lessons: {count}
 deleted_sessions: {count}
-deleted_goals: {count}
+deleted_loops: {count}
 retained: {count}
 END_RESULT
 

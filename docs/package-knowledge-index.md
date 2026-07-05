@@ -11,7 +11,7 @@ without scanning repo-local development history.
 - Root overview: [README](../README.md).
 - Runtime instructions: [CLAUDE](../CLAUDE.md).
 - User commands: `/athanor:plan`, `/athanor:work`, `/athanor:review`,
-  `/athanor:lfg`, `/athanor:lfg-goal`, `/athanor:setup`,
+  `/athanor:lfg`, `/athanor:lfg-loop`, `/athanor:setup`,
   `/athanor:discuss`, `/athanor:analyze`, `/athanor:assess`,
   `/athanor:debug`, `/athanor:prompt-gen`, `/athanor:deep-plan`,
   `/athanor:lite-plan`.

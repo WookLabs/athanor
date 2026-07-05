@@ -22,10 +22,10 @@ Thin Leader skill preambles + (per plan §Phase 1) tracked in the
 superpowers_file_present`; both are removed because the vendored
 file is gone.
 
-v0.13.0 scope extension: `lfg-goal` joined the boundary lock list as
+v0.13.0 scope extension: `lfg-loop` joined the boundary lock list as
 the 11th native Thin Leader skill at the time. It is the goal-bounded
 N-cycle orchestrator that wraps `/athanor:lfg` and itself respects the
-Thin Leader contract. Per D11 (decisions.md 2026-05-22-002), lfg-goal
+Thin Leader contract. Per D11 (decisions.md 2026-05-22-002), lfg-loop
 does NOT introduce a fifth identity invariant — it is an orchestration
 layer composed of the existing four.
 
@@ -44,7 +44,7 @@ verbatim-content checks are replaced with pointer-presence checks,
 and a new CLAUDE.md canonical-anchor check is added (R1+).
 
 Plan references:
-- docs/plans/2026-05-22-001-feat-v0.13.0-lfg-goal-skill-plan.md
+- docs/plans/2026-05-22-001-feat-v0.13.0-lfg-loop-skill-plan.md
   §Subtask 11 (test list extension 10 → 11).
 - docs/plans/2026-05-20-001-feat-v0.11.1-using-superpowers-boundary-plan.md
 - docs/plans/2026-05-22-001-feat-v0.12.0-concept-kernel-cutover-plan-b.md
@@ -61,7 +61,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 
 # 13 native Thin Leader skills — R2 scope (post-S07 wrappers restored, plus
 # assess + prompt-gen).
-# v0.13.0 added `lfg-goal` per plan §Subtask 11 (11-entry roster).
+# v0.13.0 added `lfg-loop` per plan §Subtask 11 (11-entry roster).
 # v0.17.0 / S07 collapsed `deep-plan` + `lite-plan`; they are now restored as
 # thin wrappers that delegate to `/athanor:plan`.
 NATIVE_THIN_LEADER_SKILLS = (
@@ -71,7 +71,7 @@ NATIVE_THIN_LEADER_SKILLS = (
     "deep-plan",
     "discuss",
     "lfg",
-    "lfg-goal",
+    "lfg-loop",
     "lite-plan",
     "plan",
     "prompt-gen",
@@ -203,7 +203,7 @@ def test_claude_md_canonical_anchor_contains_full_signal_set():
 def test_each_native_thin_leader_skill_has_pointer_heading():
     """MUST (R2, v0.17.0 / S04 hoist): each native Thin Leader skill carries
     the `### using-superpowers boundary` pointer heading exactly once.
-    v0.13.0 extended the list 10 → 11 by adding `lfg-goal`; v0.17.0 / S07
+    v0.13.0 extended the list 10 → 11 by adding `lfg-loop`; v0.17.0 / S07
     collapsed `deep-plan` + `lite-plan`, and the current surface restores
     them as thin wrappers; assess and prompt-gen later extend it."""
     failures: list[str] = []

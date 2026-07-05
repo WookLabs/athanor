@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "goal_id",
+    "loop_id",
     "cycle_state",
     "cycle_phase",
     "current_cycle",
@@ -23,7 +23,7 @@
     "schema_version": {
       "const": 1
     },
-    "goal_id": {
+    "loop_id": {
       "type": "string",
       "pattern": "^[0-9a-f]{8}$"
     },
@@ -34,7 +34,7 @@
         "bootstrapping",
         "cycle_n_complete",
         "cycle_n_in_progress",
-        "goal_complete",
+        "loop_complete",
         "scope_change_pending"
       ]
     },

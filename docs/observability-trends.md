@@ -9,7 +9,7 @@ The tooling turns existing point-in-time gates into local history:
 - workflow scenario scores from `scripts/evals/run_workflow_scenarios.py`
 - hook latency ratios from `scripts/gates/check_hook_performance_budget.py`
 - durable loop actions and decision statuses from
-  `scripts/loops/run_goal_loop_fixtures.py`
+  `scripts/loops/run_lfg_loop_fixtures.py`
 
 ## Collect A Snapshot
 

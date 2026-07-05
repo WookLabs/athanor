@@ -33,6 +33,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -57,14 +58,38 @@ def _read(path: Path) -> str:
 
 
 def _posix_shell() -> str | None:
-    return shutil.which("sh") or shutil.which("bash")
+    for candidate in (shutil.which("sh"), shutil.which("bash")):
+        if candidate is None:
+            continue
+        with tempfile.TemporaryDirectory() as tmp:
+            env = os.environ.copy()
+            env["PATH"] = tmp
+            try:
+                proc = subprocess.run(
+                    [candidate, "-c", "pwd >/dev/null && printf athanor-shell-ok"],
+                    cwd=REPO_ROOT,
+                    text=True,
+                    capture_output=True,
+                    env=env,
+                    timeout=10,
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+            if (
+                proc.returncode == 0
+                and proc.stdout == "athanor-shell-ok"
+                and proc.stderr == ""
+            ):
+                return candidate
+    return None
 
 
 needs_posix_shell = pytest.mark.skipif(
     _posix_shell() is None,
     reason=(
-        "behavioral resolver tests need a POSIX shell (sh or bash); both CI "
-        "matrix legs have one (windows-latest ships Git Bash)"
+        "behavioral resolver tests need a POSIX shell (sh or bash) that can "
+        "start in the repository cwd; both CI matrix legs have one "
+        "(windows-latest ships Git Bash)"
     ),
 )
 

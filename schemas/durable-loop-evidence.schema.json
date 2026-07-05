@@ -32,7 +32,7 @@
     "tier1_passed": {
       "type": ["boolean", "null"]
     },
-    "tier2_goal_met": {
+    "tier2_completion_met": {
       "type": ["boolean", "null"]
     },
     "tier3_user_response": {

@@ -17,8 +17,8 @@ This test asserts that state remains true for UserPromptSubmit at v0.18.x
 while allowing the deliberate v0.19.0 PostToolUse evidence-only addition:
 
   1. `hooks/hooks.json` does NOT register a `UserPromptSubmit` entry —
-     only `Stop` (v0.7.8+), `PreToolUse` (v0.16.0+), and the
-     `PostToolUse` evidence sniffer (v0.19.0+).
+     only `PreToolUse` (v0.16.0+), and the `PostToolUse` evidence sniffer
+     (v0.19.0+).
     2. CLAUDE.md still uses the 13-pointer + 1-canonical static dedup
      pattern (13 skills with `### using-superpowers boundary` pointers
      plus the canonical heading in CLAUDE.md).
@@ -73,11 +73,9 @@ SCRIPTS_HOOKS_DIR = REPO_ROOT / "scripts" / "hooks"
 def test_hooks_json_does_not_register_user_prompt_submit():
     """hooks/hooks.json must NOT contain a `UserPromptSubmit` event entry.
 
-    v0.18.0 ships only `Stop` (claim verification, since v0.7.8) and
-    `PreToolUse` (kernel + freeze dispatcher, since v0.16.0/v0.18.0). UPS
-    runtime dedup is deferred to v0.18.2 pending live spike — until that
-    ships, the static dedup pattern (13 pointers + 1 canonical) is the
-    sole mechanism for the using-superpowers boundary.
+    Runtime dedup is deferred pending a live UPS spike. Until that ships,
+    the static dedup pattern (13 pointers + 1 canonical) is the sole
+    mechanism for the using-superpowers boundary.
     """
     assert HOOKS_JSON.is_file(), f"hooks.json missing at {HOOKS_JSON}"
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
@@ -92,16 +90,16 @@ def test_hooks_json_does_not_register_user_prompt_submit():
     )
 
 
-def test_hooks_json_event_inventory_is_stop_pretool_and_posttool_only():
-    """Lock the exact event surface: Stop + PreToolUse + PostToolUse.
+def test_hooks_json_event_inventory_is_pretool_and_posttool_only():
+    """Lock the exact event surface: PreToolUse + PostToolUse.
 
     Detects accidental UPS introduction OR any other event-registration
     drift that would silently expand athanor's runtime gate surface.
     """
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     events = set(data.get("hooks", {}).keys())
-    assert events == {"Stop", "PreToolUse", "PostToolUse"}, (
-        f"hooks.json must register exactly Stop + PreToolUse + PostToolUse; "
+    assert events == {"PreToolUse", "PostToolUse"}, (
+        f"hooks.json must register exactly PreToolUse + PostToolUse; "
         f"got {sorted(events)!r}. Any added event needs explicit honesty "
         f"framing per the plan-of-record."
     )
@@ -137,7 +135,7 @@ _THIN_LEADER_SKILLS = [
     "debug",
     "discuss",
     "lfg",
-    "lfg-goal",
+    "lfg-loop",
     "plan",
     "prompt-gen",
     "review",
@@ -179,7 +177,7 @@ def test_skills_each_carry_a_boundary_pointer():
     )
 
 
-def test_pointer_count_is_eleven():
+def test_pointer_count_is_thirteen():
     """Sanity: exactly 13 skills carry the pointer, matching the
     canonical declaration's current native Thin Leader skill enumeration."""
     found = 0

@@ -17,7 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts.evals.run_workflow_scenarios import evaluate_root as evaluate_workflow_root
 from scripts.gates.check_hook_performance_budget import check_budgets
-from scripts.loops.run_goal_loop_fixtures import evaluate_root as evaluate_loop_root
+from scripts.loops.run_lfg_loop_fixtures import evaluate_root as evaluate_loop_root
 
 DEFAULT_HISTORY = REPO_ROOT / ".athanor" / "observability" / "trends.jsonl"
 DEFAULT_WORKFLOW_SCENARIOS = REPO_ROOT / "tests" / "fixtures" / "workflow_evals"

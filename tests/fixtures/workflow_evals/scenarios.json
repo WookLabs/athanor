@@ -182,14 +182,14 @@
       ]
     },
     {
-      "description": "A /athanor:lfg-goal cycle validates the receipt before judge verdict and loop completion.",
+      "description": "A /athanor:lfg-loop cycle validates the receipt before judge verdict and loop completion.",
       "graders": [
         {
           "id": "receipt-validator-ran",
           "kind": "require_event",
           "match": {
             "event_type": "gate.evaluated",
-            "phase": "lfg-goal",
+            "phase": "lfg-loop",
             "status": "pass"
           }
         },
@@ -230,63 +230,63 @@
           }
         }
       ],
-      "id": "lfg-goal-receipt-loop",
+      "id": "lfg-loop-receipt-loop",
       "min_score": 1.0,
       "trace": [
         {
           "actor": "leader",
           "event_type": "workflow.started",
-          "message": "lfg-goal cycle started",
-          "phase": "lfg-goal",
+          "message": "lfg-loop cycle started",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 1,
           "status": "started",
-          "trace_id": "scenario-lfg-goal"
+          "trace_id": "scenario-lfg-loop"
         },
         {
           "actor": "gate",
           "event_type": "gate.evaluated",
           "message": "receipt validator returned all_valid",
-          "phase": "lfg-goal",
+          "phase": "lfg-loop",
           "references": [
-            ".athanor/goals/36470e54/receipts/C001-lfg-receipt.md"
+            ".athanor/loops/36470e54/receipts/C001-lfg-receipt.md"
           ],
           "schema_version": 1,
           "seq": 2,
           "status": "pass",
-          "trace_id": "scenario-lfg-goal"
+          "trace_id": "scenario-lfg-loop"
         },
         {
           "actor": "worker",
           "event_type": "judge.result",
           "message": "tier 2 judge accepted goal evidence",
-          "phase": "lfg-goal",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 3,
           "status": "pass",
-          "trace_id": "scenario-lfg-goal"
+          "trace_id": "scenario-lfg-loop"
         },
         {
           "actor": "leader",
           "event_type": "workflow.finished",
-          "message": "lfg-goal cycle finished after receipt and judge checks",
-          "phase": "lfg-goal",
+          "message": "lfg-loop cycle finished after receipt and judge checks",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 4,
           "status": "pass",
-          "trace_id": "scenario-lfg-goal"
+          "trace_id": "scenario-lfg-loop"
         }
       ]
     },
     {
-      "description": "A durable lfg-goal loop stop records no-progress decision and escalates before finishing with concern.",
+      "description": "A durable lfg-loop loop stop records no-progress decision and escalates before finishing with concern.",
       "graders": [
         {
           "id": "loop-decision-recorded",
           "kind": "require_event",
           "match": {
             "event_type": "loop.decision",
-            "phase": "lfg-goal",
+            "phase": "lfg-loop",
             "status": "failure"
           }
         },
@@ -333,8 +333,8 @@
         {
           "actor": "leader",
           "event_type": "workflow.started",
-          "message": "durable lfg-goal loop resumed",
-          "phase": "lfg-goal",
+          "message": "durable lfg-loop loop resumed",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 1,
           "status": "started",
@@ -344,9 +344,9 @@
           "actor": "gate",
           "event_type": "loop.decision",
           "message": "stop_no_progress after repeated no-progress evidence",
-          "phase": "lfg-goal",
+          "phase": "lfg-loop",
           "references": [
-            ".athanor/goals/36470e54/state.json"
+            ".athanor/loops/36470e54/state.json"
           ],
           "schema_version": 1,
           "seq": 2,
@@ -357,7 +357,7 @@
           "actor": "leader",
           "event_type": "escalation.required",
           "message": "leader must surface durable loop no-progress stop",
-          "phase": "lfg-goal",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 3,
           "status": "escalated",
@@ -366,8 +366,8 @@
         {
           "actor": "leader",
           "event_type": "workflow.finished",
-          "message": "lfg-goal durable loop stopped with concern",
-          "phase": "lfg-goal",
+          "message": "lfg-loop durable loop stopped with concern",
+          "phase": "lfg-loop",
           "schema_version": 1,
           "seq": 4,
           "status": "concern",

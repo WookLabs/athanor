@@ -2,7 +2,7 @@
 
 Context
 -------
-The lfg/lfg-goal doc-lifecycle audit found a persistence gap: the core
+The lfg/lfg-loop doc-lifecycle audit found a persistence gap: the core
 work record (`work-log.md`) and review record (`review.md`) live only in
 the gitignored `.athanor/sessions/<id>/` tree. When the session is later
 cleaned (cleaner Step 4, >30 days), the work narrative is lost — only the

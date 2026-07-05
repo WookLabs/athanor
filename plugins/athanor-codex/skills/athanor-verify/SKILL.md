@@ -30,6 +30,9 @@ release is ready, a migration is safe, or a deployment succeeded.
 
 ## Codex Constraints
 
-- Do not claim Claude Stop hook enforcement or sentinel validation.
+- Do not claim hidden hook enforcement.
 - Do not treat a passing narrow test as proof of a broad claim.
 - Do not hide known unrelated failures; separate them from the target claim.
+
+
+Do not claim hook-backed enforcement.

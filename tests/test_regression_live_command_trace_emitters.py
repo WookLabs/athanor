@@ -16,7 +16,7 @@ CORE_SKILLS = [
     REPO_ROOT / "skills" / "work" / "SKILL.md",
     REPO_ROOT / "skills" / "review" / "SKILL.md",
     REPO_ROOT / "skills" / "lfg" / "SKILL.md",
-    REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md",
+    REPO_ROOT / "skills" / "lfg-loop" / "SKILL.md",
 ]
 
 

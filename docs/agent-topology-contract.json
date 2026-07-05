@@ -7,7 +7,7 @@
       "purpose": "CI watch, failure analysis, autofix retry loop",
       "allowed_dispatchers": [
         "lfg",
-        "lfg-goal"
+        "lfg-loop"
       ]
     },
     {
@@ -19,7 +19,7 @@
         "plan",
         "review",
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "lite-plan"
       ]
     },
@@ -30,7 +30,7 @@
       "allowed_dispatchers": [
         "work",
         "lfg",
-        "lfg-goal"
+        "lfg-loop"
       ]
     },
     {
@@ -39,7 +39,7 @@
       "purpose": "Release ceremony automation",
       "allowed_dispatchers": [
         "lfg",
-        "lfg-goal"
+        "lfg-loop"
       ]
     }
   ],
@@ -59,7 +59,7 @@
       "path": "docs/agent-roles/cleaner.md",
       "owner_skills": [
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "work"
       ]
     },
@@ -70,7 +70,7 @@
         "assess",
         "deep-plan",
         "discuss",
-        "lfg-goal",
+        "lfg-loop",
         "lite-plan",
         "plan",
         "review",
@@ -84,7 +84,7 @@
       "owner_skills": [
         "debug",
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "setup",
         "work"
       ]
@@ -95,7 +95,7 @@
       "owner_skills": [
         "deep-plan",
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "lite-plan",
         "plan"
       ]
@@ -116,7 +116,7 @@
         "debug",
         "deep-plan",
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "lite-plan",
         "plan",
         "review",
@@ -157,7 +157,7 @@
       ],
       "registered_agents": [],
       "next_skill_handoffs": [
-        "lfg-goal",
+        "lfg-loop",
         "plan",
         "review"
       ]
@@ -258,7 +258,7 @@
       ]
     },
     {
-      "skill": "lfg-goal",
+      "skill": "lfg-loop",
       "leader_kind": "score-target-goal-loop",
       "artifacts": [
         "GOAL.md",
@@ -340,7 +340,7 @@
         "deep-plan",
         "discuss",
         "lfg",
-        "lfg-goal",
+        "lfg-loop",
         "lite-plan",
         "plan",
         "review",

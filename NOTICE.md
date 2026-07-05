@@ -340,4 +340,4 @@ Athanor-native skills synthesized internally from existing athanor patterns
 (NOT lifted from any upstream plugin). No upstream attribution applies; the
 entry below records the synthesis lineage for audit completeness.
 
-- `/athanor:lfg-goal` (v0.13.0) — Macro Ralph loop combining user goal + Ralph loop pattern + /athanor:lfg cycle. Orchestration layer over existing 4 identity invariants; no upstream attribution (synthesis of internal patterns).
+- `/athanor:lfg-loop` (v0.13.0) — Macro Ralph loop combining user goal + Ralph loop pattern + /athanor:lfg cycle. Orchestration layer over existing 4 identity invariants; no upstream attribution (synthesis of internal patterns).

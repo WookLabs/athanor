@@ -2,7 +2,7 @@
 
 Context
 -------
-The lfg/lfg-goal doc-lifecycle audit found docs/ had NO staleness signal:
+The lfg/lfg-loop doc-lifecycle audit found docs/ had NO staleness signal:
 migration guides (v0.12.0 … v0.18.0) accumulate with no marker of which
 are superseded, and nothing flags them for archival. Only CLAUDE.md had a
 line-count guard.

@@ -16,7 +16,7 @@ DEFAULT_SOURCE_MAP = Path("docs/codex-mirror-source-map.md")
 NONE_VALUES = {"", "-", "none", "n/a"}
 VALID_STATUSES = {"mirror", "claude-only", "codex-agent-mirror"}
 BOUNDARY_TOKENS = (
-    "Claude Stop hook",
+    "hook-backed enforcement",
     "Claude PreToolUse",
     "Freeze enforcement",
     "Claude Task",

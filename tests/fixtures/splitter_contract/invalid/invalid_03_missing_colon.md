@@ -4,7 +4,7 @@
 
 - [ ] **Subtask 1: Files without colon (not a field declaration)**
   - task: Demonstrate that a line shape without the field colon is ignored.
-  - files [scripts/hooks/stop_verify_claims.py]
+  - files [scripts/hooks/pretool_dispatcher.py]
   - verify: {type: none}
   - depends_on: []
   - execution_note: direct

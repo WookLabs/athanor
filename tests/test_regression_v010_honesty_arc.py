@@ -1,7 +1,7 @@
 """Regression test for the v0.10.0 → v0.12.0 honesty arc voice.
 
 The v0.10.0 honesty arc forbids overclaim language that would imply
-behavioral parity with CE/superpowers, Stop-hook coverage extension, or
+behavioral parity with CE/superpowers, hook coverage extension, or
 identity dissolution. v0.11.8 added the "plan-of-record misread"
 attribution shape that v0.12.0 carries forward via:
 
@@ -42,9 +42,9 @@ FORBIDDEN_PHRASES = [
     "athanor supersedes compound-engineering",
     "supersedes compound-engineering",
     "ce-brainstorm equivalent",
-    # claim that Stop hook now covers vendored skills
-    "stop hook now covers vendored",
-    "stop hook protects vendored",
+    # claim that runtime hooks now cover vendored skills
+    "runtime hooks now cover vendored",
+    "runtime hooks protect vendored",
     # overclaim that vendored skills are fully integrated
     "vendored skills run under thin leader runtime enforcement",
     # identity dissolution claims
@@ -286,7 +286,7 @@ def test_state_md_current_phase_in_0_10_or_0_11_or_0_12_or_0_13_or_0_14_or_0_15_
     infrastructure release; v0.20.0 extension at the ref-optimization + uv
     tooling release; v0.21.0 extension at the opt-in lfg auto-merge release;
     v0.22.0 extension at the default-on lfg auto-merge + strengthened
-    lfg-goal loop release; v0.23.0 extension at the 한글 완료 요약 step
+    lfg-loop loop release; v0.23.0 extension at the 한글 완료 요약 step
     release; v0.24.0 extension at the governance-subsystem-removal +
     executable lfg merge gate release."""
     text = STATE.read_text(encoding="utf-8")
@@ -328,7 +328,7 @@ def test_state_md_mentions_four_identity_commitments():
         "thin leader",
         "cross-model adversarial",
         "spec-then-tdd",
-        "stop hook",
+        "explicit evidence gates",
     ]:
         assert needle in text, (
             f"STATE.md Current Phase must mention '{needle}'"

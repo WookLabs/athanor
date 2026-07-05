@@ -79,7 +79,35 @@ brick `/athanor:setup`.
   "team": { "waveSize": 3, "discoveryRelay": true },
   "memory": { "decayDays": 7, "promotionThreshold": 5, "maxAgeDays": 30 },
   "triggers": { "language": "both" },
-  "output": { "language": "en" }
+  "output": { "language": "en" },
+  "hooks": {
+    "freeze": { "mode": "off", "allowedPaths": [] },
+    "evidence": { "mode": "warn" },
+    "safetyCorpus": { "mode": "off" }
+  },
+  "lfgLoop": {
+    "maxIterations": 5,
+    "noProgressThreshold": 2,
+    "tier2Adversarial": true,
+    "tier3UserRatification": true,
+    "scopeDriftAutoCheck": true,
+    "consolidateCycles": false,
+    "archiveOnComplete": true,
+    "loopRetentionDays": 30,
+    "loopsDir": ".athanor/loops",
+    "scoreTarget": {
+      "enabled": false,
+      "targetOverall": 95,
+      "targetMinDimension": 90,
+      "maxAllowedRegression": 2
+    },
+    "dryRun": false
+  },
+  "lfg": { "autoMerge": true, "maxFixRounds": 3 },
+  "review": {
+    "lenses": ["architecture", "quality", "security", "performance", "testing", "documentation"],
+    "minConfidence": 25
+  }
 }
 ```
 
@@ -257,8 +285,7 @@ Procedure (best-effort, never fails setup):
 The probe is passive — it inspects existing artifacts (hooks/hooks.json,
 CLAUDE.md, docs/STATE.md, skills/work/references/spec-then-tdd-handler.md)
 rather than triggering Claude Code hook events itself. Empirical validation
-of each event class is deferred to per-event spikes (mirror the 2026-05-18
-Stop hook spike methodology — log-only probe registered in
+of each event class is deferred to per-event spikes (use a log-only probe registered in
 `~/.claude/settings.json`).
 
 PostToolUse is registered as evidence-only when present in `hooks/hooks.json`.
@@ -302,11 +329,11 @@ patterns); Codex subprocess writes are NOT gated (D2 residual).
 
 ### 14. Python Interpreter Functionality Probe (informational, v0.24.3)
 
-The 3 enforced hooks resolve their interpreter at runtime via
+The active hook scripts resolve their interpreter at runtime via
 `scripts/hooks/run_hook.sh`. Probe FUNCTIONALITY, not PATH presence — a
 `python3` that exists on PATH but cannot run `-c` code is the Windows Store
-App-Execution-Alias stub failure (2026-07-01 incident: the Stop gate
-silently fail-opened). `command -v python3` PASSES on that stub; only the
+App-Execution-Alias stub failure (2026-07-01 incident: a hook runner
+silently failed open). `command -v python3` PASSES on that stub; only the
 run probe catches it. Mirror run_hook.sh's probe form:
 
 ```bash
@@ -319,8 +346,8 @@ done
 
 - If at least one candidate passes: report `python_interpreter: WORKING (<candidate>)`.
 - If none passes: report `python_interpreter: NONE_WORKING` plus the warning
-  that the enforced hooks (completion-claim gate, kernel guard, evidence
-  sniffer) will degrade to a visible exit-1 no-op until Python ≥3.10 is
+  that the active hooks (kernel guard and evidence sniffer) will degrade to
+  a visible exit-1 no-op until Python ≥3.10 is
   installed. Informational — does NOT gate setup.
 
 ### Graceful Degradation (ref/ absence)
@@ -477,7 +504,7 @@ same rules as the Vendoring Gate verdict above — informational, non-blocking.
 **If all four PASS:**
 ```
 ✓ manifest-no-hooks-field 통과 — plugin.json에 "hooks": 필드가 없습니다.
-✓ hook-uniqueness 통과 — Stop 이벤트 핸들러가 단일 경로로 등록됩니다.
+✓ hook-uniqueness 통과 — hook 이벤트 핸들러가 단일 경로로 등록됩니다.
 ✓ provenance-coverage 통과 — 모든 vendored skill이 Provenance 블록을 갖추고 있습니다.
 ✓ contract-ledger 통과 — 최신 세션의 contract-ledger.md가 존재하고 비어있지 않습니다.
 ```
@@ -494,7 +521,7 @@ same rules as the Vendoring Gate verdict above — informational, non-blocking.
 파싱할 수 있습니다. 각 contract ID별 docs를 참조하여 해결하세요:
   - manifest-no-hooks-field: `.claude-plugin/plugin.json`에서 `"hooks":` 필드를 삭제하고
     hook 등록은 `hooks/hooks.json`에만 둡니다.
-  - hook-uniqueness: `hooks/hooks.json` 내 Stop 이벤트는 단 한 번만 등록되어야 합니다.
+  - hook-uniqueness: `hooks/hooks.json` 내 각 hook 이벤트는 단 한 번만 등록되어야 합니다.
   - provenance-coverage: 해당 skill의 SKILL.md에 `<!-- Provenance: ... -->` 블록을 추가합니다
     (docs/DEPENDENCIES.md §Provenance Metadata Convention 참조).
   - contract-ledger: 최신 세션 디렉토리에 `contract-ledger.md`를 생성하고 계약 행을 채웁니다.
@@ -602,7 +629,7 @@ skill, print:
 
 ```
 Both athanor and superpowers provide `verification-before-completion`.
-Athanor's vendored copy takes precedence in the Stop hook; this is intentional.
+Athanor's vendored copy is the local verification guidance; this is intentional.
 ```
 
 ### Air-Gapped / Offline Note
@@ -612,8 +639,8 @@ The Companion Plugins audit is informational only. Install instructions
 are printed for convenience but no network connectivity is required to
 run athanor. If you cannot install superpowers (air-gapped, restricted
 environment), athanor remains fully functional — its vendored
-verification-before-completion skill ensures the Stop hook works
-regardless.
+verification-before-completion skill keeps local verification guidance
+available.
 ```
 
 ---

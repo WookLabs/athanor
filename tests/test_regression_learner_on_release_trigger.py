@@ -4,7 +4,7 @@ Context
 -------
 `agents/learner.md` §On Release defines a release-time invariant: every
 git tag must trigger a Learner run that mines the release diff for at
-least one lesson. The lfg/lfg-goal doc-lifecycle audit found this contract
+least one lesson. The lfg/lfg-loop doc-lifecycle audit found this contract
 dormant — `docs/STATE.md` tracked it as "contract만 있음 / 자동 트리거
 없음" (contract-only, no trigger). Nothing in the release ceremony invoked
 the Learner.

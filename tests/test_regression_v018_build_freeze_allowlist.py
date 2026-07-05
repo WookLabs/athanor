@@ -78,7 +78,7 @@ PLAN_INLINE_LIST = """\
 
 **execution_note**: `spec-then-tdd`
 
-**files**: [`scripts/hooks/freeze_guard.py`, `scripts/hooks/hook_state.py`]
+**files**: [`scripts/hooks/freeze_guard.py`, `scripts/hooks/pretool_dispatcher.py`]
 """
 
 
@@ -298,7 +298,7 @@ def test_inline_list_form_parses(tmp_path: Path):
     parsed = mod.parse_subtask_files(str(plan))
     all_files = [f for e in parsed for f in e["files"]]
     assert "scripts/hooks/freeze_guard.py" in all_files
-    assert "scripts/hooks/hook_state.py" in all_files
+    assert "scripts/hooks/pretool_dispatcher.py" in all_files
 
 
 # ---------------------------------------------------------------------------

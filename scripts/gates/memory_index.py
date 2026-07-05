@@ -183,7 +183,7 @@ def load_records(source_root: Path, repo_root: Path) -> tuple[list[MemoryRecord]
         source_records.extend(_trace_records(path, repo_root))
     for path in sorted(source_root.glob("goals/*.md"), key=lambda item: item.as_posix()):
         source_records.append(_md_record(path, repo_root, "goal", "goal"))
-    for path in sorted(source_root.glob("goals-completed/*.md"), key=lambda item: item.as_posix()):
+    for path in sorted(source_root.glob("loops-completed/*.md"), key=lambda item: item.as_posix()):
         source_records.append(_md_record(path, repo_root, "completed_goal", "completed_goal"))
 
     by_hash: dict[str, MemoryRecord] = {}
@@ -294,7 +294,7 @@ def build_report(args: argparse.Namespace, repo_root: Path) -> dict[str, Any]:
         "generated_at": _iso_now(),
         "profile": {
             "id": "local-memory-index",
-            "description": "Read-only local memory index for lessons, traces, goals, and completed goals.",
+            "description": "Read-only local memory index for lessons, traces, goals, and completed loops.",
             "mutates_files_by_default": False,
             "external_telemetry": False,
             "irreversible_actions": 0,

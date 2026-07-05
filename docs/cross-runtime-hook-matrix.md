@@ -25,8 +25,8 @@ Local refs used as comparative architecture references:
 
 ## Read
 
-Athanor should keep Stop, PreToolUse, and PostToolUse as the only enabled
-default hooks until additional lifecycle events have live-redacted fixtures and
+Athanor should keep PreToolUse and PostToolUse as the only enabled default
+hooks until additional lifecycle events have live-redacted fixtures and
 replayable handlers. Claude Code has the broadest documented event surface.
 Codex now has enough lifecycle hook parity and a stronger trust/managed-hook
 model to justify a cross-runtime matrix before any generator.
@@ -45,7 +45,6 @@ installer, or settings writer.
 | PreCompact | capture-only | supported | supported | Collect live-redacted fixture; no settings mutation. |
 | PreToolUse | enabled | supported | supported | Keep replay-gated; safety corpus remains disabled/observe unless explicitly enabled; no settings mutation. |
 | SessionStart | capture-only | supported | supported | Collect live-redacted fixture; no settings mutation. |
-| Stop | enabled | supported | supported | Keep replay-gated; no settings mutation. |
 | SubagentStop | capture-only | supported | supported | Collect live-redacted fixture; no settings mutation. |
 | UserPromptSubmit | capture-only | supported | supported | Promote spike to live-redacted fixture before replay support; no settings mutation. |
 
@@ -63,7 +62,7 @@ installer, or settings writer.
 | Notification | documented hook event | not documented in Codex hook page | not cataloged |
 | SubagentStart | documented hook event | documented hook event | not cataloged |
 | SubagentStop | documented hook event | documented hook event | capture-only candidate |
-| Stop | documented hook event | documented hook event | enabled claim verifier |
+| Stop | documented hook event | documented hook event | not cataloged |
 | PreCompact | documented hook event | documented hook event | capture-only candidate |
 | PostCompact | not documented in Claude Code hook page | documented hook event | not cataloged |
 | SessionStart | documented hook event | documented hook event | capture-only candidate |

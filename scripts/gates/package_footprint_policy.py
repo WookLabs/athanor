@@ -25,7 +25,7 @@ DEV_ONLY_PREFIXES: tuple[tuple[str, str], ...] = (
     ("tests/", "regression tests are development-only for the default ship profile"),
     ("docs/plans/", "historical implementation plans are development history"),
     ("docs/archive/", "archived historical docs are development history"),
-    ("docs/goals-completed/", "completed goal receipts are development history"),
+    ("docs/loops-completed/", "completed loop receipts are development history"),
     ("docs/architecture/", "research and architecture review docs are development history"),
     (".github/", "CI workflows are repository operations, not runtime plugin surface"),
 )
@@ -45,7 +45,7 @@ SHIP_PROFILE_EXCLUSIONS: tuple[tuple[str, str, str], ...] = (
     ("tests/", "tests", "regression tests are verified in CI but not required at runtime"),
     ("docs/architecture/", "development_history", "deep architecture analysis is retained outside the default runtime package"),
     ("ref/", "reference_radar", "external reference clones are radar inputs, not shipped plugin content"),
-    ("docs/goals-completed/", "development_history", "completed goal receipts are repo-local audit history"),
+    ("docs/loops-completed/", "development_history", "completed loop receipts are repo-local audit history"),
     (".github/", "development_ci", "repository workflows are CI operations, not runtime plugin content"),
 )
 
@@ -109,7 +109,7 @@ def _bucket_for_path(path: str) -> str:
         return "development_ci"
     if path.startswith("tests/"):
         return "tests"
-    if path.startswith(("docs/plans/", "docs/archive/", "docs/goals-completed/", "docs/architecture/")):
+    if path.startswith(("docs/plans/", "docs/archive/", "docs/loops-completed/", "docs/architecture/")):
         return "development_history"
     if path.startswith("docs/"):
         return "docs"
@@ -347,7 +347,7 @@ def build_report(
             "Keep development history repo-local, but exclude it from the default marketplace ship profile where packaging supports it.",
             "Apply the explicit ship_profile_decisions before enforcing package size budgets.",
             "Review dev-only candidates before deleting or moving files; this gate never mutates the repository.",
-            "Treat tests, docs/plans, docs/archive, docs/architecture, docs/goals-completed, and .github as ship-profile review candidates.",
+            "Treat tests, docs/plans, docs/archive, docs/architecture, docs/loops-completed, and .github as ship-profile review candidates.",
         ],
         "checks": checks,
     }

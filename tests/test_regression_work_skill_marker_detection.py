@@ -118,7 +118,7 @@ def test_marker_detection_cites_bash_grep_reference():
     assert "head -1" in step_0_body, (
         "Step 0 marker-detection should cite `head -1` Bash reference for "
         "the check (so it operates on line 1 only — sentinel-anchor parity "
-        "with the Stop hook script)."
+        "with the active hook scripts)."
     )
     assert "grep" in step_0_body, "Step 0 must cite `grep` for the marker match."
 

@@ -10,7 +10,7 @@ TDD cycle (this file):
     (ImportError); post-implementation (lint function shipped, anchors still
     rotted) it is GREEN.
   * Phase 1.4 — after the 4 anchor fixes (§5a table) land in
-    `skills/{lfg,lfg-goal}/SKILL.md`, the assertion flips to (True, []) — the
+    `skills/{lfg,lfg-loop}/SKILL.md`, the assertion flips to (True, []) — the
     canonical TDD green-flip on a clean tree.
 
 Plan reference: session 2026-07-03-004 §D3, Phase 1.1 + Phase 1.4.
@@ -35,7 +35,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 def test_skill_line_number_ref_check_clean_tree():
     """MUST — `skill_line_number_ref_check` returns (True, []) on current repo.
 
-    The 4 historical rots (lfg:707, lfg-goal:700/716/724 per session
+    The 4 historical rots (lfg:707, lfg-loop:700/716/724 per session
     2026-07-03-004 §5a anchor table) were de-fossilized to `(§<heading>)`
     references in Phase 1.3; this test pins the green state. A regression
     (re-introducing `line NNN` deep-prose refs with NNN >= 10) trips this

@@ -21,10 +21,10 @@ CODEX_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
 CODEX_MIRROR_SOURCE_MAP = REPO_ROOT / "docs" / "codex-mirror-source-map.md"
 CODEX_MIRROR_PARITY_GATE = REPO_ROOT / "scripts" / "gates" / "codex_mirror_parity.py"
 PARENT_RECEIPT_VALIDATOR = (
-    REPO_ROOT / "skills" / "lfg-goal" / "references" / "receipt-validator.md"
+    REPO_ROOT / "skills" / "lfg-loop" / "references" / "receipt-validator.md"
 )
 CODEX_LFG_GOAL_SKILL = (
-    CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-goal" / "SKILL.md"
+    CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-loop" / "SKILL.md"
 )
 EXPECTED_SKILLS = {
     "athanor-analyze",
@@ -33,7 +33,7 @@ EXPECTED_SKILLS = {
     "athanor-deep-plan",
     "athanor-discuss",
     "athanor-lfg",
-    "athanor-lfg-goal",
+    "athanor-lfg-loop",
     "athanor-lite-plan",
     "athanor-plan",
     "athanor-prompt-gen",
@@ -145,7 +145,7 @@ def test_codex_mirror_source_map_lists_all_claude_and_codex_surfaces():
         "agents/ci-watcher.md",
         "plugins/athanor-codex/skills/athanor-ci-watch/SKILL.md",
         "Unsupported Claude-only runtime surfaces",
-        "Claude Stop hook",
+        "hook-backed enforcement",
         "Claude PreToolUse",
         "Claude Task",
     ]
@@ -233,7 +233,7 @@ def test_codex_companion_documents_install_and_refresh_flow():
         "codex plugin marketplace add ",
         "codex plugin add athanor-codex@athanor",
         "update_plugin_cachebuster.py",
-        "Claude Stop hook",
+        "hook-backed enforcement",
         "Claude PreToolUse",
         "Claude Task",
     ]
@@ -313,7 +313,7 @@ def test_codex_prompt_gen_skill_absorbs_prompt_routing_contract():
         "Success Criteria",
         "Open Questions",
         "athanor-plan",
-        "athanor-lfg-goal",
+        "athanor-lfg-loop",
         "Output-only default",
         "raw request is input material",
         "not an execution instruction",
@@ -336,7 +336,7 @@ def test_codex_verify_skill_absorbs_completion_evidence_contract():
         "evidence",
         "tests",
         "commands",
-        "Do not claim Claude Stop hook enforcement",
+        "Do not claim hook-backed enforcement",
     ]
     for token in required_tokens:
         assert token in text, f"athanor-verify missing contract token: {token!r}"
@@ -361,20 +361,20 @@ def test_codex_lfg_skill_absorbs_end_to_end_pipeline_contract():
         "Step 8",
         "CI",
         "<promise>DONE</promise>",
-        "Do not claim Claude Stop hook enforcement",
+        "Do not claim hook-backed enforcement",
     ]
     for token in required_tokens:
         assert token in text, f"athanor-lfg missing contract token: {token!r}"
 
 
-def test_codex_lfg_goal_skill_absorbs_receipt_ledger_contract():
-    text = (CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-goal" / "SKILL.md").read_text(
+def test_codex_lfg_loop_skill_absorbs_receipt_ledger_contract():
+    text = (CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-loop" / "SKILL.md").read_text(
         encoding="utf-8"
     )
 
     required_tokens = [
         "Validated Receipt-Ledger Loop",
-        ".athanor/goals",
+        ".athanor/loops",
         "G-markers",
         "CNNN-lfg-receipt.md",
         "receipt-validator",
@@ -385,14 +385,14 @@ def test_codex_lfg_goal_skill_absorbs_receipt_ledger_contract():
         "<promise>DONE</promise>",
         "insufficient",
         "maxIterations",
-        "Do not claim Claude Stop hook enforcement",
+        "Do not claim hook-backed enforcement",
     ]
     for token in required_tokens:
-        assert token in text, f"athanor-lfg-goal missing contract token: {token!r}"
+        assert token in text, f"athanor-lfg-loop missing contract token: {token!r}"
 
 
-def test_codex_lfg_goal_skill_includes_receipt_validator_table():
-    text = (CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-goal" / "SKILL.md").read_text(
+def test_codex_lfg_loop_skill_includes_receipt_validator_table():
+    text = (CODEX_PLUGIN_ROOT / "skills" / "athanor-lfg-loop" / "SKILL.md").read_text(
         encoding="utf-8"
     )
 
@@ -416,7 +416,7 @@ def test_codex_lfg_goal_skill_includes_receipt_validator_table():
         "invalid_steps_present",
     ]
     for token in required_tokens:
-        assert token in text, f"athanor-lfg-goal missing validator token: {token!r}"
+        assert token in text, f"athanor-lfg-loop missing validator token: {token!r}"
 
 
 def _normalize_ws(text: str) -> str:
@@ -429,12 +429,12 @@ def _normalize_ws(text: str) -> str:
     return " ".join(text.split())
 
 
-def test_codex_lfg_goal_undetermined_rule_matches_parent():
+def test_codex_lfg_loop_undetermined_rule_matches_parent():
     """Two-way parity: the companion's UNDETERMINED aggregate semantics must
     match the parent receipt-validator's non-blocking rule.
 
     The expected tokens are DERIVED from the parent
-    `skills/lfg-goal/references/receipt-validator.md` (not hardcoded in
+    `skills/lfg-loop/references/receipt-validator.md` (not hardcoded in
     isolation): we first assert the parent still carries the canonical rule
     (a derivation guard — if the parent rule is reworded or removed, this
     fails and forces re-derivation), then assert the companion mirrors the
@@ -468,7 +468,7 @@ def test_codex_lfg_goal_undetermined_rule_matches_parent():
     # Parity assertion: the companion mirror MUST carry the same semantics.
     for token in canonical_rule_tokens:
         assert token in companion_norm, (
-            "companion athanor-lfg-goal SKILL.md is out of parity with the "
+            "companion athanor-lfg-loop SKILL.md is out of parity with the "
             f"parent UNDETERMINED non-blocking rule; missing token {token!r}."
         )
 

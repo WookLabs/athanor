@@ -2,7 +2,7 @@
 
 The memory index is a local, read-only search surface for Athanor memory
 artifacts. It indexes lessons, workflow traces, active goal ledgers, and
-completed-goal summaries without starting a daemon or sending data outside the
+completed-loop summaries without starting a daemon or sending data outside the
 repository.
 
 Run the fixture gate:
@@ -45,7 +45,7 @@ Supported source shapes:
 - `lessons/*.md` for Learner output and reusable lessons.
 - `traces/*.jsonl` for workflow trace records.
 - `goals/*.md` for active goal ledgers.
-- `goals-completed/*.md` for completed goal summaries.
+- `loops-completed/*.md` for completed loop summaries.
 
 Records carry stable ids, `kind`, `source_path`, `content_hash`, `title`,
 `summary`, and `tokens_estimate`. Duplicate normalized content hashes collapse
@@ -54,11 +54,11 @@ to one record so repeated lessons do not inflate the memory surface.
 ## Relationship To Learner And Loops
 
 The Learner remains the owner of lesson extraction. The memory index does not
-add a registered agent. It gives `plan`, `work`, `review`, and `lfg-goal` a
+add a registered agent. It gives `plan`, `work`, `review`, and `lfg-loop` a
 small retrieval primitive that can cite prior lessons and traces without
 injecting large raw history into the worker context.
 
-`lfg-goal` should prefer memory ids and source references in handoff artifacts
+`lfg-loop` should prefer memory ids and source references in handoff artifacts
 instead of copying full historical content.
 
 ## Freshness

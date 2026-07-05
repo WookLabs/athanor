@@ -20,11 +20,10 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CATALOG_PATH = REPO_ROOT / "hooks" / "catalog.json"
 HOOKS_DIR = REPO_ROOT / "scripts" / "hooks"
-STOP_SCRIPT = HOOKS_DIR / "stop_verify_claims.py"
 PRETOOL_SCRIPT = HOOKS_DIR / "pretool_dispatcher.py"
 POSTTOOL_SCRIPT = HOOKS_DIR / "posttool_evidence_sniffer.py"
 DEFAULT_SESSION_ID = "2026-06-16-001"
-REPLAYABLE_EVENTS = {"Stop", "PreToolUse", "PostToolUse"}
+REPLAYABLE_EVENTS = {"PreToolUse", "PostToolUse"}
 FORBIDDEN_FIXTURE_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
     re.compile(r"BEGIN (?:RSA |OPENSSH |PRIVATE )?PRIVATE KEY"),
@@ -273,9 +272,7 @@ def replay_fixture(fixture: dict) -> dict:
         project, session_dir = _make_project(Path(tmp), fixture)
         materialized = _materialize_payload(payload, project)
 
-        if event == "Stop":
-            actual = _run_script(STOP_SCRIPT, materialized, project)
-        elif event == "PreToolUse":
+        if event == "PreToolUse":
             actual = _run_script(PRETOOL_SCRIPT, materialized, project)
         elif event == "PostToolUse":
             actual = _run_script(POSTTOOL_SCRIPT, materialized, project)

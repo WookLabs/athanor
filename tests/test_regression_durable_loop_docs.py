@@ -10,9 +10,9 @@ DOC = REPO_ROOT / "docs" / "durable-loop-controller.md"
 def test_durable_loop_doc_names_cli_fixture_state_and_boundary() -> None:
     body = DOC.read_text(encoding="utf-8")
     for token in (
-        "scripts/loops/run_goal_loop_controller.py",
-        "scripts/loops/run_goal_loop_fixtures.py",
-        ".athanor/goals/<goal_id>/state.json",
+        "scripts/loops/run_lfg_loop_controller.py",
+        "scripts/loops/run_lfg_loop_fixtures.py",
+        ".athanor/loops/<loop_id>/state.json",
         "loop.decision",
         "stop_no_progress",
         "stop_max_iterations",

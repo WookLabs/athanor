@@ -60,12 +60,12 @@ The trust state follows `schemas/hook-installer-trust.schema.json`:
 {
   "schema_version": 1,
   "trusted_hooks": {
-    "stop-verify-claims": {
+    "pretool-dispatcher": {
       "status": "trusted",
       "command_hash": "sha256:...",
       "source_hashes": [
         {
-          "path": "scripts/hooks/stop_verify_claims.py",
+          "path": "scripts/hooks/pretool_dispatcher.py",
           "sha256": "sha256:..."
         }
       ],

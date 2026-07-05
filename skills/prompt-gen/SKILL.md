@@ -17,7 +17,7 @@ recommend the next skill, but you do NOT implement, plan the solution, edit
 project source, run release steps, or silently invoke the recommended skill.
 
 This is a Plan Mode intake tool. It reduces ambiguity before `/athanor:plan`,
-`/athanor:work`, `/athanor:lfg-goal`, or another downstream skill receives the
+`/athanor:work`, `/athanor:lfg-loop`, or another downstream skill receives the
 request.
 
 ## Output-only default
@@ -137,7 +137,7 @@ Pick exactly one primary next skill and optional alternatives:
 | accepted plan should be executed | `/athanor:work` |
 | diff, PR, or code should be reviewed | `/athanor:review` |
 | end-to-end plan/work/review/PR/CI ship | `/athanor:lfg` |
-| repeated cycles until a measurable goal or score target | `/athanor:lfg-goal` |
+| repeated cycles until a measurable goal or score target | `/athanor:lfg-loop` |
 | install, plugin health, runtime setup | `/athanor:setup` |
 
 If the generated prompt is for a non-Athanor tool, still recommend the closest
@@ -184,7 +184,7 @@ Return a concise response with:
   generating the prompt.
 - Do not recommend `/athanor:work` unless the prompt already references an
   accepted plan or the user explicitly asks to execute.
-- Do not recommend `/athanor:lfg-goal` for a one-shot task without a measurable
+- Do not recommend `/athanor:lfg-loop` for a one-shot task without a measurable
   target.
 - Do not hide uncertainty. Put unresolved ambiguity under `Open Questions`.
 - Do not silently call the recommended next skill; wait for the user to invoke

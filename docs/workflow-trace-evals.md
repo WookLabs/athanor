@@ -16,7 +16,7 @@ Required fields:
 - `schema_version`: `1`
 - `trace_id`: stable run identifier
 - `seq`: positive sequence number
-- `phase`: workflow phase such as `work`, `plan`, `review`, or `lfg-goal`
+- `phase`: workflow phase such as `work`, `plan`, `review`, or `lfg-loop`
 - `event_type`: normalized event such as `workflow.started`,
   `agent.dispatched`, `verifier.result`, `gate.evaluated`,
   `escalation.required`, or `workflow.finished`
@@ -28,7 +28,7 @@ Optional fields:
 
 - `timestamp`: UTC event time from live command emission
 - `command`: command family such as `plan`, `work`, `review`, `lfg`, or
-  `lfg-goal`
+  `lfg-loop`
 - `session_id`: Athanor session id used for the default trace path
 - `worker_id`: optional leader or worker identifier
 - `parent_seq`: optional parent event sequence number
@@ -82,7 +82,7 @@ python scripts/evals/emit_workflow_trace.py \
   --json
 ```
 
-Core command skills (`plan`, `work`, `review`, `lfg`, and `lfg-goal`) carry
+Core command skills (`plan`, `work`, `review`, `lfg`, and `lfg-loop`) carry
 anchors for `workflow.started`, command-specific dispatch/gate events, and
 `workflow.finished`. The emitter appends one record per invocation and preserves
 optional command/session metadata through `TraceWriter`.
@@ -120,7 +120,7 @@ The initial committed scenarios cover:
 
 - `work-evidence-happy-path`
 - `work-missing-evidence-escalates`
-- `lfg-goal-receipt-loop`
+- `lfg-loop-receipt-loop`
 
 These are harness-quality evals. They score whether workflow decisions,
 evidence production, stopping conditions, and escalation behavior are present in
@@ -131,7 +131,7 @@ the trace.
 Athanor uses a small local eval profile so trace results stay inspectable:
 
 - `Task`: the workflow behavior being checked, such as `work` evidence or an
-  `lfg-goal` receipt loop.
+  `lfg-loop` receipt loop.
 - `Trace Fixture`: the local synthetic or captured JSON trace records used as
   the sample under test.
 - `Scorer`: one deterministic grader applied to the trace. Runner output gives

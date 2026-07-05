@@ -136,7 +136,7 @@ proceed to step 4. (`<id>` is the active session per CLAUDE.md §Session
 Lookup Convention; the cap is `lfg.maxFixRounds`, default 3.) **Honesty
 label: advisory (leader-bound exit code).** A real exit code now exists —
 a strict upgrade over pure prose — but it is leader-prose-bound: no
-PreToolUse/Stop runtime hook forces the leader to branch on exit 3 (the
+runtime hook forces the leader to branch on exit 3 (the
 same enforcement class as the Step 8.5 merge-readiness gate). NOT enforced.
 
 `/athanor:review` does NOT auto-apply fixes (athanor identity choice).
@@ -293,7 +293,7 @@ proceed to step 9 with any unresolved CI failures recorded. (`<id>` is the
 active session per CLAUDE.md §Session Lookup Convention; the cap is
 `lfg.maxFixRounds`, default 3.) **Honesty label: advisory (leader-bound
 exit code)** — a real exit code now exists (a strict upgrade over pure
-prose), but it is leader-prose-bound: no PreToolUse/Stop runtime hook
+prose), but it is leader-prose-bound: no runtime hook
 forces the leader to branch on exit 3 (same enforcement class as the
 Step 8.5 merge-readiness gate). NOT enforced. Each iteration:
 
@@ -357,7 +357,7 @@ section in the PR body and proceed to step 9. The autopilot contract is
 
 **Honesty label: advisory (leader-prose-enforced).** This gate is leader
 prose-driven git/gh plumbing, the same enforcement class as the Step 5/7/8
-lfg steps — there is **no PreToolUse/Stop runtime hook** that programmatically
+lfg steps — there is **no runtime hook** that programmatically
 prevents the merge or enforces the conjunction. It is **advisory**, NOT
 enforced (the same leader-bound class as the Step 3/Step 8 fix-round
 counter: a real signal exists, but no hook forces the leader to branch).
@@ -723,10 +723,10 @@ This pipeline preserves all four v0.10.0 athanor identity commitments:
    the in-tier Codex fallback, not which tier runs.
 3. **Spec-then-TDD discipline** — step 2 invokes `/athanor:work`, which
    applies Splitter `execution_note` classification and the Phase 3 gate.
-4. **Stop hook runtime gate** — every Stop event during this pipeline
-   passes through `scripts/hooks/stop_verify_claims.py` (v0.10.3-level
-   coverage: NFKC + Cyrillic/Greek/Armenian fold + paraphrase regex +
-   vendor-aware whitelist + conditional/attribution suppression).
+4. **Explicit evidence gates** — this pipeline records plan, work, review,
+   residual, CI, and result-packet evidence. Outer loops validate those
+   artifacts with receipts, assessment/review gates, controller decisions, and
+   user ratification where configured.
 
 If a worker output violates one of these invariants, the leader flags
 the violation and re-dispatches the worker rather than letting the

@@ -502,7 +502,7 @@ ghost key로, v0.24.0 기준 제거됨.)
     "evidence": { "mode": "warn" },
     "safetyCorpus": { "mode": "off" }
   },
-  "lfgGoal": {
+  "lfgLoop": {
     "maxIterations": 5,
     "scoreTarget": { "enabled": false, "targetOverall": 95, "targetMinDimension": 90 }
   },

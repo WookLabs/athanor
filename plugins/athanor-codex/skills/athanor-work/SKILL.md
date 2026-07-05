@@ -45,7 +45,7 @@ Codex-native execution guidance, not Claude worker dispatch.
 
 - Do not claim Claude hook enforcement, Freeze enforcement, or Claude Task
   isolation.
-- Do not claim Claude Stop hook verification. Use actual command output and
+- Do not claim hidden hook verification. Use actual command output and
   inspected files as evidence.
 - Do not broaden the plan just because nearby issues are visible. Use
   `athanor-scope-drift` when scope is uncertain.

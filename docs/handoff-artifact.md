@@ -8,9 +8,9 @@ artifact is a small markdown record, not a new command surface.
 
 Use the narrowest durable location that matches the work:
 
-- Goal loop: `.athanor/goals/<goal-id>/handoff.md`
+- Goal loop: `.athanor/loops/<loop-id>/handoff.md`
 - Work session: `.athanor/sessions/<session-id>/handoff.md`
-- Completed public archive: `docs/goals-completed/<goal-id>/handoff.md`
+- Completed public archive: `docs/loops-completed/<loop-id>/handoff.md`
 
 ## Required Fields
 
@@ -30,7 +30,7 @@ Every handoff artifact must contain these fields:
 # Handoff: <goal-or-session-id>
 
 ## current goal
-<one paragraph or link to goal.md>
+<one paragraph or link to loop.md>
 
 ## recent decisions
 - <decision id/path>: <short effect>

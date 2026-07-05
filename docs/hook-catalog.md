@@ -53,7 +53,6 @@ that can write settings, and it still requires trusted hook fingerprints.
 
 | ID | Event | Default | Policy | Evidence | Budget | Notes |
 | --- | --- | --- | --- | --- | ---: | --- |
-| `stop-verify-claims` | Stop | enabled | block | replay-gated | 500 ms | Verifies completion claims at turn end. |
 | `pretool-dispatcher` | PreToolUse | enabled | block | replay-gated | 500 ms | Routes tool calls through kernel and freeze guards. |
 | `pretool-safety-pattern-corpus` | PreToolUse | disabled | observe | synthetic | 100 ms | Opt-in diagnostics for risky shell and secret-shaped write patterns. |
 | `posttool-evidence-sniffer` | PostToolUse | enabled | warn | replay-gated | 500 ms | Records evidence and diagnostics without changing default policy. |

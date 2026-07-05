@@ -460,7 +460,7 @@ def test_malformed_stdin_failopen():
 
 def test_profile_off_bypasses(tmp_path):
     """When athanor.json `hooks.profile == "off"`, exit 0 even for hazardous
-    invocations — same opt-out semantics as the Stop hook."""
+    invocations — same legacy opt-out semantics as the other hook scripts."""
     cfg_dir = tmp_path / "project"
     cfg_dir.mkdir()
     (cfg_dir / "athanor.json").write_text(

@@ -35,9 +35,8 @@ before any operation. A drift exits 1 with an explanatory message.
 Voice constraints (D7 forbidden phrases): docstring and stdout messages
 avoid "translated", "interpreted", "we discovered", "natural maturation".
 
-Companion-fix arc (D11) preserved automatically: scripts/hooks/
-stop_verify_claims.py and scripts/check_vendor_drift.py live outside the
-vendored directories so this script never touches them.
+Companion-fix arc (D11) preserved automatically: scripts/check_vendor_drift.py
+lives outside the vendored directories so this script never touches it.
 
 Stdlib only, Python 3.10+.
 

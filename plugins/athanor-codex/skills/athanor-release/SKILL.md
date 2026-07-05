@@ -61,7 +61,7 @@ python3 scripts/check_release_ready.py --ci
 
 ## Codex Constraints
 
-- Do not claim Claude Task dispatch, Claude Stop hook verification, Claude
+- Do not claim Claude Task dispatch, hidden hook verification, Claude
   PreToolUse enforcement, or Freeze enforcement.
 - Do not claim a release is ready without the concrete
   `python3 scripts/check_release_ready.py --ci` result.

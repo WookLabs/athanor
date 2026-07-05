@@ -11,14 +11,13 @@ but the four athanor identity invariants survive intact:
      Planner A (Claude) + Planner B (Codex) + Critic.
   3. Spec-then-TDD discipline — `/athanor:work` Splitter execution_note
      + conjunction-of-three Phase 3 gate.
-  4. Stop hook runtime gate — `scripts/hooks/stop_verify_claims.py` fires
-     on every Stop event with whitelist + paraphrase + homoglyph detection.
+  4. Explicit evidence gates — loop artifacts, receipts, assessment/review,
+     verification, and human ratification carry completion quality.
 
 The current athanor-native Thin Leader skills (deep-plan + lite-plan restored
 as thin wrappers over `/athanor:plan --depth=`, plus assess and prompt-gen)
 must continue to exist at depth 1 under `skills/` for Claude Code auto-discovery. The
-companion-fix arc (v0.11.3 → v0.11.7) scripts continue to live in
-`scripts/hooks/`.
+active hook scripts continue to live in `scripts/hooks/`.
 
 Voice constraint (D7): docstrings here use direct attribution to the
 plan-of-record; no "translated", "interpreted", "we discovered", or
@@ -43,7 +42,7 @@ NATIVE_THIN_LEADER_SKILLS = (
     "deep-plan",
     "discuss",
     "lfg",
-    "lfg-goal",
+    "lfg-loop",
     "lite-plan",
     "plan",
     "prompt-gen",
@@ -95,7 +94,7 @@ def test_identity_invariants_documented():
         "thin leader",
         "cross-model adversarial",
         "spec-then-tdd",
-        "stop hook",
+        "explicit evidence",
     )
     missing = [needle for needle in invariants if needle not in body]
     assert not missing, (
@@ -106,21 +105,14 @@ def test_identity_invariants_documented():
     )
 
 
-def test_companion_fix_arc_scripts_present():
-    """MUST: the Stop hook companion-fix arc scripts (v0.11.3 → v0.11.7)
-    live in `scripts/hooks/` post-v0.12.0.
-
-    The atomic cut removes vendored skills + sub-agents; the runtime gate
-    machinery is OUTSIDE that scope per D10 / D11 (companion-fix arc
-    preserved intact).
-    """
+def test_active_hook_scripts_present():
+    """MUST: active hook scripts live in `scripts/hooks/`."""
     required = (
-        HOOK_SCRIPTS_DIR / "stop_verify_claims.py",  # v0.7.7 + v0.10.2/3 + v0.11.3 layers
-        HOOK_SCRIPTS_DIR / "hook_state.py",  # v0.7.9 nonce-state circuit breaker
-        HOOK_SCRIPTS_DIR / "sentinel_helper.py",  # v0.11.6 body-hash binding
+        HOOK_SCRIPTS_DIR / "pretool_dispatcher.py",
+        HOOK_SCRIPTS_DIR / "posttool_evidence_sniffer.py",
+        HOOK_SCRIPTS_DIR / "run_hook.sh",
     )
     missing = [str(p.relative_to(REPO_ROOT)) for p in required if not p.is_file()]
     assert not missing, (
-        f"MUST: companion-fix arc script(s) missing: {missing!r}. v0.12.0 "
-        f"keeps the Stop hook runtime gate intact (D10 / D11)."
+        f"MUST: active hook script(s) missing: {missing!r}."
     )

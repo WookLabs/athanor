@@ -16,20 +16,20 @@ Fixtures live in `tests/fixtures/hooks/index.json`.
 - `summary-only`: shape metadata without raw payload fields. Use this only when
   a raw fixture would be unsafe to commit.
 
-The corpus includes synthetic contract fixtures, live-redacted Claude Code
-2.1.177 captures for Stop, PreToolUse, and PostToolUse, and a Claude Code
-2.1.178 live-redacted targeted pytest PostToolUse capture. The synthetic
-fixtures cover Stop transcript-path parsing, PreToolUse kernel blocking,
-PostToolUse pytest evidence, and PostToolUse Freeze D2 file-change
-observations. The live fixtures prove the installed Claude Code payload shape
-for the core hook events and the targeted pytest evidence path, including the
+The corpus includes synthetic contract fixtures and live-redacted Claude Code
+captures for PreToolUse and PostToolUse, including a Claude Code 2.1.178
+live-redacted targeted pytest PostToolUse capture. The synthetic fixtures cover
+PreToolUse kernel blocking, PostToolUse pytest evidence, and PostToolUse Freeze
+D2 file-change observations. The live fixtures prove the installed Claude Code
+payload shape for the active hook events and the targeted pytest evidence path,
+including the
 current boundary that targeted pytest PostToolUse output has stdout/stderr but
 no direct exit-code field.
 
 ## Opt-In Live Capture
 
 `scripts/hooks/hook_payload_capture.py` is a log-only capture harness for
-reviewing live Stop, PreToolUse, PostToolUse, FileChanged, SessionStart,
+reviewing live PreToolUse, PostToolUse, FileChanged, SessionStart,
 UserPromptSubmit, PreCompact, PermissionRequest, PostToolUseFailure, and
 SubagentStop payload shapes. It is not registered in repo `hooks/hooks.json`;
 use it only by copying the printed settings snippet into user-global Claude
@@ -76,7 +76,7 @@ must still inspect the generated fixture, confirm the expected evidence subset
 is minimal, add capture provenance when committing the fixture, and run the
 replay gate before committing it.
 
-Replayable events are imported with `replayable: true`: Stop, PreToolUse, and
+Replayable events are imported with `replayable: true`: PreToolUse and
 PostToolUse. Cataloged `capture-only` events such as SessionStart,
 UserPromptSubmit, PreCompact, PermissionRequest, PostToolUseFailure,
 SubagentStop, and FileChanged may also be imported after manual review, but the

@@ -65,7 +65,6 @@ def test_hook_fixture_index_schema_and_event_coverage():
         assert isinstance(fixture["expected"], dict)
         counts[fixture["event"]] = counts.get(fixture["event"], 0) + 1
 
-    assert counts.get("Stop", 0) >= 2
     assert counts.get("PreToolUse", 0) >= 2
     assert counts.get("PostToolUse", 0) >= 3
 
@@ -78,7 +77,7 @@ def test_live_redacted_fixtures_cover_core_claude_code_hook_events():
         if fixture["source_level"] == "live-redacted"
     ]
 
-    for event_name in ("Stop", "PreToolUse", "PostToolUse"):
+    for event_name in ("PreToolUse", "PostToolUse"):
         matches = [fixture for fixture in live_fixtures if fixture["event"] == event_name]
         assert matches, f"missing live-redacted {event_name} fixture"
         fixture = matches[-1]
@@ -132,7 +131,7 @@ def test_replay_script_replays_all_fixtures_as_json():
     assert proc.returncode == 0, proc.stderr
     report = json.loads(proc.stdout)
     assert report["status"] == "pass"
-    assert report["total"] >= 10
+    assert report["total"] >= 8
     assert all(item["status"] == "pass" for item in report["results"])
 
 

@@ -538,7 +538,7 @@ Stop hook gate.
   handoffs, owners, artifacts, and safety metadata before broad tests.
 - **Organization stage receipts.** Adds
   `docs/organization-stage-receipts.md` and
-  `scripts/gates/organization_stage_receipt.py` so lfg-goal evidence can
+  `scripts/gates/organization_stage_receipt.py` so lfg-loop evidence can
   become a schema-backed stage receipt; the adapter writes only with `--emit`
   and advances work-items only with `--apply-work-item-update`.
 - **Policy promotion ledger.** Adds `docs/policy-promotion-ledger.md` and

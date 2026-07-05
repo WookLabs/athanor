@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.loops.goal_loop_controller import (
+from scripts.loops.lfg_loop_controller import (
     EvidenceSummary,
     LoopState,
     apply_decision,
@@ -30,13 +30,13 @@ RE_DRIVE_CAP = 10
 def _state(**overrides) -> LoopState:
     data = {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_complete",
         "cycle_phase": None,
         "current_cycle": 3,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C003-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C003-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": None,
         "aborted_reason": None,
@@ -53,10 +53,10 @@ def _evidence(**overrides) -> EvidenceSummary:
         "eval_status": "pass",
         "validator_status": "all_valid",
         "tier1_passed": True,
-        "tier2_goal_met": False,
+        "tier2_completion_met": False,
         "tier3_user_response": None,
         "progress_made": None,
-        "references": [".athanor/goals/36470e54/receipts/C003-lfg-receipt.md"],
+        "references": [".athanor/loops/36470e54/receipts/C003-lfg-receipt.md"],
     }
     data.update(overrides)
     return EvidenceSummary.from_dict(data)

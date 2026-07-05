@@ -38,6 +38,7 @@ import json
 import os
 import subprocess
 import sys
+import importlib
 from pathlib import Path
 
 import pytest
@@ -213,7 +214,7 @@ def test_missing_athanor_json_allows_normal_edit(tmp_path):
 
 def test_profile_off_bypasses_kernel_guard(tmp_path):
     """hooks.profile = "off" exits 0 even for rm -rf / — same opt-out
-    semantics as Stop hook + v0.16.0 kernel guard direct invocation."""
+    semantics as the v0.16.0 kernel guard direct invocation."""
     (tmp_path / "athanor.json").write_text(
         json.dumps({"hooks": {"profile": "off"}}), encoding="utf-8"
     )
@@ -276,6 +277,45 @@ def test_freeze_mode_absent_treated_as_off(tmp_path):
         f"missing freeze section must default to off, "
         f"got rc={rc} stderr={err!r}"
     )
+
+
+def test_session_mode_without_allowlist_skips_freeze_guard_import(monkeypatch, tmp_path):
+    """Missing per-session allowlist should short-circuit before importing
+    freeze_guard. This keeps the no-allowlist path cheap while preserving the
+    fail-open freeze contract."""
+    sys.path.insert(0, str(SCRIPTS_HOOKS))
+    sys.modules.pop("freeze_guard", None)
+    dispatcher = importlib.import_module("pretool_dispatcher")
+
+    real_import = __import__
+
+    def fail_on_freeze_guard_import(name, *args, **kwargs):
+        if name == "freeze_guard":
+            raise AssertionError("freeze_guard should not be imported")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", fail_on_freeze_guard_import)
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_stdin_payload",
+        lambda: _file_tool("Edit", "src/foo.py"),
+    )
+    monkeypatch.setattr(
+        dispatcher._runtime,
+        "read_athanor_config",
+        lambda: {"hooks": {"profile": "standard", "freeze": {"mode": "session"}}},
+    )
+    monkeypatch.setattr(dispatcher._runtime, "is_hook_profile_off", lambda config: False)
+    monkeypatch.setattr(dispatcher._runtime, "resolve_project_root", lambda: tmp_path)
+    monkeypatch.setattr(dispatcher, "kernel_evaluate", lambda payload: (0, ""))
+    monkeypatch.setattr(
+        dispatcher,
+        "_observe_safety_corpus",
+        lambda payload, config, project_root: "",
+    )
+    monkeypatch.setattr(dispatcher, "_read_freeze_allowlist", lambda: None)
+
+    assert dispatcher.main() == 0
 
 
 # ---------------------------------------------------------------------------

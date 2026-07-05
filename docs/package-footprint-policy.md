@@ -55,7 +55,7 @@ The default dev-only candidates are:
 - `.venv/**`;
 - `docs/plans/**`;
 - `docs/archive/**`;
-- `docs/goals-completed/**`;
+- `docs/loops-completed/**`;
 - `docs/architecture/**`;
 - `.github/**`;
 - `.python-version`;

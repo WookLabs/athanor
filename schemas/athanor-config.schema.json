@@ -148,18 +148,14 @@
     "hooks": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Stop hook configuration. As of v0.7.8, profile is honored at runtime by scripts/hooks/stop_verify_claims.py. As of v0.7.9, stopLoopThreshold caps consecutive-block loops.",
+      "description": "Configuration for active hooks: PreToolUse freeze/safety diagnostics and PostToolUse evidence observations.",
       "properties": {
         "_doc": { "type": "string" },
         "profile": {
           "type": "string",
           "enum": ["off", "standard"],
-          "description": "Stop hook gate mode: 'off' disables the gate (script exits 0 silently); 'standard' (default) enables full material-claim detection. Unknown values fall back to standard with a stderr warning at runtime. 'lenient' and 'strict' are not yet supported (deferred per plan §10)."
-        },
-        "stopLoopThreshold": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "v0.7.9+: Max consecutive exit-2 blocks per session before the circuit breaker opens and the (N+1)th invocation releases (exit 0). Prevents infinite gate loops when the verification skill misbehaves. Default 3 if missing. Set higher to be more strict, lower to release faster on suspected misconfiguration."
+          "default": "standard",
+          "description": "Legacy active-hook profile switch retained for PreToolUse/PostToolUse compatibility. off disables active hooks; standard enables them. This does not define or imply any Stop hook behavior."
         },
         "freeze": {
           "type": "object",
@@ -244,10 +240,10 @@
         }
       }
     },
-    "lfgGoal": {
+    "lfgLoop": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Goal-oriented LFG loop configuration consumed by skills/lfg-goal/. Sub-block defines circuit-breaker thresholds, adversarial tiering, release shape, archival, and dry-run semantics for the v0.13.0 LFG-goal surface.",
+      "description": "LFG Loop configuration consumed by skills/lfg-loop/. Sub-block defines circuit-breaker thresholds, adversarial tiering, release shape, archival, and dry-run semantics for the loop harness.",
       "properties": {
         "_doc": { "type": "string" },
         "maxIterations": {
@@ -266,7 +262,7 @@
         },
         "tier3UserRatification": {
           "type": "boolean",
-          "description": "Tier 3 BLOCKING user prompt at goal-completion; cannot be disabled without an explicit flag."
+          "description": "Tier 3 BLOCKING user prompt at loop completion; cannot be disabled without an explicit flag."
         },
         "scopeDriftAutoCheck": {
           "type": "boolean",
@@ -278,25 +274,25 @@
         },
         "archiveOnComplete": {
           "type": "boolean",
-          "description": "Copy completed goal directory (goal.md + goal-completion.md) to docs/goals-completed/<id>/ (tracked) after goal-complete."
+          "description": "Copy completed loop directory (loop.md + loop-completion.md) to docs/loops-completed/<loop-id>/ after complete_loop."
         },
-        "goalRetentionDays": {
+        "loopRetentionDays": {
           "type": "integer",
           "minimum": 0,
-          "description": "Cleaner ages out completed or abandoned goals after N days."
+          "description": "Cleaner ages out completed or abandoned loops after N days."
         },
-        "goalsDir": {
+        "loopsDir": {
           "type": "string",
-          "description": "Root directory for goal ledgers; relative to the project root. Default .athanor/goals."
+          "description": "Root directory for loop ledgers; relative to the project root. Default .athanor/loops."
         },
         "scoreTarget": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Optional score-target policy for lfg-goal loops that repeatedly run /athanor:assess and continue cycles until the assessment score reaches the declared target.",
+          "description": "Optional score-target policy for lfg-loop loops that repeatedly run /athanor:assess and continue cycles until the assessment score reaches the declared target.",
           "properties": {
             "enabled": {
               "type": "boolean",
-              "description": "When true, lfg-goal runs assessment scorecards at bootstrap and after each cycle; default false."
+              "description": "When true, lfg-loop runs assessment scorecards at bootstrap and after each cycle; default false."
             },
             "targetOverall": {
               "type": "integer",
@@ -339,7 +335,7 @@
           "type": "integer",
           "minimum": 1,
           "default": 3,
-          "description": "Cap (default 3) on the /athanor:lfg Step 3 (review-fix) and Step 8 (CI-fix) fix-round loops, surfaced by scripts/loops/lfg_fix_round_counter.py. The leader runs `bump --loop review|ci` each round and treats exit 3 (count reaches/exceeds this cap) as 'stop iterating'. Honesty label: ADVISORY (leader-bound exit-code) — a real exit code now exists (a strict upgrade over pure prose), but no PreToolUse/Stop runtime hook forces the leader to branch (same enforcement class as the Step 8.5 merge-readiness gate). NOT enforced."
+          "description": "Cap (default 3) on the /athanor:lfg Step 3 (review-fix) and Step 8 (CI-fix) fix-round loops, surfaced by scripts/loops/lfg_fix_round_counter.py. The leader runs `bump --loop review|ci` each round and treats exit 3 (count reaches/exceeds this cap) as 'stop iterating'. Honesty label: ADVISORY (leader-bound exit-code) — a real exit code now exists (a strict upgrade over pure prose), but no runtime hook forces the leader to branch (same enforcement class as the Step 8.5 merge-readiness gate). NOT enforced."
         }
       }
     }

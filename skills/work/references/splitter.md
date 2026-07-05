@@ -92,7 +92,7 @@ in a single write. Do not perform incremental writes.
   - **security-adjacent configuration changes** (hooks/hooks.json,
     .claude-plugin/plugin.json `hooks` field, schemas/*.json behavior
     constraints, anything under hooks/ or scripts/hooks/, athanor.json
-    `hooks` block that the Stop hook reads at runtime) — these are JSON
+    `hooks` block consumed by active hook scripts) — these are JSON
     files, not source code, so the "source code" rules above do not apply.
     Default classification: **`test-aware`** (require regression test
     accompanying the config edit). If the JSON change introduces a new

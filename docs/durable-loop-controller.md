@@ -1,8 +1,8 @@
 # Durable Loop Controller
 
-P7 adds an executable local controller for the `/athanor:lfg-goal` durable
+P7 adds an executable local controller for the `/athanor:lfg-loop` durable
 ledger loop. It turns the documented state contract in
-`.athanor/goals/<goal_id>/state.json` into deterministic decisions that can be
+`.athanor/loops/<loop_id>/state.json` into deterministic decisions that can be
 tested, traced, and gated in CI.
 
 ## Boundary
@@ -14,7 +14,7 @@ and can emit a P6 workflow trace event.
 
 The companion run-log helper,
 `scripts/loops/loop_run_log.py`, is narrower: it appends JSONL records to the
-goal directory and inspects lock, budget, and min-attempt posture. It reports
+loop directory and inspects lock, budget, and min-attempt posture. It reports
 `irreversible_actions: 0`; appending a log record is the only write it performs.
 
 ## State And Evidence
@@ -22,7 +22,7 @@ goal directory and inspects lock, budget, and min-attempt posture. It reports
 State files follow `schemas/durable-loop-state.schema.json` and live at:
 
 ```bash
-.athanor/goals/<goal_id>/state.json
+.athanor/loops/<loop_id>/state.json
 ```
 
 Evidence summaries follow `schemas/durable-loop-evidence.schema.json`. They are
@@ -31,13 +31,13 @@ intentionally narrow: eval status, receipt validator status, Tier 1/Tier 2/Tier
 assessment evidence, and artifact references.
 
 When `score_target` is absent, the controller uses the legacy durable resume
-router. When `score_target` is present, `/athanor:lfg-goal` uses the adaptive
+router. When `score_target` is present, `/athanor:lfg-loop` uses the adaptive
 controller model:
 
 - `work` remains the task/subtask execution engine inside a cycle.
 - `lfg` remains one delivery loop.
-- `assess` is the quality and goal-fit evaluation gate.
-- `lfg-goal` is the adaptive goal controller that chooses the next sub-loop
+- `assess` is the quality and loop-fit evaluation gate.
+- `lfg-loop` is the adaptive loop controller that chooses the next sub-loop
   from receipt and assessment evidence.
 
 The adaptive controller emits machine-readable actions:
@@ -86,11 +86,11 @@ assessment on the last allowed cycle.
 
 Run-log records follow `schemas/loop-run-log-record.schema.json` and live at
 the `loop_run_log` path in `state.json`, defaulting to
-`.athanor/goals/<goal_id>/run-log.jsonl`.
+`.athanor/loops/<loop_id>/run-log.jsonl`.
 
 The optional run-log fields in `state.json` are:
 
-- `acting_on`: goal id currently claimed by the runner.
+- `acting_on`: loop id currently claimed by the runner.
 - `loop_run_log`: append-only JSONL path.
 - `budget.max_cycles`, `budget.max_wall_minutes`, `budget.max_token_estimate`.
 - `min_attempts`: minimum attempts before risky or score-target finalization.
@@ -102,10 +102,10 @@ The optional run-log fields in `state.json` are:
 Run one decision:
 
 ```bash
-python scripts/loops/run_goal_loop_controller.py \
-  --state .athanor/goals/36470e54/state.json \
-  --evidence .athanor/goals/36470e54/evidence/latest.json \
-  --trace-path .athanor/traces/goal-36470e54.jsonl \
+python scripts/loops/run_lfg_loop_controller.py \
+  --state .athanor/loops/36470e54/state.json \
+  --evidence .athanor/loops/36470e54/evidence/latest.json \
+  --trace-path .athanor/traces/loop-36470e54.jsonl \
   --json
 ```
 
@@ -118,13 +118,13 @@ Append and inspect run-log posture:
 
 ```bash
 python scripts/loops/loop_run_log.py append \
-  --goal-dir .athanor/goals/36470e54 \
+  --loop-dir .athanor/loops/36470e54 \
   --event cycle_started \
   --json
 
 python scripts/loops/loop_run_log.py inspect \
-  --goal-dir .athanor/goals/36470e54 \
-  --requested-goal-id 36470e54 \
+  --loop-dir .athanor/loops/36470e54 \
+  --requested-loop-id 36470e54 \
   --json
 ```
 
@@ -136,7 +136,7 @@ action):
 
 - `0`: the controller authorized a **forward** action (e.g. `run_lfg_cycle`,
   `run_baseline_assess`, `run_delta_assess`, `prompt_tier3_user`,
-  `bootstrap_goal`, `start_next_cycle`, `resume_*`, `run_tier1_check`).
+  `bootstrap_loop`, `start_next_cycle`, `resume_*`, `run_tier1_check`).
 - `1`: the controller **halted or refused to advance** — any terminal stop
   (`stop_max_iterations`, `stop_no_progress`) **or** block/refuse action
   (`block_failed_eval`, `run_scope_drift`, `require_assessment_evidence`,
@@ -147,7 +147,7 @@ action):
 
 When `--trace-path` is supplied, the CLI appends a P6 trace record:
 
-- `phase`: `lfg-goal`
+- `phase`: `lfg-loop`
 - `event_type`: `loop.decision`
 - `actor`: `gate`
 - `status`: decision status
@@ -157,7 +157,7 @@ When `--trace-path` is supplied, the CLI appends a P6 trace record:
 Run committed durable-loop scenarios:
 
 ```bash
-python scripts/loops/run_goal_loop_fixtures.py \
+python scripts/loops/run_lfg_loop_fixtures.py \
   --fixture-root tests/fixtures/durable_loops \
   --json
 ```
@@ -165,7 +165,7 @@ python scripts/loops/run_goal_loop_fixtures.py \
 The fixture gate covers:
 
 - resume after `receipt_validated`
-- terminal `goal_complete` refusing re-entry
+- terminal `loop_complete` refusing re-entry
 - `stop_max_iterations`
 - `stop_no_progress`
 - `require_eval_evidence`

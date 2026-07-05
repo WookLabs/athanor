@@ -411,7 +411,7 @@ SKILL_SIZE_CAPS: dict[str, int] = {
     # `round(current * 1.05)`. The orchestrator's "measure AFTER relocations"
     # rule locks the ratchet to the post-diet baseline so regrowth trips
     # fail-loud at +5% above the slimmed size. See work-log.md for raw len().
-    "lfg-goal": 47754,   # post-diet 45480 * 1.05
+    "lfg-loop": 47754,   # post-diet 45480 * 1.05
     "lfg": 41463,        # post-diet 39489 * 1.05
     "setup": 27734,      # current 26413 * 1.05
     "discuss": 26176,    # current 24930 * 1.05

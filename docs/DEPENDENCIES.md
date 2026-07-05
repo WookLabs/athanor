@@ -8,7 +8,7 @@ Athanor's general policy is to **prefer installable companions over vendoring** 
 
 | Skill | Source | Rationale | Long-term posture |
 |-------|--------|-----------|-------------------|
-| `verification-before-completion` | superpowers v5.0.7 | Stop hook must have a guaranteed local target. Skill is small (~140 lines); drift cost minimal. (Decision #5, plan synthesis 2026-04-14) | **Permanent** |
+| `verification-before-completion` | superpowers v5.0.7 | Athanor workflows still require explicit evidence before terminal claims. The runtime Stop hook was removed; this vendored skill remains the local workflow discipline and prompt contract. Skill is small (~140 lines); drift cost minimal. (Decision #5, plan synthesis 2026-04-14; updated for lfg-loop migration) | **Permanent** |
 | `scope-drift` | claude-octopus (SHA `3c260845...`) | Source repo (claude-octopus) is T3 — no marketplace presence. Vendor is the only path. (Pilot PR1b 2026-04-14) | **Permanent** |
 | `ce-test-browser` | compound-engineering v3.8.3 (MIT) | Sole CE skill retained after v0.12.0 atomic cut (D8 KEEP). Browser automation capability with no equivalent in athanor-native skills; removing it would eliminate a distinct workflow category. | **Permanent** |
 

@@ -94,7 +94,7 @@ target, but default to all six lens workers for broad system/plugin assessment.
 
 **Workflow Analyst**
 - Inspect how work moves through discuss, analyze, plan, work, review, lfg,
-  lfg-goal, CI, receipts, ledgers, and handoffs.
+  lfg-loop, CI, receipts, ledgers, and handoffs.
 - Evaluate whether the workflow produces company-like operational efficiency:
   clear intake, role assignment, state tracking, verification, release, and
   learning.
@@ -227,7 +227,7 @@ Confidence: {low|medium|high}
 
 - Use `/athanor:plan` when the user wants an implementation plan.
 - Use `/athanor:work` only after the user accepts a concrete plan.
-- Use `/athanor:lfg-goal` when the user wants iterative execution until a
+- Use `/athanor:lfg-loop` when the user wants iterative execution until a
   measurable goal is met.
 ```
 
@@ -244,11 +244,11 @@ Return a concise summary to the user:
 Do not start implementation unless the user explicitly asks for a plan or work
 after reading the assessment.
 
-### Score-Target Packet For /athanor:lfg-goal
+### Score-Target Packet For /athanor:lfg-loop
 
-When `/athanor:assess` is invoked by `/athanor:lfg-goal` as a score-target
+When `/athanor:assess` is invoked by `/athanor:lfg-loop` as a score-target
 baseline, delta, or final assessment, the report must contain enough structured
-data for the lfg-goal controller evidence packet:
+data for the lfg-loop controller evidence packet:
 
 - `kind`: `baseline`, `delta`, or `final`;
 - `report_path`: the saved `assess.md` path;
@@ -258,9 +258,9 @@ data for the lfg-goal controller evidence packet:
 - `priority_plan_items`: the concrete next items from `## Priority Plan`;
 - per-dimension `score`, `target`, `floor`, `target_met`, and `regressed`.
 
-The lfg-goal leader converts those report fields into
+The lfg-loop leader converts those report fields into
 `schemas/durable-loop-evidence.schema.json` before calling
-`scripts/loops/run_goal_loop_controller.py`. Missing or malformed assessment
+`scripts/loops/run_lfg_loop_controller.py`. Missing or malformed assessment
 fields block the adaptive loop; they are not treated as a passing score.
 
 ## Rules

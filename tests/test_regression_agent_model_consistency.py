@@ -11,7 +11,7 @@ in the corresponding SKILL.md / reference file. Each `agents/*.md` file
 explicitly warns: "Keep this file in sync with the dispatch prompts in the
 corresponding SKILL.md."
 
-A drift was found (Goal: lfg/lfg-goal doc-lifecycle audit, Wave 1):
+A drift was found (Goal: lfg/lfg-loop doc-lifecycle audit, Wave 1):
 `docs/agent-roles/cleaner.md` frontmatter declared `model: haiku` (matching
 CLAUDE.md "Cleaner: minimal effort"), but the dispatch prompt in
 `skills/work/references/learner-cleaner.md` Step 5 and the Step-5 line in

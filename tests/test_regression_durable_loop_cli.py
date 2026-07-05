@@ -9,8 +9,8 @@ from pathlib import Path
 from scripts.evals.workflow_trace import load_trace
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUNNER = REPO_ROOT / "scripts" / "loops" / "run_goal_loop_controller.py"
-FIXTURE_RUNNER = REPO_ROOT / "scripts" / "loops" / "run_goal_loop_fixtures.py"
+RUNNER = REPO_ROOT / "scripts" / "loops" / "run_lfg_loop_controller.py"
+FIXTURE_RUNNER = REPO_ROOT / "scripts" / "loops" / "run_lfg_loop_fixtures.py"
 
 
 def _write_json(path: Path, data: dict) -> None:
@@ -21,13 +21,13 @@ def _write_json(path: Path, data: dict) -> None:
 def _state(**overrides) -> dict:
     data = {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "receipt_validated",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": None,
         "aborted_reason": None,
@@ -44,10 +44,10 @@ def _evidence(**overrides) -> dict:
         "eval_status": "pass",
         "validator_status": "all_valid",
         "tier1_passed": True,
-        "tier2_goal_met": False,
+        "tier2_completion_met": False,
         "tier3_user_response": None,
         "progress_made": True,
-        "references": [".athanor/goals/36470e54/receipts/C002-lfg-receipt.md"],
+        "references": [".athanor/loops/36470e54/receipts/C002-lfg-receipt.md"],
     }
     data.update(overrides)
     return data
@@ -110,7 +110,7 @@ def test_loop_controller_cli_appends_loop_decision_trace(tmp_path: Path) -> None
     trace = load_trace(trace_path)
     assert trace[0]["trace_id"] == "goal-trace"
     assert trace[0]["event_type"] == "loop.decision"
-    assert trace[0]["phase"] == "lfg-goal"
+    assert trace[0]["phase"] == "lfg-loop"
     assert trace[0]["evidence"]["action"] == "run_tier1_check"
     assert str(state_path) in trace[0]["references"][0]
 
@@ -209,7 +209,7 @@ def test_loop_controller_cli_exits_1_for_require_assessment_evidence(
             score_target={"overall_score": 90, "min_dimension_score": 80},
             assessment={
                 "kind": "delta",
-                "report_path": ".athanor/goals/36470e54/assess/delta.md",
+                "report_path": ".athanor/loops/36470e54/assess/delta.md",
                 "overall_score": 70,
                 "min_dimension_score": 60,
                 "target_met": False,

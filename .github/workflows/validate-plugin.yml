@@ -99,7 +99,7 @@ jobs:
         run: uv run python scripts/gates/harness_decision_ledger.py --json
       - name: Durable loop fixture gate
         shell: bash
-        run: uv run python scripts/loops/run_goal_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
+        run: uv run python scripts/loops/run_lfg_loop_fixtures.py --fixture-root tests/fixtures/durable_loops --json
       - name: Cross-runtime conformance gate
         shell: bash
         run: uv run python scripts/gates/runtime_conformance.py --json

@@ -5,7 +5,7 @@
 case_id: case_02_refactor_test_aware
 subtask_brief: |
   Subtask 2: Extract the duplicated `_normalize_phrase()` helper from
-  scripts/hooks/stop_verify_claims.py and scripts/hooks/sentinel_helper.py
+  scripts/hooks/pretool_dispatcher.py and scripts/hooks/posttool_evidence_sniffer.py
   into scripts/hooks/_phrase_utils.py. Update both callers to import from
   the new module. No behavior change — same input/output for every public
   function.

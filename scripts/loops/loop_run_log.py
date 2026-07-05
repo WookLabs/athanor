@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append-only run log helper for Athanor lfg-goal loops."""
+"""Append-only run log helper for Athanor lfg-loop loops."""
 from __future__ import annotations
 
 import argparse
@@ -42,30 +42,30 @@ def _read_json(path: Path) -> dict[str, Any]:
     return parsed
 
 
-def load_goal_state(goal_dir: Path | str) -> dict[str, Any]:
-    goal_path = Path(goal_dir)
-    state = _read_json(goal_path / "state.json")
-    goal_id = state.get("goal_id")
-    if not isinstance(goal_id, str) or len(goal_id) != 8:
-        raise LoopRunLogError("state.json must contain an 8-character goal_id")
+def load_loop_state(loop_dir: Path | str) -> dict[str, Any]:
+    loop_path = Path(loop_dir)
+    state = _read_json(loop_path / "state.json")
+    loop_id = state.get("loop_id")
+    if not isinstance(loop_id, str) or len(loop_id) != 8:
+        raise LoopRunLogError("state.json must contain an 8-character loop_id")
     return state
 
 
-def _run_log_path(goal_dir: Path | str, state: dict[str, Any] | None = None) -> Path:
-    goal_path = Path(goal_dir)
-    state_data = state if state is not None else load_goal_state(goal_path)
+def _run_log_path(loop_dir: Path | str, state: dict[str, Any] | None = None) -> Path:
+    loop_path = Path(loop_dir)
+    state_data = state if state is not None else load_loop_state(loop_path)
     configured = state_data.get("loop_run_log", "run-log.jsonl")
     if not isinstance(configured, str) or not configured:
         raise LoopRunLogError("loop_run_log must be a non-empty string")
     path = Path(configured)
     if path.is_absolute():
         return path
-    return goal_path / path
+    return loop_path / path
 
 
-def load_run_log(goal_dir: Path | str) -> list[dict[str, Any]]:
-    state = load_goal_state(goal_dir)
-    path = _run_log_path(goal_dir, state)
+def load_run_log(loop_dir: Path | str) -> list[dict[str, Any]]:
+    state = load_loop_state(loop_dir)
+    path = _run_log_path(loop_dir, state)
     if not path.exists():
         return []
     records: list[dict[str, Any]] = []
@@ -113,7 +113,7 @@ def _budget_snapshot(
 
 
 def append_run_record(
-    goal_dir: Path | str,
+    loop_dir: Path | str,
     *,
     event: str,
     status: str = "info",
@@ -127,11 +127,11 @@ def append_run_record(
     if not event:
         raise LoopRunLogError("event is required")
 
-    state = load_goal_state(goal_dir)
-    records = load_run_log(goal_dir)
+    state = load_loop_state(loop_dir)
+    records = load_run_log(loop_dir)
     record = {
         "schema_version": 1,
-        "goal_id": state["goal_id"],
+        "loop_id": state["loop_id"],
         "sequence": _next_sequence(records),
         "timestamp": _iso_now(),
         "event": event,
@@ -148,7 +148,7 @@ def append_run_record(
         ),
         "irreversible_actions": 0,
     }
-    path = _run_log_path(goal_dir, state)
+    path = _run_log_path(loop_dir, state)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
@@ -217,10 +217,10 @@ def _min_attempt_gate(
     }
 
 
-def inspect_goal_dir(
-    goal_dir: Path | str,
+def inspect_loop_dir(
+    loop_dir: Path | str,
     *,
-    requested_goal_id: str | None = None,
+    requested_loop_id: str | None = None,
     current_cycle: int | None = None,
     wall_minutes_used: int | None = None,
     token_estimate_used: int | None = None,
@@ -228,16 +228,16 @@ def inspect_goal_dir(
     score_target: bool = False,
     attempts_done: int | None = None,
 ) -> dict[str, Any]:
-    state = load_goal_state(goal_dir)
-    records = load_run_log(goal_dir)
+    state = load_loop_state(loop_dir)
+    records = load_run_log(loop_dir)
     acting_on = state.get("acting_on")
     lock_conflict = None
     lock_status = state.get("lock_status", "active")
-    if requested_goal_id is not None and acting_on != requested_goal_id:
+    if requested_loop_id is not None and acting_on != requested_loop_id:
         lock_status = "conflict"
         lock_conflict = {
             "acting_on": acting_on,
-            "requested_goal_id": requested_goal_id,
+            "requested_loop_id": requested_loop_id,
         }
     warnings = _budget_warnings(
         state,
@@ -263,7 +263,7 @@ def inspect_goal_dir(
             "mutates_files_by_default": False,
             "external_telemetry": False,
         },
-        "goal_id": state["goal_id"],
+        "loop_id": state["loop_id"],
         "acting_on": acting_on,
         "lock_status": lock_status,
         "lock_conflict": lock_conflict,
@@ -286,11 +286,11 @@ def inspect_goal_dir(
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inspect or append lfg-goal run logs.")
+    parser = argparse.ArgumentParser(description="Inspect or append lfg-loop run logs.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     append = subparsers.add_parser("append", help="Append one run-log record.")
-    append.add_argument("--goal-dir", type=Path, required=True)
+    append.add_argument("--loop-dir", type=Path, required=True)
     append.add_argument("--event", required=True)
     append.add_argument("--status", default="info", choices=sorted(VALID_STATUSES))
     append.add_argument("--message")
@@ -299,9 +299,9 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     append.add_argument("--token-estimate-used", type=int)
     append.add_argument("--json", action="store_true")
 
-    inspect = subparsers.add_parser("inspect", help="Inspect a goal run log.")
-    inspect.add_argument("--goal-dir", type=Path, required=True)
-    inspect.add_argument("--requested-goal-id")
+    inspect = subparsers.add_parser("inspect", help="Inspect a loop run log.")
+    inspect.add_argument("--loop-dir", type=Path, required=True)
+    inspect.add_argument("--requested-loop-id")
     inspect.add_argument("--current-cycle", type=int)
     inspect.add_argument("--wall-minutes-used", type=int)
     inspect.add_argument("--token-estimate-used", type=int)
@@ -317,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "append":
             result = append_run_record(
-                args.goal_dir,
+                args.loop_dir,
                 event=args.event,
                 status=args.status,
                 message=args.message,
@@ -326,9 +326,9 @@ def main(argv: list[str] | None = None) -> int:
                 token_estimate_used=args.token_estimate_used,
             )
         else:
-            result = inspect_goal_dir(
-                args.goal_dir,
-                requested_goal_id=args.requested_goal_id,
+            result = inspect_loop_dir(
+                args.loop_dir,
+                requested_loop_id=args.requested_loop_id,
                 current_cycle=args.current_cycle,
                 wall_minutes_used=args.wall_minutes_used,
                 token_estimate_used=args.token_estimate_used,

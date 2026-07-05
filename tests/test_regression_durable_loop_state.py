@@ -1,4 +1,4 @@
-"""Regression tests for durable lfg-goal loop state handling."""
+"""Regression tests for durable lfg-loop loop state handling."""
 from __future__ import annotations
 
 import json
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.loops.goal_loop_controller import (
+from scripts.loops.lfg_loop_controller import (
     LoopState,
     LoopStateError,
     is_terminal_state,
@@ -18,13 +18,13 @@ from scripts.loops.goal_loop_controller import (
 def _valid_state() -> dict:
     return {
         "schema_version": 1,
-        "goal_id": "36470e54",
+        "loop_id": "36470e54",
         "cycle_state": "cycle_n_in_progress",
         "cycle_phase": "receipt_validated",
         "current_cycle": 2,
         "max_iterations": 5,
         "no_progress_threshold": 2,
-        "last_receipt_path": ".athanor/goals/36470e54/receipts/C002-lfg-receipt.md",
+        "last_receipt_path": ".athanor/loops/36470e54/receipts/C002-lfg-receipt.md",
         "last_validator_status": "all_valid",
         "tier2_last_verdict": None,
         "aborted_reason": None,
@@ -41,7 +41,7 @@ def test_loop_state_round_trips_with_atomic_writer(tmp_path: Path) -> None:
     write_loop_state_atomic(path, state)
 
     loaded = load_loop_state(path)
-    assert loaded.goal_id == "36470e54"
+    assert loaded.loop_id == "36470e54"
     assert loaded.cycle_phase == "receipt_validated"
     assert loaded.to_dict() == state.to_dict()
     assert not list(path.parent.glob("*.tmp"))
@@ -84,7 +84,7 @@ def test_loop_state_accepts_legacy_missing_cycle_phase_with_warning() -> None:
     assert "legacy_missing_phase" in loaded.warnings
 
 
-@pytest.mark.parametrize("cycle_state", ["goal_complete", "aborted"])
+@pytest.mark.parametrize("cycle_state", ["loop_complete", "aborted"])
 def test_terminal_loop_states_are_detected(cycle_state: str) -> None:
     data = _valid_state()
     data["cycle_state"] = cycle_state
@@ -103,7 +103,7 @@ def test_loop_state_schema_defines_required_contract() -> None:
 
     assert schema["properties"]["schema_version"]["const"] == 1
     for field in [
-        "goal_id",
+        "loop_id",
         "cycle_state",
         "current_cycle",
         "max_iterations",

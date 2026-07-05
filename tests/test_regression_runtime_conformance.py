@@ -124,7 +124,6 @@ def test_runtime_conformance_cli_reports_pass_on_current_repo():
     assert report["surfaces"]["hooks"]["enabled_events"] == [
         "PostToolUse",
         "PreToolUse",
-        "Stop",
     ]
 
 
@@ -156,7 +155,7 @@ def test_runtime_conformance_fails_when_enabled_hook_missing_from_runtime_manife
     repo = _copy_minimal_repo(tmp_path)
     hooks_path = repo / "hooks" / "hooks.json"
     hooks = _load_json(hooks_path)
-    hooks["hooks"].pop("Stop", None)
+    hooks["hooks"].pop("PreToolUse", None)
     hooks_path.write_text(json.dumps(hooks, indent=2) + "\n", encoding="utf-8")
 
     result = _run_cli(repo)
@@ -166,7 +165,7 @@ def test_runtime_conformance_fails_when_enabled_hook_missing_from_runtime_manife
     assert report["status"] == "fail"
     assert "hooks.enabled_runtime_manifest" in _check_ids(report)
     check = _check_by_id(report, "hooks.enabled_runtime_manifest")
-    assert check["missing"][0]["event"] == "Stop"
+    assert check["missing"][0]["event"] == "PreToolUse"
 
 
 def test_runtime_conformance_fails_when_codex_manifest_adds_hooks(tmp_path):

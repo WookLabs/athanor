@@ -33,8 +33,7 @@ Decision flow:
      the block (Claude Code feeds stderr back to the model as continuation
      context so it can choose a safer alternative).
 
-Stdlib-only — same pattern as `stop_verify_claims.py`. As of v0.17.0
-(S06) the input/config helpers below are sourced from the shared
+Stdlib-only. As of v0.17.0 (S06) the input/config helpers below are sourced from the shared
 ``_athanor_hook_runtime`` sibling module; the in-script wrappers
 ``_read_stdin_payload`` / ``_find_athanor_config`` / ``_read_profile``
 remain as thin delegations so the existing test surface (which
@@ -529,8 +528,7 @@ def evaluate_payload(
     -----------------------------------------------------------
     1. Missing athanor.json yields ``profile="standard"`` (fail-CLOSED).
        ``rm -rf /`` is still blocked even when no athanor.json exists.
-    2. ``hooks.profile == "off"`` yields exit 0 (opt-out), same semantics
-       as the Stop hook.
+    2. ``hooks.profile == "off"`` yields exit 0 for legacy configs.
     3. Unknown/malformed ``tool_name`` or ``tool_input`` shape yields
        fail-open ``(0, "")`` — matches the v0.16.0 CLI behavior.
     """
@@ -540,7 +538,7 @@ def evaluate_payload(
 
     profile = _read_profile()
     if profile == "off":
-        return (0, "")  # opt-out; same semantics as Stop hook
+        return (0, "")  # legacy opt-out
 
     if not isinstance(payload, dict):
         return (0, "")

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Athanor v0.17.0 shared hook runtime — minimalist helpers used by both
-`stop_verify_claims.py` and `pretool_kernel_guard.py`.
+Athanor shared hook runtime — minimalist helpers used by active hook scripts.
 
 Per S06 scope (minimalist, Plan B-adopted):
-  1. `read_stdin_payload()` — parse PreToolUse/Stop event JSON from stdin.
+  1. `read_stdin_payload()` — parse hook event JSON from stdin.
      Fail-open on malformed. Returns dict or None.
   2. `read_athanor_config()` — walk up from cwd to find athanor.json.
      Stops at .git boundary (v0.7.9 parent-dir hijack guard). Returns
      parsed dict or {} on any error.
   3. `is_hook_profile_off(config)` — returns True if
-     `hooks.profile == "off"`. Used by all hooks for opt-out.
+     `hooks.profile == "off"` for legacy configs. Used by active hooks for
+     opt-out when present.
   4. `resolve_project_root()` — find $CLAUDE_PROJECT_DIR, .git, or
      athanor.json. Returns Path or None.
 

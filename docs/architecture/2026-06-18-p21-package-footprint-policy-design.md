@@ -39,7 +39,7 @@ The first candidate set is intentionally conservative:
 - `tests/**`;
 - `docs/plans/**`;
 - `docs/archive/**`;
-- `docs/goals-completed/**`;
+- `docs/loops-completed/**`;
 - `docs/architecture/**`;
 - `.github/**`.
 

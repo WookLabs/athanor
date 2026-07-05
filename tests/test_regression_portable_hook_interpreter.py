@@ -1,15 +1,12 @@
-"""Regression — portable interpreter resolution for the 3 ENFORCED hooks (N1).
+"""Regression — portable interpreter resolution for active hooks (N1).
 
 Gap under lock (v0.24.3)
 ------------------------
-`hooks/hooks.json` used to invoke the 3 enforced hooks with bare `python3`.
+`hooks/hooks.json` used to invoke enforced hooks with bare `python3`.
 LIVE INCIDENT (2026-07-01, Windows host): the Windows Store App-Execution-
 Alias recreated `python3` as a stub that PRINTS "Python was not found" and
-exits non-2 — Claude Code reported "Stop hook error: Failed with non-blocking
-status code" and PASSED THROUGH. Identity invariant #4 (the completion-claim
-gate) silently fail-opened. `docs/STATE.md` §"Command-hook Stop blocking
-spike (2026-05-18)" had promised a portable invocation for v0.7.8 — the
-promise was dropped until this fix.
+exits non-2, yielding a visible hook error while passing through. The portable
+launcher keeps that failure loud rather than silent.
 
 The fix: every enabled hook command routes through the portable launcher
 shim `scripts/hooks/run_hook.sh`, which resolves a WORKING Python >= 3.10 by
@@ -56,7 +53,24 @@ _EXPECTED_COMMAND_RE = re.compile(
 
 
 def _posix_shell() -> str | None:
-    return shutil.which("sh") or shutil.which("bash")
+    for shell in (shutil.which("sh"), shutil.which("bash")):
+        if shell is None:
+            continue
+        if "windowsapps" in shell.lower():
+            continue
+        try:
+            probe = subprocess.run(
+                [shell, "-c", "echo ATHANOR_SH_OK"],
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+                timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if probe.returncode == 0 and "ATHANOR_SH_OK" in probe.stdout:
+            return shell
+    return None
 
 
 needs_posix_shell = pytest.mark.skipif(
@@ -118,8 +132,8 @@ def _run_shim(
 def test_all_enabled_hook_commands_use_sh_launcher():
     """Every hooks.json inner command routes through the portable shim."""
     commands = _hook_commands()
-    assert len(commands) == 3, (
-        f"expected exactly 3 registered hook commands (Stop, PreToolUse, "
+    assert len(commands) == 2, (
+        f"expected exactly 2 registered hook commands (PreToolUse and "
         f"PostToolUse); got {len(commands)}"
     )
     for cmd in commands:
@@ -145,13 +159,13 @@ def test_no_bare_python3_hook_command_remains():
 
 
 def test_hook_command_triplet_is_uniform():
-    """Sync lock — the 3 commands are identical after normalizing the
+    """Sync lock — the active commands are identical after normalizing the
     target `.py` basename (one drifting command = partial coverage)."""
     normalized = {
         re.sub(r"[a-z0-9_]+\.py", "<TARGET>.py", cmd) for cmd in _hook_commands()
     }
     assert len(normalized) == 1, (
-        f"the 3 hook commands must be identical apart from the target .py "
+        f"the active hook commands must be identical apart from the target .py "
         f"basename; got divergent forms: {sorted(normalized)}"
     )
 
@@ -210,7 +224,7 @@ def test_shim_probes_functionality_not_presence():
 
 def test_shim_missing_interpreter_is_loud_pass_exit_1():
     """Terminal behavior lock — no-interpreter path is `exit 1` LOUD-PASS:
-    never `exit 2` (bricks python-less sessions on every Stop/tool call),
+    never `exit 2` (bricks python-less sessions on every hook call),
     never a silent success (the failure mode this shim fixes)."""
     text = _shim_text()
     code_lines = [
@@ -221,7 +235,7 @@ def test_shim_missing_interpreter_is_loud_pass_exit_1():
         "shim must terminate the no-interpreter path with `exit 1`"
     )
     assert not re.search(r"^\s*exit 2\b", code, re.M), (
-        "shim must NEVER exit 2 itself — exit 2 blocks Stop/PreToolUse and "
+        "shim must NEVER exit 2 itself — exit 2 blocks active hook calls and "
         "would brick every session on python-less hosts"
     )
     assert not re.search(r"^\s*exit 0\b", code, re.M), (
@@ -232,9 +246,9 @@ def test_shim_missing_interpreter_is_loud_pass_exit_1():
     assert last_exit.strip() == "exit 1", (
         f"the shim's final statement must be `exit 1`; got: {last_exit!r}"
     )
-    assert "INACTIVE" in text and "hooks.profile" in text, (
+    assert "INACTIVE" in text and "Active hooks" in text, (
         "the no-interpreter stderr message must say the gate is INACTIVE and "
-        "name the hooks.profile opt-out (actionable loud-pass)"
+        "name the active hooks that did not run"
     )
 
 
@@ -321,17 +335,17 @@ def test_shim_no_interpreter_exit1_behavioral(tmp_path: Path) -> None:
 
 @needs_posix_shell
 def test_hooks_json_command_end_to_end(tmp_path: Path) -> None:
-    """The SHIPPED Stop command string (verbatim from hooks.json) resolves,
+    """The shipped PreToolUse command string (verbatim from hooks.json) resolves,
     execs, and propagates exit codes when CLAUDE_PLUGIN_ROOT points at a
     plugin tree — proves the deployed string, not a reconstruction."""
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
-    command = data["hooks"]["Stop"][0]["hooks"][0]["command"]
+    command = data["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
 
     plugin_root = tmp_path / "plugin"
     hooks_dir = plugin_root / "scripts" / "hooks"
     hooks_dir.mkdir(parents=True)
     shutil.copyfile(SHIM, hooks_dir / "run_hook.sh")
-    (hooks_dir / "stop_verify_claims.py").write_text(
+    (hooks_dir / "pretool_dispatcher.py").write_text(
         "import sys\nsys.exit(7)\n", encoding="utf-8"
     )
 
@@ -350,7 +364,7 @@ def test_hooks_json_command_end_to_end(tmp_path: Path) -> None:
         timeout=60,
     )
     assert proc.returncode == 7, (
-        f"the shipped hooks.json Stop command must resolve an interpreter "
+        f"the shipped hooks.json PreToolUse command must resolve an interpreter "
         f"and propagate the target's exit code (7); got "
         f"rc={proc.returncode}, stderr={proc.stderr!r}"
     )

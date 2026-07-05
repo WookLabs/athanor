@@ -79,7 +79,7 @@ def test_claude_prompt_gen_protocol_has_prompt_and_routing_contract() -> None:
         "/athanor:plan --depth=deep",
         "/athanor:lite-plan",
         "/athanor:deep-plan",
-        "/athanor:lfg-goal",
+        "/athanor:lfg-loop",
         "Do not implement",
         "Do not silently call the recommended next skill",
     ):
@@ -135,7 +135,7 @@ def test_codex_prompt_gen_companion_exists_and_states_runtime_limits() -> None:
         "athanor-plan",
         "athanor-lite-plan",
         "athanor-deep-plan",
-        "athanor-lfg-goal",
+        "athanor-lfg-loop",
         "Do not claim Claude hooks",
         "Do not silently call the recommended skill",
     ):

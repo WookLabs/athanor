@@ -7,8 +7,8 @@ programmatic counter*. This is the small, single-purpose counter the leader
 branches on via an exit code (Key Decision 3).
 
 Honesty label: ADVISORY — leader-prose-bound. A real exit code now exists (a
-strict upgrade over pure prose), but NO PreToolUse/Stop runtime hook forces the
-leader to branch (same enforcement class as the lfg merge-readiness gate).
+strict upgrade over pure prose), but NO runtime hook forces the leader to branch
+(same enforcement class as the lfg merge-readiness gate).
 
 State file: ``.athanor/sessions/<id>/lfg-fix-rounds.json``::
 
@@ -17,7 +17,7 @@ State file: ``.athanor/sessions/<id>/lfg-fix-rounds.json``::
 
 Subcommands:
   * ``bump --session <dir> --loop review|ci`` — atomic read-increment-write
-    (temp-then-rename, mirroring goal_loop_controller.write_loop_state_atomic);
+    (temp-then-rename, mirroring lfg_loop_controller.write_loop_state_atomic);
     prints the new count. Exit 0 while ``< max_rounds``, exit 3 when the bump
     reaches/exceeds ``max_rounds`` (= "stop iterating", the cap signal).
   * ``read --session <dir>`` — prints the JSON state (a fresh session reports
@@ -25,8 +25,8 @@ Subcommands:
 
 Fail-loud (Risk R7): a malformed (present-but-unparseable) state file → exit 2
 + stderr, and the counter is NEVER silently reset/overwritten — a silent reset
-would hide a stuck loop. Deliberately NOT coupled to goal_loop_controller.py:
-lfg is single-cycle (no goal_id/cycle_state/current_cycle), so folding it into
+would hide a stuck loop. Deliberately NOT coupled to lfg_loop_controller.py:
+lfg is single-cycle (no loop_id/cycle_state/current_cycle), so folding it into
 the durable LoopState would be a category error.
 """
 from __future__ import annotations

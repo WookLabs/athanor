@@ -242,7 +242,7 @@ def test_valid_01_single_file():
     parse = _resolve_parser()
     records = parse(VALID_DIR / "valid_01_single_file.md")
     files = _files_for_subtask(records, "1")
-    assert files == ["scripts/hooks/stop_verify_claims.py"], files
+    assert files == ["scripts/hooks/pretool_dispatcher.py"], files
 
 
 def test_valid_02_multi_file():
@@ -251,7 +251,7 @@ def test_valid_02_multi_file():
     files = _files_for_subtask(records, "1")
     assert files == [
         "scripts/hooks/_athanor_hook_runtime.py",
-        "scripts/hooks/hook_state.py",
+        "scripts/hooks/pretool_kernel_guard.py",
     ], files
 
 

@@ -122,7 +122,7 @@ def test_ci_runs_durable_loop_fixture_gate():
     """Durable loop controller scenarios should be checked before broad pytest."""
     workflow = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
     assert "Durable loop fixture gate" in workflow
-    assert "python scripts/loops/run_goal_loop_fixtures.py" in workflow
+    assert "python scripts/loops/run_lfg_loop_fixtures.py" in workflow
     assert "--fixture-root tests/fixtures/durable_loops --json" in workflow
 
 
@@ -622,7 +622,7 @@ def test_unreleased_documents_organization_stage_receipts():
         "scripts/gates/organization_stage_receipt.py",
         "--emit",
         "--apply-work-item-update",
-        "lfg-goal",
+        "lfg-loop",
         "stage receipt",
     ]
     missing = [token for token in required if token not in section]

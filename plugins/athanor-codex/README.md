@@ -38,7 +38,7 @@ skill bodies are loaded.
 - `athanor-lite-plan` — thin wrapper for `athanor-plan --depth=lite`.
 - `athanor-work` — execute an accepted plan with verification discipline.
 - `athanor-lfg` — run the end-to-end plan/work/review/PR/CI pipeline.
-- `athanor-lfg-goal` — iterate LFG cycles against a durable goal ledger.
+- `athanor-lfg-loop` — iterate LFG cycles against a durable goal ledger.
 - `athanor-release` — run release ceremony steps and release-ready checks.
 - `athanor-ci-watch` — monitor GitHub Actions, fix concrete failures, and retry.
 - `athanor-review` — review changes across practical quality lenses.
@@ -50,7 +50,7 @@ skill bodies are loaded.
 ## Runtime Boundaries
 
 This is not a Claude runtime port. Codex does not receive Athanor's
-Claude Stop hook, Claude PreToolUse Kernel Guard, Freeze enforcement, or
+hidden hook enforcement, Claude PreToolUse Kernel Guard, Freeze enforcement, or
 Claude Task worker dispatch from this companion. Skills should state those
 limits instead of claiming hook-backed enforcement.
 

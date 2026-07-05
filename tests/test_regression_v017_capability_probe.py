@@ -109,14 +109,16 @@ def _make_synthetic_repo(tmp_path: Path) -> Path:
     root.mkdir()
     (root / ".git").mkdir()  # walk-up boundary marker
     (root / "athanor.json").write_text("{}", encoding="utf-8")
-    # hooks/hooks.json — registers Stop + PreToolUse like real athanor
+    # hooks/hooks.json — registers PreToolUse + PostToolUse like real athanor
     (root / "hooks").mkdir()
     (root / "hooks" / "hooks.json").write_text(
         json.dumps(
             {
                 "hooks": {
-                    "Stop": [{"hooks": [{"type": "command", "command": "x"}]}],
                     "PreToolUse": [{"hooks": [{"type": "command", "command": "y"}]}],
+                    "PostToolUse": [
+                        {"hooks": [{"type": "command", "command": "python posttool.py"}]}
+                    ],
                 }
             }
         ),
@@ -201,16 +203,16 @@ def test_probe_emits_valid_json(tmp_path):
 def test_probe_records_registered_events_from_hooks_json(tmp_path):
     """The probe must echo athanor's current hooks.json registrations.
 
-    This is the structural-honesty anchor: if a future PR drops Stop or
-    PreToolUse registration, the report should change accordingly — the
+    This is the structural-honesty anchor: if a future PR drops PreToolUse or
+    PostToolUse registration, the report should change accordingly — the
     probe is doing real inspection, not returning a static blob.
     """
     root = _make_synthetic_repo(tmp_path)
     rc, _stdout, stderr = _run_probe_in(root)
     assert rc == 0, f"probe failed: rc={rc} stderr={stderr!r}"
     data = json.loads((root / ".athanor" / "hook-capability.json").read_text())
-    assert sorted(data["athanor_registered_events"]) == ["PreToolUse", "Stop"], (
-        f"probe should report {{PreToolUse, Stop}} as the registered events; "
+    assert sorted(data["athanor_registered_events"]) == ["PostToolUse", "PreToolUse"], (
+        f"probe should report {{PreToolUse, PostToolUse}} as the registered events; "
         f"got {data['athanor_registered_events']}"
     )
 
@@ -219,18 +221,19 @@ def test_probe_marks_unregistered_synthetic_events_unsupported(tmp_path):
     """Honesty invariant — unregistered synthetic events stay unsupported.
 
     This mirrors the v0.7.7 → v0.7.8 honesty arc for the Stop label. A
-    synthetic repo with no PostToolUse registration must not inherit the real
-    repo's evidence-only support status.
+    synthetic repo must not mark unregistered forward-compat events supported.
     """
     root = _make_synthetic_repo(tmp_path)
     rc, _stdout, stderr = _run_probe_in(root)
     assert rc == 0, f"probe failed: rc={rc} stderr={stderr!r}"
     data = json.loads((root / ".athanor" / "hook-capability.json").read_text())
-    for event_name, body in data["events"].items():
+    for event_name in ("SessionStart", "UserPromptSubmit", "PreCompact"):
+        body = data["events"][event_name]
         assert body["supported"] is False, (
             f"event {event_name!r} must report supported=False until an "
             f"empirical spike lands; got {body!r}"
         )
+    assert data["events"]["PostToolUse"]["supported"] is True
 
 
 def test_probe_reports_userpromptsubmit_spike_harness_when_available(tmp_path):
@@ -265,8 +268,8 @@ def test_probe_post_tool_use_forward_compat_anchor_detected(tmp_path):
         "probe should detect the v0.19.0 PostToolUse sniffer anchor in "
         f"skills/work/references/spec-then-tdd-handler.md; got: {post!r}"
     )
-    assert post["support_level"] == "forward-compat"
-    assert post["payload_keys_source"] == "none"
+    assert post["support_level"] == "evidence-only"
+    assert post["payload_keys_source"] == "expected"
 
 
 def test_probe_post_tool_use_registered_payload_keys_are_expected_not_empirical(tmp_path):
@@ -403,9 +406,7 @@ def test_real_repo_probe_runs_against_athanor_itself():
     out_path = REPO_ROOT / ".athanor" / "hook-capability.json"
     assert out_path.is_file()
     data = json.loads(out_path.read_text(encoding="utf-8"))
-    # Real athanor registers exactly Stop + PreToolUse as of v0.17.0
-    assert "Stop" in data["athanor_registered_events"]
-    assert "PreToolUse" in data["athanor_registered_events"]
+    assert data["athanor_registered_events"] == ["PostToolUse", "PreToolUse"]
 
 
 # ---------------------------------------------------------------------------

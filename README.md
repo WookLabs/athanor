@@ -5,7 +5,7 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**v0.24.4** — 13 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. Score-target goal loops. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / Stop hook runtime gate are the athanor identity invariants — preserved intact through the v0.12.0 cutover. See [CLAUDE.md §"Concept Absorption Surface"](CLAUDE.md#concept-absorption-surface-post-v0120) for the post-cutover surface and [docs/v0.12.0-migration.md](docs/v0.12.0-migration.md) for the migration guide.
+**v0.24.4** — 13 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. LFG loop engineering. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / explicit evidence gates are the athanor identity commitments.
 
 Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
 
@@ -19,7 +19,7 @@ Current package-facing operator map: [docs/package-knowledge-index.md](docs/pack
 
 - Does NOT silently downgrade `/athanor:plan` to a single-agent flow (cross-model adversarial dual-planner stays the default).
 - Does NOT silently downgrade `/athanor:work` to a non-TDD execution flow (athanor-native Spec-then-TDD stays the default).
-- Does NOT extend the Stop hook gate scope — per D10/D11 the runtime gate + companion-fix arc 5 layers + v0.10.2 normalization stack survive intact, with rationale re-framed to general defensive coverage.
+- Does NOT rely on a hidden completion hook gate — quality is carried by explicit workflow artifacts, receipts, assessment/review gates, and controller decisions.
 - Does NOT re-license athanor (athanor stays MIT; CE and superpowers stay MIT under their copyright holders).
 - Does NOT require CE or superpowers to be separately installed. Users who need a removed upstream skill install the upstream plugin directly — see the migration guide.
 
@@ -110,7 +110,7 @@ You:     /athanor:work --team
 | `/athanor:work` | Execute | Grinding through every subtask until done |
 | `/athanor:review` | Plan | Parallel 6-lens code review (architecture, quality, security, performance, testing, docs) |
 | `/athanor:lfg` | Execute | Standalone end-to-end pipeline (plan → work → review → PR → CI) |
-| `/athanor:lfg-goal` | Execute | Goal-driven macro Ralph loop over a durable goal ledger |
+| `/athanor:lfg-loop` | Execute | Loop-engineering macro harness from objective intake through delivery, evaluation, verification, and next-loop decisions |
 
 ```
 /athanor:prompt-gen → /athanor:discuss  →  /athanor:analyze  →  /athanor:assess  →  /athanor:debug (optional)
@@ -242,7 +242,7 @@ Solo developers who want structured planning. Tech leads who want reproducible q
 
 Athanor recommends (does not require) the following companion plugins:
 
-**superpowers** — provides foundational skills like `verification-before-completion`. Athanor vendors a copy of this skill for guaranteed Stop hook behavior, but having superpowers installed adds the rest of its skill catalog (TDD, debugging, collaboration patterns).
+**superpowers** — provides foundational skills like `verification-before-completion`. Athanor keeps an explicit verification skill, but loop quality is enforced through workflow artifacts and gates rather than a hidden completion hook. Having superpowers installed adds the rest of its skill catalog (TDD, debugging, collaboration patterns).
 
 ```
 # Official marketplace
@@ -253,7 +253,7 @@ Athanor recommends (does not require) the following companion plugins:
 /plugin install superpowers@superpowers-marketplace
 ```
 
-**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 17 skills (`athanor-analyze`, `athanor-assess`, `athanor-debug`, `athanor-deep-plan`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-goal`, `athanor-lite-plan`, `athanor-plan`, `athanor-prompt-gen`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
+**athanor-codex** — a second-runtime mirror of the athanor native skill set for the [Codex CLI](https://github.com/openai/codex). Ships 17 skills (`athanor-analyze`, `athanor-assess`, `athanor-debug`, `athanor-deep-plan`, `athanor-discuss`, `athanor-lfg`, `athanor-lfg-loop`, `athanor-lite-plan`, `athanor-plan`, `athanor-prompt-gen`, `athanor-ci-watch`, `athanor-release`, `athanor-review`, `athanor-scope-drift`, `athanor-setup`, `athanor-verify`, `athanor-work`) with no Claude hooks. Install from the repo-local marketplace:
 
 ```
 codex plugin marketplace add <path-to-athanor>/.agents/plugins/marketplace.json
@@ -262,7 +262,7 @@ codex plugin add athanor-codex@athanor
 
 See [`plugins/athanor-codex/README.md`](plugins/athanor-codex/README.md) for the full install and refresh flow.
 
-Run `/athanor:setup` to audit installed companions. If superpowers is absent, athanor remains fully functional — its vendored skill ensures the Stop hook works regardless. See [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the full policy.
+Run `/athanor:setup` to audit installed companions. If superpowers is absent, athanor remains fully functional with its local verification skill. See [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the full policy.
 
 ## Roadmap
 
@@ -291,8 +291,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Athanor vendors the following open-source component:
 
 - **`verification-before-completion` skill** from [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT).
-  Triggered by the athanor Stop hook to enforce evidence-before-claims discipline
-  at turn boundaries. Full attribution in [NOTICE.md](NOTICE.md).
+  Used as an explicit evidence-before-claims workflow skill. Full attribution in [NOTICE.md](NOTICE.md).
 - **`scope-drift` skill** from [claude-octopus](https://github.com/nyldn/claude-octopus) by nyldn (MIT).
   On-demand skill that detects scope drift between current branch changes and the canonical plan-of-record.
   Full attribution in [NOTICE.md](NOTICE.md).

@@ -10,11 +10,11 @@ is the same advisory class).
 
 `scripts/loops/lfg_fix_round_counter.py` is the small, single-purpose CLI that
 closes it (Key Decision 3, labeled ADVISORY — leader-prose-bound; no
-PreToolUse/Stop hook forces the leader to branch). It maintains
+runtime hook forces the leader to branch). It maintains
 `.athanor/sessions/<id>/lfg-fix-rounds.json` and provides:
 
   * `bump --session <dir> --loop review|ci` — atomic read-increment-write
-    (temp-then-rename, mirroring `goal_loop_controller.write_loop_state_atomic`);
+    (temp-then-rename, mirroring `lfg_loop_controller.write_loop_state_atomic`);
     prints the new count; **exit 0 while `< max_rounds`, exit 3 when the bump
     reaches/exceeds `max_rounds`** (= "stop iterating", the cap signal).
   * `read --session <dir>` — prints the JSON state.
@@ -22,7 +22,7 @@ PreToolUse/Stop hook forces the leader to branch). It maintains
 Fail-loud contract (Risk R7): malformed `lfg-fix-rounds.json` → **exit 2 +
 stderr, and the counter is NEVER silently reset** (a silent reset would hide a
 stuck loop, violating fail-loud). Deliberately NOT coupled to
-`goal_loop_controller.py` — lfg is single-cycle (no `goal_id`/`cycle_state`/
+`lfg_loop_controller.py` — lfg is single-cycle (no `loop_id`/`cycle_state`/
 `current_cycle`); folding it into the durable `LoopState` would be a category
 error.
 

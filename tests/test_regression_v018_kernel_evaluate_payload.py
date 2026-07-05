@@ -217,7 +217,7 @@ def test_missing_config_still_blocks_sensitive_read(kernel_guard):
 
 def test_profile_off_bypasses_kernel_guard(monkeypatch, tmp_path):
     """When ``hooks.profile == "off"`` the gate must exit 0 even for
-    ``rm -rf /`` — same opt-out semantics as the Stop hook."""
+    ``rm -rf /`` — same legacy opt-out semantics as the other hook scripts."""
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     (project_dir / "athanor.json").write_text(

@@ -11,9 +11,9 @@ structurally cannot run a merge, so it cannot add an admin-bypass flag or skip
 branch protection — the merge command itself stays in leader prose.
 
 Honesty label: ADVISORY — leader-prose-bound. A real exit code now exists (a
-strict upgrade over hand-interpreted bash comments), but NO PreToolUse/Stop
-runtime hook forces the leader to honor the verdict — the same enforcement class
-as ``scripts/loops/lfg_fix_round_counter.py``.
+strict upgrade over hand-interpreted bash comments), but NO runtime hook forces
+the leader to honor the verdict — the same enforcement class as
+``scripts/loops/lfg_fix_round_counter.py``.
 
 The one genuinely-new safety property over today's prose: an unknown
 ``mergeStateStatus``/``mergeable`` enum **raises (exit 2) instead of silently

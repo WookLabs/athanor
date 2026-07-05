@@ -23,7 +23,7 @@ python scripts/gates/codex_mirror_parity.py --json
 | deep-plan | `skills/deep-plan/SKILL.md` | athanor-deep-plan | `plugins/athanor-codex/skills/athanor-deep-plan/SKILL.md` | mirror | deep |
 | discuss | `skills/discuss/SKILL.md` | athanor-discuss | `plugins/athanor-codex/skills/athanor-discuss/SKILL.md` | mirror | discuss |
 | lfg | `skills/lfg/SKILL.md` | athanor-lfg | `plugins/athanor-codex/skills/athanor-lfg/SKILL.md` | mirror | lfg |
-| lfg-goal | `skills/lfg-goal/SKILL.md` | athanor-lfg-goal | `plugins/athanor-codex/skills/athanor-lfg-goal/SKILL.md` | mirror | goal |
+| lfg-loop | `skills/lfg-loop/SKILL.md` | athanor-lfg-loop | `plugins/athanor-codex/skills/athanor-lfg-loop/SKILL.md` | mirror | loop |
 | lite-plan | `skills/lite-plan/SKILL.md` | athanor-lite-plan | `plugins/athanor-codex/skills/athanor-lite-plan/SKILL.md` | mirror | lite |
 | plan | `skills/plan/SKILL.md` | athanor-plan | `plugins/athanor-codex/skills/athanor-plan/SKILL.md` | mirror | plan |
 | prompt-gen | `skills/prompt-gen/SKILL.md` | athanor-prompt-gen | `plugins/athanor-codex/skills/athanor-prompt-gen/SKILL.md` | mirror | prompt |
@@ -40,10 +40,10 @@ python scripts/gates/codex_mirror_parity.py --json
 
 Unsupported Claude-only runtime surfaces in Codex:
 
-- Claude Stop hook.
 - Claude PreToolUse Kernel Guard.
 - Freeze enforcement.
 - Claude Task worker dispatch.
+- hook-backed enforcement.
 
 Codex mirror skills must state these limits instead of claiming hook-backed
 enforcement. New Codex skills require either a mirror row, a Codex-only row

@@ -16,7 +16,7 @@ finite `timeout`, so a credential/2FA prompt **fails fast** (non-zero exit →
 the existing push-failure diagnosis path) instead of hanging.
 
 Scope notes locked here:
-- `skills/lfg-goal/SKILL.md` wraps `/athanor:lfg` VERBATIM (D2) with no own
+- `skills/lfg-loop/SKILL.md` wraps `/athanor:lfg` VERBATIM (D2) with no own
   git push/commit prose, so it needs no change — this file locks that it
   stays a pure wrapper (read-only `git show/log/diff` in the receipt table is
   not autonomous plumbing).
@@ -33,7 +33,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LFG = REPO_ROOT / "skills" / "lfg" / "SKILL.md"
-LFG_GOAL = REPO_ROOT / "skills" / "lfg-goal" / "SKILL.md"
+LFG_GOAL = REPO_ROOT / "skills" / "lfg-loop" / "SKILL.md"
 CI_WATCHER = REPO_ROOT / "agents" / "ci-watcher.md"
 
 HARDEN = "GIT_TERMINAL_PROMPT=0"
@@ -158,23 +158,23 @@ def test_ci_watcher_autonomous_push_hardened() -> None:
     )
 
 
-def test_lfg_goal_is_pure_wrapper_no_own_git_push() -> None:
-    """lfg-goal wraps /athanor:lfg VERBATIM and owns NO git push/commit prose,
+def test_lfg_loop_is_pure_wrapper_no_own_git_push() -> None:
+    """lfg-loop wraps /athanor:lfg VERBATIM and owns NO git push/commit prose,
     so it needs no hardening. Lock that it stays a pure wrapper — if it ever
     grows its own autonomous push/commit, this fails and flags that the
     §'Git plumbing hardening' discipline must be added there too."""
     body = _read(LFG_GOAL)
     assert "verbatim" in body.lower() and "/athanor:lfg" in body, (
-        "lfg-goal must document that it invokes /athanor:lfg verbatim (the "
+        "lfg-loop must document that it invokes /athanor:lfg verbatim (the "
         "reason it carries no git plumbing of its own)."
     )
     # Read-only git (git show / log / diff in the receipt-validation table) is
     # fine; a `git push` / `git commit` COMMAND would be its OWN autonomous
     # plumbing that would need the same GIT_TERMINAL_PROMPT=0 hardening.
     assert "git push" not in body, (
-        "lfg-goal grew a 'git push' — it is no longer a pure lfg wrapper; add "
+        "lfg-loop grew a 'git push' — it is no longer a pure lfg wrapper; add "
         "the §'Git plumbing hardening' GIT_TERMINAL_PROMPT=0 discipline there too."
     )
     assert "git commit" not in body, (
-        "lfg-goal grew a 'git commit' — add the git-plumbing hardening there too."
+        "lfg-loop grew a 'git commit' — add the git-plumbing hardening there too."
     )

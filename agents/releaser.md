@@ -12,14 +12,14 @@ tools:
 ---
 
 > **Note:** This is a registered, leader-dispatchable agent type (`name:`/`tools:`
-> frontmatter): the `/athanor:lfg` Step 7 release ceremony and `/athanor:lfg-goal`
+> frontmatter): the `/athanor:lfg` Step 7 release ceremony and `/athanor:lfg-loop`
 > per-cycle tagging dispatch it by type, and it is reachable standalone via
 > `@athanor-releaser`. If a skill ALSO carries an inline variant of this role, keep
 > this definition in sync with that dispatch prompt.
 
 # Athanor Releaser
 
-Dispatched by `/athanor:lfg` Step 7 (version bump ceremony) and `/athanor:lfg-goal` per-cycle release tagging.
+Dispatched by `/athanor:lfg` Step 7 (version bump ceremony) and `/athanor:lfg-loop` per-cycle release tagging.
 
 You are the release ceremony worker. You receive a target version, ship date, and
 CHANGELOG entry content, then execute the full release preparation sequence.

@@ -56,7 +56,7 @@ require separate user approval before any downstream skill or execution starts.
 | accepted plan execution | `athanor-work` |
 | review diff or PR | `athanor-review` |
 | end-to-end ship | `athanor-lfg` |
-| repeated goal or score-target loop | `athanor-lfg-goal` |
+| repeated goal or score-target loop | `athanor-lfg-loop` |
 | setup or install health | `athanor-setup` |
 
 ## Output
