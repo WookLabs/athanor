@@ -39,6 +39,7 @@ The schema v2 report includes:
 - `actions`;
 - `writes`;
 - `command_hash`;
+- `command_windows`;
 - `source_hashes`;
 - `missing_sources`;
 - `trust_status`;
@@ -78,13 +79,14 @@ The trust state follows `schemas/hook-installer-trust.schema.json`:
 
 Review flow:
 
-1. Run dry-run and inspect the hook command and source paths.
+1. Run dry-run and inspect the hook command, optional `command_windows`, and
+   source paths.
 2. Review the referenced local files.
 3. Copy the current `command_hash` and `source_hashes` into trust state.
 4. Run apply with `--trust-state`.
 
-If the command or source hash changes later, apply mode blocks the action with
-a trust mismatch instead of silently installing it.
+If the command, Windows command override, or source hash changes later, apply
+mode blocks the action with a trust mismatch instead of silently installing it.
 
 ## Apply
 

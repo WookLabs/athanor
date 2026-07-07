@@ -93,6 +93,7 @@ def test_state_md_current_phase_is_v018_or_later():
         or "0.22." in heading_line
         or "0.23." in heading_line
         or "0.24." in heading_line
+        or "0.25." in heading_line
     ), (
         f"docs/STATE.md `## Current Phase` heading must reference v0.18+; "
         f"got {heading_line!r}"

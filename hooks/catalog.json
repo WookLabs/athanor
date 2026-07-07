@@ -6,6 +6,7 @@
       "event": "PreToolUse",
       "matcher": "",
       "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\"",
+      "command_windows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^& \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd\" \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\pretool_dispatcher.py\"; exit $LASTEXITCODE",
       "runtime_default": "enabled",
       "policy_mode": "block",
       "evidence_level": "replay-gated",
@@ -16,6 +17,7 @@
       "source_refs": [
         "hooks/hooks.json",
         "scripts/hooks/run_hook.sh",
+        "scripts/hooks/run_hook.cmd",
         "scripts/hooks/pretool_dispatcher.py",
         "tests/test_regression_v018_pretool_dispatcher.py"
       ]
@@ -43,6 +45,7 @@
       "event": "PostToolUse",
       "matcher": "",
       "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\"",
+      "command_windows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^& \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd\" \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\posttool_evidence_sniffer.py\"; exit $LASTEXITCODE",
       "runtime_default": "enabled",
       "policy_mode": "warn",
       "evidence_level": "replay-gated",
@@ -53,6 +56,7 @@
       "source_refs": [
         "hooks/hooks.json",
         "scripts/hooks/run_hook.sh",
+        "scripts/hooks/run_hook.cmd",
         "scripts/hooks/posttool_evidence_sniffer.py",
         "docs/hook-payload-corpus.md"
       ]

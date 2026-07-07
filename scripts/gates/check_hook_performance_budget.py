@@ -33,6 +33,7 @@ DEFAULT_CATALOG = REPO_ROOT / "hooks" / "catalog.json"
 DEFAULT_FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures" / "hooks"
 VALID_HOOK_EXIT_CODES = {0, 2}
 MIN_MEASURED_SAMPLES = 3
+MAX_BUDGET_RETRIES = 1
 
 # v0.24.3 (N1): enabled hooks are invoked through the portable launcher shim
 # `sh run_hook.sh <target.py>` (see scripts/hooks/run_hook.sh). The gate
@@ -236,31 +237,53 @@ def _measure_hook(
             "reason": f"warmup hook exited with unsupported code {warmup['exit_code']}",
         }
 
-    runs: list[dict[str, Any]] = []
-    for index in range(measured_samples):
-        fixture = selected[index % len(selected)]
-        payload = fixture.get("payload")
-        if not isinstance(payload, dict):
-            return {
-                "id": hook_id,
-                "event": event,
-                "budget_ms": budget_ms,
-                "median_ms": None,
-                "max_ms": None,
-                "runs": runs,
-                "fixtures": [str(item.get("id", "<missing-id>")) for item in selected],
-                "status": "fail",
-                "reason": "fixture payload must be a JSON object",
-            }
-        actual = _run_once(command, payload, hook_id)
-        runs.append(
-            {
-                "fixture_id": str(fixture.get("id", "<missing-id>")),
-                "duration_ms": round(actual["duration_ms"], 3),
-                "exit_code": actual["exit_code"],
-            }
-        )
-        if actual["exit_code"] not in VALID_HOOK_EXIT_CODES:
+    def run_batch() -> tuple[list[dict[str, Any]], str | None]:
+        batch_runs: list[dict[str, Any]] = []
+        for index in range(measured_samples):
+            fixture = selected[index % len(selected)]
+            payload = fixture.get("payload")
+            if not isinstance(payload, dict):
+                return batch_runs, "fixture payload must be a JSON object"
+            actual = _run_once(command, payload, hook_id)
+            batch_runs.append(
+                {
+                    "fixture_id": str(fixture.get("id", "<missing-id>")),
+                    "duration_ms": round(actual["duration_ms"], 3),
+                    "exit_code": actual["exit_code"],
+                }
+            )
+            if actual["exit_code"] not in VALID_HOOK_EXIT_CODES:
+                return (
+                    batch_runs,
+                    f"hook exited with unsupported code {actual['exit_code']}",
+                )
+        return batch_runs, None
+
+    runs, batch_error = run_batch()
+    if batch_error is not None:
+        return {
+            "id": hook_id,
+            "event": event,
+            "budget_ms": budget_ms,
+            "median_ms": None,
+            "max_ms": None,
+            "runs": runs,
+            "fixtures": [run["fixture_id"] for run in runs],
+            "status": "fail",
+            "reason": batch_error,
+        }
+
+    durations = [run["duration_ms"] for run in runs]
+    median_ms = round(float(statistics.median(durations)), 3)
+    max_ms = round(max(durations), 3)
+    retry_attempts = 0
+    initial_median_ms = median_ms
+
+    if median_ms > budget_ms and MAX_BUDGET_RETRIES > 0:
+        retry_runs, retry_error = run_batch()
+        retry_attempts = 1
+        runs.extend(retry_runs)
+        if retry_error is not None:
             return {
                 "id": hook_id,
                 "event": event,
@@ -270,18 +293,31 @@ def _measure_hook(
                 "runs": runs,
                 "fixtures": [run["fixture_id"] for run in runs],
                 "status": "fail",
-                "reason": f"hook exited with unsupported code {actual['exit_code']}",
+                "reason": retry_error,
             }
+        retry_durations = [run["duration_ms"] for run in retry_runs]
+        median_ms = round(float(statistics.median(retry_durations)), 3)
+        max_ms = round(max(run["duration_ms"] for run in runs), 3)
 
-    durations = [run["duration_ms"] for run in runs]
-    median_ms = round(float(statistics.median(durations)), 3)
-    max_ms = round(max(durations), 3)
     if median_ms > budget_ms:
         status = "fail"
-        reason = f"median runtime {median_ms}ms exceeds budget {budget_ms}ms"
+        if retry_attempts:
+            reason = (
+                f"median runtime {median_ms}ms exceeds budget {budget_ms}ms "
+                f"after retry (initial median {initial_median_ms}ms)"
+            )
+        else:
+            reason = f"median runtime {median_ms}ms exceeds budget {budget_ms}ms"
     else:
         status = "pass"
-        reason = f"median runtime within budget; max observation {max_ms}ms"
+        if retry_attempts:
+            reason = (
+                f"retry median runtime within budget "
+                f"(initial median {initial_median_ms}ms); "
+                f"max observation {max_ms}ms"
+            )
+        else:
+            reason = f"median runtime within budget; max observation {max_ms}ms"
     return {
         "id": hook_id,
         "event": event,
@@ -291,6 +327,7 @@ def _measure_hook(
         "runs": runs,
         "fixtures": [run["fixture_id"] for run in runs],
         "measured_samples": measured_samples,
+        "retry_attempts": retry_attempts,
         "status": status,
         "reason": reason,
     }

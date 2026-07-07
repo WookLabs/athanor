@@ -57,6 +57,9 @@
           "command": {
             "type": "string"
           },
+          "command_windows": {
+            "type": "string"
+          },
           "runtime_default": {
             "type": "string",
             "enum": ["enabled", "disabled", "capture-only"]

@@ -8,15 +8,15 @@ Alias recreated `python3` as a stub that PRINTS "Python was not found" and
 exits non-2, yielding a visible hook error while passing through. The portable
 launcher keeps that failure loud rather than silent.
 
-The fix: every enabled hook command routes through the portable launcher
-shim `scripts/hooks/run_hook.sh`, which resolves a WORKING Python >= 3.10 by
-FUNCTIONALITY probe (`<cand> -c "import sys; ..."` — the Store stub exists on
-PATH but cannot run code, so presence checks pass on it and the probe does
-not), in candidate order `python3` -> `python` -> `py -3`, then `exec`s the
-winner with original stdin/stdout/stderr so exit-code semantics (exit 2 =
-block) propagate unchanged. No working interpreter => exit 1 LOUD-PASS
-(visible hook error + branded stderr; never a bricked session, never a
-silent fail-open).
+The fix: every enabled POSIX hook command routes through the portable launcher
+shim `scripts/hooks/run_hook.sh`, and every enabled Windows hook command routes
+through `scripts/hooks/run_hook.cmd`. Both shims resolve a WORKING Python >=
+3.10 by FUNCTIONALITY probe (`<cand> -c "import sys; ..."` — the Store stub
+exists on PATH but cannot run code, so presence checks pass on it and the probe
+does not), then run the target with original stdin/stdout/stderr so exit-code
+semantics (exit 2 = block) propagate unchanged. No working interpreter => exit
+1 LOUD-PASS (visible hook error + branded stderr; never a bricked session,
+never a silent fail-open).
 
 This file carries:
   - static locks on hooks.json command shape, shim content, and line endings;
@@ -44,11 +44,18 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOOKS_JSON = REPO_ROOT / "hooks" / "hooks.json"
 SHIM = REPO_ROOT / "scripts" / "hooks" / "run_hook.sh"
+CMD_SHIM = REPO_ROOT / "scripts" / "hooks" / "run_hook.cmd"
 GITATTRIBUTES = REPO_ROOT / ".gitattributes"
 
 _EXPECTED_COMMAND_RE = re.compile(
     r'^sh "\$\{CLAUDE_PLUGIN_ROOT\}/scripts/hooks/run_hook\.sh" '
     r'"\$\{CLAUDE_PLUGIN_ROOT\}/scripts/hooks/[a-z0-9_]+\.py"$'
+)
+_EXPECTED_WINDOWS_COMMAND_RE = re.compile(
+    r"^powershell\.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass "
+    r'-Command \^& "\$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook\.cmd" '
+    r'"\$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\[a-z0-9_]+\.py"; '
+    r"exit \$LASTEXITCODE$"
 )
 
 
@@ -83,18 +90,40 @@ needs_posix_shell = pytest.mark.skipif(
 )
 
 
-def _hook_commands() -> list[str]:
+def _cmd_exe() -> str | None:
+    return shutil.which("cmd.exe") or shutil.which("cmd")
+
+
+needs_cmd = pytest.mark.skipif(
+    _cmd_exe() is None,
+    reason="native Windows launcher behavioral tests need cmd.exe",
+)
+
+
+def _hook_items() -> list[dict[str, object]]:
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
-    commands: list[str] = []
+    items: list[dict[str, object]] = []
     for _event, entries in data["hooks"].items():
         for entry in entries:
             for hook in entry.get("hooks", []):
-                commands.append(hook["command"])
-    return commands
+                items.append(hook)
+    return items
+
+
+def _hook_commands() -> list[str]:
+    return [str(item["command"]) for item in _hook_items()]
+
+
+def _hook_windows_commands() -> list[str]:
+    return [str(item.get("command_windows", "")) for item in _hook_items()]
 
 
 def _shim_text() -> str:
     return SHIM.read_text(encoding="utf-8")
+
+
+def _cmd_shim_text() -> str:
+    return CMD_SHIM.read_text(encoding="utf-8")
 
 
 def _run_shim(
@@ -124,6 +153,24 @@ def _run_shim(
     )
 
 
+def _run_cmd_shim(
+    target: Path,
+    *,
+    stdin_text: str = "{}",
+    timeout: int = 60,
+) -> subprocess.CompletedProcess:
+    """Run the native Windows shim through cmd.exe."""
+    cmd = _cmd_exe()
+    assert cmd is not None
+    return subprocess.run(
+        [cmd, "/C", str(CMD_SHIM), str(target)],
+        input=stdin_text,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Static locks
 # ---------------------------------------------------------------------------
@@ -141,6 +188,24 @@ def test_all_enabled_hook_commands_use_sh_launcher():
             f"hook command must use the portable sh launcher form "
             f'`sh "${{CLAUDE_PLUGIN_ROOT}}/scripts/hooks/run_hook.sh" '
             f'"${{CLAUDE_PLUGIN_ROOT}}/scripts/hooks/<target>.py"`; '
+            f"got: {cmd!r}"
+        )
+
+
+def test_all_enabled_hook_commands_have_windows_launcher():
+    """Every hooks.json command has a Codex-native Windows override."""
+    commands = _hook_windows_commands()
+    assert len(commands) == 2, (
+        f"expected exactly 2 command_windows overrides (PreToolUse and "
+        f"PostToolUse); got {len(commands)}"
+    )
+    for cmd in commands:
+        assert _EXPECTED_WINDOWS_COMMAND_RE.fullmatch(cmd), (
+            f"hook command_windows must use the native cmd launcher form "
+            f"`powershell.exe ... -Command ^& "
+            f"\"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd\" "
+            f"\"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\<target>.py\"; "
+            f"exit $LASTEXITCODE`; "
             f"got: {cmd!r}"
         )
 
@@ -168,6 +233,14 @@ def test_hook_command_triplet_is_uniform():
         f"the active hook commands must be identical apart from the target .py "
         f"basename; got divergent forms: {sorted(normalized)}"
     )
+    normalized_windows = {
+        re.sub(r"[a-z0-9_]+\.py", "<TARGET>.py", cmd)
+        for cmd in _hook_windows_commands()
+    }
+    assert len(normalized_windows) == 1, (
+        f"the active Windows hook commands must be identical apart from the "
+        f"target .py basename; got divergent forms: {sorted(normalized_windows)}"
+    )
 
 
 def test_shim_exists_and_is_lf_only():
@@ -188,6 +261,30 @@ def test_shim_exists_and_is_lf_only():
     assert "*.sh text eol=lf" in attrs, (
         ".gitattributes must contain `*.sh text eol=lf` so the shim survives "
         "autocrlf checkouts"
+    )
+
+
+def test_cmd_shim_exists_and_uses_cmd_safe_probes():
+    """Windows launcher must not depend on sh and must preserve hook stdin."""
+    assert CMD_SHIM.is_file(), f"native Windows hook launcher not found at {CMD_SHIM}"
+    text = _cmd_shim_text()
+    assert "py -3 -c" in text and "python -c" in text and "python3 -c" in text
+    assert "version_info >= (3, 10)" in text, (
+        "cmd shim must probe functionality with a Python >= 3.10 floor"
+    )
+    probe_lines = [line for line in text.splitlines() if " -c " in line]
+    assert probe_lines and all("< NUL" in line for line in probe_lines), (
+        "Windows probe invocations must read from NUL so the hook JSON payload "
+        "is never consumed before the target runs"
+    )
+    assert re.search(r"py -3 .*%TARGET%", text), (
+        "py -3 must be the first Windows execution candidate"
+    )
+    assert "exit /B 1" in text, (
+        "cmd shim no-interpreter path must be loud-pass exit 1"
+    )
+    assert "exit /B 2" not in text, (
+        "cmd shim must never exit 2 itself; only target hooks may block"
     )
 
 
@@ -367,6 +464,67 @@ def test_hooks_json_command_end_to_end(tmp_path: Path) -> None:
         f"the shipped hooks.json PreToolUse command must resolve an interpreter "
         f"and propagate the target's exit code (7); got "
         f"rc={proc.returncode}, stderr={proc.stderr!r}"
+    )
+
+
+@needs_cmd
+def test_cmd_shim_exit2_and_stdin_propagate(tmp_path: Path) -> None:
+    """Native Windows shim preserves stdin and propagates blocking exit 2."""
+    fixture = tmp_path / "exit2_fixture.py"
+    fixture.write_text(
+        "import sys\n"
+        "payload = sys.stdin.read()\n"
+        "print('CMD_FIXTURE_MARKER payload=' + payload.strip(), file=sys.stderr)\n"
+        "sys.exit(2 if payload.strip() == '{\"block\": true}' else 0)\n",
+        encoding="utf-8",
+    )
+
+    proc = _run_cmd_shim(fixture, stdin_text='{"block": true}')
+
+    assert proc.returncode == 2, (
+        f"exit 2 from the target hook must propagate through run_hook.cmd; "
+        f"got rc={proc.returncode}, stderr={proc.stderr!r}"
+    )
+    assert "CMD_FIXTURE_MARKER" in proc.stderr
+    assert '{"block": true}' in proc.stderr
+
+
+@needs_cmd
+def test_hooks_json_windows_command_end_to_end(tmp_path: Path) -> None:
+    """The shipped command_windows string uses Codex plugin env vars, runs
+    through cmd.exe, and propagates the target exit code.
+
+    Regression lock: do not fake runtime expansion with string replacement.
+    PowerShell must expand $env:CLAUDE_PLUGIN_ROOT itself, including paths with
+    spaces and apostrophes.
+    """
+    data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
+    command = data["hooks"]["PreToolUse"][0]["hooks"][0]["command_windows"]
+
+    plugin_root = tmp_path / "plugin O'Hare"
+    hooks_dir = plugin_root / "scripts" / "hooks"
+    hooks_dir.mkdir(parents=True)
+    shutil.copyfile(CMD_SHIM, hooks_dir / "run_hook.cmd")
+    (hooks_dir / "pretool_dispatcher.py").write_text(
+        "import sys\nsys.exit(7)\n", encoding="utf-8"
+    )
+
+    cmd = _cmd_exe()
+    assert cmd is not None
+    env = os.environ.copy()
+    env["CLAUDE_PLUGIN_ROOT"] = str(plugin_root)
+    proc = subprocess.run(
+        [cmd, "/C", command],
+        input="{}",
+        text=True,
+        capture_output=True,
+        timeout=60,
+        env=env,
+    )
+    assert proc.returncode == 7, (
+        f"the shipped command_windows must resolve an interpreter and "
+        f"propagate the target's exit code (7); got rc={proc.returncode}, "
+        f"stderr={proc.stderr!r}"
     )
 
 

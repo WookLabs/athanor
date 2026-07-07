@@ -5,7 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py\"",
+            "command_windows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^& \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd\" \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\pretool_dispatcher.py\"; exit $LASTEXITCODE"
           }
         ]
       }
@@ -15,7 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/posttool_evidence_sniffer.py\"",
+            "command_windows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ^& \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd\" \"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\posttool_evidence_sniffer.py\"; exit $LASTEXITCODE"
           }
         ]
       }

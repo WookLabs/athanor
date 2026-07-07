@@ -26,9 +26,11 @@ Fail-open contract:
   - empty / malformed / non-object stdin → exit 0 (mirrors v0.16.0).
   - opt-in freeze: missing ``freeze-allowlist.json`` causes no enforcement.
 
-Stdlib-only. Invoked via ``sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
-"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py"`` (portable
-interpreter launcher; v0.11.4 plugin-root expansion lesson).
+Stdlib-only. Invoked on POSIX via ``sh
+"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
+"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py"`` and on native
+Windows via the ``command_windows`` override that calls ``run_hook.cmd``.
+Both launchers preserve stdin and exit-code semantics.
 
 Subtask 2.2 ships this script BEFORE ``freeze_guard.py`` (Subtask 2.3).
 The freeze import is deferred to the freeze branch and guarded with

@@ -168,6 +168,27 @@ def test_runtime_conformance_fails_when_enabled_hook_missing_from_runtime_manife
     assert check["missing"][0]["event"] == "PreToolUse"
 
 
+def test_runtime_conformance_fails_when_windows_hook_command_drifts(tmp_path):
+    repo = _copy_minimal_repo(tmp_path)
+    hooks_path = repo / "hooks" / "hooks.json"
+    hooks = _load_json(hooks_path)
+    for entries in hooks["hooks"].values():
+        for matcher_entry in entries:
+            for hook in matcher_entry.get("hooks", []):
+                hook.pop("command_windows", None)
+    hooks_path.write_text(json.dumps(hooks, indent=2) + "\n", encoding="utf-8")
+
+    result = _run_cli(repo)
+
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["status"] == "fail"
+    assert "hooks.enabled_runtime_manifest" in _check_ids(report)
+    check = _check_by_id(report, "hooks.enabled_runtime_manifest")
+    assert check["missing"][0]["event"] in {"PreToolUse", "PostToolUse"}
+    assert "command_windows" in check["missing"][0]
+
+
 def test_runtime_conformance_fails_when_codex_manifest_adds_hooks(tmp_path):
     repo = _copy_minimal_repo(tmp_path)
     manifest_path = repo / "plugins" / "athanor-codex" / ".codex-plugin" / "plugin.json"

@@ -1,9 +1,9 @@
 #!/bin/sh
 # Athanor portable hook launcher (v0.24.3, N1).
 # Usage: sh run_hook.sh "<abs path to hook .py>"
-# Invoked from hooks/hooks.json; the harness runs hook commands through a
-# POSIX shell on every OS (proven by ${CLAUDE_PLUGIN_ROOT} expanding today),
-# so `sh` is guaranteed — no chicken/egg.
+# Invoked from POSIX hook commands in hooks/hooks.json. Native Windows runs use
+# command_windows -> scripts/hooks/run_hook.cmd so hosts without `sh` still run
+# the active gates.
 #
 # Resolves a WORKING Python >= 3.10 by FUNCTIONALITY probe, not PATH
 # presence: the Windows Store App-Execution-Alias `python3` stub exists on

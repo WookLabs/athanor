@@ -35,6 +35,24 @@ smoke, topology/package/mirror gates, and the full pytest suite under `uv run`.
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / Stop hook gate.
 
+## Archived from STATE.md (2026-07-07, v0.25.0 bounded-history trim — cap 5 Previous)
+
+## Previous Phase: v0.20.1 — output.language Presentation Preference
+
+**v0.20.1** (released 2026-06-23) — Patch release that ships the never-published
+`output.language` presentation preference (merged to main after v0.20.0 in commit
+`cdf76e5`, but never released). `output.language` is a best-effort advisory
+user-facing language preference (enum `ko|en`, default `en`; this repo runs `ko`):
+the leader interprets it at present-time across the 9 native Thin Leader skills,
+injecting a conditional per-language directive so prose surfaces can render in the
+chosen language while machine-parse surfaces (result schemas, JSON, gate output)
+stay English. The English-default behavior is unchanged, and the plugin surface
+stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
+`releaser`) and the existing native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / explicit evidence gates.
+
 ## Archived from STATE.md (2026-06-25)
 
 ## Previous Phase: v0.19.2 — Prompt, Goal, and Topology Patch

@@ -25,15 +25,18 @@ def _load_json(path: Path):
         return json.load(handle)
 
 
-def _registered_runtime_hooks() -> dict[tuple[str, str], str]:
+def _registered_runtime_hooks() -> dict[tuple[str, str], dict[str, str]]:
     hooks = _load_json(HOOKS_PATH)["hooks"]
-    registered: dict[tuple[str, str], str] = {}
+    registered: dict[tuple[str, str], dict[str, str]] = {}
     for event, matcher_entries in hooks.items():
         for matcher_entry in matcher_entries:
             matcher = matcher_entry.get("matcher", "")
             for hook in matcher_entry.get("hooks", []):
                 command = hook["command"]
-                registered[(event, command)] = matcher
+                registered[(event, command)] = {
+                    "matcher": matcher,
+                    "command_windows": hook.get("command_windows", ""),
+                }
     return registered
 
 
@@ -58,11 +61,23 @@ def test_registered_runtime_hooks_are_cataloged_as_enabled():
 
     assert set(registered) == set(cataloged)
 
-    for key, matcher in registered.items():
+    for key, runtime_entry in registered.items():
         entry = cataloged[key]
-        assert entry["matcher"] == matcher
+        assert entry["matcher"] == runtime_entry["matcher"]
+        assert entry.get("command_windows", "") == runtime_entry["command_windows"]
         assert entry["evidence_level"] in {"live-redacted", "replay-gated"}
         assert entry["performance_budget_ms"] <= 500
+
+
+def test_enabled_catalog_hooks_carry_windows_command_overrides():
+    """Enabled hooks must include the Codex-native Windows launcher path."""
+    for entry in _catalog_entries():
+        if entry["runtime_default"] != "enabled":
+            continue
+        command_windows = entry.get("command_windows")
+        assert isinstance(command_windows, str) and command_windows
+        assert "run_hook.cmd" in command_windows
+        assert "run_hook.sh" not in command_windows
 
 
 def test_non_enabled_catalog_entries_are_explicitly_non_runtime():

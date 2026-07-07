@@ -55,13 +55,21 @@ def _read_json(path: Path, label: str, *, missing_ok: bool = False) -> tuple[dic
     return data, None
 
 
-def _hook_entry(event: str, matcher: str, command: str) -> dict[str, Any]:
+def _hook_entry(
+    event: str,
+    matcher: str,
+    command: str,
+    command_windows: str = "",
+) -> dict[str, Any]:
+    hook_item: dict[str, Any] = {
+        "type": "command",
+        "command": command,
+    }
+    if command_windows:
+        hook_item["command_windows"] = command_windows
     entry: dict[str, Any] = {
         "hooks": [
-            {
-                "type": "command",
-                "command": command,
-            }
+            hook_item
         ]
     }
     if matcher:
@@ -69,12 +77,12 @@ def _hook_entry(event: str, matcher: str, command: str) -> dict[str, Any]:
     return entry
 
 
-def _iter_manifest_hooks(data: dict[str, Any]) -> list[tuple[str, str, str]]:
+def _iter_manifest_hooks(data: dict[str, Any]) -> list[tuple[str, str, str, str]]:
     hooks = data.get("hooks")
     if not isinstance(hooks, dict):
         return []
 
-    out: list[tuple[str, str, str]] = []
+    out: list[tuple[str, str, str, str]] = []
     for event, matcher_entries in hooks.items():
         if not isinstance(event, str) or not isinstance(matcher_entries, list):
             continue
@@ -92,7 +100,10 @@ def _iter_manifest_hooks(data: dict[str, Any]) -> list[tuple[str, str, str]]:
                     continue
                 command = handler.get("command")
                 if isinstance(command, str):
-                    out.append((event, matcher, command))
+                    command_windows = handler.get("command_windows", "")
+                    if not isinstance(command_windows, str):
+                        command_windows = ""
+                    out.append((event, matcher, command, command_windows))
     return out
 
 
@@ -163,8 +174,8 @@ def _blocked_reason(entry: dict[str, Any]) -> str | None:
 
 def _plan_action(
     entry: dict[str, Any],
-    runtime_hooks: set[tuple[str, str, str]],
-    settings_hooks: set[tuple[str, str, str]],
+    runtime_hooks: set[tuple[str, str, str, str]],
+    settings_hooks: set[tuple[str, str, str, str]],
     settings: dict[str, Any],
     repo_root: Path,
     trust_state: dict[str, Any],
@@ -174,12 +185,15 @@ def _plan_action(
     matcher = str(entry.get("matcher", ""))
     command = entry.get("command")
     command_text = command if isinstance(command, str) else ""
+    command_windows = entry.get("command_windows")
+    command_windows_text = command_windows if isinstance(command_windows, str) else ""
 
     action: dict[str, Any] = {
         "id": hook_id,
         "event": event,
         "matcher": matcher,
         "command": command_text,
+        "command_windows": command_windows_text,
         "runtime_default": str(entry.get("runtime_default", "")),
         "policy_mode": str(entry.get("policy_mode", "")),
         "evidence_level": str(entry.get("evidence_level", "")),
@@ -202,7 +216,7 @@ def _plan_action(
         action["reason"] = blocked
         return action
 
-    key = (event, matcher, command_text)
+    key = (event, matcher, command_text, command_windows_text)
     if key in runtime_hooks:
         action["status"] = "already-present"
         action["reason"] = "catalog entry already present in hooks/hooks.json"
@@ -222,7 +236,12 @@ def _plan_action(
 
     action["status"] = "would-add"
     action["reason"] = "settings has no matching or conflicting entry"
-    action["proposed_entry"] = _hook_entry(event, matcher, command_text)
+    action["proposed_entry"] = _hook_entry(
+        event,
+        matcher,
+        command_text,
+        command_windows_text,
+    )
     return action
 
 
@@ -299,6 +318,7 @@ def _remove_actions(
         event = str(action.get("event", ""))
         matcher = str(action.get("matcher", ""))
         command = str(action.get("command", ""))
+        command_windows = str(action.get("command_windows", ""))
         removed_count = 0
 
         if isinstance(hooks, dict):
@@ -325,6 +345,7 @@ def _remove_actions(
                             isinstance(handler, dict)
                             and handler.get("type") == "command"
                             and handler.get("command") == command
+                            and handler.get("command_windows", "") == command_windows
                         ):
                             entry_removed += 1
                             continue

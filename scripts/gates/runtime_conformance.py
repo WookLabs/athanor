@@ -100,14 +100,26 @@ def _manifest_hook_triples(hooks_manifest: dict[str, Any]) -> list[dict[str, str
                     continue
                 command = handler.get("command")
                 if isinstance(command, str):
+                    command_windows = handler.get("command_windows", "")
+                    if not isinstance(command_windows, str):
+                        command_windows = ""
                     triples.append(
                         {
                             "event": event,
                             "matcher": matcher,
                             "command": command,
+                            "command_windows": command_windows,
                         }
                     )
-    return sorted(triples, key=lambda item: (item["event"], item["matcher"], item["command"]))
+    return sorted(
+        triples,
+        key=lambda item: (
+            item["event"],
+            item["matcher"],
+            item["command"],
+            item["command_windows"],
+        ),
+    )
 
 
 def _catalog_enabled_triples(catalog: dict[str, Any]) -> list[dict[str, str]]:
@@ -121,13 +133,31 @@ def _catalog_enabled_triples(catalog: dict[str, Any]) -> list[dict[str, str]]:
             continue
         event = entry.get("event")
         command = entry.get("command")
+        command_windows = entry.get("command_windows", "")
         matcher = entry.get("matcher", "")
         if not isinstance(event, str) or not isinstance(command, str):
             continue
+        if not isinstance(command_windows, str):
+            command_windows = ""
         if not isinstance(matcher, str):
             matcher = ""
-        triples.append({"event": event, "matcher": matcher, "command": command})
-    return sorted(triples, key=lambda item: (item["event"], item["matcher"], item["command"]))
+        triples.append(
+            {
+                "event": event,
+                "matcher": matcher,
+                "command": command,
+                "command_windows": command_windows,
+            }
+        )
+    return sorted(
+        triples,
+        key=lambda item: (
+            item["event"],
+            item["matcher"],
+            item["command"],
+            item["command_windows"],
+        ),
+    )
 
 
 def _enabled_events(triples: list[dict[str, str]]) -> list[str]:

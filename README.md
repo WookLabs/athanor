@@ -5,7 +5,7 @@
 
 > The alchemist's self-sustaining furnace — a workflow orchestrator that grows smarter with use.
 
-**v0.24.4** — 13 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. LFG loop engineering. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / explicit evidence gates are the athanor identity commitments.
+**v0.25.0** — 13 athanor-native commands (+ 2 internal skills: scope-drift, verification-before-completion) + 1 KEEP vendored skill (`/athanor:ce-test-browser`). Clean-context workers. Prompt generation. Goal-aligned assessment. LFG loop engineering. Agent topology gates. 3-tier adversarial planning. 6-lens parallel review. Sessions that compound. Thin Leader / cross-model adversarial planning / Spec-then-TDD discipline / explicit evidence gates are the athanor identity commitments.
 
 Current package-facing operator map: [docs/package-knowledge-index.md](docs/package-knowledge-index.md).
 

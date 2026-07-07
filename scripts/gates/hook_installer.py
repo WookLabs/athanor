@@ -9,8 +9,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-PLUGIN_ROOT_TOKEN = "${CLAUDE_PLUGIN_ROOT}/"
-PLUGIN_ROOT_PATH_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\s]+)")
+PLUGIN_ROOT_PATH_RE = re.compile(
+    r"(?:\$\{CLAUDE_PLUGIN_ROOT\}|\$env:CLAUDE_PLUGIN_ROOT)[\\/]([^\"'\s]+)"
+)
 
 
 class HookInstallerTrustError(ValueError):
@@ -50,15 +51,32 @@ def _plugin_root_sources(command: str) -> list[str]:
     return sorted(out)
 
 
+def _command_hash(command: str, command_windows: str) -> str:
+    if not command_windows:
+        return _sha256_text(command)
+    payload = json.dumps(
+        {
+            "command": command,
+            "command_windows": command_windows,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _sha256_text(payload)
+
+
 def build_hook_fingerprint(entry: dict[str, Any], repo_root: Path | str) -> dict[str, Any]:
     """Return command/source hashes for one catalog hook entry."""
     root = Path(repo_root)
     command = _string_field(entry, "command")
+    command_windows = _string_field(entry, "command_windows")
     hook_id = _string_field(entry, "id")
     source_hashes: list[dict[str, str]] = []
     missing_sources: list[str] = []
 
-    for source_path in _plugin_root_sources(command):
+    source_paths = set(_plugin_root_sources(command))
+    source_paths.update(_plugin_root_sources(command_windows))
+    for source_path in sorted(source_paths):
         path = root.joinpath(*source_path.split("/"))
         if not path.is_file():
             missing_sources.append(source_path)
@@ -73,7 +91,7 @@ def build_hook_fingerprint(entry: dict[str, Any], repo_root: Path | str) -> dict
     return {
         "schema_version": 1,
         "hook_id": hook_id,
-        "command_hash": _sha256_text(command),
+        "command_hash": _command_hash(command, command_windows),
         "source_hashes": source_hashes,
         "missing_sources": missing_sources,
     }

@@ -4,7 +4,34 @@
 > 각 Phase / 릴리스 완료 시 업데이트합니다.
 > 자세한 변경 내역은 `CHANGELOG.md` 를 정본(source of truth)으로 봅니다.
 
-## Current Phase: v0.24.4 — skill prompt diet (refactor patch on v0.24.3)
+## Current Phase: v0.25.0 — Windows hook launch + PreToolUse precision hardening
+
+**v0.25.0** (released 2026-07-07) — Hook hardening release landing the
+Windows launcher and guard-precision fixes after the loop-engineering release
+line. Active runtime hooks remain exactly `PreToolUse` and `PostToolUse`; the
+deprecated Stop completion-claim hook is not registered. POSIX hook commands
+continue through `scripts/hooks/run_hook.sh`, while native Windows hosts use
+`command_windows` overrides through `scripts/hooks/run_hook.cmd` so Codex does
+not depend on `sh`. The Windows launcher probes `py -3`, `python`, then
+`python3` with stdin redirected from `NUL`, then executes the target hook with
+the original stdin so exit-code semantics propagate.
+
+The PreToolUse kernel guard now treats destructive `rm` detection as
+segment-scoped command-head matching after accepted wrappers, preserving blocks
+for real destructive commands (`rm -rf /`, `sudo rm -rf /`, chained destructive
+segments, root globs, and `--no-preserve-root`) while allowing quoted/logged
+data such as `echo "rm -rf /"` or `git commit -m "rm -rf /"`. Shared command
+segmentation now honors simple quote context for separators/comments, closing
+quoted `&&`, `|`, and `;` false positives across destructive-shell and Bash
+credential-read checks. Hook catalog/runtime conformance, installer dry-run,
+trust hashing, and docs now preserve `command_windows` in lockstep. Plugin
+surface stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`,
+`learner`, `releaser`) and the existing native command set are untouched.
+
+Identity invariants intact (4): Thin Leader / cross-model adversarial /
+Spec-then-TDD / explicit evidence gates.
+
+## Previous Phase: v0.24.4 — skill prompt diet (refactor patch on v0.24.3)
 
 **v0.24.4** (released 2026-07-04) — Refactor patch landing one merged PR since
 v0.24.3 (#88, `9f82019`), from a cross-model deep-plan (Planner A + contrarian
@@ -252,22 +279,6 @@ protection. The step merges only — version-bump/tag/CHANGELOG/STATE.md stays t
 no runtime hook blocks the merge). The plugin surface stays frozen: 4 registered
 agents (`ci-watcher`, `codex-dispatcher`, `learner`, `releaser`) and the existing
 native command set are untouched.
-
-Identity invariants intact (4): Thin Leader / cross-model adversarial /
-Spec-then-TDD / explicit evidence gates.
-
-## Previous Phase: v0.20.1 — output.language Presentation Preference
-
-**v0.20.1** (released 2026-06-23) — Patch release that ships the never-published
-`output.language` presentation preference (merged to main after v0.20.0 in commit
-`cdf76e5`, but never released). `output.language` is a best-effort advisory
-user-facing language preference (enum `ko|en`, default `en`; this repo runs `ko`):
-the leader interprets it at present-time across the 9 native Thin Leader skills,
-injecting a conditional per-language directive so prose surfaces can render in the
-chosen language while machine-parse surfaces (result schemas, JSON, gate output)
-stay English. The English-default behavior is unchanged, and the plugin surface
-stays frozen: 4 registered agents (`ci-watcher`, `codex-dispatcher`, `learner`,
-`releaser`) and the existing native command set are untouched.
 
 Identity invariants intact (4): Thin Leader / cross-model adversarial /
 Spec-then-TDD / explicit evidence gates.

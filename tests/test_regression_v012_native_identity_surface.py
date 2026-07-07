@@ -111,6 +111,7 @@ def test_active_hook_scripts_present():
         HOOK_SCRIPTS_DIR / "pretool_dispatcher.py",
         HOOK_SCRIPTS_DIR / "posttool_evidence_sniffer.py",
         HOOK_SCRIPTS_DIR / "run_hook.sh",
+        HOOK_SCRIPTS_DIR / "run_hook.cmd",
     )
     missing = [str(p.relative_to(REPO_ROOT)) for p in required if not p.is_file()]
     assert not missing, (

@@ -445,13 +445,15 @@ def build_capability_report(project_root: Path) -> dict:
             "skill loading is a Claude Code platform mechanism handled "
             "outside athanor's hook surface. Re-affirming this avoids the "
             "v0.10.x SessionStart fiction documented in STATE.md §U3.",
-            "Cross-platform: any new hook command MUST use the portable "
-            "launcher form `sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/"
-            "run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/...\"` per "
-            "the v0.11.4 plugin-root deployment lesson + the v0.24.3 "
-            "portable-interpreter fix (bare `python3` reproduces the "
-            "2026-07-01 Windows Store-stub silent fail-open). Bare relative "
-            "paths silently fail-open outside athanor's source repo.",
+            "Cross-platform: any new enabled hook command MUST use the POSIX "
+            "portable launcher form `sh \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/"
+            "run_hook.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/...\"` plus "
+            "a native Windows `command_windows` override through "
+            "`run_hook.cmd`. This preserves the v0.11.4 plugin-root "
+            "deployment lesson and the v0.24.3 portable-interpreter fix "
+            "(bare `python3` reproduces the 2026-07-01 Windows Store-stub "
+            "silent fail-open). Bare relative paths silently fail-open "
+            "outside athanor's source repo.",
             "Honesty label: every new event the probe marks `supported: "
             "false` MUST stay false until a spike with empirical evidence "
             "lands in docs/STATE.md (same bar as the 2026-05-18 Stop spike).",

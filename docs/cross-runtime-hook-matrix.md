@@ -73,8 +73,8 @@ installer, or settings writer.
 | Runtime | Hook trust model | Installer boundary |
 | --- | --- | --- |
 | Claude Code | plugin validation through `claude plugin validate` or `/plugin validate`; plugin hooks live at plugin-root `hooks/hooks.json` or manifest-declared hook config. | Marketplace/plugin install may expose hooks, but Athanor still requires catalog evidence before recommending runtime enablement. |
-| Codex | trust before execution for non-managed hooks; managed hooks are trusted by policy and can be forced through requirements; plugin-bundled hooks still require review. | Respect project trust and managed hooks; do not bypass the hook browser or managed policy. |
-| Athanor | catalog-first evidence policy; enabled hooks must be replay-gated or live-redacted; capture-only hooks are evidence collection only. | dry-run first; no generator writes settings until the matrix, catalog, and live fixtures prove the change. |
+| Codex | trust before execution for non-managed hooks; managed hooks are trusted by policy and can be forced through requirements; plugin-bundled hooks still require review; command hooks may carry a Windows-only `commandWindows` / `command_windows` override. | Respect project trust and managed hooks; do not bypass the hook browser or managed policy; preserve Windows overrides when installing or comparing enabled hooks. |
+| Athanor | catalog-first evidence policy; enabled hooks must be replay-gated or live-redacted; capture-only hooks are evidence collection only. | dry-run first; no generator writes settings until the matrix, catalog, and live fixtures prove the change; runtime/catalog conformance compares POSIX and Windows command strings. |
 
 ## Generator Boundary
 

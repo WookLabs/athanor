@@ -3,6 +3,42 @@
 All notable changes to Athanor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.25.0] — 2026-07-07
+
+Headline: a **hook hardening release** — native Windows launcher support for
+active hooks plus sharper PreToolUse destructive-command precision. The active
+runtime hook surface remains exactly PreToolUse + PostToolUse; the deprecated
+Stop completion-claim hook is not registered.
+
+> **Upgrade note (one-time):** this release changes active hook command
+> metadata by adding `command_windows` overrides. Approve the hook update prompt
+> on upgrade to keep the PreToolUse guard and PostToolUse evidence sniffer
+> active.
+
+### Fixed
+
+- **Native Windows hook launch.** `hooks/hooks.json` and
+  `hooks/catalog.json` now keep POSIX `command` entries on `run_hook.sh` and add
+  Windows-native `command_windows` entries through `run_hook.cmd`. The launcher
+  probes `py -3`, `python`, then `python3` with stdin redirected from `NUL`, then
+  runs the target hook with the original stdin so blocking exit codes propagate.
+- **PreToolUse `rm` precision.** Destructive `rm` detection is now
+  segment-scoped and command-head anchored, preserving blocks for real root/home
+  destructive commands while allowing quoted/logged text such as
+  `echo "rm -rf /"` and `git commit -m "rm -rf /"`.
+- **Quoted separator false positives.** Shared command segmentation now honors
+  simple single/double quotes for separators and comments, so strings like
+  `echo "note && rm -rf /"` do not create fake hazardous segments.
+
+### Changed
+
+- Hook catalog, installer dry-run/apply/remove, trust hashing, runtime
+  conformance, and documentation now preserve and compare `command_windows`
+  alongside POSIX `command`.
+- Stop-hook remnants are kept out of the active runtime surface; quality gates
+  remain carried by explicit workflow evidence, review/assessment artifacts, and
+  the active PreToolUse/PostToolUse hooks.
+
 ## [0.24.4] — 2026-07-04
 
 Headline: a small **refactor patch** — skill prompt diet. One merged PR

@@ -190,6 +190,45 @@ def test_would_add_when_enabled_hook_is_missing_from_runtime_and_settings(tmp_pa
     }
 
 
+def test_would_add_preserves_windows_command_override(tmp_path):
+    catalog_path = tmp_path / "catalog.json"
+    hooks_path = tmp_path / "hooks.json"
+    settings_path = tmp_path / ".claude" / "settings.json"
+    _write_json(
+        catalog_path,
+        _minimal_catalog(
+            {
+                "command_windows": "py -3 demo.py",
+            }
+        ),
+    )
+    _write_json(hooks_path, {"hooks": {}})
+
+    result = _run_cli(
+        "--catalog",
+        str(catalog_path),
+        "--hooks",
+        str(hooks_path),
+        "--settings",
+        str(settings_path),
+        "--json",
+    )
+
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    action = report["actions"][0]
+    assert action["command_windows"] == "py -3 demo.py"
+    assert action["proposed_entry"] == {
+        "hooks": [
+            {
+                "type": "command",
+                "command": "python3 demo.py",
+                "command_windows": "py -3 demo.py",
+            }
+        ]
+    }
+
+
 def test_conflicting_existing_settings_hook_is_reported_without_clobber(tmp_path):
     catalog_path = tmp_path / "catalog.json"
     hooks_path = tmp_path / "hooks.json"

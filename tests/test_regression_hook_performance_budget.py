@@ -101,3 +101,45 @@ def test_budget_gate_uses_median_for_status_and_reports_max(monkeypatch) -> None
     assert report["median_ms"] == 110.0
     assert report["max_ms"] == 700.0
     assert "median" in report["reason"]
+
+
+def test_budget_gate_retries_transient_process_startup_spike(monkeypatch) -> None:
+    """A one-off slow batch should be retried before failing the gate."""
+    durations = iter([100.0, 900.0, 800.0, 700.0, 100.0, 110.0, 120.0])
+
+    def fake_run_once(command, payload, hook_id):
+        return {
+            "duration_ms": next(durations),
+            "exit_code": 0,
+            "stdout": "",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr(budget_gate, "_run_once", fake_run_once)
+    report = budget_gate._measure_hook(
+        hook={
+            "id": "pretool-dispatcher",
+            "event": "PreToolUse",
+            "command": (
+                'sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh" '
+                '"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py"'
+            ),
+            "performance_budget_ms": 500,
+        },
+        fixtures=[
+            {
+                "id": "safe-pretool",
+                "event": "PreToolUse",
+                "source_level": "synthetic",
+                "payload": {"hook_event_name": "PreToolUse"},
+            },
+        ],
+        samples=3,
+        overrides={},
+    )
+
+    assert report["status"] == "pass"
+    assert report["median_ms"] == 110.0
+    assert report["max_ms"] == 900.0
+    assert report["retry_attempts"] == 1
+    assert "initial median" in report["reason"]

@@ -42,6 +42,11 @@ that can write settings, and it still requires trusted hook fingerprints.
   registered by Athanor.
 - `disabled`: documented candidate with no runtime handler.
 
+Enabled command hooks carry the POSIX `command` string and, where needed for
+native Windows Codex, a `command_windows` override. `hooks/catalog.json` and
+`hooks/hooks.json` must keep both values in lockstep; the runtime conformance
+gate compares them as part of the enabled hook identity.
+
 ## Evidence Levels
 
 - `none`: no Athanor payload fixture or handler exists.
@@ -79,6 +84,10 @@ An entry can move from `capture-only` to `enabled` only after:
 4. the hook declares a performance budget and skip/fail-open behavior;
 5. `hooks/hooks.json`, `hooks/catalog.json`, and this document are updated in
    the same change.
+
+For cross-platform enabled hooks, the same change must include the Windows
+launcher source and `command_windows` catalog/runtime entries. The Windows
+override must preserve stdin and exit-code behavior, including exit 2 blocks.
 
 ## Performance Policy
 

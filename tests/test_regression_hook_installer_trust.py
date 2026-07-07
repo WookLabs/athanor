@@ -68,6 +68,45 @@ def test_missing_source_file_is_reported(tmp_path: Path) -> None:
     assert fingerprint["missing_sources"] == ["scripts/hooks/demo.py"]
 
 
+def test_windows_command_participates_in_trust_fingerprint(tmp_path: Path) -> None:
+    for rel_path in (
+        "scripts/hooks/run_hook.sh",
+        "scripts/hooks/run_hook.cmd",
+        "scripts/hooks/demo.py",
+    ):
+        path = tmp_path.joinpath(*rel_path.split("/"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{rel_path}\n", encoding="utf-8")
+    entry = _entry(
+        'sh "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh" '
+        '"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/demo.py"'
+    )
+    entry["command_windows"] = (
+        'powershell.exe -NoProfile -NonInteractive -Command '
+        '^& "$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\run_hook.cmd" '
+        '"$env:CLAUDE_PLUGIN_ROOT\\scripts\\hooks\\demo.py"'
+    )
+
+    fingerprint = build_hook_fingerprint(entry, tmp_path)
+
+    expected_payload = json.dumps(
+        {
+            "command": entry["command"],
+            "command_windows": entry["command_windows"],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    expected_hash = hashlib.sha256(expected_payload).hexdigest()
+    assert fingerprint["command_hash"] == f"sha256:{expected_hash}"
+    assert fingerprint["missing_sources"] == []
+    assert [item["path"] for item in fingerprint["source_hashes"]] == [
+        "scripts/hooks/demo.py",
+        "scripts/hooks/run_hook.cmd",
+        "scripts/hooks/run_hook.sh",
+    ]
+
+
 def test_missing_trust_state_loads_empty_state(tmp_path: Path) -> None:
     trust_state = load_trust_state(tmp_path / ".athanor" / "missing-trust.json")
 

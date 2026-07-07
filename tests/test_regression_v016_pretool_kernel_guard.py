@@ -646,6 +646,65 @@ def test_destructive_spelling_as_quoted_data_allowed():
         )
 
 
+def test_rm_root_spelling_as_quoted_data_allowed():
+    """False-positive guard — `rm -rf /` as quoted/logged data is ALLOWED.
+
+    The rm gate must inspect the segment's command head, not any rm-looking
+    token that appears later inside safe commands such as echo, printf, or a
+    commit message.
+    """
+    for cmd in (
+        'echo "rm -rf /"',
+        'printf "rm -rf /"',
+        'git commit -m "docs: mention rm -rf / safety"',
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 0, (
+            f"{cmd!r} (rm spelling only as quoted/logged data) must be "
+            f"allowed, got rc={rc} stderr={err!r}"
+        )
+
+
+def test_quoted_separators_do_not_create_fake_hazard_segments():
+    """False-positive guard — separators inside quotes are data, not command
+    boundaries.
+
+    A safe command may log or commit text that mentions a hazardous command
+    after `&&`, `|`, or `;`. The guard must not split those quoted separator
+    spellings into fake command segments.
+    """
+    for cmd in (
+        'echo "note && rm -rf /"',
+        'printf "safe | rm -rf /"',
+        'git commit -m "docs: mention ; rm -rf /"',
+        'echo "note && git reset --hard"',
+        'echo "note && git push --force origin main"',
+        'echo "note | cat .env"',
+        'git commit -m "docs: do not cat .env"',
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 0, (
+            f"{cmd!r} contains hazardous spelling only as quoted data and "
+            f"must be allowed, got rc={rc} stderr={err!r}"
+        )
+
+
+def test_rm_root_later_segment_and_sudo_stay_blocked():
+    """Regression — anchoring rm to the segment head must not weaken real rm."""
+    for cmd in (
+        "sudo rm -rf /",
+        "cd x && rm -rf /",
+        "rm -fr /*",
+        "rm -rf --no-preserve-root /",
+        "rm -rf ~/*",
+    ):
+        rc, _, err = _run(_bash(cmd))
+        assert rc == 2, (
+            f"{cmd!r} must stay blocked after rm head anchoring, "
+            f"got rc={rc} stderr={err!r}"
+        )
+
+
 # --- Q1-3: force-push `+refspec` form --------------------------------------
 # Rule 2 missed the git-native `+refspec` force spelling (`git push origin
 # +main`), which carries no `--force`/`-f` flag yet force-pushes. A 4th

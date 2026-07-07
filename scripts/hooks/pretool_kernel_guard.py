@@ -48,12 +48,11 @@ all v0.16.0 behavior (including fail-closed on missing config) is
 preserved bit-for-bit. The 23 existing subprocess-driven regression
 tests continue to pass unchanged.
 
-Cross-platform note: reached from hooks/hooks.json via `sh
-"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_hook.sh"
-"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool_dispatcher.py"` (the
-dispatcher invokes this guard in-process; run_hook.sh resolves a
-portable Python interpreter). The plugin-root expansion follows the
-v0.11.4 lesson (bare relative paths broke deployment in
+Cross-platform note: reached from hooks/hooks.json via the POSIX
+`run_hook.sh` command and the native Windows `command_windows` override
+through `run_hook.cmd` (the dispatcher invokes this guard in-process; the
+launchers resolve a portable Python interpreter). The plugin-root expansion
+follows the v0.11.4 lesson (bare relative paths broke deployment in
 non-source-repo projects).
 """
 from __future__ import annotations
@@ -105,10 +104,13 @@ def _is_destructive_rm(command: str) -> bool:
     targets filesystem root or home — any flag order, with optional intervening
     options, including shell-glob forms (`/*`, `~/*`)."""
     # Reason per command segment (P13 shared splitter) so a later command's
-    # tokens don't bleed into this rm's analysis; within a segment, take the
-    # text after the `rm` token as its argument span.
+    # tokens don't bleed into this rm's analysis. Strip the same small wrapper
+    # prefix set as git-push/destructive-git checks, then require `rm` to be
+    # the effective command head. A quoted/logged spelling such as
+    # `echo "rm -rf /"` is data, not an rm invocation.
     for segment in _command_segments(command):
-        m = re.search(r"\brm\b(.*)", segment)
+        stripped = _strip_force_push_wrappers(segment)
+        m = re.match(r"^rm\b(.*)", stripped)
         if m is None:
             continue
         args = m.group(1)
@@ -224,38 +226,112 @@ def _stderr(msg: str) -> None:
 
 
 # Command-chain separators: `&&`, `||`, single `|`, `;`, and newline. Kept as
-# one shared splitter (P13) so the force-push and destructive-rm checks agree
-# on what "a single command segment" means. This is deliberately NOT a shell
-# tokenizer — it does not honor quoting, here-docs, `$(...)`, or backslash
-# continuations. The bias is false-NEGATIVE: when the split is ambiguous we
-# would rather UNDER-block than over-block, because this guard is a fat-finger
-# guardrail, not a security boundary (see module docstring).
-_SEGMENT_SPLIT = re.compile(r"&&|\|\||\||;|\n")
-# A trailing `#` comment is stripped only when the `#` sits at a token boundary
-# (start-of-segment or after whitespace). Mid-token `#` (e.g. `url#frag`,
-# `issue-#5`) is left intact so we never silently drop a real argument.
-_TRAILING_COMMENT = re.compile(r"(?:^|\s)#.*$")
+# one shared splitter so force-push, destructive-shell, and Bash credential-read
+# checks agree on what "a single command segment" means. This is deliberately
+# NOT a complete shell tokenizer: here-docs, `$(...)`, aliases, and full shell
+# grammar are out of scope. It does honor simple single/double quotes for
+# separators and trailing comments so quoted hazard spellings stay data instead
+# of becoming fake command segments.
 
 
 def _command_segments(command: str) -> list[str]:
     """Split a shell command string into best-effort command segments.
 
-    Splits on `&&`, `||`, `|`, `;`, and newline, then conservatively strips a
-    trailing `#`-comment from each segment (only when the `#` is at a token
-    boundary). Empty/whitespace-only segments are dropped. Shared by the
-    force-push and destructive-rm checks so both reason over the SAME notion of
-    a single command (P13).
+    Splits on unquoted `&&`, `||`, `|`, `;`, and newline, then conservatively
+    strips a trailing unquoted `#`-comment from each segment (only when the `#`
+    is at a token boundary). Empty/whitespace-only segments are dropped. Shared
+    by the force-push, destructive-shell, and Bash read checks so they reason
+    over the SAME notion of a single command.
 
-    Intentionally not a shell parser: quoting/here-docs/`$(...)` are not
-    honored. False-NEGATIVE bias — an ambiguous case under-blocks rather than
-    over-blocks (fat-finger guardrail, not a security boundary).
+    Intentionally not a shell parser: here-docs, `$(...)`, aliases, and full
+    shell grammar are not honored. False-NEGATIVE bias — an ambiguous case
+    under-blocks rather than over-blocks (fat-finger guardrail, not a security
+    boundary).
     """
     segments: list[str] = []
-    for raw in _SEGMENT_SPLIT.split(command):
-        seg = _TRAILING_COMMENT.sub("", raw).strip()
+    current: list[str] = []
+    in_single = False
+    in_double = False
+    escaped = False
+    i = 0
+
+    def flush() -> None:
+        seg = _strip_trailing_comment("".join(current)).strip()
+        current.clear()
         if seg:
             segments.append(seg)
+
+    while i < len(command):
+        char = command[i]
+
+        if escaped:
+            current.append(char)
+            escaped = False
+            i += 1
+            continue
+
+        if char == "\\" and not in_single:
+            current.append(char)
+            escaped = True
+            i += 1
+            continue
+
+        if char == "'" and not in_double:
+            in_single = not in_single
+            current.append(char)
+            i += 1
+            continue
+
+        if char == '"' and not in_single:
+            in_double = not in_double
+            current.append(char)
+            i += 1
+            continue
+
+        if not in_single and not in_double:
+            pair = command[i : i + 2]
+            if pair in {"&&", "||"}:
+                flush()
+                i += 2
+                continue
+            if char in {"|", ";", "\n"}:
+                flush()
+                i += 1
+                continue
+
+        current.append(char)
+        i += 1
+
+    flush()
     return segments
+
+
+def _strip_trailing_comment(segment: str) -> str:
+    """Strip an unquoted token-boundary `#` comment from one segment."""
+    in_single = False
+    in_double = False
+    escaped = False
+    for i, char in enumerate(segment):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            continue
+        if (
+            char == "#"
+            and not in_single
+            and not in_double
+            and (i == 0 or segment[i - 1].isspace())
+        ):
+            return segment[:i]
+    return segment
 
 
 def _read_stdin_payload() -> dict | None:
@@ -468,14 +544,11 @@ def _bash_extract_read_paths(command: str) -> list[str]:
     segment so `cat .env | grep PASS` is still inspected, and value-taking
     options (`head -n 5 .env`) don't shadow the real path (v0.18.6 R1)."""
     paths: list[str] = []
-    for segment in re.split(r"[|;&\n]", command):
-        tokens = segment.split()
-        reader_idx = next(
-            (i for i, t in enumerate(tokens) if t in _BASH_READER_KEYWORDS), None
-        )
-        if reader_idx is None:
+    for segment in _command_segments(command):
+        tokens = _strip_force_push_wrappers(segment).split()
+        if not tokens or tokens[0] not in _BASH_READER_KEYWORDS:
             continue
-        j = reader_idx + 1
+        j = 1
         while j < len(tokens):
             tok = tokens[j]
             if tok.startswith("-"):

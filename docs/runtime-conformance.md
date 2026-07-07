@@ -13,6 +13,9 @@ the machine-readable contract and the files shipped in this repository.
 
 - `hooks/catalog.json` remains the hook metadata source of truth.
 - `hooks/hooks.json` remains the only runtime hook registration file.
+- Enabled hook identity includes both the POSIX `command` and any Windows
+  `command_windows` override, so cross-platform launch fixes cannot drift
+  between the catalog and runtime manifest.
 - `docs/runtime-surface-contract.json` defines expected distribution surfaces.
 - The Codex companion at `plugins/athanor-codex` must stay hook-free,
   MCP-free, and app-free.
